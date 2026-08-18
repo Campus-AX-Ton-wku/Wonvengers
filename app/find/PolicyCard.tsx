@@ -29,6 +29,11 @@ export default function PolicyCard({
             {policy.name}
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">{policy.agency}</p>
+          {policy.tier === 2 && (
+            <span className="mt-1 inline-block rounded bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700">
+              계산 가능
+            </span>
+          )}
         </div>
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${TAG_STYLE[result.tag]}`}

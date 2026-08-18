@@ -211,6 +211,25 @@ export default function FindPage() {
           </details>
         )}
 
+        {tagged.some((t) => t.policy.tier === 2 && t.result.tag !== "해당 없음") ? (
+          <div className="mt-6 rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 p-5">
+            <p className="text-sm font-bold text-sky-900">
+              실제 부담 계산은 준비 중입니다
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-sky-800">
+              계약 조건을 넣으면 지원금을 반영한 최종 주거비를 계산하는
+              기능을 만들고 있습니다. 지금은 위 목록의 공식 페이지에서 조건을
+              확인해 주세요.
+            </p>
+          </div>
+        ) : null}
+
+        <p className="mt-8 rounded-xl bg-slate-100 p-4 text-xs leading-relaxed text-slate-600">
+          이 화면은 나이 · 지역 · 현재 상태 · 소득 구간만 비교한 결과이며,
+          <strong> 신청 자격을 확정하는 것이 아닙니다.</strong> 무주택 여부,
+          가구 소득, 복지 자격 등 남은 조건과 최종 지원 여부는 각 기관이
+          심사해 결정합니다. 반드시 공식 페이지에서 확인하세요.
+        </p>
       </div>
     </main>
   );
