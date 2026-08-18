@@ -28,8 +28,8 @@ function Choice({
       onClick={onClick}
       className={
         selected
-          ? "rounded-lg border-2 border-sky-600 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-700"
-          : "rounded-lg border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600"
+          ? "rounded-lg border-2 border-brand-600 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-700"
+          : "rounded-lg border-2 border-ink-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-600"
       }
     >
       {label}
@@ -49,10 +49,10 @@ function Question({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <p className="text-xs font-bold text-sky-600">질문 {step}</p>
-      <h2 className="mt-1 text-base font-bold text-slate-900">{title}</h2>
-      <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p>
+    <section className="rounded-xl border border-ink-200 bg-white p-5">
+      <p className="text-xs font-bold text-brand-600">질문 {step}</p>
+      <h2 className="mt-1 text-base font-bold text-ink-900">{title}</h2>
+      <p className="mt-1 text-xs leading-relaxed text-ink-500">{hint}</p>
       <div className="mt-4 flex flex-wrap gap-2">{children}</div>
     </section>
   );
@@ -82,10 +82,10 @@ export default function FindPage() {
 
   return (
     <main className="mx-auto max-w-lg px-5 py-8">
-      <h1 className="text-2xl font-extrabold text-slate-900">
+      <h1 className="text-2xl font-extrabold text-ink-900">
         내 지원금 찾기
       </h1>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+      <p className="mt-2 text-sm leading-relaxed text-ink-600">
         네 가지만 답하면 됩니다. 모르는 건 <strong>모름</strong>을 눌러도
         괜찮습니다 — 대신 해당 정책은 &lsquo;확인 필요&rsquo;로 표시됩니다.
       </p>
@@ -106,7 +106,7 @@ export default function FindPage() {
               update({ age: e.target.value === "" ? null : Number(e.target.value) })
             }
             placeholder="예: 22"
-            className="w-24 rounded-lg border-2 border-slate-200 px-3 py-2.5 text-sm"
+            className="w-24 rounded-lg border-2 border-ink-200 px-3 py-2.5 text-sm"
           />
           <Choice
             label="모름"
@@ -177,10 +177,10 @@ export default function FindPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-lg font-extrabold text-slate-900">
+        <h2 className="text-lg font-extrabold text-ink-900">
           지원금 {가능.length + 확인.length}건
         </h2>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+        <p className="mt-1 text-xs leading-relaxed text-ink-500">
           나이 · 지역 · 상태 · 소득 구간만 비교한 결과입니다. 각 정책의
           나머지 조건은 카드의 &lsquo;추가로 확인할 것&rsquo;을 보세요.
         </p>
@@ -192,7 +192,7 @@ export default function FindPage() {
         </div>
 
         {가능.length + 확인.length === 0 && (
-          <p className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600">
+          <p className="mt-4 rounded-xl border border-ink-200 bg-white p-5 text-sm leading-relaxed text-ink-600">
             입력한 조건에 해당하는 지원금을 찾지 못했습니다. 답변을 바꿔
             다시 확인해 보세요.
           </p>
@@ -200,7 +200,7 @@ export default function FindPage() {
 
         {해당없음.length > 0 && (
           <details className="mt-6">
-            <summary className="cursor-pointer text-sm font-bold text-slate-500">
+            <summary className="cursor-pointer text-sm font-bold text-ink-500">
               해당되지 않는 지원금 {해당없음.length}건 보기
             </summary>
             <div className="mt-3 flex flex-col gap-3">
@@ -212,11 +212,11 @@ export default function FindPage() {
         )}
 
         {tagged.some((t) => t.policy.tier === 2 && t.result.tag !== "해당 없음") ? (
-          <div className="mt-6 rounded-xl border-2 border-dashed border-sky-300 bg-sky-50 p-5">
-            <p className="text-sm font-bold text-sky-900">
+          <div className="mt-6 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 p-5">
+            <p className="text-sm font-bold text-brand-900">
               실제 부담 계산은 준비 중입니다
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-sky-800">
+            <p className="mt-1 text-xs leading-relaxed text-brand-800">
               계약 조건을 넣으면 지원금을 반영한 최종 주거비를 계산하는
               기능을 만들고 있습니다. 지금은 위 목록의 공식 페이지에서 조건을
               확인해 주세요.
@@ -224,7 +224,7 @@ export default function FindPage() {
           </div>
         ) : null}
 
-        <p className="mt-8 rounded-xl bg-slate-100 p-4 text-xs leading-relaxed text-slate-600">
+        <p className="mt-8 rounded-xl bg-ink-100 p-4 text-xs leading-relaxed text-ink-600">
           이 화면은 나이 · 지역 · 현재 상태 · 소득 구간만 비교한 결과이며,
           <strong> 신청 자격을 확정하는 것이 아닙니다.</strong> 무주택 여부,
           가구 소득, 복지 자격 등 남은 조건과 최종 지원 여부는 각 기관이

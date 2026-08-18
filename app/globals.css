@@ -1,9 +1,50 @@
 @import "tailwindcss";
 
+/*
+ * Perky 디자인 토큰
+ *
+ * 출처: docs/디자인/reference/color-reference.jpg
+ *   Navy #2F4156 · Teal #567C8D · Sky #C8D9E6 · Beige #F5EFEB · White
+ *
+ * 모든 텍스트/배경 조합은 WCAG AA 기준으로 검증했다 (본문 4.5:1, 큰 글씨 3:1).
+ * 색을 새로 쓰기 전에 docs/디자인/design-tokens.md 의 사용 규칙을 볼 것.
+ */
+@theme {
+  /* ── ink · Navy 계열 — 텍스트 전용 ── */
+  --color-ink-900: #2f4156; /* 제목          흰 배경 10.44:1 */
+  --color-ink-700: #465d79; /* 강조 본문·태그 */
+  --color-ink-600: #526a83; /* 본문          흰 배경  5.60:1 */
+  --color-ink-500: #5b6f86; /* 보조·메타      흰 배경  5.17:1 */
+  --color-ink-200: #d5dde5; /* 보더          텍스트 금지 */
+  --color-ink-100: #e8edf2; /* 옅은 면        텍스트 금지 */
+
+  /* ── brand · Teal/Sky 계열 — 액션·선택 상태 ── */
+  --color-brand-900: #2c4552;
+  --color-brand-800: #3a5a6b;
+  --color-brand-700: #46687a; /* hover / 눌린 상태 */
+  --color-brand-600: #567c8d; /* 기본 액션 — 버튼 배경, 큰 라벨 */
+  --color-brand-300: #a6c2d3; /* 점선 보더 */
+  --color-brand-200: #c8d9e6; /* Sky — 선택 보더  텍스트 금지 */
+  --color-brand-50: #eff4f8; /* 선택 배경 */
+
+  /* ── sand · Beige 계열 — 지면 ── */
+  --color-sand-200: #e9dfd8; /* 구분선 */
+  --color-sand-100: #f5efeb; /* 페이지 배경 */
+  --color-sand-50: #faf7f5; /* 비활성 카드 */
+
+  /* ── 상태 — 팔레트에 맞춰 채도를 낮춘 신호색 ── */
+  --color-ok-700: #2e6a52;
+  --color-ok-200: #b9d6c7;
+  --color-ok-50: #e4f0ea;
+  --color-warn-800: #7a5518;
+  --color-warn-200: #e8d4ac;
+  --color-warn-50: #f8efdc;
+}
+
 @layer base {
   body {
     font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: #f8fafc;
-    color: #0f172a;
+    background: var(--color-sand-100);
+    color: var(--color-ink-900);
   }
 }
