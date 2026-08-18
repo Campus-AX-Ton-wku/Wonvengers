@@ -1,0 +1,7 @@
+[
+  { "bracket": 1, "label": "월 100만원 이하" },
+  { "bracket": 2, "label": "월 100~150만원" },
+  { "bracket": 3, "label": "월 150~200만원" },
+  { "bracket": 4, "label": "월 200~250만원" },
+  { "bracket": 5, "label": "월 250만원 초과" }
+]
