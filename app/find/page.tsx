@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 import bracketsJson from "@/data/income-brackets.json";
+import policiesJson from "@/data/policies.json";
+import { tagPolicy } from "@/lib/filter";
+import PolicyCard from "@/app/find/PolicyCard";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
-import type { Answers, IncomeBracket, Region, Status } from "@/lib/types";
+import type { Answers, IncomeBracket, Policy, Region, Status } from "@/lib/types";
 
 const brackets = bracketsJson as IncomeBracket[];
+const policies = policiesJson as Policy[];
 const REGIONS: Region[] = ["익산시", "전라북도 (익산 외)", "그 외 지역"];
 const STATUSES: Status[] = ["대학생", "재직", "구직"];
 
@@ -68,6 +72,13 @@ export default function FindPage() {
     saveAnswers(next);
   }
 
+  const tagged = policies.map((policy) => ({
+    policy,
+    result: tagPolicy(policy, answers),
+  }));
+  const 가능 = tagged.filter((t) => t.result.tag === "가능성 있음");
+  const 확인 = tagged.filter((t) => t.result.tag === "확인 필요");
+  const 해당없음 = tagged.filter((t) => t.result.tag === "해당 없음");
 
   return (
     <main className="mx-auto max-w-lg px-5 py-8">
@@ -165,10 +176,42 @@ export default function FindPage() {
         </Question>
       </div>
 
-      {/* Task 6 에서 이 자리에 정책 목록이 들어간다 */}
-      <pre className="mt-6 overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-slate-100">
-        {JSON.stringify(answers, null, 2)}
-      </pre>
+      <div className="mt-8">
+        <h2 className="text-lg font-extrabold text-slate-900">
+          지원금 {가능.length + 확인.length}건
+        </h2>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+          나이 · 지역 · 상태 · 소득 구간만 비교한 결과입니다. 각 정책의
+          나머지 조건은 카드의 &lsquo;추가로 확인할 것&rsquo;을 보세요.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          {[...가능, ...확인].map(({ policy, result }) => (
+            <PolicyCard key={policy.id} policy={policy} result={result} />
+          ))}
+        </div>
+
+        {가능.length + 확인.length === 0 && (
+          <p className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm leading-relaxed text-slate-600">
+            입력한 조건에 해당하는 지원금을 찾지 못했습니다. 답변을 바꿔
+            다시 확인해 보세요.
+          </p>
+        )}
+
+        {해당없음.length > 0 && (
+          <details className="mt-6">
+            <summary className="cursor-pointer text-sm font-bold text-slate-500">
+              해당되지 않는 지원금 {해당없음.length}건 보기
+            </summary>
+            <div className="mt-3 flex flex-col gap-3">
+              {해당없음.map(({ policy, result }) => (
+                <PolicyCard key={policy.id} policy={policy} result={result} />
+              ))}
+            </div>
+          </details>
+        )}
+
+      </div>
     </main>
   );
 }
