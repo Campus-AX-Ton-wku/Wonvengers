@@ -7,3 +7,6 @@ build/
 .DS_Store
 next-env.d.ts
 *.tsbuildinfo
+
+# 디자인 레퍼런스 캡처 (타사 앱 화면 — 로컬에만 보관)
+docs/디자인/reference/
