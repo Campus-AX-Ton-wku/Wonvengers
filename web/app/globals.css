@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Perky 디자인 토큰
+ * Perky 디자인 토큰 (Wonvengers/docs/디자인/design-tokens.md 와 동일)
  *
- * 출처: docs/디자인/reference/color-reference.jpg
- *   Navy #2F4156 · Teal #567C8D · Sky #C8D9E6 · Beige #F5EFEB · White
- *
- * 모든 텍스트/배경 조합은 WCAG AA 기준으로 검증했다 (본문 4.5:1, 큰 글씨 3:1).
- * 색을 새로 쓰기 전에 docs/디자인/design-tokens.md 의 사용 규칙을 볼 것.
+ * 출처: Navy #2F4156 · Teal #567C8D · Sky #C8D9E6 · Beige #F5EFEB · White
+ * 모든 텍스트/배경 조합은 WCAG AA 기준 검증됨 (본문 4.5:1, 큰 글씨 3:1).
+ * 색을 새로 쓰기 전에 design-tokens.md 의 사용 규칙을 볼 것.
  */
 @theme {
   /* ── ink · Navy 계열 — 텍스트 전용 ── */
@@ -21,7 +19,7 @@
   /* ── brand · Teal/Sky 계열 — 액션·선택 상태 ── */
   --color-brand-900: #2c4552;
   --color-brand-800: #3a5a6b;
-  --color-brand-700: #46687a; /* hover / 눌린 상태 */
+  --color-brand-700: #46687a; /* hover / 눌린 상태 / 링크 */
   --color-brand-600: #567c8d; /* 기본 액션 — 버튼 배경, 큰 라벨 */
   --color-brand-300: #a6c2d3; /* 점선 보더 */
   --color-brand-200: #c8d9e6; /* Sky — 선택 보더  텍스트 금지 */
@@ -44,7 +42,38 @@
 @layer base {
   body {
     font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: var(--color-sand-100);
+    background: #ffffff;
     color: var(--color-ink-900);
+  }
+}
+
+.input {
+  /* text-base(16px) 미만이면 iOS Safari 가 포커스 시 화면을 자동 확대한다. 내리지 말 것. */
+  @apply w-full rounded-xl border border-ink-200 px-4 py-3.5 text-base font-normal text-ink-900 outline-none;
+}
+
+.input:focus {
+  @apply border-brand-600 ring-2 ring-brand-200;
+}
+
+/* 스텝 전환 — 다음 화면이 오른쪽에서 밀려 들어온다. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.step-in {
+  animation: step-in 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
   }
 }

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "youth-btm-jeonse-loan",
+    "name": "청년전용 버팀목 전세자금대출",
+    "agency": "국토교통부·주택도시보증공사(HUG)",
+    "regionScope": "전국",
+    "productType": "loan_interest_subsidy",
+    "summary": "만 19~34세 무주택 세대주(예비세대주)에게 최저 약 2.0%대 저리로 전세보증금의 최대 80%(최대 2억원)까지 대출. 지방 거주 시 0.2%p 추가 금리 인하.",
+    "sourceUrl": "https://www.myhome.go.kr/hws/portal/cont/selectYouthPolicyYouthOnlyCrutchLoanView.do",
+    "applyUrl": "https://www.myhome.go.kr",
+    "verifiedAt": null,
+    "effectiveYear": 2026,
+    "notes": "미검증 초안(팀 교차검수 필요). 이자 절감액은 계산하지 않음(대출 실행 시점 금리·개인 신용도에 따라 달라짐) — 정확한 한도·금리는 주택도시기금 홈페이지 또는 콜센터(1566-9009)에서 확인. 연세 계약에는 적용되지 않을 수 있음(전세 계약 대상 상품)."
+  },
+  {
+    "id": "jeonse-return-guarantee-fee-subsidy",
+    "name": "전세보증금반환보증 보증료 지원",
+    "agency": "국토교통부",
+    "regionScope": "전국",
+    "productType": "guarantee_fee_subsidy",
+    "summary": "전세보증금 3억원 이하, 청년(연소득 5천만원 이하) 무주택 임차인이 가입한 전세보증금반환보증의 보증료를 최대 40만원까지 지원(기 납부한 보증료 전액, 2025-03-31 이후 가입 기준).",
+    "sourceUrl": "https://www.gov.kr/portal/rcvfvrSvc/dtlEx/161300000103",
+    "applyUrl": "https://www.bokjiro.go.kr",
+    "verifiedAt": null,
+    "effectiveYear": 2026,
+    "notes": "미검증 초안(팀 교차검수 필요). 이 앱은 현재 연세·월세 계약만 다루고 전세 계약(보증금 전액형)은 별도 입력 항목이 없어 자격 여부를 자동 판정하지 않음 — 전세 계약자에게만 참고용으로 안내. 신청은 주민센터·정부24·안심전세포털에서 가능."
+  }
+]

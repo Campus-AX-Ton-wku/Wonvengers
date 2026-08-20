@@ -1,43 +1,45 @@
 import { describe, expect, it } from "vitest";
 import { tagPolicy } from "@/lib/filter";
-import type { Answers, Policy } from "@/lib/types";
+import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
 
 // 익산시 전용, 만 19~39세, 대학생·재직만, 소득 3구간 이하
-const 익산정책: Policy = {
+const 익산정책: PolicyMeta = {
   id: "test-iksan",
-  tier: 1,
   name: "테스트 익산 월세지원",
   agency: "익산시",
-  filter: {
-    age_min: 19,
-    age_max: 39,
-    regions: ["익산시"],
+  regionScope: "전북특별자치도 익산시",
+  discovery: {
+    ageMin: 19,
+    ageMax: 39,
+    regions: ["전북특별자치도 익산시"],
     statuses: ["대학생", "재직"],
-    income_bracket_max: 3,
+    incomeBracketMax: 3,
   },
-  extra_conditions: [],
-  benefit_summary: "월 최대 20만원",
-  benefit_type: "월세지원",
-  application_start: "2026-03-01",
-  application_end: "2026-11-30",
-  source_url: "https://example.com",
-  apply_url: "https://example.com",
-  verified_at: "2026-08-13",
-  verified_by: "테스트",
-  effective_year: 2026,
+  applicationStart: "2026-03-01",
+  applicationEnd: "2026-11-30",
+  benefitType: "rent_capped_monthly",
+  benefitSummary: "월 최대 20만원",
+  requiredInputs: [],
+  exclusiveGroup: [],
+  sourceUrl: "https://example.com",
+  applyUrl: "https://example.com",
+  verifiedAt: "2026-08-13",
+  effectiveYear: 2026,
+  notes: "테스트",
 };
 
 // 전라북도 전체 대상
-const 전북정책: Policy = {
+const 전북정책: PolicyMeta = {
   ...익산정책,
   id: "test-jeonbuk",
   name: "테스트 전북 주거지원",
-  filter: { ...익산정책.filter, regions: ["전라북도"] },
+  regionScope: "전북특별자치도",
+  discovery: { ...익산정책.discovery, regions: ["전북특별자치도"] },
 };
 
-const 기본답변: Answers = {
+const 기본답변: DiscoveryAnswers = {
   age: 22,
-  region: "익산시",
+  region: "전북특별자치도 익산시",
   status: "대학생",
   incomeBracket: 2,
 };
@@ -71,7 +73,7 @@ describe("tagPolicy — 해당 없음", () => {
   });
 
   it("전라북도(익산 외) 거주자는 익산시 전용 정책의 대상이 아니다", () => {
-    const r = tagPolicy(익산정책, { ...기본답변, region: "전라북도 (익산 외)" });
+    const r = tagPolicy(익산정책, { ...기본답변, region: "전북특별자치도" });
     expect(r.tag).toBe("해당 없음");
   });
 
@@ -122,5 +124,27 @@ describe("tagPolicy — 해당 없음이 확인 필요보다 우선한다 (PRD F
     expect(r.tag).toBe("해당 없음");
     expect(r.failReasons).toHaveLength(1);
     expect(r.unknownFields).toEqual([]);
+  });
+});
+
+describe("tagPolicy — discovery 미확인 필드는 추정하지 않는다", () => {
+  it("statuses 가 null 이면 답을 했어도 확인 필요", () => {
+    const 미확인정책: PolicyMeta = {
+      ...익산정책,
+      discovery: { ...익산정책.discovery, statuses: null },
+    };
+    const r = tagPolicy(미확인정책, 기본답변);
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["현재 상태"]);
+  });
+
+  it("incomeBracketMax 가 null 이면 소득 구간으로 탈락시키지 않는다", () => {
+    const 미확인정책: PolicyMeta = {
+      ...익산정책,
+      discovery: { ...익산정책.discovery, incomeBracketMax: null },
+    };
+    const r = tagPolicy(미확인정책, { ...기본답변, incomeBracket: 5 });
+    expect(r.tag).toBe("확인 필요");
+    expect(r.failReasons).toEqual([]);
   });
 });
