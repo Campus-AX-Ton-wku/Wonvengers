@@ -1,0 +1,11 @@
+# 코드 소유자 (Code Owners)
+#
+# 여기 지정된 사람은 해당 경로가 바뀌는 PR의 리뷰어로 자동 등록된다.
+# main 브랜치에는 "Require review from Code Owners" 보호 규칙이 걸려 있어서,
+# main 으로 가는 PR 은 아래 소유자의 승인 없이는 머지할 수 없다.
+#
+# 작업 흐름: feature -> develop -> main
+# develop 에는 이 규칙을 적용하지 않는다. 팀원끼리 자유롭게 통합하고,
+# main 으로 나갈 때만 최종 검토를 거친다.
+
+* @ggue1203
