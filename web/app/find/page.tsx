@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import { tagPolicy } from "@/lib/filter";
 import PolicyCard from "@/app/find/PolicyCard";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
-import type { Answers, IncomeBracket, Policy, Region, Status } from "@/lib/types";
+import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
+import { REGION_OPTIONS } from "@/lib/region";
 
 const brackets = bracketsJson as IncomeBracket[];
-const policies = policiesJson as Policy[];
-const REGIONS: Region[] = ["익산시", "전라북도 (익산 외)", "그 외 지역"];
-const STATUSES: Status[] = ["대학생", "재직", "구직"];
+const policies = policiesJson as PolicyMeta[];
+// 2층과 같은 지역 어휘를 쓴다 (lib/region.ts 단일 출처).
+const REGIONS = REGION_OPTIONS;
+const STATUSES: DiscoveryStatus[] = ["대학생", "재직", "구직"];
 
 function Choice({
   label,
@@ -59,14 +62,14 @@ function Question({
 }
 
 export default function FindPage() {
-  const [answers, setAnswers] = useState<Answers>(EMPTY_ANSWERS);
+  const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
     setAnswers(loadAnswers());
   }, []);
 
-  function update(patch: Partial<Answers>) {
+  function update(patch: Partial<DiscoveryAnswers>) {
     const next = { ...answers, ...patch };
     setAnswers(next);
     saveAnswers(next);
@@ -122,10 +125,10 @@ export default function FindPage() {
         >
           {REGIONS.map((r) => (
             <Choice
-              key={r}
-              label={r}
-              selected={answers.region === r}
-              onClick={() => update({ region: r })}
+              key={r.value}
+              label={r.label}
+              selected={answers.region === r.value}
+              onClick={() => update({ region: r.value })}
             />
           ))}
           <Choice
@@ -211,17 +214,18 @@ export default function FindPage() {
           </details>
         )}
 
-        {tagged.some((t) => t.policy.tier === 2 && t.result.tag !== "해당 없음") ? (
-          <div className="mt-6 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 p-5">
-            <p className="text-sm font-bold text-brand-900">
-              실제 부담 계산은 준비 중입니다
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-brand-800">
-              계약 조건을 넣으면 지원금을 반영한 최종 주거비를 계산하는
-              기능을 만들고 있습니다. 지금은 위 목록의 공식 페이지에서 조건을
-              확인해 주세요.
-            </p>
-          </div>
+        {tagged.some((t) => t.result.tag !== "해당 없음") ? (
+          <Link
+            href="/calculate"
+            className="mt-6 block rounded-xl bg-brand-600 p-5 text-center active:bg-brand-700"
+          >
+            <span className="block text-base font-bold text-white">
+              이 지원금을 받으면 얼마를 내게 될까?
+            </span>
+            <span className="mt-1 block text-xs leading-relaxed text-white/90">
+              계약 조건을 넣으면 지원금을 반영한 최종 예상 주거비를 계산해드려요
+            </span>
+          </Link>
         ) : null}
 
         <p className="mt-8 rounded-xl bg-ink-100 p-4 text-xs leading-relaxed text-ink-600">
