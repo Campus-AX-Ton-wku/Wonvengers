@@ -1,11 +1,11 @@
 # Perky QA 체크리스트
 
 발표 전에 사람이 직접 클릭하며 확인한다. 자동 테스트가 잡지 못하는 것들이다.
-필드명은 `web/data/policies.json` 기준이다 (1층+2층 통합 후 camelCase).
+필드명은 `apps/web/data/policies.json` 기준이다 (1층+2층 통합 후 camelCase).
 
 ## 정책 데이터
 
-- [ ] `[예시]`로 시작하는 정책이 `web/data/policies.json`에 남아 있지 않다
+- [ ] `[예시]`로 시작하는 정책이 `apps/web/data/policies.json`에 남아 있지 않다
 - [ ] `verifiedAt`이 `null`인 정책이 없다 (`null` = 팀 교차검수 전)
 - [ ] `notes`에 "미검증 초안"이 적힌 정책이 없다
 - [ ] 모든 정책의 `applyUrl`을 직접 열어 공식 페이지임을 확인했다
@@ -13,7 +13,7 @@
 - [ ] `benefitSummary` 문구가 공고 원문과 일치한다
 - [ ] `discovery.statuses`와 `discovery.incomeBracketMax`를 공고로 확인해 채웠다
       (`null`로 남으면 1층 태그가 전부 `확인 필요`로 나온다)
-- [ ] `discovery.ageMin`/`ageMax`가 `web/lib/policy-rules.ts`의 나이 검사와 일치한다
+- [ ] `discovery.ageMin`/`ageMax`가 `apps/web/lib/policy-rules.ts`의 나이 검사와 일치한다
 
 ## 1층 — 발견 (`/find`)
 
@@ -48,6 +48,6 @@
 
 ## 배포
 
-- [ ] Root Directory를 `web`으로 지정했다
+- [ ] Root Directory를 `apps/web`으로 지정했다
 - [ ] 배포 URL에서 위 항목이 모두 동작한다
 - [ ] 배포 URL을 팀원 전원이 열어봤다
