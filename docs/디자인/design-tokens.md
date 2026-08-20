@@ -1,6 +1,6 @@
 # Perky 디자인 토큰
 
-색은 `web/app/globals.css`의 `@theme` 블록 **한 곳**에만 정의한다.
+색은 `apps/web/app/globals.css`의 `@theme` 블록 **한 곳**에만 정의한다.
 화면 파일(`app/**/*.tsx`)에 `#2F4156` 같은 색값을 직접 쓰지 않는다. 토큰 이름으로만 쓴다.
 
 **팔레트 출처:** `docs/디자인/reference/color-reference.jpg`
@@ -111,4 +111,4 @@ Navy `#2F4156` · Teal `#567C8D` · Sky `#C8D9E6` · Beige `#F5EFEB` · White
 글씨로 처리해 뒀다(대비 10.6:1). 대비는 통과하지만 "금액"이라는 신호가 약하다.
 
 후보 방향: 베이지와 붙는 테라코타 계열, 또는 채도를 올린 틸.
-정해지면 `web/app/result/page.tsx`의 금액 두 줄만 바꾸면 된다.
+정해지면 `apps/web/app/result/page.tsx`의 금액 두 줄만 바꾸면 된다.

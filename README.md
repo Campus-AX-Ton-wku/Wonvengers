@@ -63,7 +63,7 @@ flowchart LR
 ## 실행
 
 ```bash
-cd web
+cd apps/web
 npm install
 npm run dev      # http://localhost:3000
 npm test         # vitest (64 tests)
@@ -74,11 +74,11 @@ npm run build    # 정적 빌드 (output: "export")
 
 | 경로 | 내용 |
 |---|---|
-| `web/` | Next.js 앱 — **배포 대상** |
+| `apps/web/` | Next.js 앱 — **배포 대상** |
 | `docs/` | 기획 · 디자인 · 발표 · 마케팅 |
 
 > [!IMPORTANT]
-> 배포 시 **Root Directory 를 `web` 으로** 지정해야 합니다. 레포 루트에는 앱이 없습니다.
+> 배포 시 **Root Directory 를 `apps/web` 으로** 지정해야 합니다. 레포 루트에는 앱이 없습니다.
 
 기획 배경과 요구사항은 [docs/기획/PRD.md](docs/기획/PRD.md) 에 있습니다.
 
@@ -89,7 +89,7 @@ npm run build    # 정적 빌드 (output: "export")
 
 <br/>
 
-정책 데이터는 `web/data/policies.json` **한 곳**에만 둡니다.
+정책 데이터는 `apps/web/data/policies.json` **한 곳**에만 둡니다.
 
 | 용도 | 사용하는 필드 |
 |---|---|
