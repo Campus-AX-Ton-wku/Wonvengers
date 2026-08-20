@@ -19,6 +19,12 @@ const UNKNOWN: CheckResult = { result: "unknown", reason: "" };
 function checkAge(policy: PolicyMeta, age: number | null): CheckResult {
   if (age === null) return UNKNOWN;
   const { ageMin, ageMax } = policy.discovery;
+  // 셋 중 하나라도 숫자로 비교할 수 없으면(정책 데이터 입력 실수 등) 통과시키지
+  // 않는다. NaN 비교는 항상 false 라서 그냥 두면 자격 없는 사람도 '가능성 있음'이
+  // 되어 버린다. 판단할 수 없을 땐 '확인 필요'가 정직한 답이다.
+  if (!Number.isFinite(age) || !Number.isFinite(ageMin) || !Number.isFinite(ageMax)) {
+    return UNKNOWN;
+  }
   if (age < ageMin) return { result: "fail", reason: `만 ${ageMin}세 이상만 신청할 수 있습니다` };
   if (age > ageMax) return { result: "fail", reason: `만 ${ageMax}세 이하만 신청할 수 있습니다` };
   return PASS;
@@ -47,6 +53,8 @@ function checkIncome(policy: PolicyMeta, incomeBracket: number | null): CheckRes
   const max = policy.discovery.incomeBracketMax;
   if (max === null) return UNKNOWN; // 공고 확인 전 — 추정하지 않는다
   if (incomeBracket === null) return UNKNOWN;
+  // checkAge 와 같은 이유 — 비교할 수 없으면 통과시키지 않는다.
+  if (!Number.isFinite(incomeBracket) || !Number.isFinite(max)) return UNKNOWN;
   if (incomeBracket > max) return { result: "fail", reason: "소득 기준을 넘습니다" };
   return PASS;
 }
