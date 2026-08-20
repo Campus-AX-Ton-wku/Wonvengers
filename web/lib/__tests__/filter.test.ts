@@ -148,3 +148,58 @@ describe("tagPolicy — discovery 미확인 필드는 추정하지 않는다", (
     expect(r.failReasons).toEqual([]);
   });
 });
+
+// policies.json 은 사람이 손으로 관리한다. 기준값이 문자열로 들어가거나 빠지면
+// NaN 비교는 항상 false 라서, 그냥 두면 자격 없는 사람도 '가능성 있음'이 된다.
+// 판단할 수 없을 땐 '확인 필요'가 정직한 답이다.
+describe("tagPolicy — 비교할 수 없는 값은 통과시키지 않는다", () => {
+  function 나이기준이망가진정책(ageMin: unknown, ageMax: unknown): PolicyMeta {
+    return {
+      ...익산정책,
+      discovery: {
+        ...익산정책.discovery,
+        ageMin: ageMin as number,
+        ageMax: ageMax as number,
+      },
+    };
+  }
+
+  it("정책의 ageMax 가 숫자가 아니면 확인 필요", () => {
+    const r = tagPolicy(나이기준이망가진정책(19, "39"), 기본답변);
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["나이"]);
+  });
+
+  it("정책의 ageMin 이 빠져 있으면 확인 필요", () => {
+    const r = tagPolicy(나이기준이망가진정책(undefined, 39), 기본답변);
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["나이"]);
+  });
+
+  it("나이 답변이 NaN 이면 확인 필요", () => {
+    const r = tagPolicy(익산정책, { ...기본답변, age: Number.NaN });
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["나이"]);
+  });
+
+  it("정책의 incomeBracketMax 가 숫자가 아니면 확인 필요", () => {
+    const 망가진정책: PolicyMeta = {
+      ...익산정책,
+      discovery: { ...익산정책.discovery, incomeBracketMax: "3" as unknown as number },
+    };
+    const r = tagPolicy(망가진정책, 기본답변);
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["소득 구간"]);
+  });
+
+  it("소득 구간 답변이 NaN 이면 확인 필요", () => {
+    const r = tagPolicy(익산정책, { ...기본답변, incomeBracket: Number.NaN });
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toEqual(["소득 구간"]);
+  });
+
+  it("비교 불가와 명확한 불일치가 함께 있으면 해당 없음이 우선한다", () => {
+    const r = tagPolicy(나이기준이망가진정책(19, "39"), { ...기본답변, status: "구직" });
+    expect(r.tag).toBe("해당 없음");
+  });
+});
