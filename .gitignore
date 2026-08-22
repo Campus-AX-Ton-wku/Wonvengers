@@ -10,3 +10,9 @@ next-env.d.ts
 
 # 디자인 레퍼런스 캡처 (타사 앱 화면 — 로컬에만 보관)
 docs/디자인/reference/
+
+# 개인 도구 설정 — 저장소에 올리지 않는다
+# .claude/settings.local.json 은 절대 경로가 하드코딩돼 있어 다른 PC 에서는 동작하지 않는다
+.claude/
+# impeccable 디자인 진단 스냅샷 (로컬 기록)
+.impeccable/
