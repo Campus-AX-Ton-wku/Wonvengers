@@ -77,3 +77,48 @@
     animation: none;
   }
 }
+
+/* ── 랜딩 히어로 ──
+   요소가 아래에서 순차적으로 떠오른다. 지연은 인라인 style 로 준다.
+   both 를 쓰는 이유: 지연 동안 opacity:0 을 유지해야 깜빡임이 없다. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.5s ease-out both;
+}
+
+/* 흩어진 조각이 제자리로 모인다 — "흩어진 지원금을 한 목록으로".
+   각 조각의 출발 위치는 인라인 CSS 변수(--dx/--dy)로 준다. */
+@keyframes gather {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gather {
+  animation: gather 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 최종 상태로 즉시 보여준다. 애니메이션만 끄면 both 때문에 사라진 채로 남는다. */
+  .rise-in,
+  .gather {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
