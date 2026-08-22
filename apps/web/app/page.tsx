@@ -1,70 +1,66 @@
 import Link from "next/link";
 
 /*
- * 히어로 그래픽 — "흩어진 지원금을 한 목록으로".
+ * 히어로 그래픽 — 집으로 들어가는 지원금.
  *
- * 흩어져 있던 조각들이 제자리로 모여 하나의 목록이 되는 장면이다. 집·동전 같은
- * 장식적 클리셰 대신 제품이 하는 일을 그대로 그린다.
+ * 동전이 하나씩 떨어져 집 안으로 들어간다. 텍스트 없이도 "주거 + 돈"이
+ * 바로 읽히도록 형태를 단순하게 유지한다.
  *
- * dx/dy 는 각 조각이 날아오기 시작하는 위치(최종 위치 기준 상대값)다.
- * globals.css 의 gather 키프레임이 이 값을 읽는다.
+ * dy 는 동전이 떨어지기 시작하는 높이(최종 위치 기준 상대값)다.
+ * globals.css 의 drop-in 키프레임이 이 값을 읽는다.
  */
-const ROWS = [
-  { y: 8, w: 148, dx: "-52px", dy: "-30px", delay: 0 },
-  { y: 40, w: 176, dx: "56px", dy: "-14px", delay: 90 },
-  { y: 72, w: 132, dx: "-34px", dy: "34px", delay: 180 },
-];
-
-/* 목록 주변으로 흩어졌다 함께 모이는 작은 조각들. 순전히 장식이라 수를 아꼈다. */
-const SPECKS = [
-  { x: 6, y: 20, s: 7, dx: "-26px", dy: "-22px", delay: 240 },
-  { x: 200, y: 22, s: 6, dx: "30px", dy: "-18px", delay: 300 },
-  { x: 12, y: 92, s: 6, dx: "-22px", dy: "26px", delay: 360 },
-  { x: 206, y: 88, s: 8, dx: "28px", dy: "24px", delay: 330 },
+/* 삼각형으로 쌓아 동전 더미로 읽히게 한다. 가로로 나란히 두면 기계 조작부처럼 보인다.
+   위에 얹히는 동전을 가장 늦게 떨어뜨려 쌓이는 순서가 자연스럽게 보이도록 한다. */
+const COINS = [
+  { cx: 98, cy: 122, dy: "-92px", delay: 300 },
+  { cx: 126, cy: 122, dy: "-104px", delay: 440 },
+  { cx: 112, cy: 100, dy: "-84px", delay: 600 },
 ];
 
 function HeroGraphic() {
   return (
     <svg
-      viewBox="0 0 224 108"
-      className="h-28 w-full"
+      viewBox="0 0 224 152"
+      className="h-36 w-full"
       role="presentation"
       aria-hidden="true"
     >
-      {ROWS.map((r, i) => (
+      {/* 집 — 몸통을 먼저 깔고 지붕을 얹는다 */}
+      <g className="draw-in">
+        <rect
+          x={58}
+          y={82}
+          width={108}
+          height={62}
+          rx={4}
+          className="fill-brand-50 stroke-brand-600"
+          strokeWidth={4}
+        />
+        <path
+          d="M112 22 L184 84 L40 84 Z"
+          className="fill-brand-600"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      {/* 동전 — 집 뒤에 그려 몸통 안에 쌓인 것처럼 보이게 한다 */}
+      {COINS.map((c, i) => (
         <g
-          key={`row-${i}`}
-          className="gather"
+          key={`coin-${i}`}
+          className="drop-in"
           style={
-            {
-              "--dx": r.dx,
-              "--dy": r.dy,
-              animationDelay: `${r.delay}ms`,
-            } as React.CSSProperties
+            { "--dy": c.dy, animationDelay: `${c.delay}ms` } as React.CSSProperties
           }
         >
-          <rect x={24} y={r.y} width={r.w} height={20} rx={6} className="fill-brand-50" />
-          <rect x={24} y={r.y} width={5} height={20} rx={2.5} className="fill-brand-600" />
+          <circle
+            cx={c.cx}
+            cy={c.cy}
+            r={13}
+            className="fill-brand-200 stroke-brand-600"
+            strokeWidth={2.5}
+          />
+          <circle cx={c.cx} cy={c.cy} r={4.5} className="fill-brand-600" />
         </g>
-      ))}
-
-      {SPECKS.map((s, i) => (
-        <rect
-          key={`speck-${i}`}
-          x={s.x}
-          y={s.y}
-          width={s.s}
-          height={s.s}
-          rx={2}
-          className="gather fill-brand-200"
-          style={
-            {
-              "--dx": s.dx,
-              "--dy": s.dy,
-              animationDelay: `${s.delay}ms`,
-            } as React.CSSProperties
-          }
-        />
       ))}
     </svg>
   );
@@ -72,14 +68,17 @@ function HeroGraphic() {
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-7 px-6 py-12">
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-8 px-6 py-12">
       <div className="rise-in">
         <HeroGraphic />
       </div>
 
       <div>
-        <h1 className="rise-in text-6xl font-extrabold tracking-tight text-ink-900" style={{ animationDelay: "80ms" }}>
-          Perky<span className="text-brand-600">.</span>
+        <h1
+          className="rise-in text-6xl font-extrabold tracking-tight text-ink-900"
+          style={{ animationDelay: "80ms" }}
+        >
+          Perky
         </h1>
 
         <p
@@ -95,8 +94,9 @@ export default function Home() {
           className="rise-in mt-4 text-base leading-relaxed text-ink-600"
           style={{ animationDelay: "240ms" }}
         >
-          청년 주거 지원금은 국가·전라북도·익산시에 흩어져 있습니다. 질문 네 개만
-          답하면 해당될 수 있는 지원금을 한 목록으로 모아 보여드립니다.
+          흩어져 있는 청년 주거 지원금,
+          <br />
+          내가 받을 수 있는 것만 골라 보여드립니다.
         </p>
       </div>
 
@@ -109,10 +109,6 @@ export default function Home() {
         </Link>
         <p className="mt-3 text-center text-sm text-ink-500">질문 4개 · 약 1분</p>
       </div>
-
-      <p className="rise-in text-sm leading-relaxed text-ink-500" style={{ animationDelay: "400ms" }}>
-        입력한 내용은 브라우저에만 저장되며 서버로 전송되지 않습니다.
-      </p>
     </main>
   );
 }
