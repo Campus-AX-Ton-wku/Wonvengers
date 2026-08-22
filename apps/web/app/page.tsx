@@ -19,48 +19,57 @@ const POLICY_COUNT = policiesJson.length;
 const MAX_BENEFIT: { won: number; asOf: string } | null = null;
 
 /*
- * 히어로 그래픽 — 집으로 들어가는 지원금.
+ * 히어로 그래픽 — 원룸 건물, 창 하나에 불이 들어온다.
  *
- * 동전이 하나씩 떨어져 집 안에 쌓인다. 삼각형으로 쌓는 이유는 가로로 나란히 두면
- * 기계 조작부처럼 보이기 때문이다.
+ * 박공지붕 단독주택을 쓰지 않는 이유: 익산 청년의 월세는 원룸·오피스텔·빌라다.
+ * 단독주택은 이 사용자가 살지 않는 집이다.
+ *
+ * 서사는 "켜진 창" 하나가 나른다 — 흩어진 지원금 중 내 것 하나가 찾아졌다는 뜻이다.
+ * 떨어지는 동전을 쓰지 않는 이유: 정지 상태(prefers-reduced-motion)에서 경로가
+ * 읽히지 않아 의미가 사라진다. 창은 켜진 채로 멈춰 있어도 그대로 읽힌다.
+ *
+ * 선 굵기는 4 하나로 통일한다. 이전 버전은 채움·선 4·선 2.5 세 어법이 섞여 있었다.
  */
-const COINS = [
-  { cx: 98, cy: 122, dy: "-92px", delay: 300 },
-  { cx: 126, cy: 122, dy: "-104px", delay: 440 },
-  { cx: 112, cy: 100, dy: "-84px", delay: 600 },
+const WINDOWS = [
+  { x: 70, y: 58, accent: false, delay: 220 },
+  { x: 102, y: 58, accent: true, delay: 520 },
+  { x: 134, y: 58, accent: false, delay: 300 },
+  { x: 70, y: 88, accent: false, delay: 380 },
+  { x: 102, y: 88, accent: false, delay: 260 },
+  { x: 134, y: 88, accent: false, delay: 340 },
 ];
 
 function HeroGraphic() {
   return (
     <svg viewBox="0 0 224 152" className="h-32 w-full" aria-hidden="true">
       <g className="draw-in">
+        {/* 옥상 슬래브 — 평지붕이라 건물 폭보다 살짝 넓게만 낸다 */}
+        <rect x={54} y={32} width={116} height={11} rx={3} className="fill-brand-600" />
+        {/* 몸통 */}
         <rect
-          x={58}
-          y={82}
-          width={108}
-          height={62}
+          x={64}
+          y={43}
+          width={96}
+          height={101}
           rx={4}
-          className="fill-brand-50 stroke-brand-600"
+          className="fill-white stroke-brand-600"
           strokeWidth={4}
         />
-        <path d="M112 22 L184 84 L40 84 Z" className="fill-brand-600" strokeLinejoin="round" />
+        {/* 현관 */}
+        <rect x={104} y={118} width={16} height={26} rx={2} className="fill-brand-600" />
       </g>
 
-      {COINS.map((c, i) => (
-        <g
-          key={`coin-${i}`}
-          className="drop-in"
-          style={{ "--dy": c.dy, animationDelay: `${c.delay}ms` } as React.CSSProperties}
-        >
-          <circle
-            cx={c.cx}
-            cy={c.cy}
-            r={13}
-            className="fill-brand-200 stroke-brand-600"
-            strokeWidth={2.5}
-          />
-          <circle cx={c.cx} cy={c.cy} r={4.5} className="fill-brand-600" />
-        </g>
+      {WINDOWS.map((w, i) => (
+        <rect
+          key={`win-${i}`}
+          x={w.x}
+          y={w.y}
+          width={20}
+          height={18}
+          rx={2}
+          className={`pop-in ${w.accent ? "fill-accent-600" : "fill-brand-200"}`}
+          style={{ animationDelay: `${w.delay}ms` } as React.CSSProperties}
+        />
       ))}
     </svg>
   );
