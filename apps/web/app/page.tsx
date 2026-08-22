@@ -41,7 +41,9 @@ const WINDOWS = [
 
 function HeroGraphic() {
   return (
-    <svg viewBox="0 0 224 152" className="h-32 w-full" aria-hidden="true">
+    // viewBox 를 건물 실제 범위(x 54~170, y 32~144)에 stroke 여유만 더해 조인다.
+    // 넓은 viewBox 를 쓰면 preserveAspectRatio 가 높이에 맞춰 축소해서 건물이 작아진다.
+    <svg viewBox="50 28 124 120" className="h-36 w-full" aria-hidden="true">
       <g className="draw-in">
         {/* 옥상 슬래브 — 평지붕이라 건물 폭보다 살짝 넓게만 낸다 */}
         <rect x={54} y={32} width={116} height={11} rx={3} className="fill-brand-600" />
@@ -77,23 +79,27 @@ function HeroGraphic() {
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-8 px-6 py-12">
-      <div className="rise-in">
-        <HeroGraphic />
-      </div>
-
-      <div>
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-9 px-6 py-12">
+      {/* 브랜드 락업 — 워드마크와 건물이 한 덩어리로 붙는다.
+          워드마크가 크지만 <h1> 은 아니다. 문서 개요에서 제목 자리는 사실이 갖는다. */}
+      <div className="text-center">
         <p
-          className="rise-in text-xs font-bold uppercase tracking-[0.22em] text-ink-500"
-          style={{ animationDelay: "80ms" }}
+          className="rise-in text-6xl font-extrabold tracking-tight text-ink-900"
+          style={{ animationDelay: "0ms" }}
         >
           Perky
         </p>
 
-        {/* 헤드라인이 사실을 나른다 — 지역과 개수를 브랜드명보다 먼저 보여준다. */}
+        <div className="rise-in mt-5" style={{ animationDelay: "110ms" }}>
+          <HeroGraphic />
+        </div>
+      </div>
+
+      <div>
+        {/* 헤드라인이 사실을 나른다 — 지역과 개수가 제목 자리를 갖는다. */}
         <h1
-          className="rise-in mt-3 text-4xl font-extrabold leading-[1.25] tracking-tight text-ink-900"
-          style={{ animationDelay: "160ms" }}
+          className="rise-in text-4xl font-extrabold leading-[1.25] tracking-tight text-ink-900"
+          style={{ animationDelay: "230ms" }}
         >
           {MAX_BENEFIT ? (
             <>
@@ -111,8 +117,8 @@ export default function Home() {
         </h1>
 
         <p
-          className="rise-in mt-5 text-base leading-relaxed text-ink-600"
-          style={{ animationDelay: "240ms" }}
+          className="rise-in mt-4 text-base leading-relaxed text-ink-600"
+          style={{ animationDelay: "300ms" }}
         >
           국가·전북·익산에 흩어진 정책을 한 화면에 모아
           <br />
@@ -120,7 +126,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="rise-in" style={{ animationDelay: "300ms" }}>
+      <div className="rise-in" style={{ animationDelay: "370ms" }}>
         <Link
           href="/find"
           className="block rounded-xl bg-brand-600 px-6 py-4 text-center text-lg font-bold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
@@ -134,7 +140,7 @@ export default function Home() {
           내용은 전부 사실이다: 서버가 없고 답변은 localStorage 에만 남는다. */}
       <div
         className="rise-in border-t border-ink-100 pt-5 text-center text-xs leading-relaxed text-ink-500"
-        style={{ animationDelay: "360ms" }}
+        style={{ animationDelay: "440ms" }}
       >
         <p>회원가입 없이 · 입력값은 이 브라우저에만 저장됩니다</p>
         <p className="mt-1">
