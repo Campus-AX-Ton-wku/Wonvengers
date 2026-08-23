@@ -58,14 +58,17 @@ export default function FindPoliciesPage() {
 
           {/* 무슨 답변으로 나온 결과인지 보여주고, 바로 고치러 갈 수 있게 한다. */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            {summary.map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full border border-ink-200 bg-sand-50 px-3 py-1 text-xs font-semibold text-ink-600"
-              >
-                {chip}
-              </span>
-            ))}
+            {/* 목록 시맨틱 — 스크린 리더가 "답변 요약, 항목 4개"로 읽는다. */}
+            <ul aria-label="답변 요약" className="flex flex-wrap items-center gap-2">
+              {summary.map((chip) => (
+                <li
+                  key={chip}
+                  className="rounded-full border border-ink-200 bg-sand-50 px-3 py-1 text-xs font-semibold text-ink-600"
+                >
+                  {chip}
+                </li>
+              ))}
+            </ul>
             <Link
               href="/find"
               className="rounded-full px-2 py-1 text-xs font-bold text-brand-700 underline transition-colors hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
