@@ -1,0 +1,34 @@
+[
+  {
+    "id": "iksan-oneroom-monthly",
+    "label": "익산 원룸 · 월세",
+    "sourceKind": "가상 예시",
+    "verifiedAt": null,
+    "note": "발표 시연을 위해 만든 가상 조건입니다. 실제 매물도 실거래 사례도 아닙니다. ⚠️ 발표 전에 팀이 직접 확인한 매물 조건으로 교체하고, sourceKind 를 '실제 매물' 또는 '실거래 사례'로 바꾸고 verifiedAt 에 확인 날짜를 적을 것.",
+    "listing": {
+      "region": "전북특별자치도 익산시",
+      "contractType": "월세",
+      "deposit": 3000000,
+      "rentOrYearlyAmount": 350000,
+      "managementFee": 50000,
+      "oneTimeMoveCost": 300000,
+      "months": 12
+    }
+  },
+  {
+    "id": "iksan-oneroom-yearly",
+    "label": "익산 원룸 · 연세",
+    "sourceKind": "가상 예시",
+    "verifiedAt": null,
+    "note": "발표 시연을 위해 만든 가상 조건입니다. 연세 480만원을 12개월로 나누면 월 환산 40만원이 되어, 월세 상한 20만원짜리 정책에서 상한 캡핑이 걸리는 경우를 보여줍니다. ⚠️ 발표 전에 팀이 직접 확인한 매물 조건으로 교체할 것.",
+    "listing": {
+      "region": "전북특별자치도 익산시",
+      "contractType": "연세",
+      "deposit": 3000000,
+      "rentOrYearlyAmount": 4800000,
+      "managementFee": 30000,
+      "oneTimeMoveCost": 0,
+      "months": 12
+    }
+  }
+]

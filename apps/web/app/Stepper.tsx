@@ -13,7 +13,7 @@ const FOCUS_RING =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700";
 
 /** 앱바 가운데 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다. */
-function HomeMark() {
+export function HomeMark() {
   return (
     <Link
       href="/"
