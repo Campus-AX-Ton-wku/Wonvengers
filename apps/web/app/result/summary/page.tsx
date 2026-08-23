@@ -7,6 +7,7 @@ import { summaryHighlights } from "@/lib/summary";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { AlertIcon, CheckIcon } from "@/app/icons";
 import { useResultData } from "../useResultData";
+import MissingInput from "../MissingInput";
 
 /**
  * F4-11. 캡처해서 공유하기 좋은 한 화면 요약.
@@ -22,8 +23,9 @@ import { useResultData } from "../useResultData";
 const exampleListings = exampleListingsData as ExampleListing[];
 
 export default function ResultSummaryPage() {
-  const { listing, summary, asOf } = useResultData();
+  const { listing, summary, asOf, status } = useResultData();
 
+  if (status === "missing") return <MissingInput />;
   if (!listing || !summary) {
     return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
   }

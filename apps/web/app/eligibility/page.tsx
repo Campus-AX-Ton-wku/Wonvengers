@@ -43,7 +43,8 @@ export default function EligibilityPage() {
   useEffect(() => {
     const listing = loadListing();
     if (!listing) {
-      router.replace("/");
+      // 계약 조건 없이는 판정할 수 없다. 홈이 아니라 그 입력을 받는 화면으로 보낸다.
+      router.replace("/calculate");
       return;
     }
     setRegion(listing.region);
