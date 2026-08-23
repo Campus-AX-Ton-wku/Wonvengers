@@ -1,11 +1,11 @@
 [
   {
     "id": "moland-youth-rent-support",
-    "name": "청년월세 한시특별지원 (2026년 상시 전환)",
+    "name": "청년월세 지원 (2026년 상시사업 전환)",
     "agency": "국토교통부",
     "regionScope": "전국",
-    "applicationStart": "2026-01-01",
-    "applicationEnd": null,
+    "applicationStart": "2026-03-30",
+    "applicationEnd": "2026-05-29",
     "benefitType": "rent_capped_monthly",
     "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 24개월 (총 최대 480만원)",
     "monthlyCap": 200000,
@@ -25,24 +25,28 @@
     "exclusiveGroup": [
       "youth-rent-cash-support"
     ],
-    "sourceUrl": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004661",
+    "sourceUrl": "https://m.bokjiro.go.kr/ssis-tem/cms/mob/customer/notice/1309500_1155.html",
     "applyUrl": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004661",
-    "verifiedAt": null,
+    "verifiedAt": "2026-08-23",
     "effectiveYear": 2026,
-    "notes": "미검증 초안(팀 교차검수 필요). 2026년부터 상시 사업으로 전환되어 연중 신청 가능. 30세 이상·혼인(이혼)·미혼부모·독립생계 인정 시 원가구 소득은 미고려될 수 있음 — 공식 공고문에서 정확한 예외 조건을 재확인할 것. 월세만 인정, 관리비는 지원 대상 금액에서 제외.",
+    "notes": "복지로 공지 '2026년 청년월세 지원 신청 안내' 원문으로 확인(2026-08-23). 만 19~34세(1991~2007년생), 청년가구 중위소득 60% 이하 + 원가구 100% 이하, 월 20만원 × 최대 24회 생애 1회, 2026년 신규 6만명. 재학·재직·구직 제한은 공지에 없음. ⚠️ 2026년부터 상시사업으로 전환됐지만 접수 창구는 연중 열려 있지 않다 — 2026년 접수는 3/30 09시~5/29 16시로 이미 종료됐고, 선정자 발표는 9/14, 5월분 월세부터 소급 지급된다. 따라서 오늘 기준 판정은 '신청 불가(접수 종료)'가 정상이다. 신규 수혜자는 2028년 12월까지만 지원. 재산기준(청년가구 1억 2,200만원 이하로 알려짐)은 공지 원문에서 확인되지 않아 코드에서 판정하지 않는다. 월세만 인정, 관리비는 지원 대상 금액에서 제외.",
     "discovery": {
       "ageMin": 19,
       "ageMax": 34,
       "regions": [
         "전국"
       ],
-      "statuses": null,
-      "incomeBracketMax": null
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMax": 3
     }
   },
   {
     "id": "iksan-youth-rent-support",
-    "name": "익산시 청년월세 한시 특별지원사업",
+    "name": "익산형 청년월세 지원사업",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "applicationStart": "2026-01-01",
@@ -62,18 +66,22 @@
     "exclusiveGroup": [
       "youth-rent-cash-support"
     ],
-    "sourceUrl": "https://m.iksan.go.kr/board/view.iksan?boardId=BBS_IKSAN_NEWS&startPage=38&dataSid=1160107",
+    "sourceUrl": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00005488",
     "applyUrl": "https://www.iksan.go.kr",
     "verifiedAt": null,
     "effectiveYear": 2026,
-    "notes": "미검증 초안(팀 교차검수 필요). ⚠️ 신청기간은 확인된 최신 공고가 없어 임시로 연중 전체를 넣어둔 값입니다 — 익산시 홈페이지에서 2026년 실제 모집 공고를 확인해 정확한 날짜로 교체할 것. 보증금 5,000만원 이하·월세 60만원 이하 주택만 대상. 국토교통부 청년월세 한시특별지원에서 소득 기준(60% 이하) 초과로 대상이 안 된 청년(중위소득 60% 초과~130% 이하)을 위한 사업이라, 국토부 사업과 사실상 상호 배타적으로 설계되어 있음. 선착순 250명 한정이라 예산 소진 시 접수 마감될 수 있음(실시간 소진 현황은 앱에서 확인 불가 — 신청 전 익산시에 확인 필요). 방문 신청만 가능(행정복지센터).",
+    "notes": "미검증 초안(팀 교차검수 필요). ⚠️ 2026년 모집 공고를 찾지 못했다 — 아래 요건은 익산시 보도자료·뉴시스 기사(2024년 사업 기준)에서 확인한 값이다. 19~34세 무주택, 임차보증금 5,000만원·월 임차료 60만원 이하 주택에 부모와 별도 거주, 본인 기준 중위소득 60% 초과~130% 이하, 재산 1억 700만원 이하, 선착순 250명, 행정복지센터 방문 신청, 접수는 12월 31일까지. 국토교통부 청년월세 지원에서 소득 초과로 탈락한 청년을 받는 사업이라 국토부 사업과 사실상 상호 배타적이다. ⚠️ discovery.incomeBracketMax 를 null 로 남긴 이유: 이 사업은 소득 '하한'(중위 60% 초과)이 있는데 1층 태그 판정에는 상한 필드만 있다. 상한(130% ≈ 월 333만원)만 넣으면 저소득 청년에게 '가능성 있음'이 잘못 표시되므로, 추정 대신 '확인 필요'로 남긴다. incomeBracketMin 필드를 추가하면 채울 수 있다. 선착순이라 예산 소진 시 조기 마감될 수 있고 실시간 소진 현황은 앱에서 알 수 없다.",
     "discovery": {
       "ageMin": 19,
       "ageMax": 34,
       "regions": [
         "전북특별자치도 익산시"
       ],
-      "statuses": null,
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
       "incomeBracketMax": null
     }
   },
@@ -82,10 +90,10 @@
     "name": "전북청년 지역정착 지원사업",
     "agency": "전북특별자치도",
     "regionScope": "전북특별자치도",
-    "applicationStart": "2026-01-01",
-    "applicationEnd": "2026-12-31",
+    "applicationStart": "2026-03-06",
+    "applicationEnd": "2026-04-10",
     "benefitType": "flat_monthly",
-    "benefitSummary": "월 30만원 × 최대 12개월 (총 최대 360만원). 포인트 30% + 지역화폐 70%로 지급 (전액 현금 아님)",
+    "benefitSummary": "월 30만원 × 최대 12개월 (총 최대 360만원). 포인트 30% + 익산사랑상품권 70%로 지급 (전액 현금 아님)",
     "monthlyCap": 300000,
     "maxMonths": 12,
     "requiredInputs": [
@@ -96,19 +104,21 @@
       "ownHouseholdMonthlyIncome"
     ],
     "exclusiveGroup": [],
-    "sourceUrl": "https://www.jeonbuk.go.kr/index.jeonbuk?menuCd=DOM_000000104006005002",
+    "sourceUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=46029",
     "applyUrl": "https://ttd.ezwel.com/",
-    "verifiedAt": null,
+    "verifiedAt": "2026-08-23",
     "effectiveYear": 2026,
-    "notes": "미검증 초안(팀 교차검수 필요). ⚠️ 신청기간은 확인된 최신 공고가 없어 임시로 연중 전체를 넣어둔 값입니다 — 전북청년허브센터(jb2030.or.kr) 또는 ttd.ezwel.com에서 2026년 실제 모집 공고를 확인해 정확한 날짜로 교체할 것. 대상 업종(농업·임업·어업·중소기업 정규직·문화예술·연구소기업 정규직)에 3개월 이상 재직해야 하므로 재학생 단독으로는 대상이 안 될 가능성이 높음(정규직 근무 중인 2차 사용자에게 더 적합). 지급액의 70%가 현금이 아닌 지역화폐(익산사랑상품권 등)로 지급되므로, 실제 사용 가능 범위가 제한적일 수 있음 — 결과 화면에 이 사실을 반드시 표시할 것. 다른 월세지원 사업과의 중복 수급 가능 여부는 공식 공고문에 명시되어 있지 않아 확인 필요(현재는 중복 허용으로 가정).",
+    "notes": "익산청년시청 '2026년 전북청년 지역정착 지원사업 모집공고(수정)'와 '추가 모집공고' 원문으로 확인(2026-08-23). 18~39세, 공고일 기준 1년 이상 거주, 농업·임업·어업·중소기업(정규직)·문화예술·연구소기업(정규직)에 3개월 이상 계속 종사, 가구 중위소득 150% 이하, 월 30만원 × 최대 12개월(포인트 30% + 익산사랑상품권 70%), 온라인 접수(ttd.ezwel.com), 문의 063-859-7384. ⚠️ 신청기간은 본모집 3/6~3/20 17시, 추가모집 3/30~4/10 17시로 두 차례였다 — 데이터 모델에 창구가 하나뿐이라 3/6~4/10 으로 합쳐 넣었고, 오늘 기준 판정은 '신청 불가(접수 종료)'가 정상이다. discovery.statuses 를 '재직'만 둔 이유: 대상 업종 정규직 3개월 이상 재직이 필수 요건이라 재학·구직 상태로는 대상이 되지 않는다(재학과 정규직을 병행하는 경우는 1층에서 '해당 없음'으로 나오므로 2층 판정으로 확인해야 한다). 지급액의 70%가 현금이 아닌 지역화폐이므로 결과 화면에 반드시 표시할 것. 다른 월세지원과의 중복 수급 가능 여부는 공고에 명시되어 있지 않아 현재는 중복 허용으로 가정한다.",
     "discovery": {
       "ageMin": 18,
       "ageMax": 39,
       "regions": [
         "전북특별자치도"
       ],
-      "statuses": null,
-      "incomeBracketMax": null
+      "statuses": [
+        "재직"
+      ],
+      "incomeBracketMax": 5
     }
   },
   {
@@ -116,28 +126,32 @@
     "name": "익산시 전입 청년 이사비·중개보수 지원사업",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
-    "applicationStart": "2025-01-01",
+    "applicationStart": "2026-01-01",
     "applicationEnd": null,
     "benefitType": "lump_sum",
-    "benefitSummary": "이사비·부동산 중개보수 실비를 1인당 최대 50만원까지 지원 (2025-01-01 이후 익산시 전입자)",
+    "benefitSummary": "이사비(최대 30만원) + 부동산 중개보수(최대 20만원) 실비를 1인당 최대 50만원까지 생애 1회 지원",
     "lumpSumCap": 500000,
     "requiredInputs": [
       "birthDate"
     ],
     "exclusiveGroup": [],
-    "sourceUrl": "https://www.jjan.kr/article/20260103500063",
+    "sourceUrl": "https://youthforest.iksan.go.kr/index.iksan?menuCd=DOM_000000102003000000",
     "applyUrl": "https://youthforest.iksan.go.kr",
     "verifiedAt": null,
     "effectiveYear": 2026,
-    "notes": "미검증 초안(팀 교차검수 필요). ⚠️ '2025-01-01 이후 익산시 전입' 조건은 현재 코드에서 확인하지 않음 — 이 항목은 나이(18~39세)만 판정하고, 전입일 조건은 별도로 사용자가 확인해야 함(추후 입력 항목 추가 검토). 정확한 신청기간·소득기준·제출서류는 익산청년시청(youthforest.iksan.go.kr) 또는 전화 문의(063-859-7384, 063-918-6085~6087)로 재확인할 것. 신청방법(온라인/방문) 미확인.",
+    "notes": "미검증 초안(팀 교차검수 필요). 전북일보 기사(2026-01-03)와 익산청년시청 안내로 확인한 요건: 2025-01-01 이후 익산시로 이사·전입신고를 완료한 18~39세 1인 가구 청년, 가구 기준 중위소득 150% 이하, 이사비 30만원 + 중개보수 20만원 한도 내 실비, 생애 1회, 문의 063-859-5745. ⚠️ 공고 원문(PDF)을 직접 열지 못했으므로 verifiedAt 은 null 로 둔다. ⚠️ 다음 조건은 코드에서 판정하지 않는다: (1) '2025-01-01 이후 익산시 전입' — 전입일 입력 항목이 없음, (2) '1인 가구' 요건. 이 항목은 나이(18~39세)만 판정한다. applicationStart 는 접수 시작일이 아니라 전입 기준일(2025-01-01)이 들어가 있었으므로 2026-01-01 로 바로잡았다 — 실제 접수기간이 공고에 명시되어 있는지 확인할 것.",
     "discovery": {
       "ageMin": 18,
       "ageMax": 39,
       "regions": [
         "전북특별자치도 익산시"
       ],
-      "statuses": null,
-      "incomeBracketMax": null
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMax": 5
     }
   },
   {
@@ -148,8 +162,8 @@
     "applicationStart": "2026-01-01",
     "applicationEnd": null,
     "benefitType": "rent_capped_monthly",
-    "benefitSummary": "부모 가구와 다른 시·군·구에 거주하는 미혼 청년에게, 지역 급지별 기준임대료 한도 내 실제 월세만큼 매월 지급 (4급지 기준 월 최대 약 17만원 추정 — 익산시 급지 확인 필요)",
-    "monthlyCap": 170000,
+    "benefitSummary": "부모 가구와 다른 시·군·구에 거주하는 미혼 청년에게, 지역 급지별 기준임대료 한도 내 실제 월세만큼 매월 지급 (익산시는 4급지 — 1인 가구 월 최대 21만 2천원)",
+    "monthlyCap": 212000,
     "requiredInputs": [
       "birthDate",
       "livesApartFromParents",
@@ -159,18 +173,22 @@
     "exclusiveGroup": [
       "youth-rent-cash-support"
     ],
-    "sourceUrl": "https://www.bokjiro.go.kr",
+    "sourceUrl": "https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/2026%EB%85%84%20%EC%A3%BC%EA%B1%B0%EA%B8%89%EC%97%AC%20%EC%84%A0%EC%A0%95%EA%B8%B0%EC%A4%80%20%EB%B0%8F%20%EC%B5%9C%EC%A0%80%EB%B3%B4%EC%9E%A5%EC%88%98%EC%A4%80",
     "applyUrl": "https://www.bokjiro.go.kr",
     "verifiedAt": null,
     "effectiveYear": 2026,
-    "notes": "미검증 초안(팀 교차검수 필요). ⚠️ 다음 조건은 현재 코드에서 확인하지 않음: (1) 미혼 여부 — 프로필에 관련 입력 항목 없음, (2) '부모와 다른 시·군·구 거주'는 단순 '부모와 별도 거주(livesApartFromParents)'로 근사 처리함 — 실제로는 같은 시에 살면(예: 서울 강남구-관악구) 분리지급 불인정이라 더 엄격한 조건이 필요함. 월 상한액(4급지 17만원 추정)은 익산시의 실제 급지 등급을 재확인해 정확한 금액으로 교체할 것. 원가구 소득 기준은 원가구 가구원 수가 아니라 본인 가구원 수 테이블을 그대로 사용하는 기존 코드 관례를 따름(부정확할 수 있음). 청년월세 한시특별지원(moland)·익산시 청년월세지원과 중복수급이 실제로 불가능한지 공식 지침에서 재확인 필요(현재는 중복 불가로 가정).",
+    "notes": "미검증 초안(팀 교차검수 필요). 소득인정액 기준 중위소득 48% 이하(2026년 1인 가구 월 1,230,834원), 만 19~29세 미혼 청년이 부모와 다른 시·군·구에 거주할 때 분리지급. monthlyCap 을 170,000원(추정)에서 212,000원으로 고쳤다 — 2026년 기준임대료 4급지(그 외 지역, 익산 포함) 1인 가구 값이며, 급지별 1인 표(1급지 369,000 / 2급지 300,000 / 3급지 247,000 / 4급지 212,000)와 '4급지 1인 가구 11% 인상' 보도가 서로 맞는다. ⚠️ 국토교통부 고시(제2025-506호) 원문을 열지 못했으므로 verifiedAt 은 null 이다 — 고시 원문으로 반드시 확인할 것. ⚠️ 다음 조건은 코드에서 판정하지 않는다: (1) 미혼 여부 — 입력 항목 없음, (2) '부모와 다른 시·군·구 거주'를 '부모와 별도 거주'로 근사 처리 — 같은 시 안에서 구만 다르면 분리지급이 인정되지 않는다. ⚠️ discovery.incomeBracketMax 를 null 로 남긴 이유: 이 사업은 본인 소득이 아니라 부모를 포함한 원가구 소득인정액으로 심사한다. 1층 질문은 본인 월소득 구간만 묻기 때문에 원가구 가구원 수를 모르는 상태로는 소득으로 탈락시킬 수 없다(예: 본인 250만원이라도 원가구가 6인이면 48% 기준 안에 들어온다). 원가구 소득 기준을 본인 가구원 수 테이블로 계산하는 2층 코드 관례도 부정확할 수 있어 함께 검수할 것.",
     "discovery": {
       "ageMin": 19,
       "ageMax": 29,
       "regions": [
         "전국"
       ],
-      "statuses": null,
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
       "incomeBracketMax": null
     }
   }

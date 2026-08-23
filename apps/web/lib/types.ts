@@ -59,8 +59,19 @@ export type BenefitType = "rent_capped_monthly" | "flat_monthly" | "lump_sum";
  * 1층(발견) 태그 판정에만 쓰는 필드. 2층 판정 규칙은 이걸 읽지 않는다.
  *
  * ageMin/ageMax/regions 는 policy-rules.ts 와 regionScope 에서 그대로 옮긴 값이다.
- * statuses / incomeBracketMax 는 공식 공고 확인 전이라 null 이다 — null 은
- * "모름"으로 취급해 '확인 필요' 태그가 붙는다. 값을 추정해 채우지 말 것 (PRD F0-5).
+ * statuses / incomeBracketMax 가 null 이면 "모름"으로 취급해 '확인 필요' 태그가
+ * 붙는다. 값을 추정해 채우지 말 것 (PRD F0-5).
+ *
+ * null 을 남기는 사유는 두 가지다:
+ *  1. 공식 공고를 아직 확인하지 못했다.
+ *  2. 확인은 했지만 1층 질문 4개로는 판정할 수 없다 — 소득 하한이 있는 정책
+ *     (익산형 청년월세: 중위 60% '초과'), 본인이 아닌 원가구 소득으로 심사하는
+ *     정책(청년 주거급여 분리지급)이 여기 해당한다. 상한만 억지로 채우면
+ *     대상이 아닌 사람에게 '가능성 있음'이 뜬다.
+ *
+ * incomeBracketMax 를 채울 때는 정책 소득 상한(1인 가구 기준)이 걸쳐 있는
+ * 구간까지 통과시킨다. 경계 구간은 2층에서 실제 금액으로 정밀 판정한다.
+ * 예) 중위 60% = 월 1,538,543원 -> 3번 구간(150~200만원)까지 통과.
  */
 export interface PolicyDiscovery {
   ageMin: number;

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import policiesJson from "@/data/policies.json";
 import { tagPolicy } from "@/lib/filter";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+
+const policies = policiesJson as PolicyMeta[];
 
 // 익산시 전용, 만 19~39세, 대학생·재직만, 소득 3구간 이하
 const 익산정책: PolicyMeta = {
@@ -201,5 +204,42 @@ describe("tagPolicy — 비교할 수 없는 값은 통과시키지 않는다", 
   it("비교 불가와 명확한 불일치가 함께 있으면 해당 없음이 우선한다", () => {
     const r = tagPolicy(나이기준이망가진정책(19, "39"), { ...기본답변, status: "구직" });
     expect(r.tag).toBe("해당 없음");
+  });
+});
+
+// QA체크리스트 1층 항목("태그가 전부 '확인 필요'로만 나오지 않는다")을 자동화한 것.
+// discovery 값을 공고로 채웠는지 실제 데이터로 확인한다.
+describe("실제 정책 데이터 — 1층 태그", () => {
+  const 익산_대학생: DiscoveryAnswers = {
+    age: 23,
+    region: "전북특별자치도 익산시",
+    status: "대학생",
+    incomeBracket: 1,
+  };
+
+  it("네 질문에 모두 답하면 '확인 필요'만 나오지는 않는다", () => {
+    const tags = policies.map((p) => tagPolicy(p, 익산_대학생).tag);
+    expect(tags.filter((t) => t === "가능성 있음").length).toBeGreaterThan(0);
+  });
+
+  it("전북 정착 지원사업은 재직자만 대상이라 대학생에게는 해당 없음이다", () => {
+    const jeonbuk = policies.find((p) => p.id === "jeonbuk-youth-settlement-support")!;
+    const r = tagPolicy(jeonbuk, 익산_대학생);
+    expect(r.tag).toBe("해당 없음");
+    expect(r.failReasons.join()).toContain("재직");
+  });
+
+  it("소득 상한을 채우지 못한 정책은 소득 구간을 답해도 확인 필요로 남는다", () => {
+    for (const id of ["iksan-youth-rent-support", "youth-housing-benefit-split-payment"]) {
+      const p = policies.find((x) => x.id === id)!;
+      const r = tagPolicy(p, 익산_대학생);
+      expect(r.tag, id).toBe("확인 필요");
+      expect(r.unknownFields, id).toContain("소득 구간");
+    }
+  });
+
+  it("국토부 청년월세는 소득 1구간 청년에게 가능성 있음이다", () => {
+    const moland = policies.find((p) => p.id === "moland-youth-rent-support")!;
+    expect(tagPolicy(moland, 익산_대학생).tag).toBe("가능성 있음");
   });
 });
