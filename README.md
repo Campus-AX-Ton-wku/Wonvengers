@@ -6,6 +6,10 @@
 
 질문 4개로 **해당될 수 있는 지원금**을 찾고, 계약 조건을 넣으면 **실제로 내 통장에서 나가는 돈**까지 계산합니다.
 
+[![데모 열어보기](https://img.shields.io/badge/▶%20데모%20열어보기-wonvengers.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://wonvengers.vercel.app)
+
+*모바일 화면 기준으로 만들었습니다. 폰으로 열어보시는 걸 권합니다.*
+
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
@@ -52,13 +56,15 @@ flowchart LR
 
 ## 화면
 
+경로를 누르면 배포된 화면으로 바로 이동합니다.
+
 | 경로 | 층 | 하는 일 |
 |---|---|---|
-| `/` | — | 랜딩 |
-| `/find` | 1층 · 발견 | 질문 4개 → 해당될 수 있는 지원금 목록 + 태그 |
-| `/calculate` | 2층 · 계산 | 계약 조건 입력 (F1) |
-| `/eligibility` | 2층 · 계산 | 정책별 자격 판정 질문 (F2) |
-| `/result` | 2층 · 계산 | 판정 결과 + 최종 예상 주거비 (F3, F4) |
+| [`/`](https://wonvengers.vercel.app) | — | 랜딩 |
+| [`/find`](https://wonvengers.vercel.app/find) | 1층 · 발견 | 질문 4개 → 해당될 수 있는 지원금 목록 + 태그 |
+| [`/calculate`](https://wonvengers.vercel.app/calculate) | 2층 · 계산 | 계약 조건 입력 (F1) |
+| [`/eligibility`](https://wonvengers.vercel.app/eligibility) | 2층 · 계산 | 정책별 자격 판정 질문 (F2) |
+| [`/result`](https://wonvengers.vercel.app/result) | 2층 · 계산 | 판정 결과 + 최종 예상 주거비 (F3, F4) |
 
 ## 실행
 
