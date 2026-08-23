@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
-import { loadListing } from "@/lib/storage";
+import { loadListing, saveAnswers } from "@/lib/storage";
 
 vi.mock("next/navigation", () => {
   // 렌더마다 새 객체를 주면 router 를 의존성으로 쓰는 useEffect 가 무한히 다시 돈다.
@@ -115,5 +115,40 @@ describe("/calculate 입력 검증", () => {
     await user.clear(보증금);
     await user.type(보증금, "-5000");
     expect(Number(보증금.value)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+/**
+ * 1층에서 이미 고른 지역을 2층에서 또 묻지 않는다. 같은 질문을 두 번 하면
+ * 1층과 2층이 별개의 앱처럼 느껴진다.
+ */
+describe("/calculate 1층 답변 이어받기", () => {
+  it("1층에서 고른 지역으로 채우고, 채웠다는 사실을 알려준다", () => {
+    saveAnswers({
+      age: 23,
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+    });
+    render(<CalculatePage />);
+
+    const region = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(region.value).toBe("전북특별자치도 익산시");
+    expect(screen.getByText(/앞에서 고른 지역으로 채웠어요/)).toBeTruthy();
+  });
+
+  it("사용자가 지역을 직접 바꾸면 안내 문구를 거둔다", async () => {
+    const user = userEvent.setup();
+    saveAnswers({ age: 23, region: "전북특별자치도 익산시", status: "재직", incomeBracket: 2 });
+    render(<CalculatePage />);
+
+    await user.selectOptions(screen.getByRole("combobox"), "그 외 지역");
+    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
+  });
+
+  it("1층을 건너뛴 사람에게는 지역이 비어 있다", () => {
+    render(<CalculatePage />);
+    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
+    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
   });
 });
