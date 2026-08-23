@@ -4,18 +4,29 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
-import { tagPolicy } from "@/lib/filter";
-import PolicyCard from "@/app/find/PolicyCard";
+import FindTopBar from "@/app/find/FindTopBar";
+import { AGE_MAX, AGE_MIN, isAgeOutOfRange, parseAgeInput, stepAge } from "@/lib/age";
+import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
 import { REGION_OPTIONS } from "@/lib/region";
-import { todayISO } from "@/lib/date";
+
+/**
+ * 1층 · 발견 — 질문만 있는 화면.
+ *
+ * 목록은 /find/policies 로 분리했다. 질문 4개와 지원금 카드를 한 화면에 쌓아두면
+ * 정보량에 눌린다는 판단이고, 2층에서 같은 이유로 스텝을 나눈 것과 같은 결정이다.
+ * (lib/steps.ts 주석 참고)
+ */
 
 const brackets = bracketsJson as IncomeBracket[];
 const policies = policiesJson as PolicyMeta[];
 // 2층과 같은 지역 어휘를 쓴다 (lib/region.ts 단일 출처).
 const REGIONS = REGION_OPTIONS;
 const STATUSES: DiscoveryStatus[] = ["대학생", "재직", "구직"];
+
+const FOCUS_RING =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700";
 
 function Choice({
   label,
@@ -30,7 +41,7 @@ function Choice({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg border-2 px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 ${
+      className={`rounded-lg border-2 px-4 py-2.5 text-sm transition-colors ${FOCUS_RING} ${
         selected
           ? "border-brand-600 bg-brand-50 font-bold text-brand-700"
           : "border-ink-200 bg-white font-medium text-ink-600 hover:border-brand-300 hover:bg-brand-50"
@@ -62,15 +73,47 @@ function Question({
   );
 }
 
+/** 나이 스테퍼. 브라우저 기본 스핀 버튼은 숨기고 −/+ 로 직접 다룬다 (lib/age.ts 참고). */
+function AgeStepper({
+  age,
+  onChange,
+}: {
+  age: number | null;
+  onChange: (age: number | null) => void;
+}) {
+  const button = `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-ink-200 bg-white text-xl font-bold text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 ${FOCUS_RING}`;
+  return (
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={() => onChange(stepAge(age, -1))} aria-label="나이 1살 내리기" className={button}>
+        −
+      </button>
+      <div className="flex items-baseline gap-1 rounded-lg border-2 border-ink-200 bg-white px-3 py-2 focus-within:border-brand-600">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={AGE_MIN}
+          max={AGE_MAX}
+          value={age ?? ""}
+          onChange={(e) => onChange(parseAgeInput(e.target.value))}
+          placeholder="22"
+          aria-label="나이"
+          className="w-12 bg-transparent text-center text-base font-bold text-ink-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <span className="text-sm font-semibold text-ink-500">세</span>
+      </div>
+      <button type="button" onClick={() => onChange(stepAge(age, 1))} aria-label="나이 1살 올리기" className={button}>
+        +
+      </button>
+    </div>
+  );
+}
+
 export default function FindPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
-  // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
-  const [asOf, setAsOf] = useState<string | undefined>(undefined);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
     setAnswers(loadAnswers());
-    setAsOf(todayISO());
   }, []);
 
   function update(patch: Partial<DiscoveryAnswers>) {
@@ -79,60 +122,38 @@ export default function FindPage() {
     saveAnswers(next);
   }
 
-  const tagged = policies.map((policy) => ({
-    policy,
-    result: tagPolicy(policy, answers),
-  }));
-  const 가능 = tagged.filter((t) => t.result.tag === "가능성 있음");
-  const 확인 = tagged.filter((t) => t.result.tag === "확인 필요");
-  const 해당없음 = tagged.filter((t) => t.result.tag === "해당 없음");
+  // 목록 화면과 같은 함수로 센다. 따로 계산하면 CTA 건수와 목록 건수가 어긋난다.
+  const groups = groupPolicies(policies, answers);
+  const count = candidateCount(groups);
 
   return (
-    <main className="mx-auto max-w-lg px-5 pb-8">
-      {/* 이 화면에는 원래 헤더가 없어서 홈으로 돌아갈 방법이 아예 없었다.
-          2층(AppBar)에는 뒤로가기가 있지만 1층에는 그것도 없다. */}
-      <header className="-mx-5 mb-6 border-b border-ink-100 bg-white px-5 pt-[env(safe-area-inset-top)]">
-        <div className="flex h-14 items-center">
-          <Link
-            href="/"
-            className="-ml-2 rounded px-2 py-1 text-sm font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
-          >
-            Perky
-          </Link>
-        </div>
-      </header>
+    <main className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
+      <FindTopBar />
 
-      <h1 className="text-2xl font-extrabold text-ink-900">
-        내 지원금 찾기
-      </h1>
+      <h1 className="mt-6 text-2xl font-extrabold text-ink-900">내 지원금 찾기</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink-600">
         네 가지만 답하면 됩니다. 모르는 건 <strong>모름</strong>을 눌러도
         괜찮습니다 — 대신 해당 정책은 &lsquo;확인 필요&rsquo;로 표시됩니다.
       </p>
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="mb-6 mt-6 flex flex-col gap-4">
         <Question
           step={1}
           title="나이가 어떻게 되시나요?"
-          hint="대부분의 청년 정책이 나이로 대상을 정합니다."
+          hint="대부분의 청년 정책이 나이로 대상을 정합니다. 만 나이로 답해주세요."
         >
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={120}
-            value={answers.age ?? ""}
-            onChange={(e) =>
-              update({ age: e.target.value === "" ? null : Number(e.target.value) })
-            }
-            placeholder="예: 22"
-            className="w-24 rounded-lg border-2 border-ink-200 px-3 py-2.5 text-sm"
-          />
+          <AgeStepper age={answers.age} onChange={(age) => update({ age })} />
           <Choice
             label="모름"
             selected={answers.age === null}
             onClick={() => update({ age: null })}
           />
+          {isAgeOutOfRange(answers.age) && (
+            <p className="w-full rounded-lg bg-warn-50 p-3 text-xs leading-relaxed text-warn-800">
+              지금 담고 있는 정책은 만 {AGE_MIN}~39세를 대상으로 합니다. 이 나이로는
+              해당되는 지원금이 없습니다.
+            </p>
+          )}
         </Question>
 
         <Question
@@ -157,8 +178,8 @@ export default function FindPage() {
 
         <Question
           step={3}
-          title="현재 상태에 가까운 것은?"
-          hint="정책마다 대상으로 하는 신분이 다릅니다."
+          title="현재 상태가 어떻게 되시나요?"
+          hint="재학·재직 여부에 따라 대상이 갈리는 정책이 있습니다."
         >
           {STATUSES.map((s) => (
             <Choice
@@ -196,61 +217,25 @@ export default function FindPage() {
         </Question>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-lg font-extrabold text-ink-900">
-          지원금 {가능.length + 확인.length}건
-        </h2>
-        <p className="mt-1 text-xs leading-relaxed text-ink-500">
-          나이 · 지역 · 상태 · 소득 구간만 비교한 결과입니다. 각 정책의
-          나머지 조건은 카드의 &lsquo;추가로 확인할 것&rsquo;을 보세요.
-        </p>
-
-        <div className="mt-4 flex flex-col gap-3">
-          {[...가능, ...확인].map(({ policy, result }) => (
-            <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
-          ))}
-        </div>
-
-        {가능.length + 확인.length === 0 && (
-          <p className="mt-4 rounded-xl border border-ink-200 bg-white p-5 text-sm leading-relaxed text-ink-600">
-            입력한 조건에 해당하는 지원금을 찾지 못했습니다. 답변을 바꿔
-            다시 확인해 보세요.
-          </p>
-        )}
-
-        {해당없음.length > 0 && (
-          <details className="mt-6">
-            <summary className="cursor-pointer text-sm font-bold text-ink-500">
-              해당되지 않는 지원금 {해당없음.length}건 보기
-            </summary>
-            <div className="mt-3 flex flex-col gap-3">
-              {해당없음.map(({ policy, result }) => (
-                <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
-              ))}
-            </div>
-          </details>
-        )}
-
-        {tagged.some((t) => t.result.tag !== "해당 없음") ? (
-          <Link
-            href="/calculate"
-            className="mt-6 block rounded-xl bg-brand-600 p-5 text-center transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
-          >
-            <span className="block text-base font-bold text-white">
-              이 지원금을 받으면 얼마를 내게 될까?
-            </span>
-            <span className="mt-1 block text-xs leading-relaxed text-white/90">
-              계약 조건을 넣으면 지원금을 반영한 최종 예상 주거비를 계산해드려요
-            </span>
-          </Link>
-        ) : null}
-
-        <p className="mt-8 rounded-xl bg-ink-100 p-4 text-xs leading-relaxed text-ink-600">
-          이 화면은 나이 · 지역 · 현재 상태 · 소득 구간만 비교한 결과이며,
-          <strong> 신청 자격을 확정하는 것이 아닙니다.</strong> 무주택 여부,
-          가구 소득, 복지 자격 등 남은 조건과 최종 지원 여부는 각 기관이
-          심사해 결정합니다. 반드시 공식 페이지에서 확인하세요.
-        </p>
+      {/* 답변을 바꿀 때마다 건수가 바로 바뀐다. 목록으로 넘어가지 않아도 반응이 보인다. */}
+      <div className="sticky bottom-0 -mx-5 mt-auto bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        <Link
+          href="/find/policies"
+          className={`block rounded-xl py-4 text-center transition-colors active:scale-[0.99] ${FOCUS_RING} ${
+            count > 0
+              ? "bg-brand-600 hover:bg-brand-700 active:bg-brand-700"
+              : "bg-ink-900 hover:bg-ink-700 active:bg-ink-700"
+          }`}
+        >
+          <span className="block text-base font-bold text-white">
+            {count > 0 ? `지원금 ${count}건 보기` : "해당되는 지원금이 없어요"}
+          </span>
+          <span className="mt-0.5 block text-xs text-white/90">
+            {count > 0
+              ? `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`
+              : "왜 해당되지 않는지 이유 보기"}
+          </span>
+        </Link>
       </div>
     </main>
   );

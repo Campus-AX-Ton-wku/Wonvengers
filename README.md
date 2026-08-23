@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-79_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-102_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
@@ -61,7 +61,8 @@ flowchart LR
 | 경로 | 층 | 하는 일 |
 |---|---|---|
 | [`/`](https://wonvengers.vercel.app) | — | 랜딩 |
-| [`/find`](https://wonvengers.vercel.app/find) | 1층 · 발견 | 질문 4개 → 해당될 수 있는 지원금 목록 + 태그 |
+| [`/find`](https://wonvengers.vercel.app/find) | 1층 · 발견 | 질문 4개 (나이 · 지역 · 상태 · 소득 구간) |
+| [`/find/policies`](https://wonvengers.vercel.app/find/policies) | 1층 · 발견 | 해당될 수 있는 지원금 목록 + 태그 |
 | [`/calculate`](https://wonvengers.vercel.app/calculate) | 2층 · 계산 | 계약 조건 입력 (F1) |
 | [`/eligibility`](https://wonvengers.vercel.app/eligibility) | 2층 · 계산 | 정책별 자격 판정 질문 (F2) |
 | [`/result`](https://wonvengers.vercel.app/result) | 2층 · 계산 | 판정 결과 + 최종 예상 주거비 (F3, F4) |
@@ -72,7 +73,7 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest (79 tests)
+npm test         # vitest (102 tests)
 npm run build    # 정적 빌드 (output: "export")
 ```
 
