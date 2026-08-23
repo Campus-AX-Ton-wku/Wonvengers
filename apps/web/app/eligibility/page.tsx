@@ -7,7 +7,7 @@ import type { EligibilityProfile, PolicyMeta } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
-import { loadListing, loadProfile, saveProfile } from "@/lib/storage";
+import { loadAnswers, loadListing, loadProfile, saveProfile } from "@/lib/storage";
 import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
@@ -34,6 +34,8 @@ const DEFAULT_PROFILE: EligibilityProfile = {
 export default function EligibilityPage() {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
+  /** 1층에서 답한 나이. 생년월일을 왜 또 묻는지 설명하는 데 쓴다. */
+  const [floor1Age, setFloor1Age] = useState<number | null>(null);
   const [profile, setProfile] = useState<EligibilityProfile>(DEFAULT_PROFILE);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export default function EligibilityPage() {
       return;
     }
     setRegion(listing.region);
+    setFloor1Age(loadAnswers().age);
     const saved = loadProfile();
     if (saved) setProfile(saved);
   }, [router]);
@@ -98,6 +101,15 @@ export default function EligibilityPage() {
           title={current.heading}
           description="정확히 모르는 값은 추정하지 않아요. '모름'을 고르면 '조건 충족 시 가능'으로 분류하고 확인 방법을 알려드려요."
         />
+
+        {/* 1층에서 나이를 답한 사람에게 생년월일을 또 묻는 이유를 말해준다.
+            나이만으로는 정책 기준일 기준 만 나이를 계산할 수 없다. */}
+        {floor1Age !== null && current.questions.some((q) => q.key === "birthDate") && (
+          <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-900">
+            앞에서 만 {floor1Age}세라고 답하셨어요. 정책마다 기준일이 달라서, 정확한
+            판정에는 생년월일이 필요합니다.
+          </p>
+        )}
 
         {current.questions.map((q) => (
           <QuestionField

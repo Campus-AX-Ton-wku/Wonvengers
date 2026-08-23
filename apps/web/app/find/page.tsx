@@ -7,7 +7,8 @@ import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
 import { ChevronDownIcon } from "@/app/icons";
 import { AGE_MAX, AGE_MIN, AGE_OPTIONS, POLICY_AGE_MAX, isAgeOutOfRange } from "@/lib/age";
-import { candidateCount, groupPolicies } from "@/lib/discovery";
+import { applicationOpenCount, candidateCount, groupPolicies } from "@/lib/discovery";
+import { todayISO } from "@/lib/date";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
 import { REGION_OPTIONS } from "@/lib/region";
@@ -118,10 +119,13 @@ function AgePicker({
 
 export default function FindPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
+  // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
+  const [asOf, setAsOf] = useState<string | undefined>(undefined);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
     setAnswers(loadAnswers());
+    setAsOf(todayISO());
   }, []);
 
   function update(patch: Partial<DiscoveryAnswers>) {
@@ -133,6 +137,10 @@ export default function FindPage() {
   // 목록 화면과 같은 함수로 센다. 따로 계산하면 CTA 건수와 목록 건수가 어긋난다.
   const groups = groupPolicies(policies, answers);
   const count = candidateCount(groups);
+  // 접수가 끝난 정책도 후보에 들어간다. 건수만 크게 말하면 "지금 3건 신청 가능"
+  // 으로 읽히므로 마감 건수를 함께 말한다.
+  const openNow = asOf ? applicationOpenCount(groups, asOf) : null;
+  const closed = openNow === null ? 0 : count - openNow;
 
   return (
     <main className="step-in mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
@@ -231,9 +239,11 @@ export default function FindPage() {
           {count > 0 ? `지원금 ${count}건 보기` : "왜 해당되지 않는지 보기"}
         </Link>
         <p className="mt-2 text-center text-xs text-ink-500">
-          {count > 0
-            ? `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`
-            : "지금 답변으로는 해당되는 지원금이 없습니다"}
+          {count === 0
+            ? "지금 답변으로는 해당되는 지원금이 없습니다"
+            : closed > 0
+              ? `지금 신청 가능 ${openNow}건 · 접수 마감 ${closed}건`
+              : `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`}
         </p>
       </div>
     </main>
