@@ -92,6 +92,7 @@ export default function EligibilityPage() {
 
       <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
         <StepHeading
+          emoji={current.emoji}
           title={current.heading}
           description="정확히 모르는 값은 추정하지 않아요. '모름'을 고르면 '조건 충족 시 가능'으로 분류하고 확인 방법을 알려드려요."
         />
