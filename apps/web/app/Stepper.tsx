@@ -12,12 +12,17 @@ import Link from "next/link";
 const FOCUS_RING =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700";
 
-/** 앱바 가운데 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다. */
+/**
+ * 앱바 가운데 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다.
+ *
+ * text-sm(14px)은 h-14 앱바 안에서 너무 작아 브랜드로 읽히지 않았다. 양옆 48px
+ * 터치 타깃 사이 공간이 넉넉해서 20px 까지는 줄바꿈·겹침 없이 들어간다.
+ */
 export function HomeMark() {
   return (
     <Link
       href="/"
-      className={`rounded px-2 py-1 text-sm font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
+      className={`rounded px-2 py-1 text-xl font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
     >
       Perky
     </Link>
