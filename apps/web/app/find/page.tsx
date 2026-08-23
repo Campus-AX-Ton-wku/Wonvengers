@@ -133,7 +133,7 @@ export default function FindPage() {
   const count = candidateCount(groups);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
+    <main className="step-in mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
       <FindTopBar />
 
       <h1 className="mt-6 text-2xl font-extrabold text-ink-900">내 지원금 찾기</h1>

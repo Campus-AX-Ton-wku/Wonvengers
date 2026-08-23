@@ -51,7 +51,7 @@ export default function ResultPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5">
+    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col px-5">
       <ResultAppBar onBack={() => router.push("/eligibility")} />
 
       <main className="flex flex-col gap-6 pb-10 pt-2">
@@ -73,7 +73,7 @@ export default function ResultPage() {
           </p>
         )}
 
-      <section className="rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
+      <section className="amount-in rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
         {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
             중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
             accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1 */}
@@ -165,8 +165,14 @@ export default function ResultPage() {
               {group.status} ({group.items.length})
             </h2>
             <div className="flex flex-col gap-3">
-              {group.items.map((r) => (
-                <PolicyCard key={r.policy.id} result={r} listing={listing} />
+              {group.items.map((r, i) => (
+                <div
+                  key={r.policy.id}
+                  className="stagger-in"
+                  style={{ animationDelay: `${Math.min(i * 45, 225)}ms` }}
+                >
+                  <PolicyCard result={r} listing={listing} />
+                </div>
               ))}
             </div>
           </div>

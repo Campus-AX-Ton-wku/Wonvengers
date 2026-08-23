@@ -147,11 +147,60 @@
   animation: draw-in 0.55s ease-out both;
 }
 
+/* ── 목록 stagger ──
+   카드가 목록으로 등장할 때만 쓴다. 지연은 인라인 style 로 주고 상한을 둔다 —
+   상한이 없으면 카드가 5장일 때 마지막 장이 늦게 와서 화면이 느려 보인다.
+   이동 거리는 rise-in(12px)보다 짧다. 목록은 '떠오름'이 아니라 '차례로 놓임'이다. */
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger-in {
+  animation: stagger-in 0.26s ease-out both;
+}
+
+/* ── 결과 금액 ──
+   이 앱의 모든 흐름이 이 두 숫자를 만들기 위해 있다. 화면에서 유일하게 공들인
+   도착이고, 그래서 다른 모션보다 길다(0.42s). 감속 곡선은 오버슈트가 없는
+   cubic-bezier(0.16, 1, 0.3, 1) — 돈이 튀어오르면 경박해진다.
+   scale 은 0.97 로 아주 얕게만 둔다. 크게 잡으면 카드가 모달처럼 읽힌다. */
+@keyframes amount-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.amount-in {
+  animation: amount-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 금액 숫자는 상자가 자리를 잡은 뒤 들어온다. 눈이 상자를 먼저 보고 숫자를 읽는다. */
+.amount-in > * {
+  animation: rise-in 0.34s ease-out both;
+  animation-delay: 0.12s;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  /* 최종 상태로 즉시 보여준다. 애니메이션만 끄면 both 때문에 사라진 채로 남는다. */
+  /* 최종 상태로 즉시 보여준다. 애니메이션만 끄면 both 때문에 사라진 채로 남는다.
+     움직임만 덜어내고 상태(보임/색)는 그대로 둔다. */
   .rise-in,
   .pop-in,
-  .draw-in {
+  .draw-in,
+  .stagger-in,
+  .amount-in,
+  .amount-in > * {
     animation: none;
     opacity: 1;
     transform: none;

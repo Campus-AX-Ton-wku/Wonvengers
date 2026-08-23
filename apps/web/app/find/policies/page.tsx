@@ -41,7 +41,7 @@ export default function FindPoliciesPage() {
   const summary = answerSummary(answers, brackets);
 
   return (
-    <main className="mx-auto max-w-lg px-5 pb-10">
+    <main className="step-in mx-auto max-w-lg px-5 pb-10">
       <FindTopBar backHref="/find" backLabel="질문으로 돌아가기" />
 
       {!loaded ? (
@@ -78,8 +78,15 @@ export default function FindPoliciesPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {[...groups.가능, ...groups.확인].map(({ policy, result }) => (
-              <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
+            {[...groups.가능, ...groups.확인].map(({ policy, result }, i) => (
+              <div
+                key={policy.id}
+                className="stagger-in"
+                /* 지연 상한 225ms — 카드가 5장이어도 마지막 장을 기다리지 않는다. */
+                style={{ animationDelay: `${Math.min(i * 45, 225)}ms` }}
+              >
+                <PolicyCard policy={policy} result={result} asOfISO={asOf} />
+              </div>
             ))}
           </div>
 
