@@ -74,7 +74,9 @@ export default function EligibilityPage() {
 
   function handleBack() {
     setError(null);
-    if (step === 0) return router.push("/");
+    // 첫 스텝의 직전 화면은 계약 조건이다. 홈으로 내보내면 입력한 계약 조건을
+    // 고치려고 처음부터 다시 들어와야 한다.
+    if (step === 0) return router.push("/calculate");
     setStep(step - 1);
   }
 
@@ -106,7 +108,11 @@ export default function EligibilityPage() {
           />
         ))}
 
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        )}
       </main>
 
       <BottomCta onClick={handleNext}>{isLast ? "결과 확인하기" : "다음"}</BottomCta>
@@ -124,16 +130,22 @@ function QuestionField({
   onChange: (value: unknown) => void;
 }) {
   const isUnknown = value === "unknown";
+  // 라벨을 for/id 로 묶는다. 묶이지 않으면 스크린리더가 입력칸을 이름 없이 읽고,
+  // 라벨을 눌러도 칸에 포커스가 가지 않는다.
+  const inputId = `q-${question.key}`;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <p className="text-base font-bold leading-snug text-ink-900">{question.label}</p>
+        <label htmlFor={inputId} className="text-base font-bold leading-snug text-ink-900">
+          {question.label}
+        </label>
         <p className="text-xs leading-relaxed text-ink-500">{question.why}</p>
       </div>
 
       {question.type === "date" && (
         <input
+          id={inputId}
           type="date"
           className="input"
           value={typeof value === "string" ? value : ""}
@@ -157,19 +169,23 @@ function QuestionField({
         </div>
       )}
 
+      {/* 빈 칸 = 모름이다. 예전에는 '모름' 을 두 번 누르면 값이 0 이 됐고, 소득 0원은
+          모든 소득 상한을 통과해 '예상 적용' 으로 잘못 판정됐다. 칸을 비활성화하지
+          않으므로 숫자를 입력하면 모름이 자연스럽게 풀린다. */}
       {question.type === "number" && (
         <div className="flex flex-col gap-2">
           <input
+            id={inputId}
             type="number"
             inputMode="numeric"
-            className="input disabled:bg-sand-50 disabled:text-ink-500"
-            disabled={isUnknown}
-            value={isUnknown ? "" : typeof value === "number" ? value : ""}
-            onChange={(e) => onChange(Number(e.target.value))}
+            className="input"
+            value={isUnknown || typeof value !== "number" ? "" : value}
+            onChange={(e) => onChange(e.target.value === "" ? "unknown" : Number(e.target.value))}
             min={0}
+            placeholder="모르면 비워두세요"
           />
           {question.allowUnknown && (
-            <OptionButton active={isUnknown} onClick={() => onChange(isUnknown ? 0 : "unknown")}>
+            <OptionButton active={isUnknown} onClick={() => onChange("unknown")}>
               모름
             </OptionButton>
           )}
@@ -178,6 +194,7 @@ function QuestionField({
 
       {question.type === "select" && (
         <select
+          id={inputId}
           className="input"
           value={typeof value === "string" ? value : "unknown"}
           onChange={(e) => onChange(e.target.value)}

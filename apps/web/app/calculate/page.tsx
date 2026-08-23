@@ -98,7 +98,10 @@ export default function InputPage() {
 
   function handleBack() {
     setError(null);
-    if (step > 0) setStep(step - 1);
+    // 첫 스텝에서는 앱바 화살표가 아무 일도 하지 않았다 — 화살표가 보이는데
+    // 반응이 없으면 고장으로 읽힌다. 1층 목록이 직전 화면이다.
+    if (step === 0) return router.push("/find/policies");
+    setStep(step - 1);
   }
 
   return (
@@ -271,7 +274,11 @@ export default function InputPage() {
           </>
         )}
 
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        )}
       </main>
 
       <BottomCta onClick={handleNext}>다음</BottomCta>
