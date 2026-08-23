@@ -1,21 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import policiesData from "@/data/policies.json";
+import Link from "next/link";
 import loanProductsData from "@/data/loan-products.json";
 import exampleListingsData from "@/data/example-listings.json";
-import type { ExampleListing, ListingInput, LoanProductMeta, PolicyMeta, PolicyResult, PolicyStatus } from "@/lib/types";
-import { buildCalculationSummary } from "@/lib/summary";
+import type { ExampleListing, ListingInput, LoanProductMeta, PolicyResult, PolicyStatus } from "@/lib/types";
+import { summaryHighlights } from "@/lib/summary";
 import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
-import { loadListing, loadProfile } from "@/lib/storage";
-import { policiesForRegion } from "@/lib/region";
-import { todayISO } from "@/lib/date";
 import { ResultAppBar } from "../Stepper";
+import { useResultData } from "./useResultData";
 
-const policies = policiesData as PolicyMeta[];
 const loanProducts = loanProductsData as LoanProductMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
 
@@ -29,39 +25,14 @@ const STATUS_STYLE: Record<PolicyStatus, string> = {
 
 export default function ResultPage() {
   const router = useRouter();
-  const [listing, setListing] = useState<ListingInput | null>(null);
-  const [asOf] = useState(todayISO());
+  const { listing, summary, asOf } = useResultData();
 
-  useEffect(() => {
-    const savedListing = loadListing();
-    const savedProfile = loadProfile();
-    if (!savedListing || !savedProfile) {
-      router.replace("/");
-      return;
-    }
-    setListing(savedListing);
-  }, [router]);
-
-  const profile = loadProfile();
-
-  const summary = useMemo(() => {
-    if (!listing || !profile) return null;
-    // 판정질문 화면과 같은 후보 집합을 써야 한다. 여기서 지역 밖 정책을 같이 빼지 않으면
-    // 묻지 않은 질문이 unknown 으로 남아 그 정책이 '조건충족시가능'으로 잘못 뜬다.
-    const scoped = policiesForRegion(policies, listing.region);
-    return buildCalculationSummary(scoped, profile, listing, asOf);
-  }, [listing, profile, asOf]);
-
-  if (!listing || !profile || !summary) {
+  if (!listing || !summary) {
     return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
   }
 
-  const includedResults = summary.results.filter((r) =>
-    summary.bestCombination.includedPolicyIds.includes(r.policy.id)
-  );
-  const unknownFromIncluded = includedResults
-    .filter((r) => r.status === "조건충족시가능")
-    .flatMap((r) => r.unknownLabels.map((label) => ({ policy: r.policy.name, label })));
+  // 캡처용 요약 화면(/result/summary)과 같은 함수로 뽑는다 (F4-11).
+  const { included, unknownConditions } = summaryHighlights(summary);
 
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
@@ -117,11 +88,11 @@ export default function ResultPage() {
           명목 총 지출 {summary.nominalTotalCost.toLocaleString()}원 기준
         </p>
 
-        {unknownFromIncluded.length > 0 && (
+        {unknownConditions.length > 0 && (
           <div className="mt-3 rounded-lg bg-white/70 p-3 text-xs text-warn-800">
             <p className="font-bold">⚠️ 이 금액에는 아직 확인되지 않은 조건이 포함되어 있습니다</p>
             <ul className="mt-1 list-disc pl-4">
-              {unknownFromIncluded.map((u, i) => (
+              {unknownConditions.map((u, i) => (
                 <li key={i}>
                   [{u.policy}] {u.label}
                 </li>
@@ -134,13 +105,13 @@ export default function ResultPage() {
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
         <p className="font-bold text-ink-700">이 금액은 아래 조합으로 계산했습니다</p>
-        {includedResults.length > 0 ? (
+        {included.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
-            {includedResults.map((r) => (
-              <li key={r.policy.id} className="flex items-baseline justify-between gap-3 text-ink-600">
-                <span className="text-xs">{r.policy.name}</span>
+            {included.map((item) => (
+              <li key={item.id} className="flex items-baseline justify-between gap-3 text-ink-600">
+                <span className="text-xs">{item.name}</span>
                 <span className="shrink-0 text-xs font-bold text-ink-900">
-                  {r.estimatedAmount.toLocaleString()}원
+                  {item.amount.toLocaleString()}원
                 </span>
               </li>
             ))}
@@ -231,6 +202,14 @@ export default function ResultPage() {
         <br />
         결과 기준일: {asOf}
       </p>
+
+      {/* F4-11: 캡처해서 공유하기 좋은 한 화면 요약. 이 화면은 길어서 스크린샷에 담기지 않는다. */}
+      <Link
+        href="/result/summary"
+        className="rounded-xl bg-ink-900 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+      >
+        한 화면 요약 보기 (캡처용)
+      </Link>
 
       <button
         onClick={() => router.push("/eligibility")}
