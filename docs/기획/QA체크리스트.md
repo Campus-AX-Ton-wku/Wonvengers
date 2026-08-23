@@ -5,15 +5,25 @@
 
 ## 정책 데이터
 
-- [ ] `[예시]`로 시작하는 정책이 `apps/web/data/policies.json`에 남아 있지 않다
-- [ ] `verifiedAt`이 `null`인 정책이 없다 (`null` = 팀 교차검수 전)
-- [ ] `notes`에 "미검증 초안"이 적힌 정책이 없다
+검증 근거와 남은 일은 [2026-08-23-정책데이터-검증기록.md](./2026-08-23-정책데이터-검증기록.md)에 정리했다.
+
+- [x] `[예시]`로 시작하는 정책이 `apps/web/data/policies.json`에 남아 있지 않다
+- [ ] `verifiedAt`이 `null`인 정책이 없다 (`null` = 팀 교차검수 전) — **3건 남음**
+      (익산형 청년월세 / 익산 이사비 / 주거급여 분리지급)
+- [ ] `notes`에 "미검증 초안"이 적힌 정책이 없다 — **위 3건과 동일**
 - [ ] 모든 정책의 `applyUrl`을 직접 열어 공식 페이지임을 확인했다
+      (복지로·익산시 페이지는 스크립트로 그려져 사람이 직접 열어봐야 한다)
 - [ ] 모든 정책을 작성자가 아닌 사람이 원문과 대조했다
 - [ ] `benefitSummary` 문구가 공고 원문과 일치한다
-- [ ] `discovery.statuses`와 `discovery.incomeBracketMax`를 공고로 확인해 채웠다
-      (`null`로 남으면 1층 태그가 전부 `확인 필요`로 나온다)
-- [ ] `discovery.ageMin`/`ageMax`가 `apps/web/lib/policy-rules.ts`의 나이 검사와 일치한다
+- [x] `discovery.statuses`를 공고로 확인해 5건 모두 채웠다
+- [ ] `discovery.incomeBracketMax`를 공고로 확인해 채웠다 — **2건은 의도적으로 `null`**
+      (익산형은 소득 하한이 있고, 주거급여는 원가구 소득으로 심사해 1층 질문으로 판정 불가.
+      `incomeBracketMin` 필드를 추가하면 익산형은 채울 수 있다)
+- [x] `discovery.ageMin`/`ageMax`가 `apps/web/lib/policy-rules.ts`의 나이 검사와 일치한다
+- [x] `income-thresholds.json`의 표가 판정 대상 연도(2026년)의 기준 중위소득이다
+      (2027년 값이 들어가 있어 교체함 — 소득 상한이 6.7% 높게 계산되고 있었다)
+- [ ] 정책별 신청기간을 공고로 확인했다 — **국토부 청년월세·전북 정착은 2026년 접수가 이미 종료**
+      되어 결과가 `신청 불가`로 나온다. 데모 전에 팀이 이 표시를 어떻게 할지 정할 것
 
 ## 1층 — 발견 (`/find`)
 
