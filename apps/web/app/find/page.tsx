@@ -5,6 +5,7 @@ import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
+import { MinusIcon, PlusIcon } from "@/app/icons";
 import { AGE_MAX, AGE_MIN, isAgeOutOfRange, parseAgeInput, stepAge } from "@/lib/age";
 import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
@@ -43,7 +44,7 @@ function Choice({
       onClick={onClick}
       className={`rounded-lg border-2 px-4 py-2.5 text-sm transition-colors ${FOCUS_RING} ${
         selected
-          ? "border-brand-600 bg-brand-50 font-bold text-brand-700"
+          ? "border-brand-600 bg-brand-50 font-bold text-brand-900"
           : "border-ink-200 bg-white font-medium text-ink-600 hover:border-brand-300 hover:bg-brand-50"
       }`}
     >
@@ -64,7 +65,7 @@ function Question({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-ink-200 bg-white p-5">
+    <section className="rounded-2xl border border-ink-200 bg-white p-5">
       <p className="text-xs font-bold text-brand-600">질문 {step}</p>
       <h2 className="mt-1 text-base font-bold text-ink-900">{title}</h2>
       <p className="mt-1 text-xs leading-relaxed text-ink-500">{hint}</p>
@@ -81,13 +82,13 @@ function AgeStepper({
   age: number | null;
   onChange: (age: number | null) => void;
 }) {
-  const button = `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-ink-200 bg-white text-xl font-bold text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 ${FOCUS_RING}`;
+  const button = `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-ink-200 bg-white text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 active:bg-brand-50 ${FOCUS_RING}`;
   return (
     <div className="flex items-center gap-2">
       <button type="button" onClick={() => onChange(stepAge(age, -1))} aria-label="나이 1살 내리기" className={button}>
-        −
+        <MinusIcon size={20} />
       </button>
-      <div className="flex items-baseline gap-1 rounded-lg border-2 border-ink-200 bg-white px-3 py-2 focus-within:border-brand-600">
+      <div className="flex items-baseline gap-1 rounded-lg border-2 border-ink-200 bg-white px-3 py-2 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-200">
         <input
           type="number"
           inputMode="numeric"
@@ -102,7 +103,7 @@ function AgeStepper({
         <span className="text-sm font-semibold text-ink-500">세</span>
       </div>
       <button type="button" onClick={() => onChange(stepAge(age, 1))} aria-label="나이 1살 올리기" className={button}>
-        +
+        <PlusIcon size={20} />
       </button>
     </div>
   );
@@ -221,21 +222,15 @@ export default function FindPage() {
       <div className="sticky bottom-0 -mx-5 mt-auto bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
         <Link
           href="/find/policies"
-          className={`block rounded-xl py-4 text-center transition-colors active:scale-[0.99] ${FOCUS_RING} ${
-            count > 0
-              ? "bg-brand-600 hover:bg-brand-700 active:bg-brand-700"
-              : "bg-ink-900 hover:bg-ink-700 active:bg-ink-700"
-          }`}
+          className={`block rounded-xl bg-brand-600 py-4 text-center text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 ${FOCUS_RING}`}
         >
-          <span className="block text-base font-bold text-white">
-            {count > 0 ? `지원금 ${count}건 보기` : "해당되는 지원금이 없어요"}
-          </span>
-          <span className="mt-0.5 block text-xs text-white/90">
-            {count > 0
-              ? `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`
-              : "왜 해당되지 않는지 이유 보기"}
-          </span>
+          {count > 0 ? `지원금 ${count}건 보기` : "왜 해당되지 않는지 보기"}
         </Link>
+        <p className="mt-2 text-center text-xs text-ink-500">
+          {count > 0
+            ? `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`
+            : "지금 답변으로는 해당되는 지원금이 없습니다"}
+        </p>
       </div>
     </main>
   );

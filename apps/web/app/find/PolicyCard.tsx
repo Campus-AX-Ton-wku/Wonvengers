@@ -34,8 +34,8 @@ export default function PolicyCard({
     <article
       className={
         dimmed
-          ? "rounded-xl border border-ink-200 bg-sand-50 p-4"
-          : "rounded-xl border border-ink-200 bg-white p-4"
+          ? "rounded-2xl border border-ink-200 bg-sand-50 p-4"
+          : "rounded-2xl border border-ink-200 bg-white p-4"
       }
     >
       <div className="flex items-start justify-between gap-3">
@@ -64,7 +64,7 @@ export default function PolicyCard({
       </p>
 
       {window === "after" && (
-        <p className="mt-3 rounded-lg bg-sand-200 p-3 text-xs leading-relaxed text-ink-600">
+        <p className="mt-3 rounded-lg bg-ink-100 p-3 text-xs leading-relaxed text-ink-600">
           <strong className="text-ink-900">
             {policy.applicationEnd}에 접수가 끝났습니다.
           </strong>{" "}
@@ -74,7 +74,7 @@ export default function PolicyCard({
       )}
 
       {window === "before" && (
-        <p className="mt-3 rounded-lg bg-sand-200 p-3 text-xs leading-relaxed text-ink-600">
+        <p className="mt-3 rounded-lg bg-ink-100 p-3 text-xs leading-relaxed text-ink-600">
           <strong className="text-ink-900">
             {policy.applicationStart}부터 접수합니다.
           </strong>{" "}

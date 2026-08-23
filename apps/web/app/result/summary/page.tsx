@@ -5,6 +5,7 @@ import exampleListingsData from "@/data/example-listings.json";
 import type { ExampleListing } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
+import { AlertIcon, CheckIcon } from "@/app/icons";
 import { useResultData } from "../useResultData";
 
 /**
@@ -29,28 +30,28 @@ export default function ResultSummaryPage() {
 
   const { included, unknownConditions } = summaryHighlights(summary);
   const activeExample = exampleListings.find((e) => e.id === listing.exampleId) ?? null;
+  const exampleUnverified = activeExample !== null && !isVerifiedExample(activeExample);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-5 py-6">
-      {/* 여기부터가 캡처 대상이다. 화면 밖으로 넘치지 않게 항목 수를 제한한다. */}
-      <section className="rounded-2xl border-2 border-brand-600 bg-white p-5">
+      {/* 캡처 대상. 화면 밖으로 넘치지 않게 담는 항목을 제한한다. */}
+      <section className="rounded-2xl border border-ink-200 bg-white p-5 shadow-sm">
         <div className="flex items-baseline justify-between">
           <p className="text-base font-extrabold tracking-tight text-ink-900">Perky</p>
           <p className="text-[11px] font-semibold text-ink-500">{asOf} 기준</p>
         </div>
 
-        <div className="mt-5">
+        {/* 결과 화면의 금액 상자와 같은 표현 — 받는 돈만 accent, 내는 돈은 중립색. */}
+        <div className="mt-4 rounded-xl bg-brand-50 p-4">
           <p className="text-xs font-semibold text-accent-700">최대 지원 가능액</p>
-          <p className="text-[2rem] font-extrabold leading-tight text-accent-600">
+          <p className="text-3xl font-extrabold leading-tight text-accent-600 tabular-nums">
             {summary.maxSupportAmount.toLocaleString()}원
           </p>
-        </div>
 
-        <div className="my-4 h-px bg-ink-100" />
+          <div className="my-3 h-px bg-brand-200" />
 
-        <div>
           <p className="text-xs font-semibold text-ink-500">최종 예상 주거비</p>
-          <p className="text-[2rem] font-extrabold leading-tight text-ink-900">
+          <p className="text-3xl font-extrabold leading-tight text-ink-900 tabular-nums">
             {summary.finalEstimatedHousingCost.toLocaleString()}원
           </p>
           <p className="mt-1 text-[11px] text-ink-500">
@@ -59,36 +60,41 @@ export default function ResultSummaryPage() {
         </div>
 
         {included.length > 0 ? (
-          <ul className="mt-5 flex flex-col gap-1.5">
+          <ul className="mt-4 flex flex-col gap-2">
             {included.map((item) => (
-              <li key={item.id} className="flex items-baseline justify-between gap-3">
-                <span className="text-xs leading-snug text-ink-600">✓ {item.name}</span>
-                <span className="shrink-0 text-xs font-bold text-ink-900">
+              <li key={item.id} className="flex items-start justify-between gap-3">
+                <span className="flex items-start gap-1.5 text-xs leading-snug text-ink-600">
+                  <CheckIcon size={14} className="mt-px shrink-0 text-ok-700" />
+                  {item.name}
+                </span>
+                <span className="shrink-0 text-xs font-bold text-ink-900 tabular-nums">
                   {item.amount.toLocaleString()}원
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-5 text-xs text-ink-500">
+          <p className="mt-4 text-xs leading-relaxed text-ink-600">
             지금 조건으로 합산할 수 있는 지원금이 없습니다.
           </p>
         )}
 
         {(unknownConditions.length > 0 || activeExample) && (
-          <div className="mt-4 flex flex-col gap-1 border-t border-ink-100 pt-3">
+          <div className="mt-4 flex flex-col gap-1.5 border-t border-ink-100 pt-3">
             {unknownConditions.length > 0 && (
-              <p className="text-[11px] font-bold leading-relaxed text-warn-800">
-                ⚠️ 아직 확인되지 않은 조건 {unknownConditions.length}건이 이 금액에 포함되어 있습니다
+              <p className="flex items-start gap-1.5 text-[11px] font-bold leading-relaxed text-warn-800">
+                <AlertIcon size={14} className="mt-px shrink-0" />
+                아직 확인되지 않은 조건 {unknownConditions.length}건이 이 금액에 포함되어 있습니다
               </p>
             )}
             {activeExample && (
               <p
-                className={`text-[11px] font-bold leading-relaxed ${
-                  isVerifiedExample(activeExample) ? "text-ok-700" : "text-warn-800"
+                className={`flex items-start gap-1.5 text-[11px] font-bold leading-relaxed ${
+                  exampleUnverified ? "text-warn-800" : "text-ok-700"
                 }`}
               >
-                ⚠️ 예시 매물({activeExample.label}) 조건으로 계산 — {exampleBadge(activeExample)}
+                <AlertIcon size={14} className="mt-px shrink-0" />
+                예시 매물({activeExample.label}) 조건으로 계산 — {exampleBadge(activeExample)}
               </p>
             )}
           </div>
@@ -100,11 +106,8 @@ export default function ResultSummaryPage() {
         </p>
       </section>
 
-      {/* 캡처 영역 밖 — 스크린샷에 들어가도 무해하지만 아래쪽에 둔다. */}
-      <div className="mt-6 flex flex-col gap-2">
-        <p className="text-center text-xs text-ink-500">
-          이 화면을 그대로 캡처해서 공유하세요.
-        </p>
+      <div className="mt-6 flex flex-col gap-3">
+        <p className="text-center text-xs text-ink-500">이 화면을 그대로 캡처해서 공유하세요.</p>
         <Link
           href="/result"
           className="rounded-xl border border-ink-200 py-3 text-center text-sm font-bold text-ink-600 transition-colors hover:border-ink-500 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
