@@ -16,9 +16,8 @@
 - [ ] 모든 정책을 작성자가 아닌 사람이 원문과 대조했다
 - [ ] `benefitSummary` 문구가 공고 원문과 일치한다
 - [x] `discovery.statuses`를 공고로 확인해 5건 모두 채웠다
-- [ ] `discovery.incomeBracketMax`를 공고로 확인해 채웠다 — **2건은 의도적으로 `null`**
-      (익산형은 소득 하한이 있고, 주거급여는 원가구 소득으로 심사해 1층 질문으로 판정 불가.
-      `incomeBracketMin` 필드를 추가하면 익산형은 채울 수 있다)
+- [x] `discovery.incomeBracketMin`/`incomeBracketMax`를 공고로 확인해 채웠다 — **1건은 의도적으로 `null`**
+      (주거급여 분리지급은 원가구 소득으로 심사해 본인 소득 구간으로는 판정 불가)
 - [x] `discovery.ageMin`/`ageMax`가 `apps/web/lib/policy-rules.ts`의 나이 검사와 일치한다
 - [x] `income-thresholds.json`의 표가 판정 대상 연도(2026년)의 기준 중위소득이다
       (2027년 값이 들어가 있어 교체함 — 소득 상한이 6.7% 높게 계산되고 있었다)

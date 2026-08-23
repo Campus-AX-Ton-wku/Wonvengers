@@ -6,7 +6,14 @@ function makeResult(overrides: Partial<PolicyMeta> & { status: PolicyResult["sta
   const { status, amount, ...policyOverrides } = overrides;
   const policy: PolicyMeta = {
     id: "p",
-    discovery: { ageMin: 19, ageMax: 39, regions: ["전국"], statuses: null, incomeBracketMax: null },
+    discovery: {
+      ageMin: 19,
+      ageMax: 39,
+      regions: ["전국"],
+      statuses: null,
+      incomeBracketMin: null,
+      incomeBracketMax: null,
+    },
     name: "p",
     agency: "",
     regionScope: "",

@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-70_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-79_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
@@ -72,7 +72,7 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest (70 tests)
+npm test         # vitest (79 tests)
 npm run build    # 정적 빌드 (output: "export")
 ```
 
@@ -99,20 +99,24 @@ npm run build    # 정적 빌드 (output: "export")
 
 | 용도 | 사용하는 필드 |
 |---|---|
-| 1층 · 발견 | 각 정책의 `discovery` 블록 — `ageMin` / `ageMax` / `regions` / `statuses` / `incomeBracketMax` |
+| 1층 · 발견 | 각 정책의 `discovery` 블록 — `ageMin` / `ageMax` / `regions` / `statuses` / `incomeBracketMin` / `incomeBracketMax` |
 | 2층 · 계산 | `regionScope`, `requiredInputs`, `benefitType`, `monthlyCap` 등 |
 
 `discovery.statuses` 와 `discovery.incomeBracketMax` 가 `null` 인 이유는 둘 중 하나입니다.
 
 1. **공식 공고 확인 전**
-2. 확인은 했지만 **1층 질문 4개로는 판정할 수 없음** — 소득 하한이 있는 정책(익산형 청년월세: 중위 60% *초과*),
-   본인이 아닌 원가구 소득으로 심사하는 정책(청년 주거급여 분리지급)
+2. 확인은 했지만 **1층 질문 4개로는 판정할 수 없음** — 본인이 아닌 원가구 소득으로 심사하는 정책(청년 주거급여 분리지급)
 
 > [!WARNING]
 > `null` 값을 추정해서 채우지 마세요. `null` 이면 1층이 `확인 필요` 태그를 붙입니다 (PRD F0-5).
 > 임의로 숫자를 넣으면 자격이 없는 사람에게 `가능성 있음`이 표시됩니다.
 
-`incomeBracketMax` 를 채울 때는 정책 소득 상한(1인 가구 기준)이 **걸쳐 있는 구간까지** 통과시킵니다.
+**`incomeBracketMin` 만 예외로 `null` 이 '하한 조건 없음'을 뜻합니다.** 소득 상한은 모든 청년 정책에 있지만
+하한은 익산형 청년월세(중위 60% *초과* ~ 130% 이하) 하나뿐입니다 — `null` 을 '모름'으로 읽으면 나머지 정책
+전부가 이유 없이 `확인 필요` 가 됩니다.
+
+`incomeBracketMin`/`Max` 를 채울 때는 정책 소득 기준(1인 가구 기준)이 **걸쳐 있는 구간까지** 통과시킵니다.
+중위 60% = 월 1,538,543원은 3번 구간(150~200만원)에 걸쳐 있으므로 '60% 이하'면 `Max: 3`, '60% 초과'면 `Min: 3` 입니다.
 경계 구간은 2층에서 실제 금액으로 판정합니다 — 1층에서 잘라 버리면 자격이 되는 사람에게 정책이 아예 보이지 않습니다.
 
 검증 근거는 [docs/기획/2026-08-23-정책데이터-검증기록.md](docs/기획/2026-08-23-정책데이터-검증기록.md) 에 있습니다.
