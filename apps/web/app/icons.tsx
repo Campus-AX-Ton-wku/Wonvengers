@@ -59,3 +59,11 @@ export function AlertIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 9l7 7 7-7" />
+    </Svg>
+  );
+}

@@ -10,6 +10,7 @@ import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { ResultAppBar } from "../Stepper";
+import Disclosure from "@/app/Disclosure";
 import { useResultData } from "./useResultData";
 
 const loanProducts = loanProductsData as LoanProductMeta[];
@@ -190,10 +191,15 @@ export default function ResultPage() {
                 신청 페이지로 이동
               </a>
             </div>
-            <p className="mt-2 text-[11px] text-ink-500">
-              {product.effectiveYear}년 기준 · {product.verifiedAt ? `${product.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
-            </p>
-            {product.notes && <p className="mt-1 text-[11px] text-ink-500">{product.notes}</p>}
+            <Disclosure label="검수 상태 · 참고사항">
+              <p className="text-[11px] text-ink-500">
+                {product.effectiveYear}년 기준 ·{" "}
+                {product.verifiedAt ? `${product.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
+              </p>
+              {product.notes && (
+                <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{product.notes}</p>
+              )}
+            </Disclosure>
           </div>
         ))}
       </section>
@@ -229,8 +235,9 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
   const { policy } = result;
   // 대상아님·신청불가는 받을 금액이 없으니 산식을 보여주면 오해를 준다.
   const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
+  // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
   return (
-    <div className="rounded-2xl border border-ink-200 bg-white p-4">
+    <article className="rounded-2xl border border-ink-200 bg-white p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-bold text-ink-900">{policy.name}</p>
@@ -258,15 +265,37 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
         </div>
       )}
 
-      {result.passedLabels.length > 0 && (
-        <RequirementList title="충족" items={result.passedLabels} tone="text-ok-700" />
-      )}
-      {result.unknownLabels.length > 0 && (
-        <RequirementList title="확인 필요" items={result.unknownLabels} tone="text-warn-800" />
-      )}
-      {result.failedLabels.length > 0 && (
-        <RequirementList title="미충족" items={result.failedLabels} tone="text-ink-500" />
-      )}
+      {/* 요건 목록은 정책마다 6~8줄이라 다 펼치면 화면을 다 먹는다. 라벨에 건수를 적는다. */}
+      <Disclosure label={`요건 자세히 보기 · ${requirementCounts(result)}`}>
+        {result.passedLabels.length > 0 && (
+          <RequirementList title="충족" items={result.passedLabels} tone="text-ok-700" />
+        )}
+        {result.unknownLabels.length > 0 && (
+          <RequirementList title="확인 필요" items={result.unknownLabels} tone="text-warn-800" />
+        )}
+        {result.failedLabels.length > 0 && (
+          <RequirementList title="미충족" items={result.failedLabels} tone="text-ink-500" />
+        )}
+        {result.passedLabels.length +
+          result.unknownLabels.length +
+          result.failedLabels.length ===
+          0 && (
+          <p className="text-xs text-ink-500">
+            신청 기간이 아니라 요건을 판정하지 않았습니다.
+          </p>
+        )}
+      </Disclosure>
+
+      {/* 검수 메모는 팀이 공고와 대조한 기록이다. 사용자가 볼 값이긴 하지만 길다. */}
+      <Disclosure label="검수 상태 · 참고사항">
+        <p className="text-[11px] text-ink-500">
+          {policy.effectiveYear}년 기준 ·{" "}
+          {policy.verifiedAt ? `${policy.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
+        </p>
+        {policy.notes && (
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{policy.notes}</p>
+        )}
+      </Disclosure>
 
       <div className="mt-3 flex flex-wrap gap-3 text-xs">
         <a href={policy.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
@@ -276,13 +305,18 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
           신청 페이지로 이동
         </a>
       </div>
-
-      <p className="mt-2 text-[11px] text-ink-500">
-        {policy.effectiveYear}년 기준 · {policy.verifiedAt ? `${policy.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
-      </p>
-      {policy.notes && <p className="mt-1 text-[11px] text-ink-500">{policy.notes}</p>}
-    </div>
+    </article>
   );
+}
+
+/** 토글을 열지 않고도 안에 뭐가 있는지 알 수 있게 라벨에 넣는 건수. 0건은 적지 않는다. */
+function requirementCounts(result: PolicyResult): string {
+  const parts = [
+    result.passedLabels.length > 0 ? `충족 ${result.passedLabels.length}` : null,
+    result.unknownLabels.length > 0 ? `확인 필요 ${result.unknownLabels.length}` : null,
+    result.failedLabels.length > 0 ? `미충족 ${result.failedLabels.length}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "판정하지 않음";
 }
 
 function RequirementList({ title, items, tone }: { title: string; items: string[]; tone: string }) {

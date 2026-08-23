@@ -2,6 +2,7 @@ import type { PolicyMeta, TagResult } from "@/lib/types";
 import { getRequiredQuestions } from "@/lib/questions";
 import { benefitTypeLabel } from "@/lib/benefit";
 import { isWithinWindow } from "@/lib/date";
+import Disclosure from "@/app/Disclosure";
 
 const TAG_STYLE: Record<TagResult["tag"], string> = {
   "가능성 있음": "bg-ok-50 text-ok-700 border-ok-200",
@@ -100,27 +101,30 @@ export default function PolicyCard({
         </p>
       )}
 
-      {extraConditions.length > 0 && (
-        <div className="mt-3">
-          <p className="text-xs font-bold text-ink-600">추가로 확인할 것</p>
-          <ul className="mt-1 list-disc pl-4 text-xs leading-relaxed text-ink-600">
-            {extraConditions.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-xs text-ink-500">
-          {policy.applicationStart} ~ {policy.applicationEnd ?? "상시"} · 확인{" "}
+      {/* 카드가 길어지면 목록 전체가 읽히지 않는다. 세부는 접어 두고 라벨에 개수를 적는다. */}
+      <Disclosure label={`자세히 보기 · 확인할 항목 ${extraConditions.length}개`}>
+        {extraConditions.length > 0 && (
+          <>
+            <p className="text-xs font-bold text-ink-600">추가로 확인할 것</p>
+            <ul className="mt-1 list-disc pl-4 text-xs leading-relaxed text-ink-600">
+              {extraConditions.map((c) => (
+                <li key={c}>{c}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        <p className={extraConditions.length > 0 ? "mt-3 text-xs text-ink-500" : "text-xs text-ink-500"}>
+          신청 기간 {policy.applicationStart} ~ {policy.applicationEnd ?? "상시"} · 확인{" "}
           {policy.verifiedAt ?? "미검수"}
         </p>
+      </Disclosure>
+
+      <div className="mt-3 flex items-center justify-end">
         <a
           href={policy.applyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white"
+          className="shrink-0 rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
         >
           공식 페이지 →
         </a>
