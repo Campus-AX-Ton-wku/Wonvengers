@@ -1,3 +1,8 @@
+/** 오늘 날짜(YYYY-MM-DD). 판정 기준일이므로 화면마다 따로 만들지 않는다. */
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function calcAge(birthDateISO: string, asOfISO: string): number {
   const birth = new Date(birthDateISO);
   const asOf = new Date(asOfISO);

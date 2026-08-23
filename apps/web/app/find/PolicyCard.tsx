@@ -1,5 +1,6 @@
 import type { PolicyMeta, TagResult } from "@/lib/types";
 import { getRequiredQuestions } from "@/lib/questions";
+import { isWithinWindow } from "@/lib/date";
 
 const TAG_STYLE: Record<TagResult["tag"], string> = {
   "가능성 있음": "bg-ok-50 text-ok-700 border-ok-200",
@@ -10,11 +11,19 @@ const TAG_STYLE: Record<TagResult["tag"], string> = {
 export default function PolicyCard({
   policy,
   result,
+  asOfISO,
 }: {
   policy: PolicyMeta;
   result: TagResult;
+  /** 판정 기준일. 없으면 접수 기간 안내를 그리지 않는다(서버 렌더링 시점). */
+  asOfISO?: string;
 }) {
   const dimmed = result.tag === "해당 없음";
+  // 1층 태그는 나이·지역·상태·소득만 본다. 접수 기간이 지난 정책도 '가능성 있음'이
+  // 되기 때문에, 기간은 태그와 별도로 알려 준다 (PRD F3-6 과 같은 사실을 1층에서도).
+  const window = asOfISO
+    ? isWithinWindow(asOfISO, policy.applicationStart, policy.applicationEnd)
+    : "within";
   // 정책이 요구하는 입력 항목의 사람이 읽는 라벨. 2층 질문과 같은 출처를 쓴다.
   const extraConditions = getRequiredQuestions([policy])
     .filter((q) => q.key !== "birthDate")
@@ -52,6 +61,25 @@ export default function PolicyCard({
       <p className="mt-0.5 text-xs text-ink-500">
         공고 기준 상한이며, 실제 지원액은 심사에 따라 달라집니다.
       </p>
+
+      {window === "after" && (
+        <p className="mt-3 rounded-lg bg-sand-200 p-3 text-xs leading-relaxed text-ink-600">
+          <strong className="text-ink-900">
+            {policy.applicationEnd}에 접수가 끝났습니다.
+          </strong>{" "}
+          다음 모집 공고를 기다려야 합니다. 조건은 미리 확인해 두는 용도로 남겨
+          둡니다.
+        </p>
+      )}
+
+      {window === "before" && (
+        <p className="mt-3 rounded-lg bg-sand-200 p-3 text-xs leading-relaxed text-ink-600">
+          <strong className="text-ink-900">
+            {policy.applicationStart}부터 접수합니다.
+          </strong>{" "}
+          아직 신청할 수 없습니다.
+        </p>
+      )}
 
       {result.tag === "해당 없음" && (
         <div className="mt-3 rounded-lg bg-white p-3">

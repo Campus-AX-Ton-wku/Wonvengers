@@ -8,6 +8,7 @@ import type { ListingInput, LoanProductMeta, PolicyMeta, PolicyResult, PolicySta
 import { buildCalculationSummary } from "@/lib/summary";
 import { loadListing, loadProfile } from "@/lib/storage";
 import { policiesForRegion } from "@/lib/region";
+import { todayISO } from "@/lib/date";
 import { ResultAppBar } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
@@ -20,10 +21,6 @@ const STATUS_STYLE: Record<PolicyStatus, string> = {
   대상아님: "bg-sand-200 text-ink-600",
   신청불가: "bg-sand-200 text-ink-500",
 };
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function ResultPage() {
   const router = useRouter();
