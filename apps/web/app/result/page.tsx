@@ -12,6 +12,7 @@ import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { ResultAppBar } from "../Stepper";
 import Disclosure from "@/app/Disclosure";
 import { useResultData } from "./useResultData";
+import MissingInput from "./MissingInput";
 
 const loanProducts = loanProductsData as LoanProductMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
@@ -29,8 +30,9 @@ const STATUS_STYLE: Record<PolicyStatus, string> = {
 
 export default function ResultPage() {
   const router = useRouter();
-  const { listing, summary, asOf } = useResultData();
+  const { listing, summary, asOf, status } = useResultData();
 
+  if (status === "missing") return <MissingInput />;
   if (!listing || !summary) {
     return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
   }
