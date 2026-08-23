@@ -1,6 +1,7 @@
 import type { DiscoveryAnswers, IncomeBracket, PolicyMeta, TagResult } from "./types";
 import { tagPolicy } from "./filter";
 import { REGION_OPTIONS } from "./region";
+import { isWithinWindow } from "./date";
 
 /**
  * 1층(발견)에서 질문 화면과 목록 화면이 공유하는 계산.
@@ -44,4 +45,18 @@ export function answerSummary(answers: DiscoveryAnswers, brackets: IncomeBracket
     answers.status ?? "상태 모름",
     bracket ? bracket.label : "소득 모름",
   ];
+}
+
+/**
+ * 후보 중 지금 실제로 신청할 수 있는 건수 (F3-6 을 1층에서도).
+ *
+ * 1층 태그는 나이·지역·상태·소득만 보므로 접수가 끝난 정책도 '가능성 있음' 이 된다.
+ * 건수만 크게 말하면 "지금 신청할 수 있는 게 3건" 으로 읽히는데 실제로는 2건이
+ * 마감일 수 있다 — 헤드라인 숫자가 카드보다 먼저 읽히기 때문에 나눠서 센다.
+ */
+export function applicationOpenCount(groups: DiscoveryGroups, asOfISO: string): number {
+  return [...groups.가능, ...groups.확인].filter(
+    ({ policy }) =>
+      isWithinWindow(asOfISO, policy.applicationStart, policy.applicationEnd) === "within"
+  ).length;
 }

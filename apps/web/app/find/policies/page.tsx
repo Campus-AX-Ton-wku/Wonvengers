@@ -6,7 +6,7 @@ import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
 import PolicyCard from "@/app/find/PolicyCard";
-import { answerSummary, candidateCount, groupPolicies } from "@/lib/discovery";
+import { answerSummary, applicationOpenCount, candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
@@ -39,6 +39,9 @@ export default function FindPoliciesPage() {
   const groups = groupPolicies(policies, answers);
   const count = candidateCount(groups);
   const summary = answerSummary(answers, brackets);
+  // 접수가 끝난 정책도 후보에 들어가므로 제목 옆에서 나눠 말한다.
+  const openNow = asOf ? applicationOpenCount(groups, asOf) : null;
+  const closed = openNow === null ? 0 : count - openNow;
 
   return (
     <main className="step-in mx-auto max-w-lg px-5 pb-10">
@@ -51,9 +54,14 @@ export default function FindPoliciesPage() {
           <h1 className="mt-6 text-2xl font-extrabold text-ink-900">
             {count > 0 ? `지원금 ${count}건` : "해당되는 지원금이 없어요"}
           </h1>
+          {closed > 0 && (
+            <p className="mt-1 text-sm font-bold text-warn-800">
+              지금 신청 가능 {openNow}건 · 접수 마감 {closed}건
+            </p>
+          )}
           <p className="mt-2 text-xs leading-relaxed text-ink-500">
             나이 · 지역 · 상태 · 소득 구간만 비교한 결과입니다. 각 정책의 나머지
-            조건은 카드의 &lsquo;추가로 확인할 것&rsquo;을 보세요.
+            조건은 카드의 &lsquo;자세히 보기&rsquo;를 보세요.
           </p>
 
           {/* 무슨 답변으로 나온 결과인지 보여주고, 바로 고치러 갈 수 있게 한다. */}

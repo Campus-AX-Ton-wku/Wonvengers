@@ -8,7 +8,7 @@ import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/l
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { formatKoreanMoney } from "@/lib/money";
 import { exampleBadge, exampleToListing, isVerifiedExample } from "@/lib/examples";
-import { loadListing, saveListing } from "@/lib/storage";
+import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
 import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
@@ -36,12 +36,24 @@ export default function InputPage() {
   const [form, setForm] = useState<ListingInput>(EMPTY);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** 1층에서 고른 지역을 그대로 이어받았는지. 사용자에게 알려주기 위한 표시다. */
+  const [regionFromFloor1, setRegionFromFloor1] = useState(false);
 
   useEffect(() => {
     const saved = loadListing();
-    if (!saved) return;
-    // 지역이 자유 입력이던 시절 저장분은 선택지로 매칭되지 않으므로 다시 고르게 한다.
-    setForm({ ...saved, region: isRegionValue(saved.region) ? saved.region : "" });
+    if (saved) {
+      // 지역이 자유 입력이던 시절 저장분은 선택지로 매칭되지 않으므로 다시 고르게 한다.
+      setForm({ ...saved, region: isRegionValue(saved.region) ? saved.region : "" });
+      return;
+    }
+
+    // 2층에 처음 들어온 경우 1층에서 이미 고른 지역을 다시 묻지 않는다.
+    // 같은 질문을 두 번 하면 1층과 2층이 별개의 앱처럼 느껴진다.
+    const region = loadAnswers().region;
+    if (region && isRegionValue(region)) {
+      setForm((prev) => ({ ...prev, region }));
+      setRegionFromFloor1(true);
+    }
   }, []);
 
   const monthlyEquivalent =
@@ -54,6 +66,7 @@ export default function InputPage() {
   }, [form.region]);
 
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
+    if (key === "region") setRegionFromFloor1(false);
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -98,7 +111,10 @@ export default function InputPage() {
 
   function handleBack() {
     setError(null);
-    if (step > 0) setStep(step - 1);
+    // 첫 스텝에서는 앱바 화살표가 아무 일도 하지 않았다 — 화살표가 보이는데
+    // 반응이 없으면 고장으로 읽힌다. 1층 목록이 직전 화면이다.
+    if (step === 0) return router.push("/find/policies");
+    setStep(step - 1);
   }
 
   return (
@@ -173,6 +189,11 @@ export default function InputPage() {
                   </option>
                 ))}
               </select>
+              {regionFromFloor1 && (
+                <p className="text-xs font-normal text-brand-700">
+                  <span aria-hidden="true">✓</span> 앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.
+                </p>
+              )}
             </Field>
 
             <Field label="계약 형태">
@@ -271,7 +292,11 @@ export default function InputPage() {
           </>
         )}
 
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        )}
       </main>
 
       <BottomCta onClick={handleNext}>다음</BottomCta>
