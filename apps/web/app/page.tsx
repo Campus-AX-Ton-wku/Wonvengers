@@ -135,20 +135,6 @@ export default function Home() {
         </Link>
         <p className="mt-3 text-center text-sm text-ink-500">질문 4개 · 약 1분</p>
       </div>
-
-      {/* 신뢰 스트립 — 다음 화면에서 나이·소득을 묻기 전에 답해야 하는 세 가지.
-          내용은 전부 사실이다: 서버가 없고 답변은 localStorage 에만 남는다. */}
-      <div
-        className="rise-in border-t border-ink-100 pt-5 text-center text-xs leading-relaxed text-ink-500"
-        style={{ animationDelay: "440ms" }}
-      >
-        <p>회원가입 없이 · 입력값은 이 브라우저에만 저장됩니다</p>
-        <p className="mt-1">
-          국토교통부 · 전북특별자치도 · 익산시 공고 기준
-          {MAX_BENEFIT ? ` · ${MAX_BENEFIT.asOf} 기준` : ""}
-        </p>
-        <p className="mt-1">자격은 각 기관이 심사해 결정합니다</p>
-      </div>
     </main>
   );
 }
