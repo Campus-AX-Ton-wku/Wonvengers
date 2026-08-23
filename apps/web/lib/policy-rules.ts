@@ -110,7 +110,7 @@ const iksan: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       lowerCeiling,
       upperCeiling,
-      "국토교통부 청년월세 한시특별지원에서 소득 기준 초과로 대상이 안 된 경우 이 구간에 해당할 가능성이 높습니다."
+      "국토교통부 청년월세 지원에서 소득 기준 초과로 대상이 안 된 경우 이 구간에 해당할 가능성이 높습니다."
     ),
     boolCheck(
       "assetsUnder107M",

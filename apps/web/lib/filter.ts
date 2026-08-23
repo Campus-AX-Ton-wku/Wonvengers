@@ -50,12 +50,23 @@ function checkStatus(policy: PolicyMeta, status: DiscoveryStatus | null): CheckR
 }
 
 function checkIncome(policy: PolicyMeta, incomeBracket: number | null): CheckResult {
-  const max = policy.discovery.incomeBracketMax;
+  const { incomeBracketMin: min, incomeBracketMax: max } = policy.discovery;
   if (max === null) return UNKNOWN; // 공고 확인 전 — 추정하지 않는다
   if (incomeBracket === null) return UNKNOWN;
   // checkAge 와 같은 이유 — 비교할 수 없으면 통과시키지 않는다.
   if (!Number.isFinite(incomeBracket) || !Number.isFinite(max)) return UNKNOWN;
   if (incomeBracket > max) return { result: "fail", reason: "소득 기준을 넘습니다" };
+  // 하한은 익산형 청년월세처럼 '소득이 일정 수준을 넘는 청년'만 받는 사업에만 있다.
+  // min 이 null 이면 하한 조건이 없다는 뜻이므로 통과다 (types.ts 주석 참고).
+  if (min !== null) {
+    if (!Number.isFinite(min)) return UNKNOWN;
+    if (incomeBracket < min) {
+      return {
+        result: "fail",
+        reason: "소득이 일정 수준을 넘는 청년만 신청할 수 있습니다 (소득이 더 낮으면 다른 사업 대상입니다)",
+      };
+    }
+  }
   return PASS;
 }
 

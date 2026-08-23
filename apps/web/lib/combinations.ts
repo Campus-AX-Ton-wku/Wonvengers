@@ -1,4 +1,4 @@
-import type { CombinationResult, PolicyResult } from "./types";
+import type { CombinationResult, PolicyMeta, PolicyResult } from "./types";
 
 function isValidCombination(subset: PolicyResult[]): boolean {
   const seenGroups = new Set<string>();
@@ -32,4 +32,35 @@ export function bestCombination(results: PolicyResult[]): CombinationResult {
   }
 
   return best;
+}
+
+export interface OverlapExclusion {
+  policy: PolicyMeta;
+  /** 이 정책과 같은 배타 그룹에 있으면서 조합에 들어간 정책 이름들 */
+  conflictsWith: string[];
+}
+
+/**
+ * 자격은 되지만 중복 제한 때문에 최적 조합에서 빠진 정책 (F4-5).
+ *
+ * 조용히 빠지면 사용자는 "왜 이 정책이 최대 지원 가능액에 없지?"를 알 수 없다.
+ * 금액이 0이라 빠진 정책은 중복 제한과 무관하므로 여기 넣지 않는다.
+ */
+export function excludedByOverlap(
+  results: PolicyResult[],
+  combination: CombinationResult
+): OverlapExclusion[] {
+  const included = results.filter((r) => combination.includedPolicyIds.includes(r.policy.id));
+  const dropped = results.filter(
+    (r) =>
+      (r.status === "예상적용" || r.status === "조건충족시가능") &&
+      !combination.includedPolicyIds.includes(r.policy.id)
+  );
+
+  return dropped.flatMap((r) => {
+    const conflictsWith = included
+      .filter((inc) => inc.policy.exclusiveGroup.some((g) => r.policy.exclusiveGroup.includes(g)))
+      .map((inc) => inc.policy.name);
+    return conflictsWith.length > 0 ? [{ policy: r.policy, conflictsWith }] : [];
+  });
 }

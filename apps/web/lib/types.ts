@@ -13,8 +13,36 @@ export interface ListingInput {
   oneTimeMoveCost: number; // 이사비 등 정책이 요구하는 일시 지출(F1-4), 없으면 0
   contractStartDate: string; // YYYY-MM-DD
   months: number; // 거주 예정 개월 수
-  sourceType: "부동산 광고" | "중개사 안내" | "계약서";
+  // F1-9. "예시 데이터"는 발표용 예시 매물을 불러왔다는 뜻이다 — 실제로 확인한
+  // 출처가 아니므로 광고·중개사 안내·계약서와 섞지 않는다 (F1-11).
+  sourceType: "부동산 광고" | "중개사 안내" | "계약서" | "예시 데이터";
   confirmedMatchesActualContract: boolean; // F1-10
+  /** 예시 매물에서 불러온 입력이면 그 예시의 id. 직접 입력한 값이면 null. (F1-11) */
+  exampleId?: string | null;
+}
+
+/**
+ * F1-11. 발표용 예시 매물.
+ *
+ * sourceKind 와 verifiedAt 으로 "이게 실제 매물인지"를 화면에 그대로 드러낸다.
+ * verifiedAt 이 null 이면 팀이 확인하기 전이므로 실제 매물이라고 표시할 수 없다.
+ */
+export interface ExampleListing {
+  id: string;
+  label: string;
+  sourceKind: "가상 예시" | "실제 매물" | "실거래 사례";
+  verifiedAt: string | null; // YYYY-MM-DD, null = 팀 확인 전
+  note: string;
+  listing: Pick<
+    ListingInput,
+    | "region"
+    | "contractType"
+    | "deposit"
+    | "rentOrYearlyAmount"
+    | "managementFee"
+    | "oneTimeMoveCost"
+    | "months"
+  >;
 }
 
 // F2. 정책 판정용 공통 입력
@@ -59,14 +87,34 @@ export type BenefitType = "rent_capped_monthly" | "flat_monthly" | "lump_sum";
  * 1층(발견) 태그 판정에만 쓰는 필드. 2층 판정 규칙은 이걸 읽지 않는다.
  *
  * ageMin/ageMax/regions 는 policy-rules.ts 와 regionScope 에서 그대로 옮긴 값이다.
- * statuses / incomeBracketMax 는 공식 공고 확인 전이라 null 이다 — null 은
- * "모름"으로 취급해 '확인 필요' 태그가 붙는다. 값을 추정해 채우지 말 것 (PRD F0-5).
+ * statuses / incomeBracketMax 가 null 이면 "모름"으로 취급해 '확인 필요' 태그가
+ * 붙는다. 값을 추정해 채우지 말 것 (PRD F0-5).
+ *
+ * incomeBracketMin 만 예외로 null 을 '하한 조건 없음'으로 읽는다. 소득 상한은
+ * 모든 청년 정책에 있지만 하한은 익산형 하나뿐이라, null 을 '모름'으로 읽으면
+ * 나머지 정책 전부가 이유 없이 '확인 필요'가 된다.
+ *
+ * null 을 남기는 사유는 두 가지다:
+ *  1. 공식 공고를 아직 확인하지 못했다.
+ *  2. 확인은 했지만 1층 질문 4개로는 판정할 수 없다 — 본인이 아닌 원가구 소득으로
+ *     심사하는 정책(청년 주거급여 분리지급)이 여기 해당한다. 원가구 가구원 수를
+ *     모르면 본인 소득 구간만으로는 탈락시킬 수 없다.
+ *
+ * incomeBracketMin/Max 를 채울 때는 정책 소득 기준(1인 가구 기준)이 걸쳐 있는
+ * 구간까지 통과시킨다. 경계 구간은 2층에서 실제 금액으로 정밀 판정한다.
+ * 예) 중위 60% = 월 1,538,543원 -> 3번 구간(150~200만원)이 걸친 구간이므로,
+ *     '60% 이하'면 Max=3, '60% 초과'면 Min=3 이다.
+ *
+ * 소득 하한이 있는 정책은 익산형 청년월세뿐이다(중위 60% 초과 ~ 130% 이하).
+ * 국토부 사업에서 소득 초과로 탈락한 청년을 받는 사업이라, 하한을 빼먹으면
+ * 저소득 청년 전원에게 '가능성 있음'이 잘못 표시된다.
  */
 export interface PolicyDiscovery {
   ageMin: number;
   ageMax: number;
   regions: string[]; // region.ts 의 REGION_OPTIONS 값과 같은 어휘를 쓴다
   statuses: DiscoveryStatus[] | null;
+  incomeBracketMin: number | null; // null = 하한 없음 또는 확인 전
   incomeBracketMax: number | null;
 }
 

@@ -6,9 +6,11 @@ import type { PolicyMeta } from "./types";
  * 정책 필터가 조용히 틀리기 쉽다. 선택지로 고정해 그 문제를 없앤다.
  */
 export const REGION_OPTIONS = [
-  { value: "전북특별자치도 익산시", label: "전북특별자치도 익산시" },
-  { value: "전북특별자치도", label: "전북특별자치도 (익산시 외)" },
-  { value: "그 외 지역", label: "그 외 지역 (전국 정책만 해당)" },
+  // chipLabel 은 목록 화면의 답변 요약 칩에 쓰는 짧은 이름이다. 지역 어휘가
+  // 갈라지지 않도록 선택지와 같은 곳에 둔다.
+  { value: "전북특별자치도 익산시", label: "전북특별자치도 익산시", chipLabel: "익산시" },
+  { value: "전북특별자치도", label: "전북특별자치도 (익산시 외)", chipLabel: "전북 (익산시 외)" },
+  { value: "그 외 지역", label: "그 외 지역 (전국 정책만 해당)", chipLabel: "그 외 지역" },
 ] as const;
 
 export type RegionValue = (typeof REGION_OPTIONS)[number]["value"];

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "../types";
 import { evaluatePolicy } from "../eligibility";
-import { makeListing, makeProfile, TODAY } from "./fixtures";
+import { makeListing, makeProfile, OPEN_PERIOD_DAY, TODAY } from "./fixtures";
 
 const policies = policiesData as PolicyMeta[];
 const moland = policies.find((p) => p.id === "moland-youth-rent-support")!;
@@ -11,11 +11,11 @@ const jeonbuk = policies.find((p) => p.id === "jeonbuk-youth-settlement-support"
 const iksanMoving = policies.find((p) => p.id === "iksan-newcomer-moving-cost-support")!;
 const housingBenefitSplit = policies.find((p) => p.id === "youth-housing-benefit-split-payment")!;
 
-describe("국토부 청년월세 한시특별지원", () => {
+describe("국토부 청년월세 지원", () => {
   it("모든 조건을 충족하면 예상 적용이고, 월 상한×연세 환산월세 중 작은 값 × 개월수로 계산한다", () => {
     const profile = makeProfile();
     const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 1800000, months: 12 }); // 월 15만원 환산
-    const result = evaluatePolicy(moland, profile, listing, TODAY);
+    const result = evaluatePolicy(moland, profile, listing, OPEN_PERIOD_DAY);
 
     expect(result.status).toBe("예상적용");
     expect(result.failedLabels).toHaveLength(0);
@@ -25,42 +25,50 @@ describe("국토부 청년월세 한시특별지원", () => {
   it("월세가 월 상한(20만원)보다 높으면 상한으로 캡핑한다", () => {
     const profile = makeProfile();
     const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 350000, months: 12 });
-    const result = evaluatePolicy(moland, profile, listing, TODAY);
+    const result = evaluatePolicy(moland, profile, listing, OPEN_PERIOD_DAY);
     expect(result.estimatedAmount).toBe(200000 * 12);
   });
 
   it("생애 지원 상한 24개월을 넘는 계약 기간이어도 24개월분까지만 계산한다", () => {
     const profile = makeProfile();
     const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 200000, months: 30 });
-    const result = evaluatePolicy(moland, profile, listing, TODAY);
+    const result = evaluatePolicy(moland, profile, listing, OPEN_PERIOD_DAY);
     expect(result.estimatedAmount).toBe(200000 * 24);
   });
 
   it("나이 경계값 19세는 통과, 18세는 탈락한다", () => {
     const listing = makeListing();
-    const pass = evaluatePolicy(moland, makeProfile({ birthDate: "2007-08-12" }), listing, TODAY); // 만 19세
-    const fail = evaluatePolicy(moland, makeProfile({ birthDate: "2008-08-13" }), listing, TODAY); // 만 18세
+    const pass = evaluatePolicy(moland, makeProfile({ birthDate: "2007-04-01" }), listing, OPEN_PERIOD_DAY); // 만 19세
+    const fail = evaluatePolicy(moland, makeProfile({ birthDate: "2007-04-02" }), listing, OPEN_PERIOD_DAY); // 만 18세
     expect(pass.status).not.toBe("대상아님");
     expect(fail.status).toBe("대상아님");
   });
 
   it("무주택이 아니면 대상아님이고, 다른 탈락 사유가 있어도 모두 함께 보여준다 (F3-5)", () => {
     const profile = makeProfile({ hasNoHouse: false, receivingOtherRentSupport: true });
-    const result = evaluatePolicy(moland, profile, makeListing(), TODAY);
+    const result = evaluatePolicy(moland, profile, makeListing(), OPEN_PERIOD_DAY);
     expect(result.status).toBe("대상아님");
     expect(result.failedLabels.length).toBeGreaterThanOrEqual(2);
   });
 
   it("소득을 모르면 조건 충족 시 가능으로 분류하고 확인 방법을 안내한다 (F3-4)", () => {
     const profile = makeProfile({ ownHouseholdMonthlyIncome: "unknown" });
-    const result = evaluatePolicy(moland, profile, makeListing(), TODAY);
+    const result = evaluatePolicy(moland, profile, makeListing(), OPEN_PERIOD_DAY);
     expect(result.status).toBe("조건충족시가능");
     expect(result.unknownLabels.length).toBeGreaterThan(0);
   });
 
   it("대상아님·신청불가 정책의 예상액은 0이다 (안전 규칙)", () => {
     const profile = makeProfile({ hasNoHouse: false });
-    const result = evaluatePolicy(moland, profile, makeListing(), TODAY);
+    const result = evaluatePolicy(moland, profile, makeListing(), OPEN_PERIOD_DAY);
+    expect(result.estimatedAmount).toBe(0);
+  });
+
+  // 2026년 접수는 5/29 에 끝났다. 조건을 다 갖춘 사람에게도 '신청불가'가 나오는 것이
+  // 정상이며, 이 사실이 데이터에 남아 있는지 고정해 둔다 (F3-6).
+  it("2026년 접수 기간(3/30~5/29)이 끝난 뒤에는 조건을 모두 갖춰도 신청불가다", () => {
+    const result = evaluatePolicy(moland, makeProfile(), makeListing(), TODAY);
+    expect(result.status).toBe("신청불가");
     expect(result.estimatedAmount).toBe(0);
   });
 
@@ -83,7 +91,7 @@ describe("국토부 청년월세 한시특별지원", () => {
   });
 });
 
-describe("익산시 청년월세 한시 특별지원사업 (소득 구간 60~130%)", () => {
+describe("익산형 청년월세 지원사업 (소득 구간 60~130%)", () => {
   it("본인 가구 소득이 60% 이하이면(국토부 대상) 익산시 사업은 대상아님이다", () => {
     const result = evaluatePolicy(iksan, makeProfile({ ownHouseholdMonthlyIncome: 1000000 }), makeListing(), TODAY);
     expect(result.status).toBe("대상아님");
@@ -106,7 +114,7 @@ describe("전북청년 지역정착 지원사업", () => {
       jeonbuk,
       makeProfile({ employedInTargetSectorOver3Months: false }),
       makeListing(),
-      TODAY
+      OPEN_PERIOD_DAY
     );
     expect(result.status).toBe("대상아님");
   });
@@ -116,10 +124,20 @@ describe("전북청년 지역정착 지원사업", () => {
       jeonbuk,
       makeProfile({ ownHouseholdMonthlyIncome: 1000000 }),
       makeListing({ contractType: "월세", rentOrYearlyAmount: 900000, months: 12 }),
-      TODAY
+      OPEN_PERIOD_DAY
     );
     expect(result.status).toBe("예상적용");
     expect(result.estimatedAmount).toBe(300000 * 12);
+  });
+
+  it("2026년 접수 기간(3/6~4/10)이 끝난 뒤에는 조건을 모두 갖춰도 신청불가다", () => {
+    const result = evaluatePolicy(
+      jeonbuk,
+      makeProfile({ ownHouseholdMonthlyIncome: 1000000 }),
+      makeListing(),
+      TODAY
+    );
+    expect(result.status).toBe("신청불가");
   });
 });
 
@@ -165,7 +183,7 @@ describe("청년 주거급여 분리지급", () => {
       TODAY
     );
     expect(result.status).toBe("예상적용");
-    expect(result.estimatedAmount).toBe(150000 * 12); // 월세(15만)가 상한(17만)보다 낮음
+    expect(result.estimatedAmount).toBe(150000 * 12); // 월세(15만)가 4급지 1인 기준임대료(21만 2천)보다 낮음
   });
 
   it("만 30세 이상이면 대상아님이다", () => {

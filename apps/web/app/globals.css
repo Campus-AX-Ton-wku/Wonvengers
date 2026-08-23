@@ -56,6 +56,12 @@
   }
 }
 
+/* 브라우저 기본 선택색(파랑)은 팔레트 밖이다. 캡처·공유되는 화면이라 눈에 띈다. */
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-ink-900);
+}
+
 .input {
   /* text-base(16px) 미만이면 iOS Safari 가 포커스 시 화면을 자동 확대한다. 내리지 말 것. */
   @apply w-full rounded-xl border border-ink-200 px-4 py-3.5 text-base font-normal text-ink-900 outline-none;
