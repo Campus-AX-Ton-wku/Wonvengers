@@ -9,6 +9,7 @@ import PolicyCard from "@/app/find/PolicyCard";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
 import { REGION_OPTIONS } from "@/lib/region";
+import { todayISO } from "@/lib/date";
 
 const brackets = bracketsJson as IncomeBracket[];
 const policies = policiesJson as PolicyMeta[];
@@ -63,10 +64,13 @@ function Question({
 
 export default function FindPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
+  // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
+  const [asOf, setAsOf] = useState<string | undefined>(undefined);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
     setAnswers(loadAnswers());
+    setAsOf(todayISO());
   }, []);
 
   function update(patch: Partial<DiscoveryAnswers>) {
@@ -203,7 +207,7 @@ export default function FindPage() {
 
         <div className="mt-4 flex flex-col gap-3">
           {[...가능, ...확인].map(({ policy, result }) => (
-            <PolicyCard key={policy.id} policy={policy} result={result} />
+            <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
           ))}
         </div>
 
@@ -221,7 +225,7 @@ export default function FindPage() {
             </summary>
             <div className="mt-3 flex flex-col gap-3">
               {해당없음.map(({ policy, result }) => (
-                <PolicyCard key={policy.id} policy={policy} result={result} />
+                <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
               ))}
             </div>
           </details>
