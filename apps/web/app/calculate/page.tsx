@@ -38,12 +38,19 @@ export default function InputPage() {
   const [error, setError] = useState<string | null>(null);
   /** 1층에서 고른 지역을 그대로 이어받았는지. 사용자에게 알려주기 위한 표시다. */
   const [regionFromFloor1, setRegionFromFloor1] = useState(false);
+  /**
+   * 계약 형태를 사용자가 실제로 골랐는지 (PRD F1-1: '월세·연세 중 선택하게 한다').
+   * 기본값을 하나 켜 두면 월세 계약자가 '연세' 를 그대로 두고 넘어갈 수 있고,
+   * 그러면 월 환산액이 1/12 로 줄어 지원금이 크게 어긋난다.
+   */
+  const [contractTypeChosen, setContractTypeChosen] = useState(false);
 
   useEffect(() => {
     const saved = loadListing();
     if (saved) {
       // 지역이 자유 입력이던 시절 저장분은 선택지로 매칭되지 않으므로 다시 고르게 한다.
       setForm({ ...saved, region: isRegionValue(saved.region) ? saved.region : "" });
+      setContractTypeChosen(true); // 저장된 입력에는 이미 고른 계약 형태가 있다
       return;
     }
 
@@ -74,11 +81,13 @@ export default function InputPage() {
   // "예시 데이터" 표시가 사라지면 가상 조건이 실제 입력처럼 보인다.
   function loadExample(example: ExampleListing) {
     setError(null);
+    setContractTypeChosen(true); // 예시에는 계약 형태가 들어 있다
     setForm((prev) => exampleToListing(example, prev));
   }
 
   function clearExample() {
     setError(null);
+    setContractTypeChosen(false);
     setForm({ ...EMPTY });
   }
 
@@ -88,7 +97,13 @@ export default function InputPage() {
   function validate(current: number): string | null {
     if (current === 0) {
       if (!form.region) return "거주 예정 지역을 선택해주세요.";
-      if (form.deposit < 0 || form.rentOrYearlyAmount < 0) return "금액은 0원 이상이어야 합니다.";
+      if (!contractTypeChosen) return "계약 형태를 선택해주세요. 월세와 연세는 계산이 다릅니다.";
+      // 보증금 0(무보증)·관리비 0 은 정상이지만, 월세·연세가 0 이면 계산할 값이 없다.
+      if (form.rentOrYearlyAmount <= 0) {
+        return form.contractType === "연세"
+          ? "연세 선납액을 입력해주세요."
+          : "월세액을 입력해주세요.";
+      }
       return null;
     }
     if (!form.contractStartDate) return "계약 시작 예정일을 입력해주세요.";
@@ -196,19 +211,22 @@ export default function InputPage() {
               )}
             </Field>
 
-            <Field label="계약 형태">
+            <FieldGroup label="계약 형태">
               <div className="flex flex-col gap-2">
-                {(["연세", "월세"] as ContractType[]).map((type) => (
+                {(["월세", "연세"] as ContractType[]).map((type) => (
                   <OptionButton
                     key={type}
-                    active={form.contractType === type}
-                    onClick={() => update("contractType", type)}
+                    active={contractTypeChosen && form.contractType === type}
+                    onClick={() => {
+                      setContractTypeChosen(true);
+                      update("contractType", type);
+                    }}
                   >
                     {type}
                   </OptionButton>
                 ))}
               </div>
-            </Field>
+            </FieldGroup>
 
             <Field label="보증금 (원)">
               <NumberInput money value={form.deposit} onChange={(v) => update("deposit", v)} />
@@ -314,6 +332,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /**
+ * 라벨이 붙은 버튼 그룹.
+ *
+ * Field(<label>)로 감싸면 안 된다 — button 은 labelable 요소라서 첫 버튼이
+ * label 전체 텍스트를 자기 접근성 이름으로 가져간다("계약 형태 월세 연세, 버튼").
+ */
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-col gap-2 text-sm font-semibold text-ink-700">
+      <span>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/**
  * 숫자 입력. 음수는 입력되는 순간 0으로 막고, 금액이면 만·억 단위로 읽어준다 (F1-8).
  * '다음'을 누를 때까지 기다리면 금액 단위 실수를 늦게 알게 된다.
  */
@@ -328,16 +361,20 @@ function NumberInput({
 }) {
   return (
     <div className="flex flex-col gap-1">
+      {/* 0 을 값으로 보여주면 사용자가 지우고 입력해야 한다. 빈 칸 + placeholder 로 둔다. */}
       <input
         type="number"
         inputMode="numeric"
         className="input"
-        value={Number.isFinite(value) ? value : 0}
+        value={Number.isFinite(value) && value !== 0 ? value : ""}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
         min={0}
+        placeholder="0"
       />
       {money && value > 0 && (
-        <p className="text-xs font-semibold text-brand-700">{formatKoreanMoney(value)}</p>
+        <p aria-hidden="true" className="text-xs font-semibold text-brand-700">
+          {formatKoreanMoney(value)}
+        </p>
       )}
     </div>
   );
