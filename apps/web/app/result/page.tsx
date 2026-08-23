@@ -79,8 +79,11 @@ export default function ResultPage() {
         </h1>
 
       <section className="rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
-        <p className="text-xs font-semibold text-brand-900">최대 지원 가능액 (12개월 기준)</p>
-        <p className="text-3xl font-extrabold text-brand-900">
+        {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
+            중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
+            accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1 */}
+        <p className="text-xs font-semibold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
+        <p className="text-3xl font-extrabold text-accent-600">
           {summary.maxSupportAmount.toLocaleString()}원
         </p>
 
@@ -175,7 +178,7 @@ export default function ResultPage() {
 
       <button
         onClick={() => router.push("/eligibility")}
-        className="rounded-xl border border-ink-200 py-3 text-sm font-bold text-ink-600"
+        className="rounded-xl border border-ink-200 py-3 text-sm font-bold text-ink-600 transition-colors hover:border-ink-500 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
       >
         답변 수정하기
       </button>

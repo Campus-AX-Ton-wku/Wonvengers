@@ -29,11 +29,11 @@ function Choice({
     <button
       type="button"
       onClick={onClick}
-      className={
+      className={`rounded-lg border-2 px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 ${
         selected
-          ? "rounded-lg border-2 border-brand-600 bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-700"
-          : "rounded-lg border-2 border-ink-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-600"
-      }
+          ? "border-brand-600 bg-brand-50 font-bold text-brand-700"
+          : "border-ink-200 bg-white font-medium text-ink-600 hover:border-brand-300 hover:bg-brand-50"
+      }`}
     >
       {label}
     </button>
@@ -84,7 +84,20 @@ export default function FindPage() {
   const 해당없음 = tagged.filter((t) => t.result.tag === "해당 없음");
 
   return (
-    <main className="mx-auto max-w-lg px-5 py-8">
+    <main className="mx-auto max-w-lg px-5 pb-8">
+      {/* 이 화면에는 원래 헤더가 없어서 홈으로 돌아갈 방법이 아예 없었다.
+          2층(AppBar)에는 뒤로가기가 있지만 1층에는 그것도 없다. */}
+      <header className="-mx-5 mb-6 border-b border-ink-100 bg-white px-5 pt-[env(safe-area-inset-top)]">
+        <div className="flex h-14 items-center">
+          <Link
+            href="/"
+            className="-ml-2 rounded px-2 py-1 text-sm font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+          >
+            Perky
+          </Link>
+        </div>
+      </header>
+
       <h1 className="text-2xl font-extrabold text-ink-900">
         내 지원금 찾기
       </h1>
@@ -217,7 +230,7 @@ export default function FindPage() {
         {tagged.some((t) => t.result.tag !== "해당 없음") ? (
           <Link
             href="/calculate"
-            className="mt-6 block rounded-xl bg-brand-600 p-5 text-center active:bg-brand-700"
+            className="mt-6 block rounded-xl bg-brand-600 p-5 text-center transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
           >
             <span className="block text-base font-bold text-white">
               이 지원금을 받으면 얼마를 내게 될까?
