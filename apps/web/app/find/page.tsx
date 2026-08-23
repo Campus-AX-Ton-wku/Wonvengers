@@ -55,11 +55,13 @@ function Choice({
 
 function Question({
   step,
+  emoji,
   title,
   hint,
   children,
 }: {
   step: number;
+  emoji: string;
   title: string;
   hint: string;
   children: React.ReactNode;
@@ -67,7 +69,10 @@ function Question({
   return (
     <section className="rounded-2xl border border-ink-200 bg-white p-5">
       <p className="text-xs font-bold text-brand-600">질문 {step}</p>
-      <h2 className="mt-1 text-base font-bold text-ink-900">{title}</h2>
+      {/* 이모지는 톤을 위한 장식이다. 스크린리더가 "생일 케이크"를 읽으면 방해만 된다. */}
+      <h2 className="mt-1 text-base font-bold text-ink-900">
+        <span aria-hidden="true">{emoji}</span> {title}
+      </h2>
       <p className="mt-1 text-xs leading-relaxed text-ink-500">{hint}</p>
       <div className="mt-4 flex flex-wrap gap-2">{children}</div>
     </section>
@@ -132,14 +137,11 @@ export default function FindPage() {
       <FindTopBar />
 
       <h1 className="mt-6 text-2xl font-extrabold text-ink-900">내 지원금 찾기</h1>
-      <p className="mt-2 text-sm leading-relaxed text-ink-600">
-        네 가지만 답하면 됩니다. 모르는 건 <strong>모름</strong>을 눌러도
-        괜찮습니다 — 대신 해당 정책은 &lsquo;확인 필요&rsquo;로 표시됩니다.
-      </p>
 
-      <div className="mb-6 mt-6 flex flex-col gap-4">
+      <div className="mb-6 mt-5 flex flex-col gap-4">
         <Question
           step={1}
+          emoji="🎂"
           title="나이가 어떻게 되시나요?"
           hint="대부분의 청년 정책이 나이로 대상을 정합니다. 만 나이로 답해주세요."
         >
@@ -159,6 +161,7 @@ export default function FindPage() {
 
         <Question
           step={2}
+          emoji="📍"
           title="어디에 살거나 살 예정인가요?"
           hint="지자체 정책은 거주 지역에 따라 대상이 달라집니다."
         >
@@ -179,6 +182,7 @@ export default function FindPage() {
 
         <Question
           step={3}
+          emoji="🎓"
           title="현재 상태가 어떻게 되시나요?"
           hint="재학·재직 여부에 따라 대상이 갈리는 정책이 있습니다."
         >
@@ -199,6 +203,7 @@ export default function FindPage() {
 
         <Question
           step={4}
+          emoji="💰"
           title="본인의 월 소득은 어느 정도인가요?"
           hint="정확한 금액이 아니어도 됩니다. 세전 기준으로 가까운 구간을 고르세요."
         >

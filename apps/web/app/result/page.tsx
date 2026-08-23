@@ -108,7 +108,10 @@ export default function ResultPage() {
 
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
-        <p className="font-bold text-ink-700">이 금액은 아래 조합으로 계산했습니다</p>
+        <p className="font-bold text-ink-700">
+          <span aria-hidden="true">🧩</span>{" "}
+          <span>이 금액은 아래 조합으로 계산했습니다</span>
+        </p>
         {included.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
             {included.map((item) => (
@@ -143,7 +146,9 @@ export default function ResultPage() {
       </section>
 
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
-        <p className="font-bold text-ink-700">계약 시 필요한 목돈과 지급 시점은 다릅니다</p>
+        <p className="font-bold text-ink-700">
+          <span aria-hidden="true">💳</span> 계약 시 필요한 목돈과 지급 시점은 다릅니다
+        </p>
         <p className="mt-1 text-ink-500">
           계약 당일 필요한 현금: <strong>{upfrontCash.toLocaleString()}원</strong> (보증금
           {listing.contractType === "연세" ? " + 연세 선납액" : ""})
@@ -170,7 +175,9 @@ export default function ResultPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-sm font-bold text-ink-500">이용 가능한 대출·보증 상품 ({loanProducts.length})</h2>
+          <h2 className="text-sm font-bold text-ink-500">
+            <span aria-hidden="true">🏦</span> 이용 가능한 대출·보증 상품 ({loanProducts.length})
+          </h2>
           <p className="mt-1 text-[11px] text-ink-500">
             아래는 현금 지원금이 아닌 대출·보증료 상품입니다. 이자 절감액을 계산하지 않으며, 위 "최대
             지원 가능액"에도 포함되지 않습니다 — 대출과 지원금을 같은 금액으로 섞으면 실제보다 많이
