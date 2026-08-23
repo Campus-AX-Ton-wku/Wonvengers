@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
-import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
+import exampleListingsData from "@/data/example-listings.json";
+import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { formatKoreanMoney } from "@/lib/money";
+import { exampleBadge, exampleToListing, isVerifiedExample } from "@/lib/examples";
 import { loadListing, saveListing } from "@/lib/storage";
 import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
@@ -13,6 +15,7 @@ import { buildQuestionSteps } from "@/lib/steps";
 import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
+const exampleListings = exampleListingsData as ExampleListing[];
 
 const EMPTY: ListingInput = {
   region: "",
@@ -25,6 +28,7 @@ const EMPTY: ListingInput = {
   months: 12,
   sourceType: "중개사 안내",
   confirmedMatchesActualContract: false,
+  exampleId: null,
 };
 
 export default function InputPage() {
@@ -52,6 +56,20 @@ export default function InputPage() {
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  // 예시를 불러온 뒤 값을 고쳐도 exampleId 는 지우지 않는다. 절반만 고친 상태에서
+  // "예시 데이터" 표시가 사라지면 가상 조건이 실제 입력처럼 보인다.
+  function loadExample(example: ExampleListing) {
+    setError(null);
+    setForm((prev) => exampleToListing(example, prev));
+  }
+
+  function clearExample() {
+    setError(null);
+    setForm({ ...EMPTY });
+  }
+
+  const activeExample = exampleListings.find((e) => e.id === form.exampleId) ?? null;
 
   /** 해당 스텝의 입력만 검증한다. 규칙 자체는 기존 handleSubmit 과 동일하다. */
   function validate(current: number): string | null {
@@ -94,6 +112,50 @@ export default function InputPage() {
               title={"어떤 방을 보고 계신가요?"}
               description="계약 조건을 넣으면 받을 수 있는 지원금을 반영해 실제 부담액을 계산해드려요."
             />
+
+            {/* F1-11: 발표 시연용 고정 예시. 실제 매물인지 여부를 배지로 그대로 드러낸다. */}
+            <section className="rounded-xl border border-ink-200 bg-sand-50 p-4">
+              <p className="text-sm font-bold text-ink-700">예시로 채워보기</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-500">
+                직접 입력하기 전에 예시 조건으로 결과를 먼저 볼 수 있어요.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {exampleListings.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => loadExample(e)}
+                    className={`rounded-lg border-2 px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 ${
+                      form.exampleId === e.id
+                        ? "border-brand-600 bg-brand-50 text-brand-700"
+                        : "border-ink-200 bg-white text-ink-600 hover:border-brand-300 hover:bg-brand-50"
+                    }`}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+
+              {activeExample && (
+                <div className="mt-3 rounded-lg bg-white p-3">
+                  <p
+                    className={`text-xs font-bold ${
+                      isVerifiedExample(activeExample) ? "text-ok-700" : "text-warn-800"
+                    }`}
+                  >
+                    {exampleBadge(activeExample)}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{activeExample.note}</p>
+                  <button
+                    type="button"
+                    onClick={clearExample}
+                    className="mt-2 text-[11px] font-bold text-ink-500 underline hover:text-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                  >
+                    예시 지우고 직접 입력하기
+                  </button>
+                </div>
+              )}
+            </section>
 
             <Field label="거주 예정 지역">
               <select
@@ -184,6 +246,10 @@ export default function InputPage() {
                 <option value="부동산 광고">부동산 광고</option>
                 <option value="중개사 안내">중개사 안내</option>
                 <option value="계약서">계약서</option>
+                {/* 예시를 불러왔을 때만 노출한다. 직접 고를 수 있는 출처가 아니다. */}
+                {form.sourceType === "예시 데이터" && (
+                  <option value="예시 데이터">예시 데이터 (실제로 확인한 조건이 아님)</option>
+                )}
               </select>
             </Field>
 
@@ -194,7 +260,9 @@ export default function InputPage() {
                 checked={form.confirmedMatchesActualContract}
                 onChange={(e) => update("confirmedMatchesActualContract", e.target.checked)}
               />
-              위 조건은 제가 검토 중인 매물의 실제 계약 조건과 일치합니다.
+              {activeExample && !isVerifiedExample(activeExample)
+                ? "위 조건이 실제 계약이 아닌 예시임을 알고, 계산 결과를 확인합니다."
+                : "위 조건은 제가 검토 중인 매물의 실제 계약 조건과 일치합니다."}
             </label>
           </>
         )}

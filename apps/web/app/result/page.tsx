@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import loanProductsData from "@/data/loan-products.json";
-import type { ListingInput, LoanProductMeta, PolicyMeta, PolicyResult, PolicyStatus } from "@/lib/types";
+import exampleListingsData from "@/data/example-listings.json";
+import type { ExampleListing, ListingInput, LoanProductMeta, PolicyMeta, PolicyResult, PolicyStatus } from "@/lib/types";
 import { buildCalculationSummary } from "@/lib/summary";
 import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { excludedByOverlap } from "@/lib/combinations";
+import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { loadListing, loadProfile } from "@/lib/storage";
 import { policiesForRegion } from "@/lib/region";
 import { todayISO } from "@/lib/date";
@@ -15,6 +17,7 @@ import { ResultAppBar } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
 const loanProducts = loanProductsData as LoanProductMeta[];
+const exampleListings = exampleListingsData as ExampleListing[];
 
 const STATUS_ORDER: PolicyStatus[] = ["예상적용", "조건충족시가능", "대상아님", "신청불가"];
 const STATUS_STYLE: Record<PolicyStatus, string> = {
@@ -63,6 +66,9 @@ export default function ResultPage() {
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
   const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
+  // 예시 매물로 계산했다면 결과에도 그대로 표시한다 (F1-11). 이 화면은 캡처해서
+  // 공유되기 때문에, 가상 조건으로 나온 금액이 실제 사례로 오해되면 안 된다.
+  const activeExample = exampleListings.find((e) => e.id === listing.exampleId) ?? null;
 
   const grouped = STATUS_ORDER.map((status) => ({
     status,
@@ -78,6 +84,19 @@ export default function ResultPage() {
           최대 지원 가능액과
           <br />최종 예상 주거비예요
         </h1>
+
+        {activeExample && (
+          <p
+            className={`rounded-xl p-3 text-xs font-bold leading-relaxed ${
+              isVerifiedExample(activeExample)
+                ? "bg-ok-50 text-ok-700"
+                : "bg-warn-50 text-warn-800"
+            }`}
+          >
+            예시 매물({activeExample.label}) 조건으로 계산한 결과입니다 —{" "}
+            {exampleBadge(activeExample)}
+          </p>
+        )}
 
       <section className="rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
         {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라

@@ -13,8 +13,36 @@ export interface ListingInput {
   oneTimeMoveCost: number; // 이사비 등 정책이 요구하는 일시 지출(F1-4), 없으면 0
   contractStartDate: string; // YYYY-MM-DD
   months: number; // 거주 예정 개월 수
-  sourceType: "부동산 광고" | "중개사 안내" | "계약서";
+  // F1-9. "예시 데이터"는 발표용 예시 매물을 불러왔다는 뜻이다 — 실제로 확인한
+  // 출처가 아니므로 광고·중개사 안내·계약서와 섞지 않는다 (F1-11).
+  sourceType: "부동산 광고" | "중개사 안내" | "계약서" | "예시 데이터";
   confirmedMatchesActualContract: boolean; // F1-10
+  /** 예시 매물에서 불러온 입력이면 그 예시의 id. 직접 입력한 값이면 null. (F1-11) */
+  exampleId?: string | null;
+}
+
+/**
+ * F1-11. 발표용 예시 매물.
+ *
+ * sourceKind 와 verifiedAt 으로 "이게 실제 매물인지"를 화면에 그대로 드러낸다.
+ * verifiedAt 이 null 이면 팀이 확인하기 전이므로 실제 매물이라고 표시할 수 없다.
+ */
+export interface ExampleListing {
+  id: string;
+  label: string;
+  sourceKind: "가상 예시" | "실제 매물" | "실거래 사례";
+  verifiedAt: string | null; // YYYY-MM-DD, null = 팀 확인 전
+  note: string;
+  listing: Pick<
+    ListingInput,
+    | "region"
+    | "contractType"
+    | "deposit"
+    | "rentOrYearlyAmount"
+    | "managementFee"
+    | "oneTimeMoveCost"
+    | "months"
+  >;
 }
 
 // F2. 정책 판정용 공통 입력
