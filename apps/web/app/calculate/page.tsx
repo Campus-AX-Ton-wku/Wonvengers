@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
+import { formatKoreanMoney } from "@/lib/money";
 import { loadListing, saveListing } from "@/lib/storage";
 import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
@@ -124,11 +125,12 @@ export default function InputPage() {
             </Field>
 
             <Field label="보증금 (원)">
-              <NumberInput value={form.deposit} onChange={(v) => update("deposit", v)} />
+              <NumberInput money value={form.deposit} onChange={(v) => update("deposit", v)} />
             </Field>
 
             <Field label={form.contractType === "연세" ? "연세 선납액 (원)" : "월세액 (원)"}>
               <NumberInput
+                money
                 value={form.rentOrYearlyAmount}
                 onChange={(v) => update("rentOrYearlyAmount", v)}
               />
@@ -142,7 +144,7 @@ export default function InputPage() {
             />
 
             <Field label="월 관리비 (원)">
-              <NumberInput value={form.managementFee} onChange={(v) => update("managementFee", v)} />
+              <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />
             </Field>
 
             <Field label="계약 시작 예정일">
@@ -160,6 +162,7 @@ export default function InputPage() {
 
             <Field label="이사비 등 정책이 요구하는 일시 지출 (원, 없으면 0)">
               <NumberInput
+                money
                 value={form.oneTimeMoveCost}
                 onChange={(v) => update("oneTimeMoveCost", v)}
               />
@@ -213,15 +216,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+/**
+ * 숫자 입력. 음수는 입력되는 순간 0으로 막고, 금액이면 만·억 단위로 읽어준다 (F1-8).
+ * '다음'을 누를 때까지 기다리면 금액 단위 실수를 늦게 알게 된다.
+ */
+function NumberInput({
+  value,
+  onChange,
+  money = false,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  money?: boolean;
+}) {
   return (
-    <input
-      type="number"
-      inputMode="numeric"
-      className="input"
-      value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(Number(e.target.value))}
-      min={0}
-    />
+    <div className="flex flex-col gap-1">
+      <input
+        type="number"
+        inputMode="numeric"
+        className="input"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        min={0}
+      />
+      {money && value > 0 && (
+        <p className="text-xs font-semibold text-brand-700">{formatKoreanMoney(value)}</p>
+      )}
+    </div>
   );
 }

@@ -6,6 +6,8 @@ import policiesData from "@/data/policies.json";
 import loanProductsData from "@/data/loan-products.json";
 import type { ListingInput, LoanProductMeta, PolicyMeta, PolicyResult, PolicyStatus } from "@/lib/types";
 import { buildCalculationSummary } from "@/lib/summary";
+import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
+import { excludedByOverlap } from "@/lib/combinations";
 import { loadListing, loadProfile } from "@/lib/storage";
 import { policiesForRegion } from "@/lib/region";
 import { todayISO } from "@/lib/date";
@@ -59,6 +61,8 @@ export default function ResultPage() {
     .flatMap((r) => r.unknownLabels.map((label) => ({ policy: r.policy.name, label })));
 
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
+  // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
+  const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
 
   const grouped = STATUS_ORDER.map((status) => ({
     status,
@@ -108,6 +112,42 @@ export default function ResultPage() {
         )}
       </section>
 
+      {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
+      <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
+        <p className="font-bold text-ink-700">이 금액은 아래 조합으로 계산했습니다</p>
+        {includedResults.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-1">
+            {includedResults.map((r) => (
+              <li key={r.policy.id} className="flex items-baseline justify-between gap-3 text-ink-600">
+                <span className="text-xs">{r.policy.name}</span>
+                <span className="shrink-0 text-xs font-bold text-ink-900">
+                  {r.estimatedAmount.toLocaleString()}원
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-ink-500">
+            합산할 수 있는 정책이 없습니다. 아래 목록에서 각 정책의 미충족·확인 필요 조건을 보세요.
+          </p>
+        )}
+
+        {overlapExcluded.length > 0 && (
+          <div className="mt-3 rounded-lg bg-sand-50 p-3">
+            <p className="text-xs font-bold text-ink-600">중복 수급이 안 돼서 빠진 정책</p>
+            <ul className="mt-1 flex flex-col gap-1 text-xs leading-relaxed text-ink-500">
+              {overlapExcluded.map((x) => (
+                <li key={x.policy.id}>
+                  <strong className="text-ink-600">{x.policy.name}</strong> —{" "}
+                  {x.conflictsWith.join(" · ")}과(와) 중복 수급할 수 없어, 금액이 더 큰 쪽만
+                  넣었습니다.
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
         <p className="font-bold text-ink-700">계약 시 필요한 목돈과 지급 시점은 다릅니다</p>
         <p className="mt-1 text-ink-500">
@@ -127,7 +167,7 @@ export default function ResultPage() {
             </h2>
             <div className="flex flex-col gap-3">
               {group.items.map((r) => (
-                <PolicyCard key={r.policy.id} result={r} />
+                <PolicyCard key={r.policy.id} result={r} listing={listing} />
               ))}
             </div>
           </div>
@@ -184,8 +224,10 @@ export default function ResultPage() {
   );
 }
 
-function PolicyCard({ result }: { result: PolicyResult }) {
+function PolicyCard({ result, listing }: { result: PolicyResult; listing: ListingInput }) {
   const { policy } = result;
+  // 대상아님·신청불가는 받을 금액이 없으니 산식을 보여주면 오해를 준다.
+  const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
   return (
     <div className="rounded-2xl border border-ink-200 bg-white p-4">
       <div className="flex items-start justify-between gap-2">
@@ -198,12 +240,21 @@ function PolicyCard({ result }: { result: PolicyResult }) {
         </span>
       </div>
 
-      <p className="mt-2 text-xs text-ink-500">{policy.benefitSummary}</p>
+      {/* F4-3: 지원 형태 · 지급 시점 · 적용 산식 · 총 예상액 */}
+      <p className="mt-2 text-xs font-semibold text-ink-600">
+        {benefitTypeLabel(policy.benefitType)} · {payoutTiming(policy)}
+      </p>
+      <p className="mt-0.5 text-xs text-ink-500">{policy.benefitSummary}</p>
 
-      {result.estimatedAmount > 0 && (
-        <p className="mt-1 text-sm font-bold text-brand-900">
-          이 정책 단독 예상액: {result.estimatedAmount.toLocaleString()}원
-        </p>
+      {showFormula && (
+        <div className="mt-2 rounded-lg bg-sand-50 p-2.5">
+          <p className="text-sm font-bold text-brand-900">
+            이 정책 단독 예상액: {result.estimatedAmount.toLocaleString()}원
+          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
+            {benefitFormula(policy, listing)}
+          </p>
+        </div>
       )}
 
       {result.passedLabels.length > 0 && (

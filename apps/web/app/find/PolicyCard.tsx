@@ -1,5 +1,6 @@
 import type { PolicyMeta, TagResult } from "@/lib/types";
 import { getRequiredQuestions } from "@/lib/questions";
+import { benefitTypeLabel } from "@/lib/benefit";
 import { isWithinWindow } from "@/lib/date";
 
 const TAG_STYLE: Record<TagResult["tag"], string> = {
@@ -53,7 +54,7 @@ export default function PolicyCard({
 
       {/* 1층에서는 금액을 계산하지 않는다. 공고 문구를 그대로 인용한다. (PRD F0-9) */}
       <p className="mt-3 text-xs font-bold text-ink-500">
-        {policy.benefitType}
+        {benefitTypeLabel(policy.benefitType)}
       </p>
       <p className="mt-0.5 text-sm font-bold text-ink-900">
         {policy.benefitSummary}

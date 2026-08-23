@@ -1,9 +1,27 @@
-import type { ListingInput, PolicyMeta } from "./types";
+import type { BenefitType, ListingInput, PolicyMeta } from "./types";
 import { monthlyRentEquivalent } from "./rent";
+
+const won = (amount: number) => `${amount.toLocaleString()}원`;
+
+const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
+  rent_capped_monthly: "월세 지원 · 실제 월세 범위 내",
+  flat_monthly: "정액 지원 · 월 고정액",
+  lump_sum: "일시금 지원 · 실비",
+};
+
+/** 지원 형태를 사람이 읽는 말로. 화면에 benefitType 을 그대로 찍으면 영문 코드가 노출된다. */
+export function benefitTypeLabel(type: BenefitType): string {
+  return BENEFIT_TYPE_LABEL[type];
+}
+
+/** 정책의 지원 개월 상한과 실제 거주 개월 중 작은 값. */
+function supportedMonths(policy: PolicyMeta, listing: ListingInput): number {
+  return Math.min(policy.maxMonths ?? listing.months, listing.months);
+}
 
 /** 정책 하나를 단독으로 받는다고 가정했을 때의 총 예상액. */
 export function estimatePolicyAmount(policy: PolicyMeta, listing: ListingInput): number {
-  const eligibleMonths = Math.min(policy.maxMonths ?? listing.months, listing.months);
+  const eligibleMonths = supportedMonths(policy, listing);
 
   if (policy.benefitType === "rent_capped_monthly") {
     const monthly = Math.min(policy.monthlyCap ?? Infinity, monthlyRentEquivalent(listing));
@@ -16,4 +34,33 @@ export function estimatePolicyAmount(policy: PolicyMeta, listing: ListingInput):
 
   // lump_sum
   return Math.min(policy.lumpSumCap ?? Infinity, listing.oneTimeMoveCost);
+}
+
+/**
+ * 금액이 어떻게 나온 값인지 한 문장으로 설명한다 (F4-3).
+ * 총액만 보여주면 "왜 이 금액인지"를 알 수 없고, 사용자가 검산할 수도 없다.
+ */
+export function benefitFormula(policy: PolicyMeta, listing: ListingInput): string {
+  const total = estimatePolicyAmount(policy, listing);
+  const months = supportedMonths(policy, listing);
+
+  if (policy.benefitType === "rent_capped_monthly") {
+    const monthly = monthlyRentEquivalent(listing);
+    if (policy.monthlyCap == null) {
+      return `월 환산 월세 ${won(monthly)} × ${months}개월 = ${won(total)}`;
+    }
+    return `월 환산 월세 ${won(monthly)}과 월 상한 ${won(policy.monthlyCap)} 중 작은 값 × ${months}개월 = ${won(total)}`;
+  }
+
+  if (policy.benefitType === "flat_monthly") {
+    return `월 ${won(policy.monthlyCap ?? 0)} × ${months}개월 = ${won(total)}`;
+  }
+
+  return `실제 일시 지출 ${won(listing.oneTimeMoveCost)}과 상한 ${won(policy.lumpSumCap ?? 0)} 중 작은 값 = ${won(total)}`;
+}
+
+/** 언제 받는 돈인지 (F4-3). 계약 당일 목돈과 헷갈리지 않게 결과 카드에 함께 적는다. */
+export function payoutTiming(policy: PolicyMeta): string {
+  if (policy.benefitType === "lump_sum") return "1회 지급";
+  return policy.maxMonths ? `매월 지급 · 최대 ${policy.maxMonths}개월` : "매월 지급 · 거주 기간 동안";
 }

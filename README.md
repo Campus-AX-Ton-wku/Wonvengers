@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-102_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-123_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
@@ -73,7 +73,7 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest (102 tests)
+npm test         # vitest (123 tests)
 npm run build    # 정적 빌드 (output: "export")
 ```
 
