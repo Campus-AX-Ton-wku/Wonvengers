@@ -80,7 +80,9 @@ describe("/find 목록으로 넘어가는 CTA", () => {
     expect(screen.getByText(/지금 답변으로는 해당되는 지원금이 없습니다/)).toBeTruthy();
   });
 
-  it("CTA 아래 보조 문구가 가능성 있음·확인 필요 건수를 나눠 보여준다", async () => {
+  // 접수가 끝난 정책도 후보에 들어가므로, 건수만 크게 말하면 "지금 3건 신청 가능"
+  // 으로 읽힌다. 마감 건수가 있으면 그걸 먼저 말한다.
+  it("접수 마감된 정책이 있으면 CTA 보조 문구가 신청 가능·마감 건수를 나눈다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
@@ -89,9 +91,9 @@ describe("/find 목록으로 넘어가는 CTA", () => {
     await user.click(screen.getByRole("button", { name: "대학생" }));
     await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
 
-    // 국토부·이사비 = 가능성 있음 2건, 주거급여 = 확인 필요 1건
     expect(screen.getByText("지원금 3건 보기")).toBeTruthy();
-    expect(screen.getByText("가능성 있음 2건 · 확인 필요 1건")).toBeTruthy();
+    // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
+    expect(screen.getByText(/지금 신청 가능 \d+건 · 접수 마감 \d+건/)).toBeTruthy();
   });
 });
 

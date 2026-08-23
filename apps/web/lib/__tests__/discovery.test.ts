@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import bracketsJson from "@/data/income-brackets.json";
-import { answerSummary, candidateCount, groupPolicies } from "@/lib/discovery";
+import {
+  answerSummary,
+  applicationOpenCount,
+  candidateCount,
+  groupPolicies,
+} from "@/lib/discovery";
 import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
@@ -82,5 +87,40 @@ describe("answerSummary", () => {
   it("소득 구간 번호가 표에 없으면 '소득 모름'으로 둔다", () => {
     const summary = answerSummary({ ...익산_대학생, incomeBracket: 99 }, brackets);
     expect(summary[3]).toBe("소득 모름");
+  });
+});
+
+/**
+ * 1층 태그는 나이·지역·상태·소득만 본다. 접수가 끝난 정책도 '가능성 있음' 이 되므로,
+ * 건수만 크게 말하면 "지금 신청할 수 있는 게 3건" 으로 읽힌다. 실제로는 2건이
+ * 마감이었을 수 있다 — 헤드라인 숫자가 카드보다 먼저 읽히기 때문에 나눠서 센다.
+ */
+describe("applicationOpenCount", () => {
+  const 익산_대학생: DiscoveryAnswers = {
+    age: 23,
+    region: "전북특별자치도 익산시",
+    status: "대학생",
+    incomeBracket: 1,
+  };
+
+  it("접수 기간 안에 있는 후보만 센다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
+    const 마감후 = applicationOpenCount(g, "2026-08-23");
+    const 접수중 = applicationOpenCount(g, "2026-04-01");
+
+    expect(접수중).toBeGreaterThan(마감후);
+    expect(마감후).toBeLessThanOrEqual(candidateCount(g));
+  });
+
+  it("접수 시작 전인 정책도 세지 않는다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    expect(applicationOpenCount(g, "2025-01-01")).toBe(0);
+  });
+
+  it("'해당 없음' 은 접수 중이어도 세지 않는다", () => {
+    const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
+    expect(candidateCount(g)).toBe(0);
+    expect(applicationOpenCount(g, "2026-04-01")).toBe(0);
   });
 });
