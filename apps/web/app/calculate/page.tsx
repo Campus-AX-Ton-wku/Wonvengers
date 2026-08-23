@@ -109,13 +109,16 @@ export default function InputPage() {
         {step === 0 ? (
           <>
             <StepHeading
-              title={"어떤 방을 보고 계신가요?"}
+              emoji="🏠"
+              title="어떤 방을 보고 계신가요?"
               description="계약 조건을 넣으면 받을 수 있는 지원금을 반영해 실제 부담액을 계산해드려요."
             />
 
             {/* F1-11: 발표 시연용 고정 예시. 실제 매물인지 여부를 배지로 그대로 드러낸다. */}
             <section className="rounded-xl border border-ink-200 bg-sand-50 p-4">
-              <p className="text-sm font-bold text-ink-700">예시로 채워보기</p>
+              <p className="text-sm font-bold text-ink-700">
+                <span aria-hidden="true">✨</span> 예시로 채워보기
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-ink-500">
                 직접 입력하기 전에 예시 조건으로 결과를 먼저 볼 수 있어요.
               </p>
@@ -201,7 +204,8 @@ export default function InputPage() {
         ) : (
           <>
             <StepHeading
-              title={"비용과 기간을 알려주세요"}
+              emoji="🧾"
+              title="비용과 기간을 알려주세요"
               description="관리비와 이사비까지 넣어야 실제로 나가는 돈을 정확히 계산할 수 있어요."
             />
 

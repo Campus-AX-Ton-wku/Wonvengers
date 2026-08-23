@@ -51,11 +51,11 @@ export default function ResultPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5">
+    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col px-5">
       <ResultAppBar onBack={() => router.push("/eligibility")} />
 
       <main className="flex flex-col gap-6 pb-10 pt-2">
-        <h1 className="text-2xl font-extrabold leading-snug text-ink-900">
+        <h1 className="text-center text-2xl font-extrabold leading-snug text-ink-900">
           최대 지원 가능액과
           <br />최종 예상 주거비예요
         </h1>
@@ -73,7 +73,7 @@ export default function ResultPage() {
           </p>
         )}
 
-      <section className="rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
+      <section className="amount-in rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
         {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
             중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
             accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1 */}
@@ -108,7 +108,10 @@ export default function ResultPage() {
 
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
-        <p className="font-bold text-ink-700">이 금액은 아래 조합으로 계산했습니다</p>
+        <p className="font-bold text-ink-700">
+          <span aria-hidden="true">🧩</span>{" "}
+          <span>이 금액은 아래 조합으로 계산했습니다</span>
+        </p>
         {included.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
             {included.map((item) => (
@@ -143,7 +146,9 @@ export default function ResultPage() {
       </section>
 
       <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
-        <p className="font-bold text-ink-700">계약 시 필요한 목돈과 지급 시점은 다릅니다</p>
+        <p className="font-bold text-ink-700">
+          <span aria-hidden="true">💳</span> 계약 시 필요한 목돈과 지급 시점은 다릅니다
+        </p>
         <p className="mt-1 text-ink-500">
           계약 당일 필요한 현금: <strong>{upfrontCash.toLocaleString()}원</strong> (보증금
           {listing.contractType === "연세" ? " + 연세 선납액" : ""})
@@ -160,8 +165,14 @@ export default function ResultPage() {
               {group.status} ({group.items.length})
             </h2>
             <div className="flex flex-col gap-3">
-              {group.items.map((r) => (
-                <PolicyCard key={r.policy.id} result={r} listing={listing} />
+              {group.items.map((r, i) => (
+                <div
+                  key={r.policy.id}
+                  className="stagger-in"
+                  style={{ animationDelay: `${Math.min(i * 45, 225)}ms` }}
+                >
+                  <PolicyCard result={r} listing={listing} />
+                </div>
               ))}
             </div>
           </div>
@@ -170,7 +181,9 @@ export default function ResultPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-sm font-bold text-ink-500">이용 가능한 대출·보증 상품 ({loanProducts.length})</h2>
+          <h2 className="text-sm font-bold text-ink-500">
+            <span aria-hidden="true">🏦</span> 이용 가능한 대출·보증 상품 ({loanProducts.length})
+          </h2>
           <p className="mt-1 text-[11px] text-ink-500">
             아래는 현금 지원금이 아닌 대출·보증료 상품입니다. 이자 절감액을 계산하지 않으며, 위 "최대
             지원 가능액"에도 포함되지 않습니다 — 대출과 지원금을 같은 금액으로 섞으면 실제보다 많이

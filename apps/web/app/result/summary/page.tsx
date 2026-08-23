@@ -35,7 +35,7 @@ export default function ResultSummaryPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-5 py-6">
       {/* 캡처 대상. 화면 밖으로 넘치지 않게 담는 항목을 제한한다. */}
-      <section className="rounded-2xl border border-ink-200 bg-white p-5 shadow-sm">
+      <section className="amount-in rounded-2xl border border-ink-200 bg-white p-5 shadow-sm">
         <div className="flex items-baseline justify-between">
           <p className="text-base font-extrabold tracking-tight text-ink-900">Perky</p>
           <p className="text-[11px] font-semibold text-ink-500">{asOf} 기준</p>

@@ -9,9 +9,16 @@ import type { QuestionDef } from "./questions";
  * (policies.json 에 정책이 추가돼 새 질문이 생겼는데 여기 빠지면
  *  폼에서 조용히 사라진다 — steps.test.ts 가 이걸 잡는다.)
  */
-export const QUESTION_GROUPS: { title: string; heading: string; keys: RequiredInputKey[] }[] = [
+export const QUESTION_GROUPS: {
+  title: string;
+  /** 스텝 제목 앞에 붙는 장식. 화면에서 aria-hidden 으로 감춘다. */
+  emoji: string;
+  heading: string;
+  keys: RequiredInputKey[];
+}[] = [
   {
     title: "기본 자격",
+    emoji: "🙋",
     heading: "기본 자격을 확인할게요",
     keys: [
       "birthDate",
@@ -24,6 +31,7 @@ export const QUESTION_GROUPS: { title: string; heading: string; keys: RequiredIn
   },
   {
     title: "가구 · 소득",
+    emoji: "👨‍👩‍👧",
     heading: "가구와 소득을 알려주세요",
     keys: [
       "householdSize",
@@ -34,6 +42,7 @@ export const QUESTION_GROUPS: { title: string; heading: string; keys: RequiredIn
   },
   {
     title: "재산 · 지역 요건",
+    emoji: "📄",
     heading: "재산과 지역 요건을 확인할게요",
     keys: [
       "assetsUnder107M",
@@ -49,10 +58,11 @@ export const QUESTION_GROUPS: { title: string; heading: string; keys: RequiredIn
 /** 실제로 물어볼 질문만 그룹에 채운다. 질문이 하나도 없는 그룹은 화면에서 뺀다. */
 export function buildQuestionSteps(
   questions: QuestionDef[]
-): { title: string; heading: string; questions: QuestionDef[] }[] {
+): { title: string; emoji: string; heading: string; questions: QuestionDef[] }[] {
   const byKey = new Map(questions.map((q) => [q.key, q]));
   return QUESTION_GROUPS.map((g) => ({
     title: g.title,
+    emoji: g.emoji,
     heading: g.heading,
     questions: g.keys.map((k) => byKey.get(k)).filter((q): q is QuestionDef => Boolean(q)),
   })).filter((g) => g.questions.length > 0);
