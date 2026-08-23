@@ -1,5 +1,6 @@
 import type { BenefitType, ListingInput, PolicyMeta } from "./types";
 import { monthlyRentEquivalent } from "./rent";
+import { formatKoreanMoney } from "./money";
 
 const won = (amount: number) => `${amount.toLocaleString()}원`;
 
@@ -63,4 +64,27 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput): strin
 export function payoutTiming(policy: PolicyMeta): string {
   if (policy.benefitType === "lump_sum") return "1회 지급";
   return policy.maxMonths ? `매월 지급 · 최대 ${policy.maxMonths}개월` : "매월 지급 · 거주 기간 동안";
+}
+
+/**
+ * 공고에 적힌 상한. 1층 목록에서 "이 정책이 최대 얼마짜리인가"를 보여주는 데 쓴다.
+ *
+ * 1층은 계약 조건을 모르므로 개인별 예상액을 계산할 수 없다 — 그건 2층의 일이다.
+ * 그래서 화면에서는 반드시 '공고 상한'이라고 적어 개인 예상액과 구분한다.
+ */
+export function benefitCeiling(policy: PolicyMeta): { label: string; amount: number } | null {
+  if (policy.benefitType === "lump_sum") {
+    if (policy.lumpSumCap == null) return null;
+    return { label: `최대 ${formatKoreanMoney(policy.lumpSumCap)}`, amount: policy.lumpSumCap };
+  }
+
+  if (policy.monthlyCap == null) return null;
+
+  // 지원 개월 수가 정해지지 않은 정책(주거급여 분리지급)은 총액 상한이 없다.
+  if (policy.maxMonths == null) {
+    return { label: `월 최대 ${formatKoreanMoney(policy.monthlyCap)}`, amount: policy.monthlyCap };
+  }
+
+  const total = policy.monthlyCap * policy.maxMonths;
+  return { label: `최대 ${formatKoreanMoney(total)}`, amount: total };
 }

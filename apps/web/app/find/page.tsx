@@ -5,8 +5,8 @@ import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
-import { MinusIcon, PlusIcon } from "@/app/icons";
-import { AGE_MAX, AGE_MIN, isAgeOutOfRange, parseAgeInput, stepAge } from "@/lib/age";
+import { ChevronDownIcon } from "@/app/icons";
+import { AGE_MAX, AGE_MIN, AGE_OPTIONS, POLICY_AGE_MAX, isAgeOutOfRange } from "@/lib/age";
 import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
@@ -79,37 +79,39 @@ function Question({
   );
 }
 
-/** 나이 스테퍼. 브라우저 기본 스핀 버튼은 숨기고 −/+ 로 직접 다룬다 (lib/age.ts 참고). */
-function AgeStepper({
+/**
+ * 나이 선택. 눌러서 목록을 스크롤해 고른다.
+ *
+ * 한 살씩 −/+ 로 누르는 건 25살까지 일곱 번을 눌러야 한다. 네이티브 <select> 는
+ * iOS·안드로이드에서 휠 피커로 뜨고, 데스크톱에서는 스크롤 가능한 목록이 된다 —
+ * 직접 만든 스크롤 위젯보다 손에 익고 키보드·스크린리더가 그냥 동작한다.
+ */
+function AgePicker({
   age,
   onChange,
 }: {
   age: number | null;
   onChange: (age: number | null) => void;
 }) {
-  const button = `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-ink-200 bg-white text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 active:bg-brand-50 ${FOCUS_RING}`;
   return (
-    <div className="flex items-center gap-2">
-      <button type="button" onClick={() => onChange(stepAge(age, -1))} aria-label="나이 1살 내리기" className={button}>
-        <MinusIcon size={20} />
-      </button>
-      <div className="flex items-baseline gap-1 rounded-lg border-2 border-ink-200 bg-white px-3 py-2 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-200">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={AGE_MIN}
-          max={AGE_MAX}
-          value={age ?? ""}
-          onChange={(e) => onChange(parseAgeInput(e.target.value))}
-          placeholder="22"
-          aria-label="나이"
-          className="w-12 bg-transparent text-center text-base font-bold text-ink-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-        />
-        <span className="text-sm font-semibold text-ink-500">세</span>
-      </div>
-      <button type="button" onClick={() => onChange(stepAge(age, 1))} aria-label="나이 1살 올리기" className={button}>
-        <PlusIcon size={20} />
-      </button>
+    <div className="relative">
+      <select
+        aria-label="나이"
+        value={age ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+        className={`w-full appearance-none rounded-lg border-2 border-ink-200 bg-white py-3 pl-4 pr-10 text-base font-bold text-ink-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 ${FOCUS_RING}`}
+      >
+        <option value="">나이를 선택하세요</option>
+        {AGE_OPTIONS.map((n) => (
+          <option key={n} value={n}>
+            만 {n}세
+          </option>
+        ))}
+      </select>
+      <ChevronDownIcon
+        size={18}
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-500"
+      />
     </div>
   );
 }
@@ -143,18 +145,15 @@ export default function FindPage() {
           step={1}
           emoji="🎂"
           title="나이가 어떻게 되시나요?"
-          hint="대부분의 청년 정책이 나이로 대상을 정합니다. 만 나이로 답해주세요."
+          hint={`대부분의 청년 정책이 나이로 대상을 정합니다. 만 ${AGE_MIN}~${AGE_MAX}세에서 고르세요.`}
         >
-          <AgeStepper age={answers.age} onChange={(age) => update({ age })} />
-          <Choice
-            label="모름"
-            selected={answers.age === null}
-            onClick={() => update({ age: null })}
-          />
+          <div className="w-full">
+            <AgePicker age={answers.age} onChange={(age) => update({ age })} />
+          </div>
           {isAgeOutOfRange(answers.age) && (
             <p className="w-full rounded-lg bg-warn-50 p-3 text-xs leading-relaxed text-warn-800">
-              지금 담고 있는 정책은 만 {AGE_MIN}~39세를 대상으로 합니다. 이 나이로는
-              해당되는 지원금이 없습니다.
+              지금 담고 있는 정책은 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다. 이
+              나이로는 해당되는 지원금이 없습니다.
             </p>
           )}
         </Question>
