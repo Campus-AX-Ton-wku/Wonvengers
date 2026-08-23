@@ -55,7 +55,7 @@ export default function ResultPage() {
       <ResultAppBar onBack={() => router.push("/eligibility")} />
 
       <main className="flex flex-col gap-6 pb-10 pt-2">
-        <h1 className="text-2xl font-extrabold leading-snug text-ink-900">
+        <h1 className="text-center text-2xl font-extrabold leading-snug text-ink-900">
           최대 지원 가능액과
           <br />최종 예상 주거비예요
         </h1>

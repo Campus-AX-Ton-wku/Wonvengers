@@ -65,21 +65,24 @@ describe("1층 정책 카드", () => {
     expect(details.open).toBe(false);
   });
 
-  it("정책명·태그·공고 문구·접수 종료 안내는 토글 밖에 남는다", async () => {
+  it("정책명·태그·상한 금액·접수 종료 안내는 토글 밖에 남는다", async () => {
     await renderList();
     const card = topCards()[0];
 
     expect(within(card).getByText("청년월세 지원 (2026년 상시사업 전환)").closest("details")).toBeNull();
     expect(within(card).getByText(/2026-05-29에 접수가 끝났습니다/).closest("details")).toBeNull();
-    expect(within(card).getByText(/생애 1회 최대 24개월/).closest("details")).toBeNull();
+    // 목록의 목적이 "무엇을 최대 얼마까지 받나"를 훑는 것이므로 금액은 접지 않는다
+    expect(within(card).getByText("최대 480만원").closest("details")).toBeNull();
+    expect(within(card).getByText("공고 상한").closest("details")).toBeNull();
   });
 
-  it("공식 페이지 링크는 접히지 않는다", async () => {
+  // 카드를 한 화면에 여러 장 훑을 수 있게, 긴 공고 문구와 신청 정보는 토글로 내렸다.
+  it("공고 문구와 공식 페이지 링크는 토글 안으로 내려갔다", async () => {
     await renderList();
-    for (const card of topCards()) {
-      const link = within(card).getByRole("link", { name: "공식 페이지 →" });
-      expect(link.closest("details")).toBeNull();
-    }
+    const card = topCards()[0];
+
+    expect(within(card).getByText(/생애 1회 최대 24개월/).closest("details")).not.toBeNull();
+    expect(within(card).getByRole("link", { name: "공식 페이지 →" }).closest("details")).not.toBeNull();
   });
 });
 
