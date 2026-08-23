@@ -2,6 +2,13 @@ import type { EligibilityProfile, ListingInput } from "../types";
 
 export const TODAY = "2026-08-12";
 
+/**
+ * 국토부 청년월세(3/30~5/29)와 전북청년 지역정착(본모집 3/6~3/20 + 추가모집 3/30~4/10)의
+ * 접수 기간이 겹치는 날. 두 사업은 TODAY 기준으로는 이미 접수가 끝나 '신청불가'가 되므로,
+ * 판정 규칙 자체를 검증하는 테스트에서는 이 날짜를 기준일로 쓴다.
+ */
+export const OPEN_PERIOD_DAY = "2026-04-01";
+
 export function makeListing(overrides: Partial<ListingInput> = {}): ListingInput {
   return {
     region: "전북특별자치도 익산시",

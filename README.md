@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-64_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-187_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
@@ -61,10 +61,12 @@ flowchart LR
 | 경로 | 층 | 하는 일 |
 |---|---|---|
 | [`/`](https://wonvengers.vercel.app) | — | 랜딩 |
-| [`/find`](https://wonvengers.vercel.app/find) | 1층 · 발견 | 질문 4개 → 해당될 수 있는 지원금 목록 + 태그 |
+| [`/find`](https://wonvengers.vercel.app/find) | 1층 · 발견 | 질문 4개 (나이 · 지역 · 상태 · 소득 구간) |
+| [`/find/policies`](https://wonvengers.vercel.app/find/policies) | 1층 · 발견 | 해당될 수 있는 지원금 목록 + 태그 |
 | [`/calculate`](https://wonvengers.vercel.app/calculate) | 2층 · 계산 | 계약 조건 입력 (F1) |
 | [`/eligibility`](https://wonvengers.vercel.app/eligibility) | 2층 · 계산 | 정책별 자격 판정 질문 (F2) |
 | [`/result`](https://wonvengers.vercel.app/result) | 2층 · 계산 | 판정 결과 + 최종 예상 주거비 (F3, F4) |
+| [`/result/summary`](https://wonvengers.vercel.app/result/summary) | 2층 · 계산 | 캡처용 한 화면 요약 (F4-11) |
 
 ## 실행
 
@@ -72,7 +74,9 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest (64 tests)
+npm test         # vitest 전체 (187 tests)
+npm run test:lib # 판정·계산 로직만 (140) — 몇 초
+npm run test:ui  # 화면 테스트 (47) — jsdom
 npm run build    # 정적 빌드 (output: "export")
 ```
 
@@ -96,17 +100,32 @@ npm run build    # 정적 빌드 (output: "export")
 <br/>
 
 정책 데이터는 `apps/web/data/policies.json` **한 곳**에만 둡니다.
+발표용 예시 매물은 `apps/web/data/example-listings.json` 입니다 — `verifiedAt` 이 `null` 이면
+화면에 `가상 예시 · 실제 매물이 아닙니다` 로 표시되고, 팀이 확인한 뒤 날짜를 넣어야 실제 매물로 표시됩니다.
 
 | 용도 | 사용하는 필드 |
 |---|---|
-| 1층 · 발견 | 각 정책의 `discovery` 블록 — `ageMin` / `ageMax` / `regions` / `statuses` / `incomeBracketMax` |
+| 1층 · 발견 | 각 정책의 `discovery` 블록 — `ageMin` / `ageMax` / `regions` / `statuses` / `incomeBracketMin` / `incomeBracketMax` |
 | 2층 · 계산 | `regionScope`, `requiredInputs`, `benefitType`, `monthlyCap` 등 |
 
-`discovery.statuses` 와 `discovery.incomeBracketMax` 가 `null` 인 정책은 **공식 공고 확인 전**이라는 뜻입니다.
+`discovery.statuses` 와 `discovery.incomeBracketMax` 가 `null` 인 이유는 둘 중 하나입니다.
+
+1. **공식 공고 확인 전**
+2. 확인은 했지만 **1층 질문 4개로는 판정할 수 없음** — 본인이 아닌 원가구 소득으로 심사하는 정책(청년 주거급여 분리지급)
 
 > [!WARNING]
 > `null` 값을 추정해서 채우지 마세요. `null` 이면 1층이 `확인 필요` 태그를 붙입니다 (PRD F0-5).
 > 임의로 숫자를 넣으면 자격이 없는 사람에게 `가능성 있음`이 표시됩니다.
+
+**`incomeBracketMin` 만 예외로 `null` 이 '하한 조건 없음'을 뜻합니다.** 소득 상한은 모든 청년 정책에 있지만
+하한은 익산형 청년월세(중위 60% *초과* ~ 130% 이하) 하나뿐입니다 — `null` 을 '모름'으로 읽으면 나머지 정책
+전부가 이유 없이 `확인 필요` 가 됩니다.
+
+`incomeBracketMin`/`Max` 를 채울 때는 정책 소득 기준(1인 가구 기준)이 **걸쳐 있는 구간까지** 통과시킵니다.
+중위 60% = 월 1,538,543원은 3번 구간(150~200만원)에 걸쳐 있으므로 '60% 이하'면 `Max: 3`, '60% 초과'면 `Min: 3` 입니다.
+경계 구간은 2층에서 실제 금액으로 판정합니다 — 1층에서 잘라 버리면 자격이 되는 사람에게 정책이 아예 보이지 않습니다.
+
+검증 근거는 [docs/기획/2026-08-23-정책데이터-검증기록.md](docs/기획/2026-08-23-정책데이터-검증기록.md) 에 있습니다.
 
 </details>
 

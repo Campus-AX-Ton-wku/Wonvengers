@@ -102,4 +102,17 @@ describe("policies.json 의 1층 discovery 블록", () => {
       }
     }
   });
+
+  // 하한은 익산형 청년월세처럼 소득 밴드가 있는 사업에만 있다(null = 하한 없음).
+  // 하한만 있고 상한이 없으면 밴드가 반쪽이라 판정이 이상해진다.
+  it("incomeBracketMin 은 null 이거나 1~5 사이 숫자이고, 상한보다 크지 않다", () => {
+    for (const p of policies) {
+      const { incomeBracketMin: min, incomeBracketMax: max } = p.discovery;
+      if (min === null) continue;
+      expect(typeof min, `${p.id}: incomeBracketMin 형식 오류`).toBe("number");
+      expect(min >= 1 && min <= 5, `${p.id}: incomeBracketMin 이 구간 범위를 벗어남`).toBe(true);
+      expect(max, `${p.id}: 하한만 있고 상한이 없음`).not.toBeNull();
+      expect(min <= (max as number), `${p.id}: incomeBracketMin 이 Max 보다 큼`).toBe(true);
+    }
+  });
 });

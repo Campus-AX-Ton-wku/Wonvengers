@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import policiesJson from "@/data/policies.json";
 import { tagPolicy } from "@/lib/filter";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+
+const policies = policiesJson as PolicyMeta[];
 
 // 익산시 전용, 만 19~39세, 대학생·재직만, 소득 3구간 이하
 const 익산정책: PolicyMeta = {
@@ -13,6 +16,7 @@ const 익산정책: PolicyMeta = {
     ageMax: 39,
     regions: ["전북특별자치도 익산시"],
     statuses: ["대학생", "재직"],
+    incomeBracketMin: null,
     incomeBracketMax: 3,
   },
   applicationStart: "2026-03-01",
@@ -201,5 +205,114 @@ describe("tagPolicy — 비교할 수 없는 값은 통과시키지 않는다", 
   it("비교 불가와 명확한 불일치가 함께 있으면 해당 없음이 우선한다", () => {
     const r = tagPolicy(나이기준이망가진정책(19, "39"), { ...기본답변, status: "구직" });
     expect(r.tag).toBe("해당 없음");
+  });
+});
+
+describe("tagPolicy — 소득 하한(incomeBracketMin)", () => {
+  const 하한정책: PolicyMeta = {
+    ...익산정책,
+    id: "test-band",
+    discovery: { ...익산정책.discovery, incomeBracketMin: 3, incomeBracketMax: 5 },
+  };
+
+  it("하한보다 낮은 구간은 해당 없음이고 이유를 설명한다", () => {
+    const r = tagPolicy(하한정책, { ...기본답변, incomeBracket: 2 });
+    expect(r.tag).toBe("해당 없음");
+    expect(r.failReasons[0]).toContain("소득이 일정 수준을 넘는 청년만");
+  });
+
+  it("하한과 같은 구간은 통과한다 (경계 구간은 2층에서 판정)", () => {
+    expect(tagPolicy(하한정책, { ...기본답변, incomeBracket: 3 }).tag).toBe("가능성 있음");
+  });
+
+  it("상한과 하한을 모두 벗어나면 상한 초과가 먼저 걸린다", () => {
+    const 좁은정책: PolicyMeta = {
+      ...하한정책,
+      discovery: { ...하한정책.discovery, incomeBracketMin: 3, incomeBracketMax: 3 },
+    };
+    const r = tagPolicy(좁은정책, { ...기본답변, incomeBracket: 5 });
+    expect(r.tag).toBe("해당 없음");
+    expect(r.failReasons[0]).toBe("소득 기준을 넘습니다");
+  });
+
+  it("소득 구간을 모르면 하한이 있어도 확인 필요다", () => {
+    const r = tagPolicy(하한정책, { ...기본답변, incomeBracket: null });
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toContain("소득 구간");
+  });
+
+  it("하한이 숫자가 아니면 통과시키지 않는다", () => {
+    const 망가진정책: PolicyMeta = {
+      ...하한정책,
+      discovery: { ...하한정책.discovery, incomeBracketMin: "3" as unknown as number },
+    };
+    expect(tagPolicy(망가진정책, { ...기본답변, incomeBracket: 4 }).tag).toBe("확인 필요");
+  });
+});
+
+// QA체크리스트 1층 항목("태그가 전부 '확인 필요'로만 나오지 않는다")을 자동화한 것.
+// discovery 값을 공고로 채웠는지 실제 데이터로 확인한다.
+describe("실제 정책 데이터 — 1층 태그", () => {
+  const 익산_대학생: DiscoveryAnswers = {
+    age: 23,
+    region: "전북특별자치도 익산시",
+    status: "대학생",
+    incomeBracket: 1,
+  };
+
+  it("네 질문에 모두 답하면 '확인 필요'만 나오지는 않는다", () => {
+    const tags = policies.map((p) => tagPolicy(p, 익산_대학생).tag);
+    expect(tags.filter((t) => t === "가능성 있음").length).toBeGreaterThan(0);
+  });
+
+  it("전북 정착 지원사업은 재직자만 대상이라 대학생에게는 해당 없음이다", () => {
+    const jeonbuk = policies.find((p) => p.id === "jeonbuk-youth-settlement-support")!;
+    const r = tagPolicy(jeonbuk, 익산_대학생);
+    expect(r.tag).toBe("해당 없음");
+    expect(r.failReasons.join()).toContain("재직");
+  });
+
+  it("원가구 소득으로 심사하는 주거급여는 소득 구간을 답해도 확인 필요로 남는다", () => {
+    const p = policies.find((x) => x.id === "youth-housing-benefit-split-payment")!;
+    const r = tagPolicy(p, 익산_대학생);
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toContain("소득 구간");
+  });
+
+  // 익산형은 국토부 사업에서 소득 초과로 탈락한 청년을 받는 사업이다.
+  // 소득이 낮으면 대상이 아니다 — 하한을 빼먹으면 여기가 '가능성 있음'이 된다.
+  it("익산형 청년월세는 소득이 하한(3구간)보다 낮으면 해당 없음이다", () => {
+    const iksan = policies.find((p) => p.id === "iksan-youth-rent-support")!;
+    expect(tagPolicy(iksan, 익산_대학생).tag).toBe("해당 없음");
+    expect(tagPolicy(iksan, { ...익산_대학생, incomeBracket: 2 }).tag).toBe("해당 없음");
+    expect(tagPolicy(iksan, { ...익산_대학생, incomeBracket: 3 }).tag).toBe("가능성 있음");
+    expect(tagPolicy(iksan, { ...익산_대학생, incomeBracket: 5 }).tag).toBe("가능성 있음");
+  });
+
+  // 소득이 3구간이면 국토부(60% 이하)와 익산형(60% 초과) 둘 다 '가능성 있음'이다.
+  // 경계 구간이라 어느 쪽인지는 2층에서 실제 금액으로 갈린다.
+  it("경계 구간(3구간)에서는 국토부와 익산형이 함께 가능성 있음으로 나온다", () => {
+    const 경계 = { ...익산_대학생, incomeBracket: 3 };
+    const tags = ["moland-youth-rent-support", "iksan-youth-rent-support"].map(
+      (id) => tagPolicy(policies.find((p) => p.id === id)!, 경계).tag
+    );
+    expect(tags).toEqual(["가능성 있음", "가능성 있음"]);
+  });
+
+  it("소득 하한이 없는 정책은 incomeBracketMin 이 null 이어도 통과한다", () => {
+    for (const id of [
+      "moland-youth-rent-support",
+      "jeonbuk-youth-settlement-support",
+      "iksan-newcomer-moving-cost-support",
+    ]) {
+      const p = policies.find((x) => x.id === id)!;
+      expect(p.discovery.incomeBracketMin, id).toBeNull();
+      expect(tagPolicy(p, 익산_대학생).failReasons.join(), id).not.toContain("소득");
+    }
+  });
+
+  it("국토부 청년월세는 소득 1구간 청년에게 가능성 있음이다", () => {
+    const moland = policies.find((p) => p.id === "moland-youth-rent-support")!;
+    expect(tagPolicy(moland, 익산_대학생).tag).toBe("가능성 있음");
   });
 });
