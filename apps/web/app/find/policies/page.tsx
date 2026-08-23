@@ -41,7 +41,7 @@ export default function FindPoliciesPage() {
   const summary = answerSummary(answers, brackets);
 
   return (
-    <main className="mx-auto max-w-lg px-5 pb-10">
+    <main className="step-in mx-auto max-w-lg px-5 pb-10">
       <FindTopBar backHref="/find" backLabel="질문으로 돌아가기" />
 
       {!loaded ? (
@@ -78,15 +78,23 @@ export default function FindPoliciesPage() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {[...groups.가능, ...groups.확인].map(({ policy, result }) => (
-              <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
+            {[...groups.가능, ...groups.확인].map(({ policy, result }, i) => (
+              <div
+                key={policy.id}
+                className="stagger-in"
+                /* 지연 상한 225ms — 카드가 5장이어도 마지막 장을 기다리지 않는다. */
+                style={{ animationDelay: `${Math.min(i * 45, 225)}ms` }}
+              >
+                <PolicyCard policy={policy} result={result} asOfISO={asOf} />
+              </div>
             ))}
           </div>
 
           {count === 0 && (
             <p className="mt-4 rounded-xl border border-ink-200 bg-white p-5 text-sm leading-relaxed text-ink-600">
-              입력한 조건에 해당하는 지원금을 찾지 못했습니다. 아래에서 이유를
-              확인하고, <Link href="/find" className="font-bold text-brand-700 underline">답변을 바꿔</Link>{" "}
+              <span aria-hidden="true">🔍</span> 입력한 조건에 해당하는 지원금을 찾지
+              못했습니다. 아래에서 이유를 확인하고,{" "}
+              <Link href="/find" className="font-bold text-brand-700 underline">답변을 바꿔</Link>{" "}
               다시 확인해 보세요.
             </p>
           )}
@@ -110,7 +118,7 @@ export default function FindPoliciesPage() {
               className="mt-6 block rounded-xl bg-brand-600 p-5 text-center transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
             >
               <span className="block text-base font-bold text-white">
-                이 지원금을 받으면 얼마를 내게 될까?
+                <span aria-hidden="true">🧮</span> 이 지원금을 받으면 얼마를 내게 될까?
               </span>
               <span className="mt-1 block text-xs leading-relaxed text-white/90">
                 계약 조건을 넣으면 지원금을 반영한 최종 예상 주거비를 계산해드려요

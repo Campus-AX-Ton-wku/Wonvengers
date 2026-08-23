@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
-import { benefitFormula, benefitTypeLabel, estimatePolicyAmount, payoutTiming } from "@/lib/benefit";
+import {
+  benefitCeiling,
+  benefitFormula,
+  benefitTypeLabel,
+  estimatePolicyAmount,
+  payoutTiming,
+} from "@/lib/benefit";
 import { makeListing } from "./fixtures";
 
 const policies = policiesData as PolicyMeta[];
@@ -78,6 +84,42 @@ describe("benefitTypeLabel", () => {
   it("정책 데이터의 모든 benefitType 에 이름이 있다", () => {
     for (const policy of policies) {
       expect(benefitTypeLabel(policy.benefitType), policy.id).not.toContain("_");
+    }
+  });
+});
+
+/**
+ * 1층은 계약 조건을 모르므로 개인별 예상액을 계산할 수 없다 (그건 2층의 일이다).
+ * 대신 공고에 적힌 상한을 보여준다 — "이 정책이 최대 얼마짜리인가"는 목록에서
+ * 정책을 고르는 데 필요한 정보다. 개인 예상액으로 읽히지 않게 라벨을 붙인다.
+ */
+describe("benefitCeiling", () => {
+  it("월 상한과 지원 개월 수가 있으면 총액 상한을 낸다", () => {
+    expect(benefitCeiling(moland)).toEqual({ label: "최대 480만원", amount: 4800000 });
+  });
+
+  it("정액형도 월 상한 × 개월 수로 총액을 낸다", () => {
+    expect(benefitCeiling(jeonbuk)).toEqual({ label: "최대 360만원", amount: 3600000 });
+  });
+
+  it("일시금형은 1회 상한을 낸다", () => {
+    expect(benefitCeiling(iksanMoving)).toEqual({ label: "최대 50만원", amount: 500000 });
+  });
+
+  it("지원 개월 수가 정해지지 않은 정책은 월 상한만 낸다", () => {
+    // 주거급여 분리지급은 거주 기간 동안 계속 받으므로 총액 상한이 없다
+    expect(benefitCeiling(housingBenefit)).toEqual({
+      label: "월 최대 21만 2,000원",
+      amount: 212000,
+    });
+  });
+
+  it("모든 정책이 상한을 낼 수 있다", () => {
+    for (const policy of policies) {
+      const ceiling = benefitCeiling(policy);
+      expect(ceiling, policy.id).not.toBeNull();
+      expect(ceiling!.amount, policy.id).toBeGreaterThan(0);
+      expect(ceiling!.label, policy.id).toMatch(/만원|원$/);
     }
   });
 });
