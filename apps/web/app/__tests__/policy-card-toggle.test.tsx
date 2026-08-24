@@ -59,10 +59,11 @@ describe("1층 정책 카드", () => {
     expect(within(topCards()[0]).getByText(/자세히 보기 · 확인할 항목 \d+개/)).toBeTruthy();
   });
 
-  it("신청 기간·확인 날짜도 토글 안으로 들어간다", async () => {
+  it("신청 기간과 공고 출처도 토글 안으로 들어간다", async () => {
     await renderList();
-    const details = 카드안_토글(topCards()[0], /확인 2026-08-23/);
-    expect(details.open).toBe(false);
+    expect(카드안_토글(topCards()[0], /신청 기간 2026-03-30/).open).toBe(false);
+    // 출처는 접어 두지만 카드마다 반드시 있다 — 이 숫자가 어디서 왔는지 물을 수 있어야 한다.
+    expect(카드안_토글(topCards()[0], /2026-08-23에 공고 원문과 대조했습니다/).open).toBe(false);
   });
 
   it("정책명·태그·상한 금액·접수 종료 안내는 토글 밖에 남는다", async () => {
