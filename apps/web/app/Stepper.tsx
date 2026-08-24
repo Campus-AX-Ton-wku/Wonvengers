@@ -142,21 +142,16 @@ export function OptionButton({
 export function StepHeading({
   title,
   emoji,
-  description,
 }: {
   title: string;
   /** 장식용. 스크린리더에서는 감춘다. */
   emoji?: string;
-  description?: string;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <h1 className="text-2xl font-extrabold leading-snug text-ink-900">
-        {emoji && <span aria-hidden="true">{emoji} </span>}
-        {title}
-      </h1>
-      {description && <p className="text-sm leading-relaxed text-ink-500">{description}</p>}
-    </div>
+    <h1 className="text-2xl font-extrabold leading-snug text-ink-900">
+      {emoji && <span aria-hidden="true">{emoji} </span>}
+      {title}
+    </h1>
   );
 }
 

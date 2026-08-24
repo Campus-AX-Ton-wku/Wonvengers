@@ -58,13 +58,11 @@ function Question({
   step,
   emoji,
   title,
-  hint,
   children,
 }: {
   step: number;
   emoji: string;
   title: string;
-  hint: string;
   children: React.ReactNode;
 }) {
   return (
@@ -74,7 +72,6 @@ function Question({
       <h2 className="mt-1 text-base font-bold text-ink-900">
         <span aria-hidden="true">{emoji}</span> {title}
       </h2>
-      <p className="mt-1 text-xs leading-relaxed text-ink-500">{hint}</p>
       <div className="mt-4 flex flex-wrap gap-2">{children}</div>
     </section>
   );
@@ -153,7 +150,6 @@ export default function FindPage() {
           step={1}
           emoji="🎂"
           title="나이가 어떻게 되시나요?"
-          hint={`대부분의 청년 정책이 나이로 대상을 정합니다. 만 ${AGE_MIN}~${AGE_MAX}세에서 고르세요.`}
         >
           <div className="w-full">
             <AgePicker age={answers.age} onChange={(age) => update({ age })} />
@@ -170,7 +166,6 @@ export default function FindPage() {
           step={2}
           emoji="📍"
           title="어디에 살거나 살 예정인가요?"
-          hint="지자체 정책은 거주 지역에 따라 대상이 달라집니다."
         >
           {REGIONS.map((r) => (
             <Choice
@@ -191,7 +186,6 @@ export default function FindPage() {
           step={3}
           emoji="🎓"
           title="현재 상태가 어떻게 되시나요?"
-          hint="재학·재직 여부에 따라 대상이 갈리는 정책이 있습니다."
         >
           {STATUSES.map((s) => (
             <Choice
@@ -212,7 +206,6 @@ export default function FindPage() {
           step={4}
           emoji="💰"
           title="본인의 월 소득은 어느 정도인가요?"
-          hint="정확한 금액이 아니어도 됩니다. 세전 기준으로 가까운 구간을 고르세요."
         >
           {brackets.map((b) => (
             <Choice
