@@ -25,6 +25,7 @@ function makeResult(overrides: Partial<PolicyMeta> & { status: PolicyResult["sta
     exclusiveGroup: [],
     sourceUrl: "",
     applyUrl: "",
+    youthPolicyNo: null,
     verifiedAt: null,
     effectiveYear: 2026,
     notes: "",
