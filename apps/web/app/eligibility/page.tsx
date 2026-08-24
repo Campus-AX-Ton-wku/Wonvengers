@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { EligibilityProfile, PolicyMeta } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
+import { MONTH_OPTIONS, birthYearOptions, dayOptions, fromISODate, toISODate } from "@/lib/birth";
+import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
 import { loadAnswers, loadListing, loadProfile, saveProfile } from "@/lib/storage";
@@ -97,11 +99,7 @@ export default function EligibilityPage() {
       <AppBar onBack={handleBack} current={step + 3} total={steps.length + 2} />
 
       <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
-        <StepHeading
-          emoji={current.emoji}
-          title={current.heading}
-          description="정확히 모르는 값은 추정하지 않아요. '모름'을 고르면 '조건 충족 시 가능'으로 분류하고 확인 방법을 알려드려요."
-        />
+        <StepHeading emoji={current.emoji} title={current.heading} />
 
         {/* 1층에서 나이를 답한 사람에게 생년월일을 또 묻는 이유를 말해준다.
             나이만으로는 정책 기준일 기준 만 나이를 계산할 수 없다. */}
@@ -149,20 +147,15 @@ function QuestionField({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <label htmlFor={inputId} className="text-base font-bold leading-snug text-ink-900">
-          {question.label}
-        </label>
-        <p className="text-xs leading-relaxed text-ink-500">{question.why}</p>
-      </div>
+      <label htmlFor={inputId} className="text-base font-bold leading-snug text-ink-900">
+        {question.label}
+      </label>
 
       {question.type === "date" && (
-        <input
+        <BirthDatePicker
           id={inputId}
-          type="date"
-          className="input"
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
         />
       )}
 
@@ -190,13 +183,27 @@ function QuestionField({
           <input
             id={inputId}
             type="number"
-            inputMode="numeric"
+            inputMode={question.money ? "decimal" : "numeric"}
+            step={question.money ? "any" : 1}
             className="input"
-            value={isUnknown || typeof value !== "number" ? "" : value}
-            onChange={(e) => onChange(e.target.value === "" ? "unknown" : Number(e.target.value))}
+            value={numberFieldValue(question, value)}
+            onChange={(e) =>
+              onChange(
+                e.target.value === ""
+                  ? "unknown"
+                  : question.money
+                    ? manwonToWon(Number(e.target.value))
+                    : Number(e.target.value)
+              )
+            }
             min={0}
-            placeholder="모르면 비워두세요"
           />
+          {/* 0 하나 더/덜 친 실수를 그 자리에서 잡는다 (F1-8 과 같은 이유). */}
+          {question.money && typeof value === "number" && value > 0 && (
+            <p aria-hidden="true" className="text-xs font-semibold text-brand-700">
+              {formatKoreanMoney(value)}
+            </p>
+          )}
           {question.allowUnknown && (
             <OptionButton active={isUnknown} onClick={() => onChange("unknown")}>
               모름
@@ -220,6 +227,103 @@ function QuestionField({
           {question.allowUnknown && <option value="unknown">모름</option>}
         </select>
       )}
+    </div>
+  );
+}
+
+/** 금액 질문은 만원, 나머지(가구원 수 등)는 그대로 보여준다. */
+function numberFieldValue(question: QuestionDef, value: unknown): number | "" {
+  if (typeof value !== "number") return "";
+  return question.money ? (wonToManwon(value) ?? "") : value;
+}
+
+/**
+ * 생년월일 — 년/월/일 목록에서 고른다.
+ *
+ * <input type="date"> 는 오늘(2026년)부터 시작해서 청년이 자기 생년까지 19년을
+ * 거슬러 올라가야 했다. 목록 맨 위가 만 18세 생년이라 대부분 한두 번만 굴리면 닿는다.
+ * 세 칸을 다 고르기 전에는 빈 값으로 둔다 — 반쯤 고른 상태가 날짜로 저장되면 안 된다.
+ */
+function BirthDatePicker({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  type Parts = { year: number | null; month: number | null; day: number | null };
+  const [parts, setParts] = useState<Parts>(
+    () => fromISODate(value) ?? { year: null, month: null, day: null }
+  );
+
+  // 저장된 프로필은 마운트 뒤에 들어온다 — 그때 목록에도 되살린다.
+  useEffect(() => {
+    const saved = fromISODate(value);
+    if (saved) setParts(saved);
+  }, [value]);
+
+  const years = useMemo(() => birthYearOptions(new Date().getFullYear()), []);
+  const days = dayOptions(parts.year, parts.month);
+
+  function update(patch: Partial<Parts>) {
+    const next = { ...parts, ...patch };
+    // 2월 30일 같은 날짜가 남지 않게 자른다 (3월 31일에서 2월로 바꾼 경우).
+    if (next.year !== null && next.month !== null && next.day !== null) {
+      next.day = Math.min(next.day, dayOptions(next.year, next.month).length);
+    }
+    setParts(next);
+    onChange(
+      next.year !== null && next.month !== null && next.day !== null
+        ? toISODate(next.year, next.month, next.day)
+        : ""
+    );
+  }
+
+  const toNumber = (v: string) => (v === "" ? null : Number(v));
+
+  return (
+    <div className="flex gap-2">
+      <select
+        id={id}
+        className="input flex-[1.3]"
+        value={parts.year ?? ""}
+        onChange={(e) => update({ year: toNumber(e.target.value) })}
+      >
+        <option value="">년</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}년
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="생년월일 월"
+        className="input flex-1"
+        value={parts.month ?? ""}
+        onChange={(e) => update({ month: toNumber(e.target.value) })}
+      >
+        <option value="">월</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m} value={m}>
+            {m}월
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="생년월일 일"
+        className="input flex-1"
+        value={parts.day ?? ""}
+        onChange={(e) => update({ day: toNumber(e.target.value) })}
+      >
+        <option value="">일</option>
+        {days.map((d) => (
+          <option key={d} value={d}>
+            {d}일
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
