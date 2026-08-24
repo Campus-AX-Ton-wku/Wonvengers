@@ -8,10 +8,8 @@ import { summaryHighlights } from "@/lib/summary";
 import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
-import { corroborate } from "@/lib/youth-index";
 import { ResultAppBar } from "../Stepper";
 import Disclosure from "@/app/Disclosure";
-import { YouthBadge, YouthDetails, youthSummaryLabel } from "@/app/YouthCorroboration";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
 
@@ -242,8 +240,6 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
   const { policy } = result;
   // 대상아님·신청불가는 받을 금액이 없으니 산식을 보여주면 오해를 준다.
   const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
-  // 정부 청년정책 DB 대조. 판정·금액에는 쓰지 않고 출처 확인용으로만 보여준다.
-  const youth = corroborate(policy);
   // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
   return (
     <article className="rounded-2xl border border-ink-200 bg-white p-4">
@@ -251,9 +247,6 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
         <div>
           <p className="text-sm font-bold text-ink-900">{policy.name}</p>
           <p className="text-xs text-ink-500">{policy.agency} · {policy.regionScope}</p>
-          <div className="mt-1.5">
-            <YouthBadge state={youth.state} />
-          </div>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${STATUS_STYLE[result.status]}`}>
           {result.status}
@@ -298,11 +291,6 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
         )}
       </Disclosure>
 
-      {/* 정부 청년정책 DB(온통청년)에 같은 정책이 어떻게 등록되어 있는지. 출처 확인용이다. */}
-      <Disclosure label={youthSummaryLabel(youth)}>
-        <YouthDetails policy={policy} youth={youth} />
-      </Disclosure>
-
       {/* 검수 메모는 팀이 공고와 대조한 기록이다. 사용자가 볼 값이긴 하지만 길다. */}
       <Disclosure label="검수 상태 · 참고사항">
         <p className="text-[11px] text-ink-500">
@@ -316,7 +304,7 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
 
       <div className="mt-3 flex flex-wrap gap-3 text-xs">
         <a href={policy.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
-          공식 출처
+          공고 원문
         </a>
         <a href={policy.applyUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline">
           신청 페이지로 이동

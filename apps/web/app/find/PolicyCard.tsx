@@ -2,9 +2,7 @@ import type { PolicyMeta, TagResult } from "@/lib/types";
 import { getRequiredQuestions } from "@/lib/questions";
 import { benefitCeiling, benefitTypeLabel } from "@/lib/benefit";
 import { isWithinWindow } from "@/lib/date";
-import { corroborate } from "@/lib/youth-index";
 import Disclosure from "@/app/Disclosure";
-import { YouthBadge, YouthDetails } from "@/app/YouthCorroboration";
 
 /**
  * 1층 정책 카드.
@@ -47,8 +45,6 @@ export default function PolicyCard({
   const window = asOfISO
     ? isWithinWindow(asOfISO, policy.applicationStart, policy.applicationEnd)
     : "within";
-  // 정부 청년정책 DB 대조 결과. 판정에는 쓰지 않고 출처 신뢰도만 보여준다.
-  const youth = corroborate(policy);
 
   return (
     <article
@@ -64,9 +60,6 @@ export default function PolicyCard({
           <p className="mt-0.5 text-xs text-ink-500">
             {policy.agency} · {benefitTypeLabel(policy.benefitType).split(" · ")[0]}
           </p>
-          <div className="mt-1.5">
-            <YouthBadge state={youth.state} />
-          </div>
         </div>
 
         <div className="shrink-0 text-right">
@@ -132,12 +125,30 @@ export default function PolicyCard({
         )}
 
         <p className="mt-3 text-xs text-ink-500">
-          신청 기간 {policy.applicationStart} ~ {policy.applicationEnd ?? "상시"} · 확인{" "}
-          {policy.verifiedAt ?? "미검수"}
+          신청 기간 {policy.applicationStart} ~ {policy.applicationEnd ?? "상시"}
         </p>
 
+        {/* 이 숫자들이 어느 공고에서 온 값인지, 언제 대조한 것인지를 카드 안에서 밝힌다.
+            앱 데이터는 팀이 공고를 손으로 옮긴 값이라 원문으로 가는 길이 있어야 한다. */}
         <div className="mt-3 border-t border-ink-200 pt-3">
-          <YouthDetails policy={policy} youth={youth} />
+          <p className="text-xs font-bold text-ink-600">이 정보의 출처</p>
+          <a
+            href={policy.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-block text-xs font-semibold text-brand-700 underline hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+          >
+            공고 원문 →
+          </a>
+          {policy.verifiedAt ? (
+            <p className="mt-1 text-[11px] text-ink-500">
+              팀이 {policy.verifiedAt}에 공고 원문과 대조했습니다.
+            </p>
+          ) : (
+            <p className="mt-1 text-[11px] font-semibold text-warn-800">
+              아직 공고 원문과 대조하지 않았습니다. 신청 전에 원문을 직접 확인하세요.
+            </p>
+          )}
         </div>
 
         <a

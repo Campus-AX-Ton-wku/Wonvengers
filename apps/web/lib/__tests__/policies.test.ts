@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
-import youthIndexJson from "@/data/youth-policy-index.json";
-import type { PolicyMeta, YouthPolicyIndex } from "@/lib/types";
+import type { PolicyMeta } from "@/lib/types";
 import { POLICY_RULES } from "@/lib/policy-rules";
 
 const policies = policiesJson as PolicyMeta[];
-const youthIndex = youthIndexJson as YouthPolicyIndex;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe("policies.json 형식", () => {
@@ -75,9 +73,12 @@ describe("policies.json 형식", () => {
   });
 });
 
-describe("온통청년 대조 색인과의 연결", () => {
-  // 필드가 아예 빠지면 화면이 조용히 전부 '미등록'으로 나온다. null 은 "온통청년에서
-  // 못 찾았다"는 뜻이라 허용하고, undefined 만 막는다.
+/**
+ * youthPolicyNo 는 화면에서 쓰지 않는다. 정책 발굴 스크립트가
+ * "이 후보는 이미 앱에 있다"를 가려내는 열쇠라서, 형식이 깨지면 같은 정책이
+ * 후보 목록에 다시 올라온다.
+ */
+describe("온통청년 정책번호 (발굴 스크립트용)", () => {
   it("모든 정책에 youthPolicyNo 필드가 있다 (null 허용)", () => {
     for (const p of policies) {
       expect(p.youthPolicyNo !== undefined, `${p.id}: youthPolicyNo 필드가 없음`).toBe(true);
@@ -89,25 +90,6 @@ describe("온통청년 대조 색인과의 연결", () => {
       if (p.youthPolicyNo !== null) {
         expect(p.youthPolicyNo, `${p.id}: youthPolicyNo 형식 오류`).toMatch(/^\d{20}$/);
       }
-    }
-  });
-
-  it("youthPolicyNo 가 있으면 색인에 해당 기록이 있다", () => {
-    // 어긋나면 화면이 '미등록'으로 표시된다. npm run fetch:youth 를 다시 돌리라는 신호다.
-    for (const p of policies) {
-      if (p.youthPolicyNo !== null) {
-        expect(
-          youthIndex.records[p.youthPolicyNo],
-          `${p.id}: youth-policy-index.json 에 ${p.youthPolicyNo} 없음 — npm run fetch:youth 실행 필요`
-        ).toBeTruthy();
-      }
-    }
-  });
-
-  it("색인 조회일 형식이 올바르고 각 기록에 mismatches 배열이 있다", () => {
-    expect(youthIndex.fetchedAt, "색인 fetchedAt 형식 오류").toMatch(DATE);
-    for (const [plcyNo, record] of Object.entries(youthIndex.records)) {
-      expect(Array.isArray(record.mismatches), `${plcyNo}: mismatches 가 배열이 아님`).toBe(true);
     }
   });
 });

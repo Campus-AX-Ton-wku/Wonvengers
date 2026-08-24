@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import FindPoliciesPage from "@/app/find/policies/page";
 import { EMPTY_ANSWERS, saveAnswers } from "@/lib/storage";
+import policiesJson from "@/data/policies.json";
+import type { PolicyMeta } from "@/lib/types";
 
 /** QA체크리스트 "1층 — 목록" 절을 자동화한 것. */
 
@@ -98,5 +100,58 @@ describe("/find/policies", () => {
 
     await screen.findByRole("heading", { level: 1 });
     expect(screen.getByText(/신청 자격을 확정하는 것이 아닙니다/)).toBeTruthy();
+  });
+});
+
+/**
+ * 출처는 지역 공고 하나로 간다.
+ *
+ * 예전에는 카드에 `온통청년 미등록` 배지가 붙었는데, 그건 "정부 DB 에 없다"가 아니라
+ * "정책번호를 매핑하지 않았다"는 뜻이었다 — 찾아본 적이 없는데 찾지 못했다고 말했다.
+ * 확인한 사실만 말하기 위해, 팀이 직접 대조한 공고 원문만 보여준다.
+ */
+describe("/find/policies 정책 출처", () => {
+  const policies = policiesJson as PolicyMeta[];
+
+  it("정책마다 공고 원문 링크가 있고, 실제 sourceUrl 을 가리킨다", async () => {
+    saveAnswers(EMPTY_ANSWERS);
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    const links = screen.getAllByRole("link", { name: "공고 원문 →" });
+    expect(links).toHaveLength(policies.length);
+
+    const shown = new Set(links.map((a) => a.getAttribute("href")));
+    for (const p of policies) {
+      expect(shown.has(p.sourceUrl), `${p.id}: 공고 원문 링크 없음`).toBe(true);
+    }
+  });
+
+  it("검수한 정책은 대조 날짜를, 검수 전 정책은 대조하지 않았다고 밝힌다", async () => {
+    saveAnswers(EMPTY_ANSWERS);
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    const verified = policies.filter((p) => p.verifiedAt !== null);
+    const unverified = policies.filter((p) => p.verifiedAt === null);
+
+    for (const p of verified) {
+      expect(
+        screen.getAllByText(`팀이 ${p.verifiedAt}에 공고 원문과 대조했습니다.`).length
+      ).toBeGreaterThan(0);
+    }
+    // 익산형 청년월세가 아직 검수 전이다. 조용히 넘기면 미검수 값이 확인된 값처럼 보인다.
+    expect(unverified.length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/아직 공고 원문과 대조하지 않았습니다/)).toHaveLength(
+      unverified.length
+    );
+  });
+
+  it("온통청년 대조 표시가 화면에 없다", async () => {
+    saveAnswers(EMPTY_ANSWERS);
+    const { container } = render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(container.textContent).not.toMatch(/온통청년/);
   });
 });
