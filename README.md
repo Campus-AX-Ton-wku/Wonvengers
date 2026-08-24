@@ -13,23 +13,22 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-219_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-224_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
 </div>
 
-<!--
-  스크린샷 자리 — 캡처가 준비되면 이 주석을 지우고 아래 형태로 넣으면 됩니다.
+<div align="center">
+  <img src="docs/이미지/landing.png"  width="24%" alt="랜딩 — 익산 청년이 받을 수 있는 주거 지원금 5개" />
+  <img src="docs/이미지/find.png"     width="24%" alt="1층 질문 — 나이·지역·상태·소득 4개" />
+  <img src="docs/이미지/policies.png" width="24%" alt="1층 목록 — 가능성 있음 / 확인 필요 태그" />
+  <img src="docs/이미지/result.png"   width="24%" alt="2층 결과 — 최대 지원 가능액과 최종 예상 주거비" />
+</div>
 
-  <div align="center">
-    <img src="docs/이미지/landing.png"  width="30%" alt="랜딩" />
-    <img src="docs/이미지/find.png"     width="30%" alt="발견" />
-    <img src="docs/이미지/result.png"   width="30%" alt="결과" />
-  </div>
-
-  권장: /(랜딩), /find(질문·목록), /result(최종 계산) 세 장
--->
+<div align="center">
+<sub>랜딩 → 질문 4개 → 해당될 수 있는 지원금 → 최종 예상 주거비 (390×844 실제 화면)</sub>
+</div>
 
 ---
 
@@ -73,18 +72,25 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest 전체 (219 tests)
-npm run test:lib # 판정·계산 로직만 (156) — 몇 초
-npm run test:ui  # 화면 테스트 (63) — jsdom
+npm test         # vitest 전체 (224 tests)
+npm run test:lib # 판정·계산 로직만 (158) — 몇 초
+npm run test:ui  # 화면 테스트 (66) — jsdom
 npm run build    # 정적 빌드 (output: "export")
 ```
+
+`npm run fetch:youth` 는 화면과 무관한 **내부 발굴 도구**입니다. 온통청년 API 로 정책 후보 목록
+([docs/기획/온통청년-주거후보.md](docs/기획/온통청년-주거후보.md))을 만들고 콘솔에 대조 보고를 찍습니다.
+빌드·배포에는 쓰이지 않고, 앱 화면에도 이 API 값이 나가지 않습니다 —
+자세한 배경은 [docs/온통청년-API-연동.md](docs/온통청년-API-연동.md) 에 있습니다.
 
 ## 구조
 
 | 경로 | 내용 |
 |---|---|
 | `apps/web/` | Next.js 앱 — **배포 대상** |
-| `docs/` | 기획 · 디자인 · 발표 · 마케팅 |
+| `docs/기획` · `docs/디자인` · `docs/발표` · `docs/마케팅` | PRD · 체크리스트 · 검증기록 · 디자인 · 발표 자료 |
+| `docs/온통청년-API-연동.md` | 내부 발굴 도구 문서 (화면에 나가지 않는 API) |
+| `docs/이미지/` | README 스크린샷 |
 
 > [!IMPORTANT]
 > 배포 시 **Root Directory 를 `apps/web` 으로** 지정해야 합니다. 레포 루트에는 앱이 없습니다.
@@ -102,10 +108,25 @@ npm run build    # 정적 빌드 (output: "export")
 발표용 예시 매물은 `apps/web/data/example-listings.json` 입니다 — `verifiedAt` 이 `null` 이면
 화면에 `가상 예시 · 실제 매물이 아닙니다` 로 표시되고, 팀이 확인한 뒤 날짜를 넣어야 실제 매물로 표시됩니다.
 
+`apps/web/data/` 전체는 다음과 같습니다.
+
+| 파일 | 쓰는 곳 |
+|---|---|
+| `policies.json` | 정책 원본 — 1층 판정 · 2층 계산 모두 |
+| `income-brackets.json` | 1층 소득 구간 선택지 5개 (`월 100만원 이하` … `월 250만원 초과`) |
+| `income-thresholds.json` | 2층 중위소득 기준액 — 실제 금액으로 판정할 때 |
+| `loan-products.json` | 결과 화면의 대출 상품 안내 |
+| `example-listings.json` | 발표용 예시 매물 (F1-11) |
+
 | 용도 | 사용하는 필드 |
 |---|---|
 | 1층 · 발견 | 각 정책의 `discovery` 블록 — `ageMin` / `ageMax` / `regions` / `statuses` / `incomeBracketMin` / `incomeBracketMax` |
 | 2층 · 계산 | `regionScope`, `requiredInputs`, `benefitType`, `monthlyCap` 등 |
+
+> [!NOTE]
+> `youthPolicyNo` 는 **화면에서 쓰지 않지만 지우면 안 되는 필드**입니다. 발굴 스크립트가
+> "이 후보는 이미 앱에 있다"를 가려내는 열쇠라서, 형식이 깨지면 같은 정책이 후보 목록에
+> 다시 올라옵니다. 테스트 2개가 이 필드를 검사합니다 (`lib/__tests__/policies.test.ts`).
 
 `discovery.statuses` 와 `discovery.incomeBracketMax` 가 `null` 인 이유는 둘 중 하나입니다.
 
@@ -128,11 +149,26 @@ npm run build    # 정적 빌드 (output: "export")
 
 </details>
 
-## 검수 상태
+## 출처와 검수
+
+정책 데이터는 팀이 공고를 손으로 옮긴 값입니다. 그래서 **숫자마다 원문으로 가는 길과 대조 날짜를
+화면에 그대로 드러냅니다** — 어느 쪽을 믿을지 사용자가 판단할 수 있어야 합니다.
+
+1층 지원금 카드를 펼치면 `이 정보의 출처` 블록이 있고, 여기서 갈립니다.
+
+| `verifiedAt` | 화면 표기 |
+|---|---|
+| 날짜 있음 | `공고 원문 →` 링크 + `팀이 (날짜)에 공고 원문과 대조했습니다.` |
+| `null` | `공고 원문 →` 링크 + **`아직 공고 원문과 대조하지 않았습니다. 신청 전에 원문을 직접 확인하세요.`** |
+
+결과 화면의 정책별 상세에도 같은 `공고 원문` 링크가 있습니다.
+
+현재 정책 5건 중 **4건은 2026-08-23 대조 완료**, 1건(`익산형 청년월세 지원사업`)은 대조 전입니다.
+근거는 [docs/기획/2026-08-23-정책데이터-검증기록.md](docs/기획/2026-08-23-정책데이터-검증기록.md) 에 있습니다.
 
 > [!CAUTION]
-> `verifiedAt` 이 `null` 이거나 `notes` 에 "미검증 초안"이 적힌 정책은 **팀 교차검수 전**입니다.
-> 발표·배포 전에 반드시 공식 공고로 확인해야 합니다.
+> `notes` 에 "미검증 초안"이 적힌 정책도 교차검수 전으로 취급합니다.
+> 발표·배포 전에는 대조가 끝난 정책까지 공고를 다시 확인하세요 — 공고는 갱신됩니다.
 
 ## 기여
 
