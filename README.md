@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-207_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-219_passing-3FB950?style=flat-square&logo=vitest&logoColor=white)
 
 **팀 Wonvengers** · 원광대학교 · 멋쟁이사자처럼 Campus AX-Ton
 
@@ -66,7 +66,6 @@ flowchart LR
 | [`/calculate`](https://wonvengers.vercel.app/calculate) | 2층 · 계산 | 계약 조건 입력 (F1) |
 | [`/eligibility`](https://wonvengers.vercel.app/eligibility) | 2층 · 계산 | 정책별 자격 판정 질문 (F2) |
 | [`/result`](https://wonvengers.vercel.app/result) | 2층 · 계산 | 판정 결과 + 최종 예상 주거비 (F3, F4) |
-| [`/result/summary`](https://wonvengers.vercel.app/result/summary) | 2층 · 계산 | 캡처용 한 화면 요약 (F4-11) |
 
 ## 실행
 
@@ -74,9 +73,9 @@ flowchart LR
 cd apps/web
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest 전체 (207 tests)
-npm run test:lib # 판정·계산 로직만 (146) — 몇 초
-npm run test:ui  # 화면 테스트 (61) — jsdom
+npm test         # vitest 전체 (219 tests)
+npm run test:lib # 판정·계산 로직만 (156) — 몇 초
+npm run test:ui  # 화면 테스트 (63) — jsdom
 npm run build    # 정적 빌드 (output: "export")
 ```
 

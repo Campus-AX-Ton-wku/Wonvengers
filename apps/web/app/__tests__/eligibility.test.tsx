@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EligibilityPage from "@/app/eligibility/page";
 import CalculatePage from "@/app/calculate/page";
@@ -46,6 +46,64 @@ describe("뒤로가기", () => {
   });
 });
 
+/** 생년월일은 년/월/일 목록 세 개다. */
+async function pickBirthDate(
+  user: ReturnType<typeof userEvent.setup>,
+  year: number,
+  month: number,
+  day: number
+) {
+  await user.selectOptions(screen.getByLabelText("생년월일"), String(year));
+  await user.selectOptions(screen.getByLabelText("생년월일 월"), String(month));
+  await user.selectOptions(screen.getByLabelText("생년월일 일"), String(day));
+}
+
+/**
+ * <input type="date"> 는 오늘(2026)부터 시작해서 청년이 19년을 거슬러 올라가야 했다.
+ * 목록 맨 위가 만 18세 생년이라 한두 번만 굴리면 닿는다.
+ */
+describe("생년월일 선택", () => {
+  async function openFirstStep() {
+    render(<EligibilityPage />);
+    await screen.findByLabelText("이전 단계로");
+  }
+
+  it("목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
+    await openFirstStep();
+    const years = Array.from((screen.getByLabelText("생년월일") as HTMLSelectElement).options)
+      .map((o) => o.value)
+      .filter(Boolean);
+
+    expect(years[0]).toBe(String(new Date().getFullYear() - 18));
+    expect(years).not.toContain(String(new Date().getFullYear()));
+  });
+
+  it("세 칸을 다 골라야 넘어간다 — 반쯤 고른 상태는 날짜가 아니다", async () => {
+    const user = userEvent.setup();
+    await openFirstStep();
+
+    await user.selectOptions(screen.getByLabelText("생년월일"), "2003");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
+
+    await pickBirthDate(user, 2003, 8, 12);
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.birthDate).toBe("2003-08-12");
+  });
+
+  // 3월 31일을 고른 뒤 2월로 바꾸면 2월 31일이 남으면 안 된다.
+  it("없는 날짜가 남지 않게 자른다", async () => {
+    const user = userEvent.setup();
+    await openFirstStep();
+
+    await pickBirthDate(user, 2003, 3, 31);
+    await user.selectOptions(screen.getByLabelText("생년월일 월"), "2");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(loadProfile()?.birthDate).toBe("2003-02-28");
+  });
+});
+
 describe("숫자 질문의 '모름'", () => {
   /** 가구원 수 · 소득처럼 숫자를 받는 칸들 */
   const numberInputs = () => screen.getAllByRole("spinbutton") as HTMLInputElement[];
@@ -54,8 +112,7 @@ describe("숫자 질문의 '모름'", () => {
     render(<EligibilityPage />);
     await screen.findByLabelText("이전 단계로");
     // 1번 스텝(기본 자격)에는 생년월일이 있어 넘어가려면 채워야 한다
-    const birth = screen.getByLabelText("생년월일");
-    fireEvent.change(birth, { target: { value: "2003-08-12" } });
+    await pickBirthDate(user, 2003, 8, 12);
     await user.click(screen.getByRole("button", { name: "다음" }));
   }
 
@@ -104,5 +161,25 @@ describe("숫자 질문의 '모름'", () => {
     await user.type(numberInputs()[0], "2");
     await user.click(screen.getByRole("button", { name: /다음|결과 확인하기/ }));
     expect(loadProfile()?.householdSize).toBe(2);
+  });
+
+  // 가구원 수는 그대로 세지만, 소득은 만원 단위로 받는다.
+  it("소득 칸은 만원으로 받고 원으로 저장한다", async () => {
+    const user = userEvent.setup();
+    await goToIncomeStep(user);
+
+    await user.type(screen.getByLabelText("본인 가구의 월 소득 (만원)"), "150");
+    expect(screen.getByText("150만원")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /다음|결과 확인하기/ }));
+    expect(loadProfile()?.ownHouseholdMonthlyIncome).toBe(1_500_000);
+  });
+
+  it("'모르면 비워두세요' 안내를 지웠다 — 밑에 '모름' 버튼이 있다", async () => {
+    const user = userEvent.setup();
+    await goToIncomeStep(user);
+
+    expect(numberInputs()[0].getAttribute("placeholder")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
   });
 });

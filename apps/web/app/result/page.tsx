@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import loanProductsData from "@/data/loan-products.json";
 import exampleListingsData from "@/data/example-listings.json";
 import type { ExampleListing, ListingInput, LoanProductMeta, PolicyResult, PolicyStatus } from "@/lib/types";
@@ -39,7 +38,6 @@ export default function ResultPage() {
     return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
   }
 
-  // 캡처용 요약 화면(/result/summary)과 같은 함수로 뽑는다 (F4-11).
   const { included, unknownConditions } = summaryHighlights(summary);
 
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
@@ -228,14 +226,6 @@ export default function ResultPage() {
         <br />
         결과 기준일: {asOf}
       </p>
-
-      {/* F4-11: 캡처해서 공유하기 좋은 한 화면 요약. 이 화면은 길어서 스크린샷에 담기지 않는다. */}
-      <Link
-        href="/result/summary"
-        className="rounded-xl bg-ink-900 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
-      >
-        한 화면 요약 보기 (캡처용)
-      </Link>
 
       <button
         onClick={() => router.push("/eligibility")}
