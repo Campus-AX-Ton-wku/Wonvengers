@@ -29,8 +29,9 @@ describe("/calculate 예시 매물", () => {
 
     await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
 
-    expect(screen.getByDisplayValue("3000000")).toBeTruthy(); // 보증금
-    expect(screen.getByDisplayValue("350000")).toBeTruthy(); // 월세
+    // 금액 칸은 만원 단위다 — 300 = 300만원, 35 = 35만원
+    expect(screen.getByDisplayValue("300")).toBeTruthy(); // 보증금 3,000,000원
+    expect(screen.getByDisplayValue("35")).toBeTruthy(); // 월세 350,000원
   });
 
   it("가상 예시라는 배지와 설명을 보여준다", async () => {
@@ -94,7 +95,7 @@ describe("/calculate 예시 매물", () => {
 
     await user.click(screen.getByRole("button", { name: "예시 지우고 직접 입력하기" }));
     expect(screen.queryByText("가상 예시 · 실제 매물이 아닙니다")).toBeNull();
-    expect(screen.queryByDisplayValue("350000")).toBeNull();
+    expect(screen.queryByDisplayValue("35")).toBeNull();
   });
 });
 
@@ -105,6 +106,23 @@ describe("/calculate 입력 검증", () => {
 
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(screen.getByText("거주 예정 지역을 선택해주세요.")).toBeTruthy();
+  });
+
+  it("만원 단위로 입력받는다 — 3 을 넣으면 3만원이다", async () => {
+    const user = userEvent.setup();
+    render(<CalculatePage />);
+
+    await user.type(screen.getAllByRole("spinbutton")[0], "3"); // 보증금
+    expect(screen.getByText("3만원")).toBeTruthy();
+
+    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 익산시");
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    await user.type(screen.getAllByRole("spinbutton")[1], "35"); // 월세
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    // 저장·계산은 그대로 원 단위여야 한다
+    expect(loadListing()?.deposit).toBe(30_000);
+    expect(loadListing()?.rentOrYearlyAmount).toBe(350_000);
   });
 
   it("음수는 입력되는 순간 0으로 막힌다", async () => {

@@ -6,7 +6,7 @@ import policiesData from "@/data/policies.json";
 import exampleListingsData from "@/data/example-listings.json";
 import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
-import { formatKoreanMoney } from "@/lib/money";
+import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { exampleBadge, exampleToListing, isVerifiedExample } from "@/lib/examples";
 import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
 import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
@@ -139,19 +139,12 @@ export default function InputPage() {
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (
           <>
-            <StepHeading
-              emoji="🏠"
-              title="어떤 방을 보고 계신가요?"
-              description="계약 조건을 넣으면 받을 수 있는 지원금을 반영해 실제 부담액을 계산해드려요."
-            />
+            <StepHeading emoji="🏠" title="어떤 방을 보고 계신가요?" />
 
             {/* F1-11: 발표 시연용 고정 예시. 실제 매물인지 여부를 배지로 그대로 드러낸다. */}
             <section className="rounded-xl border border-ink-200 bg-sand-50 p-4">
               <p className="text-sm font-bold text-ink-700">
                 <span aria-hidden="true">✨</span> 예시로 채워보기
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-ink-500">
-                직접 입력하기 전에 예시 조건으로 결과를 먼저 볼 수 있어요.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {exampleListings.map((e) => (
@@ -228,11 +221,11 @@ export default function InputPage() {
               </div>
             </FieldGroup>
 
-            <Field label="보증금 (원)">
+            <Field label="보증금 (만원)">
               <NumberInput money value={form.deposit} onChange={(v) => update("deposit", v)} />
             </Field>
 
-            <Field label={form.contractType === "연세" ? "연세 선납액 (원)" : "월세액 (원)"}>
+            <Field label={form.contractType === "연세" ? "연세 선납액 (만원)" : "월세액 (만원)"}>
               <NumberInput
                 money
                 value={form.rentOrYearlyAmount}
@@ -242,13 +235,9 @@ export default function InputPage() {
           </>
         ) : (
           <>
-            <StepHeading
-              emoji="🧾"
-              title="비용과 기간을 알려주세요"
-              description="관리비와 이사비까지 넣어야 실제로 나가는 돈을 정확히 계산할 수 있어요."
-            />
+            <StepHeading emoji="🧾" title="비용과 기간을 알려주세요" />
 
-            <Field label="월 관리비 (원)">
+            <Field label="월 관리비 (만원)">
               <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />
             </Field>
 
@@ -265,7 +254,7 @@ export default function InputPage() {
               <NumberInput value={form.months} onChange={(v) => update("months", v)} />
             </Field>
 
-            <Field label="이사비 등 정책이 요구하는 일시 지출 (원, 없으면 0)">
+            <Field label="이사비 등 정책이 요구하는 일시 지출 (만원, 없으면 0)">
               <NumberInput
                 money
                 value={form.oneTimeMoveCost}
@@ -349,6 +338,9 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 /**
  * 숫자 입력. 음수는 입력되는 순간 0으로 막고, 금액이면 만·억 단위로 읽어준다 (F1-8).
  * '다음'을 누를 때까지 기다리면 금액 단위 실수를 늦게 알게 된다.
+ *
+ * money 인 칸은 만원 단위로 주고받는다 — 3 을 넣으면 30,000원이 저장된다.
+ * value/onChange 는 그대로 원 단위이므로 계산·저장 쪽은 아무것도 바뀌지 않는다.
  */
 function NumberInput({
   value,
@@ -359,15 +351,20 @@ function NumberInput({
   onChange: (v: number) => void;
   money?: boolean;
 }) {
+  const shown = money ? wonToManwon(value) : Number.isFinite(value) && value !== 0 ? value : null;
   return (
     <div className="flex flex-col gap-1">
       {/* 0 을 값으로 보여주면 사용자가 지우고 입력해야 한다. 빈 칸 + placeholder 로 둔다. */}
       <input
         type="number"
-        inputMode="numeric"
+        inputMode={money ? "decimal" : "numeric"}
+        step={money ? "any" : 1}
         className="input"
-        value={Number.isFinite(value) && value !== 0 ? value : ""}
-        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        value={shown ?? ""}
+        onChange={(e) => {
+          const typed = Math.max(0, Number(e.target.value) || 0);
+          onChange(money ? manwonToWon(typed) : typed);
+        }}
         min={0}
         placeholder="0"
       />
