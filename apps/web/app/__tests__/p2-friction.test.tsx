@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
 import EligibilityPage from "@/app/eligibility/page";
 import ResultPage from "@/app/result/page";
-import ResultSummaryPage from "@/app/result/summary/page";
 import { loadListing, saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 
@@ -50,12 +49,6 @@ describe("입력 없이 결과 화면에 들어왔을 때", () => {
     expect(screen.getByRole("link", { name: /지원금 목록/ }).getAttribute("href")).toBe(
       "/find/policies"
     );
-  });
-
-  it("캡처용 요약 화면도 같게 동작한다", async () => {
-    render(<ResultSummaryPage />);
-    expect(await screen.findByText(/계산할 계약 조건이 없어요/)).toBeTruthy();
-    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("판정 질문 화면은 필요한 입력을 받는 곳으로 보낸다", async () => {
@@ -119,7 +112,7 @@ describe("금액 칸", () => {
 
     await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 익산시");
     await user.click(screen.getByRole("button", { name: "월세" }));
-    await user.type(screen.getAllByRole("spinbutton")[1], "350000");
+    await user.type(screen.getAllByRole("spinbutton")[1], "35"); // 만원 단위
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.queryByText(/입력해주세요/)).toBeNull();
