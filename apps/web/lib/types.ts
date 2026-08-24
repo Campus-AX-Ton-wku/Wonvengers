@@ -135,6 +135,12 @@ export interface PolicyMeta {
   exclusiveGroup: string[]; // 동시 합산 불가 그룹 id들
   sourceUrl: string;
   applyUrl: string;
+  /**
+   * 온통청년(정부 청년정책 DB)의 정책번호(plcyNo). null = 온통청년에서 찾지 못함.
+   * 이 값으로 youth-policy-index.json 을 찾아 등록 정보와 대조한다.
+   * 대조 결과는 화면 표시 전용이며 판정·금액 계산에는 쓰지 않는다 (PRD 2-5).
+   */
+  youthPolicyNo: string | null;
   verifiedAt: string | null; // null = 팀 교차검수 전
   effectiveYear: number;
   notes: string;
@@ -203,4 +209,47 @@ export interface TagResult {
 export interface IncomeBracket {
   bracket: number;
   label: string;
+}
+
+// ── 온통청년 대조 색인 ──
+//
+// scripts/fetch-youth-policies.mjs 가 만든 data/youth-policy-index.json 의 모양.
+// 정부 정책 DB 에 같은 정책이 어떻게 등록되어 있는지 보여주기 위한 것이다.
+// 판정 규칙은 이 값을 읽지 않는다 — 같은 입력이 같은 결과를 내야 하고(F3-2),
+// 온통청년 기록도 낡을 수 있기 때문이다.
+
+export interface YouthPolicyRecord {
+  plcyNo: string;
+  name: string | null;
+  agency: string | null;
+  largeCategory: string | null;
+  mediumCategory: string | null;
+  applyPeriod: string | null; // "20260415 ~ 20260930" 원문 그대로
+  applyUrl: string | null;
+  referenceUrl: string | null;
+  ageMin: number;
+  ageMax: number;
+  ageUnlimited: boolean; // 공고에 나이 제한이 없다고 표기된 경우
+  supportScale: number; // 지원 규모(명). 0 = 미기재
+  firstComeFirstServed: boolean;
+  lastModifiedAt: string | null;
+  /** 앱 데이터와 어긋나는 항목. 비어 있지 않으면 화면에 그대로 노출한다. */
+  mismatches: string[];
+}
+
+export interface YouthPolicyIndex {
+  source: string;
+  sourceUrl: string;
+  fetchedAt: string; // YYYY-MM-DD
+  note: string;
+  records: Record<string, YouthPolicyRecord>;
+}
+
+/** 대조 결과. 화면은 이 세 상태만 구분한다. */
+export type YouthMatchState = "일치" | "불일치" | "미등록";
+
+export interface YouthCorroboration {
+  state: YouthMatchState;
+  record: YouthPolicyRecord | null;
+  fetchedAt: string;
 }
