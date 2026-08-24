@@ -59,11 +59,6 @@ export default function FindPoliciesPage() {
               지금 신청 가능 {openNow}건 · 접수 마감 {closed}건
             </p>
           )}
-          <p className="mt-2 text-xs leading-relaxed text-ink-500">
-            나이 · 지역 · 상태 · 소득 구간만 비교한 결과입니다. 각 정책의 나머지
-            조건은 카드의 &lsquo;자세히 보기&rsquo;를 보세요.
-          </p>
-
           {/* 무슨 답변으로 나온 결과인지 보여주고, 바로 고치러 갈 수 있게 한다. */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {/* 목록 시맨틱 — 스크린 리더가 "답변 요약, 항목 4개"로 읽는다. */}

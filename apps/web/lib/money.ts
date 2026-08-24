@@ -18,3 +18,23 @@ export function formatKoreanMoney(amount: number): string {
 
   return `${parts.join(" ")}원`;
 }
+
+/**
+ * 금액 입력은 만원 단위로 받는다 (3 → 30,000원).
+ *
+ * 월세·보증금은 자릿수가 길어 "350000" 을 넣다가 0 을 하나 더/덜 치는 실수가 잦다.
+ * 저장·계산은 그대로 원 단위이고, 입력칸에서만 만원으로 바꿔 주고받는다.
+ */
+export const WON_PER_MANWON = 10_000;
+
+/** 입력칸의 만원 값 → 저장할 원 단위 금액. 5.5 → 55,000원. */
+export function manwonToWon(manwon: number): number {
+  if (!Number.isFinite(manwon) || manwon <= 0) return 0;
+  return Math.round(manwon * WON_PER_MANWON);
+}
+
+/** 저장된 원 단위 금액 → 입력칸에 보여줄 만원 값. 0 이하는 빈 칸으로 둔다. */
+export function wonToManwon(won: number): number | null {
+  if (!Number.isFinite(won) || won <= 0) return null;
+  return won / WON_PER_MANWON;
+}
