@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
-import type { PolicyMeta } from "@/lib/types";
+import youthIndexJson from "@/data/youth-policy-index.json";
+import type { PolicyMeta, YouthPolicyIndex } from "@/lib/types";
 import { POLICY_RULES } from "@/lib/policy-rules";
 
 const policies = policiesJson as PolicyMeta[];
+const youthIndex = youthIndexJson as YouthPolicyIndex;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe("policies.json 형식", () => {
@@ -69,6 +71,43 @@ describe("policies.json 형식", () => {
     for (const p of policies) {
       expect(p.requiredInputs?.length, `${p.id}: requiredInputs 가 비어 있음`).toBeGreaterThan(0);
       expect(Array.isArray(p.exclusiveGroup), `${p.id}: exclusiveGroup 이 배열이 아님`).toBe(true);
+    }
+  });
+});
+
+describe("온통청년 대조 색인과의 연결", () => {
+  // 필드가 아예 빠지면 화면이 조용히 전부 '미등록'으로 나온다. null 은 "온통청년에서
+  // 못 찾았다"는 뜻이라 허용하고, undefined 만 막는다.
+  it("모든 정책에 youthPolicyNo 필드가 있다 (null 허용)", () => {
+    for (const p of policies) {
+      expect(p.youthPolicyNo !== undefined, `${p.id}: youthPolicyNo 필드가 없음`).toBe(true);
+    }
+  });
+
+  it("youthPolicyNo 는 null 이거나 20자리 정책번호다", () => {
+    for (const p of policies) {
+      if (p.youthPolicyNo !== null) {
+        expect(p.youthPolicyNo, `${p.id}: youthPolicyNo 형식 오류`).toMatch(/^\d{20}$/);
+      }
+    }
+  });
+
+  it("youthPolicyNo 가 있으면 색인에 해당 기록이 있다", () => {
+    // 어긋나면 화면이 '미등록'으로 표시된다. npm run fetch:youth 를 다시 돌리라는 신호다.
+    for (const p of policies) {
+      if (p.youthPolicyNo !== null) {
+        expect(
+          youthIndex.records[p.youthPolicyNo],
+          `${p.id}: youth-policy-index.json 에 ${p.youthPolicyNo} 없음 — npm run fetch:youth 실행 필요`
+        ).toBeTruthy();
+      }
+    }
+  });
+
+  it("색인 조회일 형식이 올바르고 각 기록에 mismatches 배열이 있다", () => {
+    expect(youthIndex.fetchedAt, "색인 fetchedAt 형식 오류").toMatch(DATE);
+    for (const [plcyNo, record] of Object.entries(youthIndex.records)) {
+      expect(Array.isArray(record.mismatches), `${plcyNo}: mismatches 가 배열이 아님`).toBe(true);
     }
   });
 });

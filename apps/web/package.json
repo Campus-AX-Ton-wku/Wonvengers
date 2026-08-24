@@ -8,7 +8,8 @@
     "start": "next start",
     "test": "vitest run",
     "test:lib": "vitest run lib",
-    "test:ui": "vitest run app"
+    "test:ui": "vitest run app",
+    "fetch:youth": "node scripts/fetch-youth-policies.mjs"
   },
   "dependencies": {
     "next": "^15.5.4",
