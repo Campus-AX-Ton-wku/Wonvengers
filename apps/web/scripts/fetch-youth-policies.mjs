@@ -1,22 +1,32 @@
 #!/usr/bin/env node
 /**
- * 온통청년 청년정책 API 에서 정책 원문 정보를 받아 두 개의 산출물을 만든다.
+ * 온통청년 청년정책 API — 팀이 쓰는 내부 발굴 도구.
  *
- *   1) data/youth-policy-index.json   — 화면이 읽는 대조 색인 (policies.json 의 youthPolicyNo 기준)
- *   2) docs/기획/온통청년-주거후보.md  — 1층 정책을 8~12개로 늘릴 때 쓰는 후보 목록
+ * 앱은 정책 출처를 **지역 공고 하나**로 간다 (policies.json 의 sourceUrl).
+ * 여기서 받은 값은 화면에 나가지 않는다. 하는 일은 두 가지다.
  *
- * ── 왜 런타임이 아니라 빌드 전에 받아서 파일로 굽는가 ─────────────────────
+ *   1) docs/기획/온통청년-주거후보.md — 1층 정책을 8~12개로 늘릴 때 볼 후보 목록
+ *   2) 콘솔 보고 — 이미 매핑한 정책의 등록 정보가 앱 데이터와 어긋나는 지점
+ *
+ * ── 왜 화면에서 뺐는가 ───────────────────────────────────────────────
+ *
+ * 한때 이 값을 "정부 DB 와 대조했다"고 카드에 표시했다. 커버리지가 그걸
+ * 뒷받침하지 못해서 뺐다.
+ *
+ *  - 지역 필터(zipCd)가 안 걸린다. 익산으로 조회했는데 경상북도 의성군
+ *    사업이 섞여 들어오고, 정작 익산 이사비·중개보수는 결과에 없다.
+ *  - 대분류 하나(`주거`)로만 조회하므로, 다른 분류에 등록된 정책은
+ *    "없다"고 말할 근거가 되지 않는다.
+ *  - 등록 정보 자체가 낡는다. 이미 끝난 신청기간이 그대로 남아 있다.
+ *
+ * 즉 "미등록"이라고 말할 수 있는 근거가 없다. 확인한 사실만 말해야 하므로
+ * 사용자 화면에는 팀이 직접 대조한 지역 공고만 남겼다.
+ *
+ * ── 왜 런타임이 아니라 스크립트인가 ──────────────────────────────────
  *
  *  - 앱은 `output: "export"` 정적 배포다. 런타임에 호출을 대신해 줄 서버가 없다.
- *  - 이 API 는 브라우저 직접 호출을 허용하지 않는다. Origin 을 붙여도
- *    Access-Control-Allow-Origin 이 오지 않고 OPTIONS 프리플라이트가 403 이다.
+ *  - 이 API 는 브라우저 직접 호출을 허용하지 않는다 (프리플라이트 403).
  *  - 인증키를 클라이언트 번들에 넣으면 누구나 볼 수 있다.
- *  - 같은 입력은 같은 결과를 내야 한다 (PRD F3-2). 화면이 매번 외부 응답에
- *    따라 달라지면 그 보장이 깨지고, 발표 중 API 가 죽으면 화면도 죽는다.
- *
- * 그래서 여기서 받은 값은 **판정과 금액 계산에 쓰지 않는다.** policies.json 이
- * 그대로 유일한 판정 근거이고, 이 색인은 "공식 등록 정보와 대조한 결과"를
- * 보여주는 용도로만 쓴다 (PRD 2-5 의 결정과 같다).
  *
  * 실행:
  *   npm run fetch:youth
@@ -110,7 +120,8 @@ function parseApplyPeriod(raw) {
 
 /**
  * 앱 데이터와 온통청년 등록 정보가 어긋나는 지점을 찾는다.
- * 여기서 나온 경고는 화면에 그대로 노출한다 — 숨기면 이 연동의 의미가 없다.
+ * 콘솔 보고에만 쓴다 — 팀이 "공고를 다시 볼까"를 판단하는 힌트다.
+ * 어느 쪽이 맞는지는 이 스크립트가 알 수 없다. 온통청년 등록이 낡은 경우가 있다.
  */
 function findMismatches(policy, record) {
   const out = [];
@@ -168,7 +179,7 @@ let unregistered = 0;
 for (const policy of policies) {
   if (!policy.youthPolicyNo) {
     unregistered++;
-    report.push({ id: policy.id, state: "미등록", detail: "youthPolicyNo 가 null — 온통청년에서 찾지 못한 정책" });
+    report.push({ id: policy.id, state: "번호 미매핑", detail: "youthPolicyNo 가 null — 아직 온통청년 정책번호를 찾아 넣지 않았다" });
     continue;
   }
   try {
@@ -190,15 +201,6 @@ for (const policy of policies) {
     report.push({ id: policy.id, state: "오류", detail: err.message });
   }
 }
-
-const index = {
-  source: "온통청년 청년정책 API (getPlcy)",
-  sourceUrl: "https://www.youthcenter.go.kr/cmnFooter/openapiIntro/oaiGuide",
-  fetchedAt: today,
-  note: "이 파일은 scripts/fetch-youth-policies.mjs 가 생성한다. 손으로 고치지 말 것. 판정·금액 계산에는 쓰지 않는다.",
-  records,
-};
-writeFileSync(join(WEB_ROOT, "data", "youth-policy-index.json"), JSON.stringify(index, null, 2) + "\n", "utf8");
 
 // 2) 1층 확장용 후보 목록
 let candidateMd = "";
@@ -246,6 +248,7 @@ for (const r of report) {
   console.log(`  ${r.state.padEnd(10)} ${r.id}`);
   if (r.detail) console.log(`             ${r.detail}`);
 }
-console.log(`\n  data/youth-policy-index.json — ${Object.keys(records).length}건 기록, 미등록 ${unregistered}건`);
+console.log(`\n  매핑된 정책 ${Object.keys(records).length}건 조회 · 번호 미매핑 ${unregistered}건`);
+console.log("  (이 값은 화면에 나가지 않는다. 앱이 보여주는 출처는 policies.json 의 sourceUrl 이다.)");
 if (candidateMd) console.log(`  docs/기획/온통청년-주거후보.md — 후보 목록 갱신됨`);
 console.log("");
