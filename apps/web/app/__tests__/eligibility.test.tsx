@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EligibilityPage from "@/app/eligibility/page";
 import CalculatePage from "@/app/calculate/page";
@@ -46,47 +46,80 @@ describe("뒤로가기", () => {
   });
 });
 
-/** 생년월일은 년/월/일 목록 세 개다. */
+/**
+ * 생년월일은 휠 데이트 피커다 — 트리거를 열고, 컬럼에서 고르고, '확인' 을 눌러야
+ * 값이 올라간다. jsdom 에서는 스크롤을 흉내낼 수 없으므로 항목을 직접 클릭한다.
+ * (스크롤 위치 ↔ 인덱스 계산은 lib/__tests__/wheel.test.ts 가 덮는다.)
+ */
+const 생년월일칸 = (part: string) =>
+  screen.getByRole("listbox", { name: `생년월일 ${part}` });
+
+async function openBirthWheel(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /^생년월일 —/ }));
+}
+
+/** 패널이 이미 열려 있을 때 세 칸을 고른다. 트리거는 토글이라 다시 누르면 닫힌다. */
+async function pickParts(
+  user: ReturnType<typeof userEvent.setup>,
+  year: number,
+  month: number,
+  day: number
+) {
+  await user.click(within(생년월일칸("년")).getByRole("option", { name: `${year}년` }));
+  await user.click(within(생년월일칸("월")).getByRole("option", { name: `${month}월` }));
+  await user.click(within(생년월일칸("일")).getByRole("option", { name: `${day}일` }));
+}
+
+const 확인 = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: "확인" }));
+
 async function pickBirthDate(
   user: ReturnType<typeof userEvent.setup>,
   year: number,
   month: number,
   day: number
 ) {
-  await user.selectOptions(screen.getByLabelText("생년월일 년"), String(year));
-  await user.selectOptions(screen.getByLabelText("생년월일 월"), String(month));
-  await user.selectOptions(screen.getByLabelText("생년월일 일"), String(day));
+  await openBirthWheel(user);
+  await pickParts(user, year, month, day);
+  await 확인(user);
 }
 
 /**
  * <input type="date"> 는 오늘(2026)부터 시작해서 청년이 19년을 거슬러 올라가야 했다.
  * 목록 맨 위가 만 18세 생년이라 한두 번만 굴리면 닿는다.
  */
-describe("생년월일 선택", () => {
+describe("생년월일 선택 (휠 피커)", () => {
   async function openFirstStep() {
     render(<EligibilityPage />);
     await screen.findByLabelText("이전 단계로");
   }
 
-  it("목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
+  it("연도 목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
+    const user = userEvent.setup();
     await openFirstStep();
-    const years = Array.from((screen.getByLabelText("생년월일 년") as HTMLSelectElement).options)
-      .map((o) => o.value)
-      .filter(Boolean);
+    await openBirthWheel(user);
 
-    expect(years[0]).toBe(String(new Date().getFullYear() - 18));
-    expect(years).not.toContain(String(new Date().getFullYear()));
+    const years = within(생년월일칸("년"))
+      .getAllByRole("option")
+      .map((o) => o.textContent);
+    const now = new Date().getFullYear();
+    expect(years[0]).toBe(`${now - 18}년`);
+    expect(years).not.toContain(`${now}년`);
   });
 
-  it("세 칸을 다 골라야 넘어간다 — 반쯤 고른 상태는 날짜가 아니다", async () => {
+  // 휠은 항상 무언가를 가리킨다. 확인 전에 값이 새면 손대지 않은 사람도 날짜를 제출한다.
+  it("'확인' 을 누르기 전에는 저장되지 않는다", async () => {
     const user = userEvent.setup();
     await openFirstStep();
 
-    await user.selectOptions(screen.getByLabelText("생년월일 년"), "2003");
+    await openBirthWheel(user);
+    await user.click(within(생년월일칸("년")).getByRole("option", { name: "2003년" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
 
-    await pickBirthDate(user, 2003, 8, 12);
+    // 에러가 떠도 패널은 열려 있다 — 다시 누르면 토글로 닫힌다
+    await pickParts(user, 2003, 8, 12);
+    await 확인(user);
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(loadProfile()?.birthDate).toBe("2003-08-12");
   });
@@ -96,11 +129,24 @@ describe("생년월일 선택", () => {
     const user = userEvent.setup();
     await openFirstStep();
 
-    await pickBirthDate(user, 2003, 3, 31);
-    await user.selectOptions(screen.getByLabelText("생년월일 월"), "2");
+    await openBirthWheel(user);
+    await user.click(within(생년월일칸("년")).getByRole("option", { name: "2003년" }));
+    await user.click(within(생년월일칸("월")).getByRole("option", { name: "3월" }));
+    await user.click(within(생년월일칸("일")).getByRole("option", { name: "31일" }));
+    await user.click(within(생년월일칸("월")).getByRole("option", { name: "2월" }));
+    await user.click(screen.getByRole("button", { name: "확인" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(loadProfile()?.birthDate).toBe("2003-02-28");
+  });
+
+  it("고른 날짜를 트리거 버튼에 그대로 보여준다", async () => {
+    const user = userEvent.setup();
+    await openFirstStep();
+
+    expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
+    await pickBirthDate(user, 2003, 8, 12);
+    expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
 });
 

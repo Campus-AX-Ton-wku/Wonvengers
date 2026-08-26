@@ -180,7 +180,7 @@ describe("/calculate 1층 답변 이어받기", () => {
  * 스크롤 위치 ↔ 인덱스 계산은 lib/__tests__/wheel.test.ts 가 따로 덮는다.
  */
 describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
-  const 열기 = () => screen.getByRole("button", { name: /날짜 선택|년 \d+월/ });
+  const 열기 = () => screen.getByRole("button", { name: /^계약 시작 예정일 —/ });
   const 칸 = (part: string) => screen.getByRole("listbox", { name: `계약 시작 예정일 ${part}` });
   const 항목 = (part: string, name: string | RegExp) =>
     within(칸(part)).getByRole("option", { name });
@@ -229,7 +229,7 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     const user = userEvent.setup();
     await goToStep2(user);
 
-    expect(screen.getByRole("button", { name: "날짜 선택" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "계약 시작 예정일 — 선택 안 함" })).toBeTruthy();
 
     await user.click(열기());
     await user.click(항목("년", "2027년"));
@@ -237,7 +237,7 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     await user.click(항목("일", "5일"));
     await user.click(screen.getByRole("button", { name: "확인" }));
 
-    expect(screen.getByRole("button", { name: /2027년 3월 5일/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "계약 시작 예정일 — 2027년 3월 5일" })).toBeTruthy();
   });
 
   // 3월 31일을 고른 뒤 2월로 옮기면 2월 31일이 남으면 안 된다.
