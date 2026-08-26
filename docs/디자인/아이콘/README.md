@@ -54,21 +54,51 @@ PNG 로 받았으니 압축 손실은 없다. 다만 모델 출력 자체에 미
 
 ## 파생 에셋
 
-아직 만들지 않았다. **앱에는 현재 아이콘이 하나도 없다** — 파비콘도, `apple-touch-icon` 도,
-`manifest` 도 없어서 탭에 기본 아이콘이 뜨고 홈화면에 추가하면 스크린샷이 아이콘이 된다.
+전부 `perky-icon-2048.png` 에서 굽는다. 손으로 만들지 않는다.
 
-붙일 때 만들 것:
+| 파일 | 크기 | 용도 | 용량 |
+|---|---|---|---|
+| `apps/web/app/favicon.ico` | 16 · 32 · 48 | 브라우저 탭 | 3.9 KB |
+| `apps/web/app/icon.png` | 512 | Next 기본 아이콘 + PWA 512 | 151.5 KB |
+| `apps/web/app/apple-icon.png` | 180 | iOS 홈 화면 | 18.6 KB |
+| `apps/web/public/icon-192.png` | 192 | PWA 런처 | 20.9 KB |
+| `apps/web/public/icon-maskable-512.png` | 512 | 안드로이드 — 마크 85% 축소본 | 116.1 KB |
 
-| 파일 | 크기 | 용도 |
-|---|---|---|
-| `apps/web/app/favicon.ico` | 32, 16 | 브라우저 탭 |
-| `apps/web/app/icon.png` | 512 | Next.js 기본 아이콘 |
-| `apps/web/app/apple-icon.png` | 180 | iOS 홈화면 |
-| `apps/web/public/icon-192.png` | 192 | PWA manifest |
-| `apps/web/public/icon-512.png` | 512 | PWA manifest |
-| `apps/web/public/icon-maskable-512.png` | 512 | 안드로이드 — 마크 85% 축소본 |
+`favicon.ico` · `icon.png` · `apple-icon.png` 는 **Next 가 파일명만 보고 자동으로
+`<link>` 태그를 넣는다.** `layout.tsx` 에 아이콘 메타데이터를 손으로 적지 않는다.
 
-`apps/web/app/manifest.json` 과 `layout.tsx` 메타데이터 연결도 함께 필요하다.
+`public/icon-512.png` 는 두지 않는다 — `app/icon.png` 가 `/icon.png` 로 나가므로
+매니페스트가 그걸 가리키면 된다. 따로 두면 같은 파일 151KB 가 두 벌 배포된다.
+
+### 검증한 것
+
+빌드 산출물(`out/`)에서 직접 확인했다.
+
+- `<link rel="icon">` · `apple-touch-icon` · `rel="manifest"` 가 HTML 에 주입됨
+- **16px 에서 `p` 의 카운터(구멍)가 메워지지 않는다** — 축소해서 눈으로 확인
+- **안드로이드 원형 마스크(지름 66.7%)를 씌워 비교** — 일반 512 는 기둥 왼쪽과 볼
+  오른쪽이 깎이고, maskable 은 여유 있게 들어온다. 마크 최대 반경 60.8% (안전 61.1%)
+
+### 다시 구울 때
+
+```bash
+# 마스터를 바꿨다면 파생을 전부 다시 굽는다.
+# 일반: 마스터를 그대로 축소
+# 마스커블: 마스터를 85% 로 줄여 배경색 캔버스 중앙에 붙인 뒤 축소
+```
+
+축소는 Lanczos 를 쓴다. 마스커블 축소율을 바꿨으면 마크 최대 반경을 다시 재서
+61.1% 안에 들어오는지 확인한다.
+
+### 용량 한 가지
+
+`icon.png` 151KB · `icon-maskable-512.png` 116KB 는 2색 도형치고 무겁다.
+마스터에 모델 출력 노이즈(고유 색 2,456개)가 깔려 있어 PNG 가 압축을 못 한다.
+양자화로는 잘 안 줄고 밴딩만 생긴다(8색 78KB, 최대 픽셀차 66).
+
+줄이려면 위 "색이 완전히 평면은 아니다" 의 2색 정리를 먼저 하면 된다. 그러면
+파생이 각 5KB 수준으로 떨어진다. 다만 PWA 아이콘은 설치할 때 한 번만 받고
+평소 받는 건 `favicon.ico`(3.9KB) 뿐이라, 급한 문제는 아니다.
 
 ## 참고
 
