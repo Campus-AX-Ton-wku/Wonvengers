@@ -133,4 +133,26 @@ describe("2층 정책 카드", () => {
     expect(screen.getByText("최대 지원 가능액 (12개월 기준)").closest("details")).toBeNull();
     expect(screen.getByText("이 금액은 아래 조합으로 계산했습니다").closest("details")).toBeNull();
   });
+
+  /* 받을 수 없는 정책이 목록의 절반을 차지하면 받을 수 있는 것이 아래로 밀린다.
+     이 픽스처는 대상아님 1건 · 신청불가 2건 · 예상적용 2건이 나온다. */
+  it("'대상아님' 그룹은 접혀 있고 라벨에 건수가 있다", async () => {
+    await renderResult();
+
+    const label = screen.getByText(/^대상아님 \(\d+\)$/);
+    const details = label.closest("details") as HTMLDetailsElement | null;
+    expect(details, "대상아님 그룹이 토글이 아니다").not.toBeNull();
+    expect(details!.open).toBe(false);
+    // 접었어도 안에 카드가 있어야 한다 — 왜 대상이 아닌지는 열면 그대로 나온다
+    expect(within(details!).getAllByRole("article").length).toBeGreaterThan(0);
+  });
+
+  it("받을 수 있는 정책과 신청불가는 접지 않는다", async () => {
+    await renderResult();
+
+    for (const status of ["예상적용", "신청불가"]) {
+      const heading = screen.getByText(new RegExp(`^${status} \\(\\d+\\)$`));
+      expect(heading.closest("details"), `${status} 그룹이 접혀 있다`).toBeNull();
+    }
+  });
 });

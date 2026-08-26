@@ -159,11 +159,8 @@ export default function ResultPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        {grouped.map((group) => (
-          <div key={group.status}>
-            <h2 className="mb-2 text-sm font-bold text-ink-500">
-              {group.status} ({group.items.length})
-            </h2>
+        {grouped.map((group) => {
+          const cards = (
             <div className="flex flex-col gap-3">
               {group.items.map((r, i) => (
                 <div
@@ -175,8 +172,28 @@ export default function ResultPage() {
                 </div>
               ))}
             </div>
-          </div>
-        ))}
+          );
+
+          /* '대상아님'은 접는다. 받을 수 없는 정책이 목록의 절반을 차지하면 받을 수 있는
+             것이 아래로 밀린다. 라벨에 건수를 남기므로 접었다고 값이 사라지지 않는다 —
+             왜 대상이 아닌지는 카드를 열면 그대로 있다 (1층 '해당되지 않는 지원금'과 같은 처리). */
+          return (
+            <div key={group.status}>
+              {group.status === "대상아님" ? (
+                <Disclosure label={`${group.status} (${group.items.length})`} className="">
+                  {cards}
+                </Disclosure>
+              ) : (
+                <>
+                  <h2 className="mb-2 text-sm font-bold text-ink-500">
+                    {group.status} ({group.items.length})
+                  </h2>
+                  {cards}
+                </>
+              )}
+            </div>
+          );
+        })}
       </section>
 
       <section className="flex flex-col gap-3">
