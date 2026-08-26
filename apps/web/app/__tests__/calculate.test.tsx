@@ -240,6 +240,37 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     expect(screen.getByRole("button", { name: "계약 시작 예정일 — 2027년 3월 5일" })).toBeTruthy();
   });
 
+  /* 키보드 타이핑 점프. 스크롤은 jsdom 에서 흉내낼 수 없지만 keydown 은 실제로 뜬다.
+     연도 목록이 4개뿐인 계약 예정일에서도 되는지, 그리고 버퍼가 이어 붙는지 본다. */
+  it("숫자를 치면 그 항목으로 뛴다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+    await user.click(열기());
+
+    칸("월").focus();
+    await user.keyboard("9");
+    expect(항목("월", "9월").getAttribute("aria-selected")).toBe("true");
+
+    // 이어 치면 좁혀진다 — 1 다음 2 는 12월
+    await user.keyboard("12");
+    expect(항목("월", "12월").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("화살표로도 옮길 수 있다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+    await user.click(열기());
+
+    칸("월").focus();
+    await user.keyboard("5");
+    await user.keyboard("{ArrowDown}");
+    expect(항목("월", "6월").getAttribute("aria-selected")).toBe("true");
+    await user.keyboard("{Home}");
+    expect(항목("월", "1월").getAttribute("aria-selected")).toBe("true");
+    await user.keyboard("{End}");
+    expect(항목("월", "12월").getAttribute("aria-selected")).toBe("true");
+  });
+
   // 3월 31일을 고른 뒤 2월로 옮기면 2월 31일이 남으면 안 된다.
   it("없는 날짜가 남지 않게 자른다", async () => {
     const user = userEvent.setup();
