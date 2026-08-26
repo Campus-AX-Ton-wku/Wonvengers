@@ -4,18 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { MONTH_OPTIONS, dayOptions, fromISODate, toISODate } from "@/lib/date";
 import {
   ITEM_HEIGHT,
+  TYPE_AHEAD_MS,
   WHEEL_HEIGHT,
   WHEEL_PAD,
   clampIndex,
   indexFromScroll,
   scrollTopForIndex,
+  typeAheadMatch,
 } from "@/lib/wheel";
 
 /**
  * 스크롤형 휠 데이트 피커 (Wheel Date Picker). 실기기 확인을 거쳐 채택했다 (2026-08-27).
  *
- * 남은 것: 타이핑 점프. 네이티브 select 는 '9' 를 누르면 9월로 뛰는데 여기는 없다.
- * 목록이 최대 31개라 화살표로도 닿긴 하지만, 키보드 사용자에게는 select 보다 느리다.
+ * 키보드는 네이티브 select 가 주던 것을 직접 짠다 — 화살표·PageUp/Down·Home/End 와
+ * 숫자 타이핑 점프('9' 를 누르면 9월로). 생년 목록은 28개라 화살표만으로는 멀다.
  *
  * ── 왜 이렇게 만들었나 ──────────────────────────────────────────────
  *
@@ -58,6 +60,9 @@ function Column({
   /* 사용자가 굴리는 중에 programmatic scroll 을 걸면 손가락과 싸운다.
      스크롤이 멎은 뒤에만 외부 값으로 위치를 맞춘다. */
   const settling = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /* 타이핑 점프용 버퍼. "3" 다음 "1" 이 1초 안에 오면 31 로 좁힌다. */
+  const buffer = useRef("");
+  const bufferTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const index = Math.max(0, values.indexOf(selected));
 
   useEffect(() => {
@@ -67,6 +72,14 @@ function Column({
     // 1px 이내는 스냅 오차다. 다시 쓰면 스크롤이 튄다.
     if (Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
   }, [index]);
+
+  useEffect(() => {
+    // 패널을 닫으면 컬럼이 언마운트된다. 남은 타이머가 사라진 ref 를 건드리지 않게 정리한다.
+    return () => {
+      if (settling.current) clearTimeout(settling.current);
+      if (bufferTimer.current) clearTimeout(bufferTimer.current);
+    };
+  }, []);
 
   function handleScroll() {
     const el = ref.current;
@@ -78,8 +91,7 @@ function Column({
     if (next !== undefined && next !== selected) onSelect(next);
   }
 
-  /* 키보드 — 네이티브 select 가 공짜로 주던 것을 직접 짠다.
-     타이핑 점프(예: '9' 를 눌러 9월로)는 아직 없다. */
+  /* 키보드 — 네이티브 select 가 공짜로 주던 것을 직접 짠다. */
   function handleKeyDown(e: React.KeyboardEvent) {
     const move = (delta: number) => {
       e.preventDefault();
@@ -91,6 +103,26 @@ function Column({
     if (e.key === "PageUp") return move(-3);
     if (e.key === "Home") return move(-index);
     if (e.key === "End") return move(values.length - 1 - index);
+
+    /* 숫자 타이핑 점프. 이어 치면 "1"→1월, "12"→12월 로 좁혀진다.
+       이어 붙인 버퍼로 못 찾으면 방금 누른 글자만으로 다시 찾는다 — select 와 같다.
+       (생년 2003 을 치다가 오타가 나도 마지막 숫자부터 다시 시작한다.) */
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const joined = buffer.current + e.key;
+      const joinedHit = typeAheadMatch(values, joined);
+      buffer.current = joinedHit !== null ? joined : e.key;
+
+      if (bufferTimer.current) clearTimeout(bufferTimer.current);
+      bufferTimer.current = setTimeout(() => (buffer.current = ""), TYPE_AHEAD_MS);
+
+      const hit = joinedHit ?? typeAheadMatch(values, e.key);
+      if (hit !== null) onSelect(hit);
+      return;
+    }
+
+    // 숫자가 아닌 키가 오면 치던 숫자열은 버린다.
+    buffer.current = "";
   }
 
   return (

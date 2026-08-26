@@ -38,3 +38,26 @@ export function clampIndex(index: number, count: number): number {
   if (count <= 0) return 0;
   return Math.min(Math.max(index, 0), count - 1);
 }
+
+/**
+ * 타이핑 점프(type-ahead)가 버퍼를 비우기까지의 시간(ms).
+ *
+ * 네이티브 select 와 같은 1초로 둔다. 짧게 잡으면 "31" 을 치는 동안 버퍼가 끊겨
+ * 3일로 가버리고, 길게 잡으면 다음에 누른 숫자가 앞 글자에 이어 붙는다.
+ */
+export const TYPE_AHEAD_MS = 1000;
+
+/**
+ * 눌린 숫자열로 갈 항목을 찾는다. 네이티브 select 처럼 **앞자리 일치**이고,
+ * 목록 순서대로 처음 맞는 것을 준다.
+ *
+ *   월 목록 1~12 에서 "9" → 9,  "1" → 1,  "12" → 12
+ *   생년 목록 2008~1981(내림차순)에서 "2003" → 2003,  "20" → 2008 (목록 순서상 먼저)
+ *
+ * 못 찾으면 null 이다. 호출하는 쪽이 버퍼를 버리고 마지막 글자로 다시 시도한다.
+ */
+export function typeAheadMatch(values: number[], buffer: string): number | null {
+  if (!buffer) return null;
+  const hit = values.find((v) => String(v).startsWith(buffer));
+  return hit ?? null;
+}
