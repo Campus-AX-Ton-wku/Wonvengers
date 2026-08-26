@@ -168,3 +168,14 @@
     transform: none;
   }
 }
+
+/* ── 휠 데이트 피커 컬럼 ──
+   스크롤바가 보이면 휠이 아니라 목록으로 읽힌다. 스크롤 자체는 살려 둔다. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

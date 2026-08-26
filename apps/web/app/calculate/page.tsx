@@ -6,6 +6,8 @@ import policiesData from "@/data/policies.json";
 import exampleListingsData from "@/data/example-listings.json";
 import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
+import { contractYearOptions } from "@/lib/date";
+import WheelDatePicker from "@/app/WheelDatePicker";
 import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { exampleBadge, exampleToListing, isVerifiedExample } from "@/lib/examples";
 import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
@@ -241,14 +243,16 @@ export default function InputPage() {
               <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />
             </Field>
 
-            <Field label="계약 시작 예정일">
-              <input
-                type="date"
-                className="input"
+            {/* ⚠️ 스파이크 — 휠 데이트 피커. 감이 나쁘면 DatePicker(네이티브 select)로
+                되돌린다. /eligibility 생년월일은 아직 select 라 나란히 비교할 수 있다. */}
+            <FieldGroup label="계약 시작 예정일">
+              <WheelDatePicker
+                label="계약 시작 예정일"
+                years={contractYearOptions(new Date().getFullYear())}
                 value={form.contractStartDate}
-                onChange={(e) => update("contractStartDate", e.target.value)}
+                onChange={(v) => update("contractStartDate", v)}
               />
-            </Field>
+            </FieldGroup>
 
             <Field label="거주 예정 개월 수">
               <NumberInput value={form.months} onChange={(v) => update("months", v)} />

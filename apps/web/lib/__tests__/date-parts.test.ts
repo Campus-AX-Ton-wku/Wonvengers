@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AGE_MAX, AGE_MIN } from "@/lib/age";
-import { birthYearOptions, dayOptions, daysInMonth, fromISODate, toISODate } from "@/lib/birth";
+import { birthYearOptions } from "@/lib/birth";
+import { contractYearOptions, dayOptions, daysInMonth, fromISODate, toISODate } from "@/lib/date";
 
 describe("생년 목록", () => {
   it("만 18세 생년이 맨 위, 만 45세 생년이 맨 아래다", () => {
@@ -52,5 +53,27 @@ describe("ISO 변환", () => {
   it("빈 값·형식이 아닌 값은 null 이다 — 부분 선택 상태를 날짜로 오해하지 않는다", () => {
     expect(fromISODate("")).toBeNull();
     expect(fromISODate("2003-8-12")).toBeNull();
+  });
+});
+
+/*
+ * 계약 시작 예정일은 생년월일과 반대 방향으로 간다. 둘이 같은 DatePicker 를 쓰므로
+ * 연도 목록이 뒤바뀌면 조용히 엉뚱한 해가 뜬다.
+ */
+describe("계약 시작 예정일 연도 목록", () => {
+  it("작년부터 내후년까지 오름차순이다", () => {
+    expect(contractYearOptions(2026)).toEqual([2025, 2026, 2027, 2028]);
+  });
+
+  // 상시 접수 정책(이사비·주거급여)은 이미 계약한 사람이 뒤늦게 신청한다.
+  it("작년을 포함한다 — 이미 계약한 사람이 실제 계약일을 넣을 수 있어야 한다", () => {
+    expect(contractYearOptions(2026)).toContain(2025);
+  });
+
+  it("생년 목록과 방향이 반대다", () => {
+    const birth = birthYearOptions(2026);
+    const contract = contractYearOptions(2026);
+    expect(birth[0]).toBeGreaterThan(birth[1]); // 내림차순
+    expect(contract[0]).toBeLessThan(contract[1]); // 오름차순
   });
 });
