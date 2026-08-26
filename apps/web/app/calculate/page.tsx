@@ -243,8 +243,8 @@ export default function InputPage() {
               <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />
             </Field>
 
-            {/* ⚠️ 스파이크 — 휠 데이트 피커. 감이 나쁘면 DatePicker(네이티브 select)로
-                되돌린다. /eligibility 생년월일은 아직 select 라 나란히 비교할 수 있다. */}
+            {/* 휠 데이트 피커. /eligibility 생년월일은 아직 네이티브 select 다 —
+                둘을 맞출지는 아직 결정하지 않았다 (app/DatePicker.tsx 가 그쪽). */}
             <FieldGroup label="계약 시작 예정일">
               <WheelDatePicker
                 label="계약 시작 예정일"

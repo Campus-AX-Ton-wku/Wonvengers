@@ -12,10 +12,10 @@ import {
 } from "@/lib/wheel";
 
 /**
- * ⚠️ 스파이크 — 굴러가는 감각을 실기기에서 보기 위한 것이다.
+ * 스크롤형 휠 데이트 피커 (Wheel Date Picker). 실기기 확인을 거쳐 채택했다 (2026-08-27).
  *
- * 감이 좋으면 접근성(스크린리더 낭독 문구·타이핑 점프)과 QA 항목을 붙여 정식화하고,
- * 나쁘면 이 파일만 지우고 app/DatePicker.tsx(네이티브 select)로 되돌린다.
+ * 남은 것: 타이핑 점프. 네이티브 select 는 '9' 를 누르면 9월로 뛰는데 여기는 없다.
+ * 목록이 최대 31개라 화살표로도 닿긴 하지만, 키보드 사용자에게는 select 보다 느리다.
  *
  * ── 왜 이렇게 만들었나 ──────────────────────────────────────────────
  *
@@ -78,8 +78,8 @@ function Column({
     if (next !== undefined && next !== selected) onSelect(next);
   }
 
-  /* 키보드 — 네이티브 select 가 공짜로 주던 것 중 최소한만 가져온다.
-     스파이크라 타이핑 점프(예: '9' 를 눌러 9월로)는 아직 없다. */
+  /* 키보드 — 네이티브 select 가 공짜로 주던 것을 직접 짠다.
+     타이핑 점프(예: '9' 를 눌러 9월로)는 아직 없다. */
   function handleKeyDown(e: React.KeyboardEvent) {
     const move = (delta: number) => {
       e.preventDefault();
