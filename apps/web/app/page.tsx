@@ -144,9 +144,6 @@ export default function Home() {
         >
           내 지원금 찾아보기
         </Link>
-        <p className="mt-3 text-center text-sm text-ink-500">
-          <span aria-hidden="true">⏱</span> 질문 4개 · 약 1분
-        </p>
       </div>
     </main>
   );
