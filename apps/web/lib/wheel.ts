@@ -10,7 +10,16 @@
 /** 한 항목의 높이(px). CSS 와 반드시 같은 값을 써야 스냅 위치가 어긋나지 않는다. */
 export const ITEM_HEIGHT = 40;
 
-/** 한 번에 보이는 줄 수. 홀수여야 가운데 한 줄이 정확히 선택 위치가 된다. */
+/**
+ * 한 번에 보이는 줄 수. 홀수여야 가운데 한 줄이 정확히 선택 위치가 된다.
+ *
+ * 3줄로 줄여봤다가 5줄로 되돌렸다. 이 값은 **굴리는 거리를 줄이지 않는다** —
+ * 28개 목록을 끝까지 가려면 어느 쪽이든 28 × ITEM_HEIGHT 를 굴려야 하고,
+ * 창만 좁아져서 굴리는 동안 보이는 맥락이 줄었다.
+ *
+ * 생년 28개가 답답했던 진짜 원인은 스냅 모드였다 — snap-mandatory 가 긴 플릭을
+ * 중간에 붙잡았다. proximity 로 바꾸면서 해결됐다 (WheelDatePicker 의 alignToNearest).
+ */
 export const VISIBLE_ROWS = 5;
 
 export const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ROWS;
