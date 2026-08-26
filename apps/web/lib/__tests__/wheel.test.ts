@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   ITEM_HEIGHT,
+  TYPE_AHEAD_MS,
   VISIBLE_ROWS,
   WHEEL_HEIGHT,
   WHEEL_PAD,
   clampIndex,
   indexFromScroll,
   scrollTopForIndex,
+  typeAheadMatch,
 } from "@/lib/wheel";
 
 /*
@@ -57,5 +59,51 @@ describe("스크롤 위치 ↔ 인덱스", () => {
     for (const i of [0, 1, 7, 11]) {
       expect(indexFromScroll(scrollTopForIndex(i), 12)).toBe(i);
     }
+  });
+});
+
+/*
+ * 타이핑 점프. 네이티브 select 가 주던 것 중 마지막으로 채운 조각이다.
+ * 생년 목록은 28개라 화살표만으로는 멀어서, 이게 없으면 키보드 사용자가 제일 손해다.
+ */
+describe("타이핑 점프", () => {
+  const 월 = Array.from({ length: 12 }, (_, i) => i + 1);
+  const 일 = Array.from({ length: 31 }, (_, i) => i + 1);
+  /** 생년은 내림차순이다 (2008 → 1981). 목록 순서가 결과를 바꾼다. */
+  const 생년 = Array.from({ length: 28 }, (_, i) => 2008 - i);
+
+  it("한 자리를 누르면 그 숫자로 간다", () => {
+    expect(typeAheadMatch(월, "9")).toBe(9);
+    expect(typeAheadMatch(일, "3")).toBe(3);
+  });
+
+  it("이어 치면 좁혀진다 — 1 다음 2 는 12월", () => {
+    expect(typeAheadMatch(월, "1")).toBe(1);
+    expect(typeAheadMatch(월, "12")).toBe(12);
+    expect(typeAheadMatch(일, "31")).toBe(31);
+  });
+
+  it("앞자리 일치이고 목록 순서대로 처음 맞는 것을 준다", () => {
+    // 생년 목록이 내림차순이라 "20" 은 2008 이 먼저다
+    expect(typeAheadMatch(생년, "20")).toBe(2008);
+    expect(typeAheadMatch(생년, "200")).toBe(2008);
+    expect(typeAheadMatch(생년, "2003")).toBe(2003);
+    expect(typeAheadMatch(생년, "199")).toBe(1999);
+  });
+
+  it("없는 숫자열은 null 이다 — 호출하는 쪽이 버퍼를 버린다", () => {
+    expect(typeAheadMatch(생년, "9")).toBeNull(); // 9 로 시작하는 생년은 없다
+    expect(typeAheadMatch(월, "13")).toBeNull();
+    expect(typeAheadMatch(월, "0")).toBeNull();
+  });
+
+  it("빈 버퍼는 null 이다", () => {
+    expect(typeAheadMatch(월, "")).toBeNull();
+    expect(typeAheadMatch([], "1")).toBeNull();
+  });
+
+  // 짧으면 "31" 을 치는 동안 끊겨 3일로 가고, 길면 다음에 누른 숫자가 앞에 붙는다.
+  it("버퍼 유지 시간이 네이티브 select 와 같은 1초다", () => {
+    expect(TYPE_AHEAD_MS).toBe(1000);
   });
 });
