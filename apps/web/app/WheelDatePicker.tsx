@@ -126,11 +126,14 @@ function Column({
 }
 
 export default function WheelDatePicker({
+  id,
   label,
   years,
   value,
   onChange,
 }: {
+  /** 트리거 버튼의 id. 바깥 <label htmlFor> 과 묶을 때 쓴다. */
+  id?: string;
   label: string;
   years: number[];
   /** YYYY-MM-DD, 아직 안 고르면 "" */
@@ -156,20 +159,23 @@ export default function WheelDatePicker({
   }
 
   const shown = fromISODate(value);
+  const shownText = shown ? `${shown.year}년 ${shown.month}월 ${shown.day}일` : null;
 
   return (
     <div className="flex flex-col gap-2">
+      {/* 버튼이 스스로 필드명과 현재 값을 말한다. 바깥 <label> 이 이름을 덮으면
+          스크린리더가 "생년월일, 버튼" 까지만 읽고 고른 날짜를 알려주지 않는다. */}
       <button
+        id={id}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        aria-label={`${label} — ${shownText ?? "선택 안 함"}`}
         className={`input flex items-center justify-between text-left ${
           shown ? "font-semibold text-ink-900" : "text-ink-500"
         } ${FOCUS_RING}`}
       >
-        <span>
-          {shown ? `${shown.year}년 ${shown.month}월 ${shown.day}일` : "날짜 선택"}
-        </span>
+        <span>{shownText ?? "날짜 선택"}</span>
         <span aria-hidden="true" className="text-xs text-ink-500">
           {open ? "닫기" : "고르기"}
         </span>
