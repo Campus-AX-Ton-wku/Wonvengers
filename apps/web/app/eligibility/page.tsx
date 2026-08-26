@@ -6,7 +6,7 @@ import policiesData from "@/data/policies.json";
 import type { EligibilityProfile, PolicyMeta } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
 import { birthYearOptions } from "@/lib/birth";
-import DatePicker from "@/app/DatePicker";
+import WheelDatePicker from "@/app/WheelDatePicker";
 import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
@@ -152,10 +152,12 @@ function QuestionField({
         {question.label}
       </label>
 
-      {/* 생년월일 — 최신 생년이 목록 맨 위다. <input type="date"> 는 오늘(2026)부터
+      {/* 생년월일 — 계약 시작 예정일과 같은 휠 피커를 쓴다. 앱 안에 날짜 UI 가
+          두 종류이면 같은 동작을 두 번 배워야 한다.
+          연도는 최신 생년(만 18세)이 맨 위다. <input type="date"> 는 오늘(2026)부터
           시작해서 청년이 19년을 거슬러 올라가야 했다. */}
       {question.type === "date" && (
-        <DatePicker
+        <WheelDatePicker
           id={inputId}
           label={question.label}
           years={birthYearOptions(new Date().getFullYear())}
