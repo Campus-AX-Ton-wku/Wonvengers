@@ -27,18 +27,18 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
 
-    // 금액 칸은 만원 단위다 — 300 = 300만원, 35 = 35만원
+    // 금액 칸은 만원 단위다 — 300 = 300만원, 480 = 480만원
     expect(screen.getByDisplayValue("300")).toBeTruthy(); // 보증금 3,000,000원
-    expect(screen.getByDisplayValue("35")).toBeTruthy(); // 월세 350,000원
+    expect(screen.getByDisplayValue("480")).toBeTruthy(); // 연세 4,800,000원
   });
 
   it("가상 예시라는 배지와 설명을 보여준다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("가상 예시 · 실제 매물이 아닙니다")).toBeTruthy();
     expect(screen.getByText(/발표 시연을 위해 만든 가상 조건/)).toBeTruthy();
   });
@@ -47,16 +47,16 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("300만원")).toBeTruthy(); // 보증금 3,000,000
-    expect(screen.getByText("35만원")).toBeTruthy(); // 월세 350,000
+    expect(screen.getByText("480만원")).toBeTruthy(); // 연세 4,800,000
   });
 
   it("예시를 불러와도 '실제 계약과 일치' 확인은 켜지지 않는다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     // 2번째 스텝으로 넘어가야 체크박스가 보인다
     await user.click(screen.getByRole("button", { name: "다음" }));
 
@@ -67,7 +67,7 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.getByText(/실제 계약이 아닌 예시임을 알고/)).toBeTruthy();
@@ -78,24 +78,24 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     const saved = loadListing();
     expect(saved?.sourceType).toBe("예시 데이터");
-    expect(saved?.exampleId).toBe("iksan-oneroom-monthly");
+    expect(saved?.exampleId).toBe("iksan-oneroom-yearly");
   });
 
   it("예시 지우기를 누르면 입력이 초기화된다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("가상 예시 · 실제 매물이 아닙니다")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "예시 지우고 직접 입력하기" }));
     expect(screen.queryByText("가상 예시 · 실제 매물이 아닙니다")).toBeNull();
-    expect(screen.queryByDisplayValue("35")).toBeNull();
+    expect(screen.queryByDisplayValue("480")).toBeNull();
   });
 });
 
