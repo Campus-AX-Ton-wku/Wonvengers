@@ -35,6 +35,15 @@ type Parts = { year: number; month: number; day: number };
 const FOCUS_RING =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700";
 
+/* globals.css 의 prefers-reduced-motion 규칙은 CSS 애니메이션만 끈다.
+   scrollTo({behavior:"smooth"}) 는 별개라 여기서 직접 물어본다. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
+}
+
 /** 아직 아무것도 안 고른 상태에서 휠을 어디에 놓고 시작할지. */
 function startingParts(years: number[]): Parts {
   const now = new Date();
@@ -85,10 +94,31 @@ function Column({
     const el = ref.current;
     if (!el) return;
     if (settling.current) clearTimeout(settling.current);
-    settling.current = setTimeout(() => (settling.current = null), 140);
+    /* 마지막 스크롤 이벤트로부터 140ms 뒤 = 관성이 멎은 시점. 관성 중에는 계속
+       리셋되므로 이 타이머는 손을 뗀 뒤 한 번만 터진다. */
+    settling.current = setTimeout(() => {
+      settling.current = null;
+      alignToNearest();
+    }, 140);
 
     const next = values[indexFromScroll(el.scrollTop, values.length)];
     if (next !== undefined && next !== selected) onSelect(next);
+  }
+
+  /**
+   * snap-proximity 는 스냅을 **보장하지 않는다.** 그게 목적이다 — mandatory 는
+   * 가장 가까운 지점으로 강제로 붙잡아 긴 플릭을 중간에 죽인다. 28개짜리 생년
+   * 목록에서 그게 답답함의 정체였다.
+   *
+   * 대신 관성이 멎은 자리가 항목 사이에 걸칠 수 있다. 그러면 가운데 하이라이트
+   * 밴드와 고른 값이 어긋나 보인다. 그래서 멎은 뒤 정확히 가운데로 붙인다.
+   */
+  function alignToNearest() {
+    const el = ref.current;
+    if (!el) return;
+    const top = scrollTopForIndex(indexFromScroll(el.scrollTop, values.length));
+    if (Math.abs(el.scrollTop - top) <= 1) return; // 이미 맞았다. 다시 쓰면 튄다.
+    el.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }
 
   /* 키보드 — 네이티브 select 가 공짜로 주던 것을 직접 짠다. */
@@ -134,7 +164,7 @@ function Column({
       tabIndex={0}
       onScroll={handleScroll}
       onKeyDown={handleKeyDown}
-      className={`no-scrollbar flex-1 snap-y snap-mandatory overflow-y-scroll rounded-lg ${FOCUS_RING}`}
+      className={`no-scrollbar flex-1 snap-y snap-proximity overflow-y-scroll rounded-lg ${FOCUS_RING}`}
       style={{ height: WHEEL_HEIGHT, paddingTop: WHEEL_PAD, paddingBottom: WHEEL_PAD }}
     >
       {values.map((v) => (
