@@ -29,82 +29,20 @@ const POLICY_COUNT = policiesJson.length;
  */
 const MAX_BENEFIT: { won: number; asOf: string } | null = null;
 
-/*
- * 히어로 그래픽 — 원룸 건물, 창 하나에 불이 들어온다.
- *
- * 박공지붕 단독주택을 쓰지 않는 이유: 익산 청년의 월세는 원룸·오피스텔·빌라다.
- * 단독주택은 이 사용자가 살지 않는 집이다.
- *
- * 서사는 "켜진 창" 하나가 나른다 — 흩어진 지원금 중 내 것 하나가 찾아졌다는 뜻이다.
- * 떨어지는 동전을 쓰지 않는 이유: 정지 상태(prefers-reduced-motion)에서 경로가
- * 읽히지 않아 의미가 사라진다. 창은 켜진 채로 멈춰 있어도 그대로 읽힌다.
- *
- * 선 굵기는 4 하나로 통일한다. 이전 버전은 채움·선 4·선 2.5 세 어법이 섞여 있었다.
- */
-const WINDOWS = [
-  { x: 70, y: 58, accent: false, delay: 220 },
-  { x: 102, y: 58, accent: true, delay: 520 },
-  { x: 134, y: 58, accent: false, delay: 300 },
-  { x: 70, y: 88, accent: false, delay: 380 },
-  { x: 102, y: 88, accent: false, delay: 260 },
-  { x: 134, y: 88, accent: false, delay: 340 },
-];
-
-function HeroGraphic() {
-  return (
-    // viewBox 를 건물 실제 범위(x 54~170, y 32~144)에 stroke 여유만 더해 조인다.
-    // 넓은 viewBox 를 쓰면 preserveAspectRatio 가 높이에 맞춰 축소해서 건물이 작아진다.
-    <svg viewBox="50 28 124 120" className="h-36 w-full" aria-hidden="true">
-      <g className="draw-in">
-        {/* 옥상 슬래브 — 평지붕이라 건물 폭보다 살짝 넓게만 낸다 */}
-        <rect x={54} y={32} width={116} height={11} rx={3} className="fill-brand-600" />
-        {/* 몸통 */}
-        <rect
-          x={64}
-          y={43}
-          width={96}
-          height={101}
-          rx={4}
-          className="fill-white stroke-brand-600"
-          strokeWidth={4}
-        />
-        {/* 현관 */}
-        <rect x={104} y={118} width={16} height={26} rx={2} className="fill-brand-600" />
-      </g>
-
-      {WINDOWS.map((w, i) => (
-        <rect
-          key={`win-${i}`}
-          x={w.x}
-          y={w.y}
-          width={20}
-          height={18}
-          rx={2}
-          className={`pop-in ${w.accent ? "fill-accent-600" : "fill-brand-200"}`}
-          style={{ animationDelay: `${w.delay}ms` } as React.CSSProperties}
-        />
-      ))}
-    </svg>
-  );
-}
-
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-9 px-6 py-12">
-      {/* 브랜드 락업 — 워드마크와 건물이 한 덩어리로 붙는다.
+      {/* 워드마크만 남긴다. 건물 그래픽은 지웠다 — 워드마크·헤드라인·설명·CTA 가
+          이미 위에서 아래로 읽히는데, 그래픽이 그 사이에 끼어 시선을 한 번 끊었다.
+          왼쪽 정렬은 아래 헤드라인·설명과 같은 축을 쓰기 위한 것이다. 가운데 정렬이면
+          시선이 좌우로 한 번 튄다.
           워드마크가 크지만 <h1> 은 아니다. 문서 개요에서 제목 자리는 사실이 갖는다. */}
-      <div className="text-center">
-        <p
-          className="rise-in text-6xl font-extrabold tracking-tight text-ink-900"
-          style={{ animationDelay: "0ms" }}
-        >
-          Perky
-        </p>
-
-        <div className="rise-in mt-5" style={{ animationDelay: "110ms" }}>
-          <HeroGraphic />
-        </div>
-      </div>
+      <p
+        className="rise-in text-8xl font-extrabold tracking-tight text-ink-900"
+        style={{ animationDelay: "0ms" }}
+      >
+        Perky
+      </p>
 
       <div>
         {/* 헤드라인이 사실을 나른다 — 지역과 개수가 제목 자리를 갖는다. */}

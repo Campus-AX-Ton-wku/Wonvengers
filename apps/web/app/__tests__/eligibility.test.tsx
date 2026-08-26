@@ -53,7 +53,7 @@ async function pickBirthDate(
   month: number,
   day: number
 ) {
-  await user.selectOptions(screen.getByLabelText("생년월일"), String(year));
+  await user.selectOptions(screen.getByLabelText("생년월일 년"), String(year));
   await user.selectOptions(screen.getByLabelText("생년월일 월"), String(month));
   await user.selectOptions(screen.getByLabelText("생년월일 일"), String(day));
 }
@@ -70,7 +70,7 @@ describe("생년월일 선택", () => {
 
   it("목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
     await openFirstStep();
-    const years = Array.from((screen.getByLabelText("생년월일") as HTMLSelectElement).options)
+    const years = Array.from((screen.getByLabelText("생년월일 년") as HTMLSelectElement).options)
       .map((o) => o.value)
       .filter(Boolean);
 
@@ -82,7 +82,7 @@ describe("생년월일 선택", () => {
     const user = userEvent.setup();
     await openFirstStep();
 
-    await user.selectOptions(screen.getByLabelText("생년월일"), "2003");
+    await user.selectOptions(screen.getByLabelText("생년월일 년"), "2003");
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
 

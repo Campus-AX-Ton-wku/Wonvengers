@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
 import { loadListing, saveAnswers } from "@/lib/storage";
@@ -27,18 +27,18 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
 
-    // 금액 칸은 만원 단위다 — 300 = 300만원, 35 = 35만원
+    // 금액 칸은 만원 단위다 — 300 = 300만원, 480 = 480만원
     expect(screen.getByDisplayValue("300")).toBeTruthy(); // 보증금 3,000,000원
-    expect(screen.getByDisplayValue("35")).toBeTruthy(); // 월세 350,000원
+    expect(screen.getByDisplayValue("480")).toBeTruthy(); // 연세 4,800,000원
   });
 
   it("가상 예시라는 배지와 설명을 보여준다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("가상 예시 · 실제 매물이 아닙니다")).toBeTruthy();
     expect(screen.getByText(/발표 시연을 위해 만든 가상 조건/)).toBeTruthy();
   });
@@ -47,16 +47,16 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("300만원")).toBeTruthy(); // 보증금 3,000,000
-    expect(screen.getByText("35만원")).toBeTruthy(); // 월세 350,000
+    expect(screen.getByText("480만원")).toBeTruthy(); // 연세 4,800,000
   });
 
   it("예시를 불러와도 '실제 계약과 일치' 확인은 켜지지 않는다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     // 2번째 스텝으로 넘어가야 체크박스가 보인다
     await user.click(screen.getByRole("button", { name: "다음" }));
 
@@ -67,7 +67,7 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.getByText(/실제 계약이 아닌 예시임을 알고/)).toBeTruthy();
@@ -78,24 +78,24 @@ describe("/calculate 예시 매물", () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     const saved = loadListing();
     expect(saved?.sourceType).toBe("예시 데이터");
-    expect(saved?.exampleId).toBe("iksan-oneroom-monthly");
+    expect(saved?.exampleId).toBe("iksan-oneroom-yearly");
   });
 
   it("예시 지우기를 누르면 입력이 초기화된다", async () => {
     const user = userEvent.setup();
     render(<CalculatePage />);
 
-    await user.click(screen.getByRole("button", { name: "익산 원룸 · 월세" }));
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
     expect(screen.getByText("가상 예시 · 실제 매물이 아닙니다")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "예시 지우고 직접 입력하기" }));
     expect(screen.queryByText("가상 예시 · 실제 매물이 아닙니다")).toBeNull();
-    expect(screen.queryByDisplayValue("35")).toBeNull();
+    expect(screen.queryByDisplayValue("480")).toBeNull();
   });
 });
 
@@ -168,5 +168,95 @@ describe("/calculate 1층 답변 이어받기", () => {
     render(<CalculatePage />);
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
     expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
+  });
+});
+
+/*
+ * 계약 시작 예정일은 휠 데이트 피커다 (⚠️ 스파이크).
+ *
+ * jsdom 은 레이아웃이 없어 실제 스크롤을 흉내낼 수 없다 — scrollTop 이 항상 0이다.
+ * 그래서 여기서는 굴러가는 감각이 아니라 **값이 새는 경로**를 지킨다: 확인을 누르기
+ * 전에는 저장되지 않는지, 없는 날짜가 남지 않는지, 연도 방향이 뒤바뀌지 않았는지.
+ * 스크롤 위치 ↔ 인덱스 계산은 lib/__tests__/wheel.test.ts 가 따로 덮는다.
+ */
+describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
+  const 열기 = () => screen.getByRole("button", { name: /날짜 선택|년 \d+월/ });
+  const 칸 = (part: string) => screen.getByRole("listbox", { name: `계약 시작 예정일 ${part}` });
+  const 항목 = (part: string, name: string | RegExp) =>
+    within(칸(part)).getByRole("option", { name });
+
+  async function goToStep2(user: ReturnType<typeof userEvent.setup>) {
+    render(<CalculatePage />);
+    await user.click(screen.getByRole("button", { name: "익산 원룸 · 연세" }));
+    await user.click(screen.getByRole("button", { name: "다음" }));
+  }
+
+  it("연도 목록이 작년부터 오름차순이다 (생년월일과 반대 방향)", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+    await user.click(열기());
+
+    const years = within(칸("년")).getAllByRole("option").map((o) => o.textContent);
+    const now = new Date().getFullYear();
+    expect(years[0]).toBe(`${now - 1}년`);
+    expect(years.at(-1)).toBe(`${now + 2}년`);
+  });
+
+  // 휠은 항상 무언가를 가리킨다. 확인 전에 값이 새면 손대지 않은 사람이 오늘 날짜를 제출한다.
+  it("'확인' 을 누르기 전에는 값이 저장되지 않는다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+
+    await user.click(열기());
+    await user.click(항목("년", "2027년"));
+    await user.click(항목("월", "9월"));
+    await user.click(항목("일", "1일"));
+
+    // 아직 확인을 안 눌렀다 — 필수값 검증이 막아야 한다
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByText("계약 시작 예정일을 입력해주세요.")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "확인" }));
+    // 저장은 검증을 다 통과해야 일어난다 — '실제 계약과 일치' 확인까지 켠다
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.queryByText("계약 시작 예정일을 입력해주세요.")).toBeNull();
+    expect(loadListing()?.contractStartDate).toBe("2027-09-01");
+  });
+
+  it("고른 날짜를 트리거 버튼에 그대로 보여준다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+
+    expect(screen.getByRole("button", { name: "날짜 선택" })).toBeTruthy();
+
+    await user.click(열기());
+    await user.click(항목("년", "2027년"));
+    await user.click(항목("월", "3월"));
+    await user.click(항목("일", "5일"));
+    await user.click(screen.getByRole("button", { name: "확인" }));
+
+    expect(screen.getByRole("button", { name: /2027년 3월 5일/ })).toBeTruthy();
+  });
+
+  // 3월 31일을 고른 뒤 2월로 옮기면 2월 31일이 남으면 안 된다.
+  it("없는 날짜가 남지 않게 자른다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+
+    await user.click(열기());
+    await user.click(항목("년", "2026년"));
+    await user.click(항목("월", "3월"));
+    await user.click(항목("일", "31일"));
+    await user.click(항목("월", "2월"));
+
+    expect(항목("일", "28일").getAttribute("aria-selected")).toBe("true");
+    expect(within(칸("일")).queryByRole("option", { name: "31일" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "확인" }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadListing()?.contractStartDate).toBe("2026-02-28");
   });
 });
