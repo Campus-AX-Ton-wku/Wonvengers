@@ -25,6 +25,26 @@
  * oneTimeMoveCost 를 얹었다. 값을 바꾸면 덱의 숫자가 바뀐다.
  */
 
+/*
+ * ── 실행 준비 ──────────────────────────────────────────────────────
+ *
+ *   npm run dev                            # 다른 창에서 서버를 띄워둔다
+ *   node scripts/capture-screens.mjs       # docs/이미지/ 에 4장을 덮어쓴다
+ *   CAPTURE_OUT=/tmp/shots node ...        # 덮어쓰기 전에 눈으로 볼 때
+ *
+ * **WSL 주의 1 — 한글 폰트.** globals.css 의 폰트 스택(Pretendard → Apple SD
+ * Gothic Neo → Malgun Gothic)은 웹폰트가 아니라 기기에 설치된 것을 쓴다. 리눅스
+ * 헤드리스에는 셋 다 없어서 한글이 전부 두부(□)로 찍힌다. Pretendard 를 깔면
+ * 해결된다 (~/.local/share/fonts + fc-cache). 이모지도 별도 폰트가 필요하다
+ * (fonts-noto-color-emoji) — 없으면 섹션 제목의 🧩·💳 가 두부가 된다.
+ *
+ * **WSL 주의 2 — HMR 이 안 돈다.** /mnt/c (윈도우 파일시스템)에서는 inotify 가
+ * 동작하지 않아 Next dev 가 파일 변경을 못 잡는다. 코드를 고친 뒤 그냥 찍으면
+ * **낡은 화면이 조용히 찍힌다.** 서버를 폴링으로 띄우거나 재시작할 것:
+ *
+ *   WATCHPACK_POLLING=true npm run dev
+ */
+
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -70,18 +90,21 @@ const FIXTURE = {
     exampleId: "iksan-oneroom-yearly",
   },
 
-  /* 판정 문항 16개. 모두 채워야 결과가 '확인 필요' 로 덮이지 않는다. */
+  /* 판정 문항 16개. 모두 채워야 결과가 '확인 필요' 로 덮이지 않는다.
+     값은 lib/__tests__/fixtures.ts 의 makeProfile 과 같게 둔다 — 테스트가 보는
+     상태와 캡처에 찍히는 상태가 갈리면, 통과한 테스트가 캡처를 보증하지 못한다.
+     (isStudentOrEmployed 는 boolean 이 아니라 "student" 다.) */
   profile: {
     birthDate: "2003-08-12",
-    isStudentOrEmployed: true,
+    isStudentOrEmployed: "student",
     livesApartFromParents: true,
     canRegisterResidence: true,
     hasNoHouse: true,
     isContractHolder: true,
     householdSize: 1,
-    useOriginHousehold: false,
-    ownHouseholdMonthlyIncome: 1200000,
-    originHouseholdMonthlyIncome: 3000000,
+    useOriginHousehold: true,
+    ownHouseholdMonthlyIncome: 1000000,
+    originHouseholdMonthlyIncome: 1000000,
     assetsUnder107M: true,
     isBasicLivelihoodRecipient: false,
     isNearPovertyClass: false,
@@ -126,6 +149,12 @@ async function main() {
   for (const screen of SCREENS) {
     const url = `${BASE}${screen.path}`;
     await page.goto(url, { waitUntil: "networkidle" });
+
+    /* Next 개발 서버가 좌하단에 띄우는 표시가 캡처에 함께 찍힌다.
+       next.config 로 끄면 팀 전체의 개발 환경이 바뀌므로 캡처할 때만 감춘다. */
+    await page.addStyleTag({
+      content: "nextjs-portal, [data-nextjs-toast], #__next-build-watcher { display: none !important }",
+    });
 
     /* 문구가 나타날 때까지 기다린다. '불러오는 중...' 상태로 찍히면 빈 화면이 된다. */
     try {
