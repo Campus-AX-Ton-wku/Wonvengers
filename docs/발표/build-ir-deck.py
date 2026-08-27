@@ -180,11 +180,14 @@ page(s, 4)
 # ══ 5 · 검증 ═══════════════════════════════════════════════════════
 s = prs.slides.add_slide(BLANK)
 head(s, "검증", "숫자를 믿어도 되는지부터 확인했습니다.")
-# 숫자는 2026-08-27, PR #61 머지 시점으로 다시 셌다. 테스트는 `npm test` 의 통과
-# 건수, PR 은 `gh pr list --state merged`, 커밋은 `git rev-list --count develop`.
-# 스냅샷이므로 발표 직전에 다시 세는 것이 맞다.
+# 2026-08-27 기준. 세는 법:
+#   테스트  cd apps/web && npm test          → 통과 건수
+#   PR      gh pr list --state merged --json number --jq 'length'
+#   커밋    git rev-list --count main
+# 커밋 수를 정확한 숫자로 적으면 이 파일을 고치는 커밋 때문에 또 어긋난다
+# (실제로 119 로 적었다가 120 이 됐다). 그래서 '120+' 로 둔다.
 STAT = [("5건", "정책 전부 공고 원문 대조"), ("263", "테스트 통과 (로직 + 화면)"),
-        ("61", "PR · 커밋 119개"), ("4주", "배포까지 (계정 없이 열림)")]
+        ("62", "PR · 커밋 120+"), ("4주", "배포까지 (계정 없이 열림)")]
 cw = int((CW - 3*int(0.22*IN))/4); gap = int(0.22*IN)
 for i, (n, label) in enumerate(STAT):
     x = M + i*(cw+gap)
