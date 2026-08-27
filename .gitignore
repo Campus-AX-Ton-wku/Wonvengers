@@ -16,3 +16,6 @@ docs/디자인/reference/
 .claude/
 # impeccable 디자인 진단 스냅샷 (로컬 기록)
 .impeccable/
+
+# 루트에 굴러다니는 로고 원본 — 정식 마스터는 docs/디자인/아이콘/ 에 있다
+/wonvengers-logo.jpg
