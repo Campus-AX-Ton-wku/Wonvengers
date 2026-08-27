@@ -6,7 +6,7 @@ import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
 import { ChevronDownIcon } from "@/app/icons";
-import { AGE_MAX, AGE_MIN, AGE_OPTIONS, POLICY_AGE_MAX, isAgeOutOfRange } from "@/lib/age";
+import { AGE_MIN, POLICY_AGE_MAX, ageOptionGroups, isAgeOutOfRange } from "@/lib/age";
 import { applicationOpenCount, candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
@@ -83,6 +83,10 @@ function Question({
  * 한 살씩 −/+ 로 누르는 건 25살까지 일곱 번을 눌러야 한다. 네이티브 <select> 는
  * iOS·안드로이드에서 휠 피커로 뜨고, 데스크톱에서는 스크롤 가능한 목록이 된다 —
  * 직접 만든 스크롤 위젯보다 손에 익고 키보드·스크린리더가 그냥 동작한다.
+ *
+ * 목록은 <optgroup> 두 개로 나뉜다. 대상 정책이 없는 나이(40~45세)를 지우지 않고
+ * 묶어서 보여주는 이유는 lib/age.ts 의 ageOptionGroups 주석에 있다. 네이티브
+ * select 라 그룹 라벨이 모바일 휠 피커에도 그대로 뜨고 스크린리더가 읽는다.
  */
 function AgePicker({
   age,
@@ -99,11 +103,16 @@ function AgePicker({
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
         className={`w-full appearance-none rounded-lg border-2 border-ink-200 bg-white py-3 pl-4 pr-10 text-base font-bold text-ink-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 ${FOCUS_RING}`}
       >
+        {/* 미선택은 그룹 밖에 둔다. 그룹 안에 넣으면 '있음' 묶음의 첫 항목처럼 읽힌다. */}
         <option value="">나이를 선택하세요</option>
-        {AGE_OPTIONS.map((n) => (
-          <option key={n} value={n}>
-            만 {n}세
-          </option>
+        {ageOptionGroups().map((group) => (
+          <optgroup key={group.label} label={group.label}>
+            {group.ages.map((n) => (
+              <option key={n} value={n}>
+                만 {n}세
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       <ChevronDownIcon

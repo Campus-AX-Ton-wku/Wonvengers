@@ -59,6 +59,41 @@ describe("/find 나이 선택", () => {
     await user.selectOptions(ageSelect(), "42");
     expect(screen.queryByText(/이 나이로는/)).not.toBeNull();
   });
+
+  /*
+   * 위 안내는 고른 **뒤에** 뜬다. 그래서 목록 안에서도 경계를 보여준다 —
+   * 41세가 그 옵션이 무용하다는 걸 고르기 전에 알 수 있어야 한다.
+   * (지우지 않는 이유는 lib/__tests__/age.test.ts 의 ageOptionGroups 참고.)
+   */
+  it("목록이 해당 지원금 있음·없음 두 그룹으로 나뉘어 있다", () => {
+    render(<FindPage />);
+    const groups = Array.from(ageSelect().querySelectorAll("optgroup"));
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0].label).toMatch(/있음/);
+    expect(groups[1].label).toMatch(/없음/);
+  });
+
+  it("39세는 '있음' 그룹, 40세는 '없음' 그룹에 들어 있다", () => {
+    render(<FindPage />);
+    const 그룹라벨 = (value: string) =>
+      (
+        Array.from(ageSelect().options).find((o) => o.value === value)
+          ?.parentElement as HTMLOptGroupElement | null
+      )?.label;
+
+    expect(그룹라벨("39")).toMatch(/있음/);
+    expect(그룹라벨("40")).toMatch(/없음/);
+  });
+
+  /* '나이를 선택하세요' 는 어느 그룹에도 넣지 않는다 — 그룹 안에 들어가면
+     '있음' 묶음의 첫 항목처럼 읽힌다. */
+  it("미선택 항목은 그룹 밖에 있다", () => {
+    render(<FindPage />);
+    const 미선택 = Array.from(ageSelect().options).find((o) => o.value === "");
+
+    expect(미선택?.parentElement?.tagName).toBe("SELECT");
+  });
 });
 
 describe("/find 목록으로 넘어가는 CTA", () => {
