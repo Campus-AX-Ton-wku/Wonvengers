@@ -50,7 +50,10 @@
 
 @layer base {
   body {
-    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    /* --font-pretendard 는 app/layout.tsx 의 next/font/local 이 넣는다. 그 안에
+       폴백(Apple SD Gothic Neo → Malgun Gothic → sans-serif)까지 들어 있어서
+       폰트를 못 받아도 한글이 읽힌다. 변수가 없을 때를 대비해 뒤에도 남긴다. */
+    font-family: var(--font-pretendard), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     background: #ffffff;
     color: var(--color-ink-900);
   }
