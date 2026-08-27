@@ -6,6 +6,7 @@ import exampleListingsData from "@/data/example-listings.json";
 import type { ExampleListing, ListingInput, LoanProductMeta, PolicyResult, PolicyStatus } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
 import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
+import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { ResultAppBar } from "../Stepper";
@@ -55,9 +56,13 @@ export default function ResultPage() {
       <ResultAppBar onBack={() => router.push("/eligibility")} />
 
       <main className="flex flex-col gap-6 pb-10 pt-2">
-        <h1 className="text-center text-2xl font-extrabold leading-snug text-ink-900">
-          최대 지원 가능액과
-          <br />최종 예상 주거비예요
+        {/* 아래 카드가 '최대 지원 가능액'·'최종 예상 주거비' 라벨을 이미 단다.
+            제목이 같은 말을 반복하면 캡처 한 장에서 같은 문구가 두 번 나오고,
+            두 줄이 화면 상단을 먹어 금액 카드가 아래로 밀린다.
+            금액은 넣지 않는다 — app/page.tsx 의 MAX_BENEFIT 주석과 같은 태도로,
+            확정되지 않은 금액을 가장 큰 약속으로 쓰지 않는다. */}
+        <h1 className="text-center text-xl font-extrabold leading-snug text-ink-900">
+          내 예상 결과예요
         </h1>
 
         {activeExample && (
@@ -76,20 +81,28 @@ export default function ResultPage() {
       <section className="amount-in rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
         {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
             중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
-            accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1 */}
+            accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1
+
+            크기도 갈라놓는다. 전에는 둘 다 text-3xl 이어서 색만 달랐는데, 지출액이
+            자릿수가 하나 더 많아 시각적으로 압도했다 — 자릿수가 색을 이긴다.
+            large text 기준(3:1)이라 4.76:1 로 여유가 있다.
+
+            text-5xl 로 올렸다가 되돌렸다 — 390px 폭에서 '304만 4,000원' 이 두 줄로
+            넘치고 '원' 만 다음 줄에 떨어졌다. 만 단위 표기가 원 단위보다 길어질 수
+            있다는 걸 캡처를 보고 알았다. break-keep 은 단위 사이에서 끊기는 것도 막는다. */}
         <p className="text-xs font-semibold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
-        <p className="text-3xl font-extrabold text-accent-600 tabular-nums">
-          {summary.maxSupportAmount.toLocaleString()}원
+        <p className="break-keep text-4xl font-extrabold text-accent-600 tabular-nums">
+          {formatKoreanMoney(summary.maxSupportAmount)}
         </p>
 
         <div className="my-3 h-px bg-brand-200" />
 
         <p className="text-xs font-semibold text-ink-500">최종 예상 주거비 (명목 지출 − 최대 지원 가능액)</p>
-        <p className="text-3xl font-extrabold text-ink-900 tabular-nums">
-          {summary.finalEstimatedHousingCost.toLocaleString()}원
+        <p className="break-keep text-xl font-extrabold text-ink-900 tabular-nums">
+          {formatKoreanMoney(summary.finalEstimatedHousingCost)}
         </p>
         <p className="mt-1 text-xs text-ink-500">
-          명목 총 지출 {summary.nominalTotalCost.toLocaleString()}원 기준
+          명목 총 지출 {formatKoreanMoney(summary.nominalTotalCost)} 기준
         </p>
 
         {unknownConditions.length > 0 && (
@@ -118,7 +131,7 @@ export default function ResultPage() {
               <li key={item.id} className="flex items-baseline justify-between gap-3 text-ink-600">
                 <span className="text-xs">{item.name}</span>
                 <span className="shrink-0 text-xs font-bold text-ink-900 tabular-nums">
-                  {item.amount.toLocaleString()}원
+                  {formatKoreanMoney(item.amount)}
                 </span>
               </li>
             ))}
@@ -150,7 +163,7 @@ export default function ResultPage() {
           <span aria-hidden="true">💳</span> 계약 시 필요한 목돈과 지급 시점은 다릅니다
         </p>
         <p className="mt-1 text-ink-500">
-          계약 당일 필요한 현금: <strong>{upfrontCash.toLocaleString()}원</strong> (보증금
+          계약 당일 필요한 현금: <strong>{formatKoreanMoney(upfrontCash)}</strong> (보증금
           {listing.contractType === "연세" ? " + 연세 선납액" : ""})
         </p>
         <p className="mt-1 text-ink-500">
@@ -279,8 +292,10 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
       {showFormula && (
         <div className="mt-2 rounded-lg bg-sand-50 p-2.5">
           <p className="text-sm font-bold text-brand-900">
-            이 정책 단독 예상액: {result.estimatedAmount.toLocaleString()}원
+            이 정책 단독 예상액: {formatKoreanMoney(result.estimatedAmount)}
           </p>
+          {/* 산식은 원 단위로 남긴다. 이 줄의 목적은 공고 원문과 대조하는 검산이고,
+              공고가 원 단위로 적혀 있다. 만원으로 바꾸면 대조가 어려워진다. */}
           <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
             {benefitFormula(policy, listing)}
           </p>

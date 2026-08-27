@@ -68,9 +68,24 @@ export default function PolicyCard({
           >
             {result.tag}
           </span>
+
+          {/* 접수 기간은 태그가 보지 않는 사실이라(위 주석 참고) 태그 옆에 함께 붙인다.
+              아래 본문에도 같은 사실이 문장으로 있지만, 태그·금액만 훑는 사람에게는
+              그 문장이 늦다 — 초록 태그와 가장 큰 금액을 보고 카드를 지나친다. */}
+          {window === "after" && (
+            <span className="mt-1 block text-[11px] font-bold text-ink-500">접수 마감</span>
+          )}
+
           {ceiling && (
             <>
-              <p className="mt-1 text-sm font-extrabold tabular-nums text-accent-600">
+              {/* 마감된 정책의 금액은 accent 를 쓰지 않는다. accent 는 '받을 수 있는
+                  돈' 신호인데, 지금 신청할 수 없는 금액에 그 색을 주면 목록에서 가장
+                  큰 혜택처럼 읽힌다 (덱 캡처에서 480만원이 그랬다). */}
+              <p
+                className={`mt-1 text-sm font-extrabold tabular-nums ${
+                  window === "after" ? "text-ink-500" : "text-accent-600"
+                }`}
+              >
                 {ceiling.label}
               </p>
               <p className="text-[10px] text-ink-500">공고 상한</p>

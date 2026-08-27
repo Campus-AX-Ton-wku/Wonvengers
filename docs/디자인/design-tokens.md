@@ -106,7 +106,31 @@ Navy `#2F4156` · Teal `#567C8D` · Sky `#C8D9E6` · Beige `#F5EFEB` · White
 
 ## 폰트
 
-`Pretendard` → `Apple SD Gothic Neo` → `Malgun Gothic` → `sans-serif`
+**Pretendard 를 웹폰트로 직접 싣는다** (`app/layout.tsx`, `next/font/local`).
+폴백은 `Apple SD Gothic Neo` → `Malgun Gothic` → `sans-serif` 로 남긴다.
+
+전에는 이 스택을 CSS 에 적기만 하고 파일을 부르지 않았다. 그래서 Pretendard 가
+설치된 사람만 그 글꼴을 봤고 나머지는 기기별 폴백을 봤다 — 윈도우는 Malgun
+Gothic, 맥·iOS 는 Apple SD Gothic Neo. 셋 다 멀쩡한 고딕이지만 자폭과 굵기가
+달라 같은 화면이 기기마다 다르게 읽혔고, 발표 덱의 캡처와 심사위원 폰의 화면이
+어긋났다. 아래 "유니코드 글리프를 아이콘 자리에 쓰지 않는다" 와 같은 이유다.
+
+파일은 앱이 쓰는 글자만 남긴 가변 폰트 서브셋이다 (143KB).
+
+| 후보 | 크기 | 한글 |
+|---|---|---|
+| PretendardVariable (전체) | 2,009KB | 11,172자 |
+| Pretendard-Regular (정적 1웨이트) | 748KB | 11,172자 |
+| **서브셋 — 쓰는 것** | **143KB** | **~600자** |
+| ~~PretendardStd~~ | 285KB | **0자 — 라틴 전용, 쓰지 말 것** |
+
+`PretendardStd` 는 이름이 서브셋처럼 보이지만 한글 글리프가 없다. 크기만 보고는
+알 수 없어서 한 번 잘못 넣었다.
+
+서브셋을 다시 만드는 법은 `apps/web/scripts/build-font-subset.py` 에 있다.
+서브셋에 없는 글자는 폴백으로 그려져 문장 중간에서 글꼴이 갈리는데 에러가 나지
+않으므로 `lib/__tests__/font-coverage.test.ts` 가 소스·정책 데이터의 한글을
+검사한다. 정책 문구가 바뀌면 그 테스트가 먼저 실패한다.
 
 ---
 
