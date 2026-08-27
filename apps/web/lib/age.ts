@@ -28,3 +28,31 @@ export function isAgeOutOfRange(age: number | null): boolean {
   if (age === null) return false;
   return age < AGE_MIN || age > POLICY_AGE_MAX;
 }
+
+/**
+ * 선택 목록을 '해당되는 지원금 있음 / 없음' 두 묶음으로 나눈다 (<optgroup>).
+ *
+ * 40~45세를 목록에 남기는 이유는 위 AGE_MAX 주석에 있다 — 그 사람들도 나이를
+ * 답해서 "왜 해당되는 게 없는지"를 알아야 한다. 그런데 그 안내는 **고른 뒤에**
+ * 뜨므로, 고르기 전에는 그 옵션이 무용하다는 걸 알 수 없었다.
+ *
+ * 그래서 지우는 대신 묶어서 표시한다. 지우면 41세에게 남는 길은 셋뿐이고 전부
+ * 나쁘다 — 39세를 고르거나(거짓. 받을 수 없는 금액을 받을 수 있다고 믿는다),
+ * 모름으로 두거나(대상이 아닌 걸 끝까지 모른다), 앱이 고장났다고 판단한다.
+ *
+ * 경계는 isAgeOutOfRange 하나에서 나온다. 정책 데이터의 ageMax 가 바뀌어
+ * POLICY_AGE_MAX 를 올리면 그룹도 따라 움직인다.
+ */
+export function ageOptionGroups(): { label: string; ages: number[] }[] {
+  return [
+    {
+      label: `해당되는 지원금 있음 (만 ${AGE_MIN}~${POLICY_AGE_MAX}세)`,
+      ages: AGE_OPTIONS.filter((age) => !isAgeOutOfRange(age)),
+    },
+    {
+      label: `해당되는 지원금 없음 (만 ${POLICY_AGE_MAX + 1}세 이상)`,
+      ages: AGE_OPTIONS.filter((age) => isAgeOutOfRange(age)),
+    },
+    // 정책 상한이 목록 상한까지 올라가면 '없음' 묶음이 빈다. 빈 그룹은 내보내지 않는다.
+  ].filter((group) => group.ages.length > 0);
+}
