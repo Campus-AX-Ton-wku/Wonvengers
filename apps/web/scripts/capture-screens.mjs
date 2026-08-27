@@ -32,11 +32,14 @@
  *   node scripts/capture-screens.mjs       # docs/이미지/ 에 4장을 덮어쓴다
  *   CAPTURE_OUT=/tmp/shots node ...        # 덮어쓰기 전에 눈으로 볼 때
  *
- * **WSL 주의 1 — 한글 폰트.** globals.css 의 폰트 스택(Pretendard → Apple SD
- * Gothic Neo → Malgun Gothic)은 웹폰트가 아니라 기기에 설치된 것을 쓴다. 리눅스
- * 헤드리스에는 셋 다 없어서 한글이 전부 두부(□)로 찍힌다. Pretendard 를 깔면
- * 해결된다 (~/.local/share/fonts + fc-cache). 이모지도 별도 폰트가 필요하다
- * (fonts-noto-color-emoji) — 없으면 섹션 제목의 🧩·💳 가 두부가 된다.
+ * **주의 1 — 시스템에 한글 폰트를 깔지 말 것.** 역설적으로 들리지만 의도한
+ * 것이다. 앱은 Pretendard 를 웹폰트로 직접 싣는다(app/layout.tsx). 캡처 환경에
+ * 시스템 한글 폰트가 없으면, 웹폰트가 깨진 날 캡처가 두부(□)로 즉시 알려준다.
+ * 시스템에 Pretendard 를 깔아두면 웹폰트가 죽어도 똑같이 예쁘게 찍혀서
+ * 사용자만 깨진 화면을 보게 된다 — 실제로 이 함정에 한 번 빠졌다.
+ *
+ * 이모지는 별도 폰트가 필요하다 (fonts-noto-color-emoji) — 없으면 섹션 제목의
+ * 🧩·💳 가 두부가 된다. 이모지는 서브셋에 넣지 않으므로 이건 기기 폰트가 맞다.
  *
  * **WSL 주의 2 — HMR 이 안 돈다.** /mnt/c (윈도우 파일시스템)에서는 inotify 가
  * 동작하지 않아 Next dev 가 파일 변경을 못 잡는다. 코드를 고친 뒤 그냥 찍으면
