@@ -4,15 +4,16 @@ import bracketsJson from "@/data/income-brackets.json";
 import {
   answerSummary,
   applicationOpenCount,
+  splitByApplicationWindow,
   candidateCount,
   groupPolicies,
 } from "@/lib/discovery";
-import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
+import type { IncomeBracket, PolicyMeta, ResolvedAnswers } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
 const brackets = bracketsJson as IncomeBracket[];
 
-const 익산_대학생: DiscoveryAnswers = {
+const 익산_대학생: ResolvedAnswers = {
   age: 23,
   region: "전북특별자치도 익산시",
   status: "대학생",
@@ -96,7 +97,7 @@ describe("answerSummary", () => {
  * 마감이었을 수 있다 — 헤드라인 숫자가 카드보다 먼저 읽히기 때문에 나눠서 센다.
  */
 describe("applicationOpenCount", () => {
-  const 익산_대학생: DiscoveryAnswers = {
+  const 익산_대학생: ResolvedAnswers = {
     age: 23,
     region: "전북특별자치도 익산시",
     status: "대학생",
@@ -122,5 +123,63 @@ describe("applicationOpenCount", () => {
     const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
     expect(candidateCount(g)).toBe(0);
     expect(applicationOpenCount(g, "2026-04-01")).toBe(0);
+  });
+});
+
+/**
+ * 후보를 '지금 신청할 수 있는 것'과 '이번 회차가 끝난 것'으로 가른다.
+ *
+ * 접수가 끝난 정책을 목록에서 지우지는 않는다 — 국토부 청년월세처럼 다음 회차에
+ * 다시 열리는 사업이라, 없애면 "그런 지원금이 아예 없다"로 읽혀 또 다른 거짓이 된다.
+ * 대신 숫자와 순서에서 섞이지 않게 갈라 둔다.
+ */
+describe("splitByApplicationWindow", () => {
+  const 익산_대학생: ResolvedAnswers = {
+    age: 23,
+    region: "전북특별자치도 익산시",
+    status: "대학생",
+    incomeBracket: 1,
+  };
+
+  it("접수가 끝난 후보를 신청 가능한 쪽에서 빼낸다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
+    const { 신청가능, 마감 } = splitByApplicationWindow(g, "2026-08-23");
+
+    expect(마감.map((t) => t.policy.id)).toContain("moland-youth-rent-support");
+    expect(신청가능.map((t) => t.policy.id)).not.toContain("moland-youth-rent-support");
+  });
+
+  it("후보를 하나도 잃거나 중복시키지 않는다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    const { 신청가능, 마감 } = splitByApplicationWindow(g, "2026-08-23");
+
+    expect(신청가능.length + 마감.length).toBe(candidateCount(g));
+    const ids = [...신청가능, ...마감].map((t) => t.policy.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("접수 시작 전인 정책도 마감 쪽으로 보낸다 — 지금 신청할 수 없는 건 같다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    const { 신청가능 } = splitByApplicationWindow(g, "2025-01-01");
+
+    expect(신청가능).toHaveLength(0);
+  });
+
+  it("'해당 없음' 은 어느 쪽에도 넣지 않는다", () => {
+    const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
+    const { 신청가능, 마감 } = splitByApplicationWindow(g, "2026-04-01");
+
+    expect(신청가능).toHaveLength(0);
+    expect(마감).toHaveLength(0);
+  });
+
+  it("applicationOpenCount 와 어긋나지 않는다", () => {
+    const g = groupPolicies(policies, 익산_대학생);
+    for (const asOf of ["2025-01-01", "2026-04-01", "2026-08-23"]) {
+      expect(splitByApplicationWindow(g, asOf).신청가능).toHaveLength(
+        applicationOpenCount(g, asOf)
+      );
+    }
   });
 });

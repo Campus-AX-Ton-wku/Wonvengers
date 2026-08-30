@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import FindPoliciesPage from "@/app/find/policies/page";
 import { saveAnswers } from "@/lib/storage";
+import { birthDateForAge } from "@/lib/__tests__/fixtures";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -21,7 +22,7 @@ vi.mock("next/navigation", () => ({
  */
 
 const 익산_대학생 = {
-  age: 23,
+  birthDate: birthDateForAge(23),
   region: "전북특별자치도 익산시" as const,
   status: "대학생" as const,
   incomeBracket: 1,

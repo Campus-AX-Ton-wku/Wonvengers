@@ -194,11 +194,25 @@ export type DiscoveryStatus = "대학생" | "재직" | "구직";
 
 /** 1층 질문 4개에 대한 답. null 은 사용자가 '모름'을 선택했다는 뜻이다. */
 export interface DiscoveryAnswers {
-  age: number | null;
+  /**
+   * YYYY-MM-DD. 나이(숫자)가 아니라 생년월일을 저장한다 — 나이를 저장하면 시간이
+   * 지나며 조용히 거짓이 된다. 만 39세로 저장된 사람이 반년 뒤에도 39세로 판정된다.
+   * 2층(/eligibility)도 같은 값을 쓰므로 같은 질문을 두 번 하지 않아도 된다.
+   */
+  birthDate: string | null;
   region: string | null; // REGION_OPTIONS 의 value
   status: DiscoveryStatus | null;
   incomeBracket: number | null;
 }
+
+/**
+ * 판정 코드(filter·discovery)가 보는 형태.
+ *
+ * tagPolicy 는 순수 함수라 오늘이 며칠인지 모른다. 생년월일을 그대로 넘기면
+ * groupPolicies·answerSummary·candidateCount 까지 기준일 인자가 번진다.
+ * 화면 경계에서 resolveAnswers 로 한 번만 나이로 바꿔 넘긴다.
+ */
+export type ResolvedAnswers = Omit<DiscoveryAnswers, "birthDate"> & { age: number | null };
 
 export type DiscoveryTag = "가능성 있음" | "확인 필요" | "해당 없음";
 

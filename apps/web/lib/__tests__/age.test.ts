@@ -1,35 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  AGE_MAX,
-  AGE_MIN,
-  AGE_OPTIONS,
-  POLICY_AGE_MAX,
-  ageOptionGroups,
-  isAgeOutOfRange,
-} from "@/lib/age";
-
-/**
- * 나이는 목록에서 골라 넣는다 (네이티브 select — 모바일에서 휠 피커로 뜬다).
- * 한 살씩 −/+ 로 누르는 방식은 25살까지 일곱 번을 눌러야 해서 바꿨다.
- */
-describe("AGE_OPTIONS", () => {
-  it("만 18세부터 시작한다 — 전북 정착·익산 이사비가 18세부터 대상이다", () => {
-    expect(AGE_OPTIONS[0]).toBe(18);
-    expect(AGE_MIN).toBe(18);
-  });
-
-  it("정책 상한(39)보다 넉넉한 45세까지 고를 수 있다", () => {
-    expect(AGE_OPTIONS.at(-1)).toBe(45);
-    expect(AGE_MAX).toBeGreaterThan(POLICY_AGE_MAX);
-  });
-
-  it("빠짐없이 한 살씩 이어진다", () => {
-    expect(AGE_OPTIONS).toHaveLength(AGE_MAX - AGE_MIN + 1);
-    for (let i = 1; i < AGE_OPTIONS.length; i++) {
-      expect(AGE_OPTIONS[i] - AGE_OPTIONS[i - 1]).toBe(1);
-    }
-  });
-});
+import { AGE_MIN, POLICY_AGE_MAX, isAgeOutOfRange, resolveAnswers } from "@/lib/age";
+import type { DiscoveryAnswers } from "@/lib/types";
 
 describe("isAgeOutOfRange", () => {
   it("대상 정책이 없는 나이를 알려준다", () => {
@@ -37,9 +8,11 @@ describe("isAgeOutOfRange", () => {
     expect(isAgeOutOfRange(40)).toBe(true);
   });
 
-  // 목록에서 40~45세를 고를 수 있게 열어 둔 이유가 이 안내다.
-  it("고를 수 있지만 대상 정책이 없는 나이도 범위 밖으로 본다", () => {
+  // 입력 범위(만 18~64세)를 정책 범위보다 넓게 열어 둔 이유가 이 안내다.
+  // 답할 수는 있지만 대상이 아닌 사람에게 왜 해당되지 않는지 말해줘야 한다.
+  it("답할 수 있지만 대상 정책이 없는 나이도 범위 밖으로 본다", () => {
     expect(isAgeOutOfRange(45)).toBe(true);
+    expect(isAgeOutOfRange(64)).toBe(true);
   });
 
   it("18~39세는 범위 안이다", () => {
@@ -54,44 +27,60 @@ describe("isAgeOutOfRange", () => {
 });
 
 /**
- * 목록을 두 그룹으로 나눈다.
+ * 1층은 나이 대신 생년월일을 받는다. 판정 코드(filter·discovery)는 여전히 나이만
+ * 보므로, 화면 경계에서 한 번 나이로 바꿔 넘긴다.
  *
- * 40~45세를 목록에 남기는 이유는 그 사람들도 나이를 답해서 "왜 해당되는 게
- * 없는지"를 알아야 하기 때문이다. 그런데 고르기 전에는 그 옵션이 무용하다는 걸
- * 알 수 없었다 — 41세를 고르고 나서야 안내가 뜬다.
- *
- * 그래서 지우는 대신 표시한다. 옵션을 빼면 41세는 39세를 고르거나(거짓 →
- * 받을 수 없는 금액을 보게 된다) 모름으로 두거나(끝까지 모른다) 셋 중 하나가 된다.
+ * 저장하는 값이 생년월일이어야 하는 이유: 나이를 저장하면 시간이 지나면서 조용히
+ * 거짓이 된다. 만 39세로 저장된 사람은 반년 뒤에도 39세로 판정된다.
  */
-describe("ageOptionGroups", () => {
-  it("대상 정책이 있는 나이와 없는 나이를 나눈다", () => {
-    const groups = ageOptionGroups();
+describe("resolveAnswers", () => {
+  const 답변: DiscoveryAnswers = {
+    birthDate: "1998-03-14",
+    region: "전북특별자치도 익산시",
+    status: "재직",
+    incomeBracket: 2,
+  };
 
-    expect(groups).toHaveLength(2);
-    expect(groups[0].ages).toContain(AGE_MIN);
-    expect(groups[0].ages).toContain(POLICY_AGE_MAX);
-    expect(groups[1].ages).toContain(POLICY_AGE_MAX + 1);
-    expect(groups[1].ages).toContain(AGE_MAX);
+  it("생년월일을 기준일 시점의 만 나이로 바꾼다", () => {
+    expect(resolveAnswers(답변, "2026-08-30").age).toBe(28);
   });
 
-  it("경계가 isAgeOutOfRange 와 어긋나지 않는다", () => {
-    const [있음, 없음] = ageOptionGroups();
-
-    expect(있음.ages.every((a) => !isAgeOutOfRange(a))).toBe(true);
-    expect(없음.ages.every((a) => isAgeOutOfRange(a))).toBe(true);
+  it("생일이 아직 안 지났으면 한 살 적다", () => {
+    expect(resolveAnswers({ ...답변, birthDate: "1998-12-01" }, "2026-08-30").age).toBe(27);
   });
 
-  it("목록의 나이를 하나도 잃지 않는다", () => {
-    const 합친것 = ageOptionGroups().flatMap((g) => g.ages);
-
-    expect(합친것).toEqual(AGE_OPTIONS);
+  it("생일 당일에 한 살 올라간다", () => {
+    expect(resolveAnswers({ ...답변, birthDate: "1998-08-30" }, "2026-08-30").age).toBe(28);
   });
 
-  it("라벨이 어느 나이대인지 말해준다", () => {
-    const [있음, 없음] = ageOptionGroups();
+  it("생년월일을 아직 안 골랐으면 나이는 모름이다", () => {
+    expect(resolveAnswers({ ...답변, birthDate: null }, "2026-08-30").age).toBeNull();
+  });
 
-    expect(있음.label).toContain(String(AGE_MIN));
-    expect(있음.label).toContain(String(POLICY_AGE_MAX));
-    expect(없음.label).toContain(String(POLICY_AGE_MAX + 1));
+  /*
+   * 정적 export 라 기준일은 브라우저에서만 들어온다 (find/page.tsx 의 asOf —
+   * 빌드 시점 날짜가 HTML 에 박히면 안 된다). 서버 렌더링 때는 오늘이 며칠인지
+   * 모르므로 나이도 모름이어야 한다. 1970년 기준으로 음수 나이를 내면 안 된다.
+   */
+  it("기준일을 아직 모르면 나이도 모름이다", () => {
+    expect(resolveAnswers(답변, null).age).toBeNull();
+  });
+
+  // 저장된 값이 깨져 있어도 숫자를 지어내면 안 된다. 판정이 '확인 필요'로 가야
+  // 하는데 NaN 을 흘려보내면 비교가 전부 false 라 '가능성 있음'이 되어 버린다.
+  it("생년월일이 깨져 있으면 나이는 모름이다", () => {
+    expect(resolveAnswers({ ...답변, birthDate: "이상한값" }, "2026-08-30").age).toBeNull();
+  });
+
+  it("나이 말고 다른 답변은 그대로 넘긴다", () => {
+    const 결과 = resolveAnswers(답변, "2026-08-30");
+
+    expect(결과.region).toBe("전북특별자치도 익산시");
+    expect(결과.status).toBe("재직");
+    expect(결과.incomeBracket).toBe(2);
+  });
+
+  it("생년월일 자체는 판정 쪽으로 넘기지 않는다", () => {
+    expect(resolveAnswers(답변, "2026-08-30")).not.toHaveProperty("birthDate");
   });
 });
