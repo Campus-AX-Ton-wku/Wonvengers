@@ -88,3 +88,29 @@ export function benefitCeiling(policy: PolicyMeta): { label: string; amount: num
   const total = policy.monthlyCap * policy.maxMonths;
   return { label: `최대 ${formatKoreanMoney(total)}`, amount: total };
 }
+
+/**
+ * 여러 정책 중 가장 큰 '총액 상한'. 목록 화면 헤드라인이 쓴다.
+ *
+ * 합산하지 않는다. 중복 수급 제한(exclusiveGroup) 때문에 상한을 더하면 실제로는
+ * 받을 수 없는 금액이 된다. 정확한 조합은 계약 조건이 있어야 bestCombination 이
+ * 계산할 수 있으므로 1층에서는 불가능하다 — 가장 큰 한 건만 말한다.
+ *
+ * 총액이 정해지지 않은 정책(지원 개월 수가 없는 주거급여 분리지급)은 후보에서
+ * 뺀다. '월 21만원'과 '총 480만원'은 서로 비교할 수 있는 값이 아니라, 섞어서
+ * 최댓값을 고르면 단위가 뒤엉킨 숫자가 헤드라인에 오른다.
+ */
+export function largestTotalCeiling(
+  policies: PolicyMeta[]
+): { label: string; amount: number } | null {
+  const 총액있는것 = policies.filter(
+    (p) => p.benefitType === "lump_sum" || (p.monthlyCap != null && p.maxMonths != null)
+  );
+
+  let best: { label: string; amount: number } | null = null;
+  for (const policy of 총액있는것) {
+    const ceiling = benefitCeiling(policy);
+    if (ceiling && (best === null || ceiling.amount > best.amount)) best = ceiling;
+  }
+  return best;
+}

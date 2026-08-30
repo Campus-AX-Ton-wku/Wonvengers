@@ -17,9 +17,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
 
@@ -27,11 +27,15 @@ jobs:
       # 스냅샷은 보호되지 않은 전용 브랜치에 따로 둔다.
       - name: 지난 스냅샷 가져오기
         run: |
-          if git fetch origin freshness-snapshot --depth=1 2>/dev/null; then
-            git show origin/freshness-snapshot:iksan-snapshot.json \
-              > apps/web/scripts/freshness/iksan-snapshot.json
+          dest=apps/web/scripts/freshness/freshness-snapshot.json
+          if git fetch origin freshness-snapshot --depth=1 2>/dev/null &&
+             git show origin/freshness-snapshot:freshness-snapshot.json > "$dest" 2>/dev/null; then
             echo "지난 스냅샷을 가져왔다."
           else
+            # 파일이 없으면 리다이렉트가 빈 파일을 남긴다. 지우지 않으면 스크립트가
+            # 깨진 JSON 을 읽는다. (익산 목록만 담던 iksan-snapshot.json 시절의
+            # 브랜치를 처음 만날 때가 이 경우다 — 한 번 기준선을 다시 잡는다.)
+            rm -f "$dest"
             echo "지난 스냅샷이 없다 — 이번 실행이 기준선이 된다."
           fi
 
@@ -55,15 +59,15 @@ jobs:
 
       - name: 스냅샷 저장
         run: |
-          snapshot=apps/web/scripts/freshness/iksan-snapshot.json
+          snapshot=apps/web/scripts/freshness/freshness-snapshot.json
           [ -f "$snapshot" ] || exit 0
           work=$(mktemp -d)
-          cp "$snapshot" "$work/iksan-snapshot.json"
+          cp "$snapshot" "$work/freshness-snapshot.json"
           cd "$work"
           git init -q
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add iksan-snapshot.json
+          git add freshness-snapshot.json
           git commit -q -m "익산 주거 스냅샷 ${{ github.run_id }}"
           git push -q --force \
             "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \

@@ -19,10 +19,20 @@ import Disclosure from "@/app/Disclosure";
  */
 
 const TAG_STYLE: Record<TagResult["tag"], string> = {
-  "가능성 있음": "bg-ok-50 text-ok-700 border-ok-200",
-  "확인 필요": "bg-warn-50 text-warn-800 border-warn-200",
-  "해당 없음": "bg-ink-100 text-ink-700 border-ink-200",
+  "가능성 있음": "bg-ok-50 text-ok-700",
+  "확인 필요": "bg-warn-50 text-warn-800",
+  "해당 없음": "bg-ink-100 text-ink-700",
 };
+
+/**
+ * 접수가 끝난 정책의 태그는 색을 뺀다.
+ *
+ * 1층 태그는 나이·지역·상태·소득만 보므로 마감된 정책도 '가능성 있음'이 된다
+ * (PRD F3-6, 의도된 결정 — 문구는 그대로 둔다). 그런데 초록은 "지금 받을 수 있다"는
+ * 신호라, 못 받는 카드에 그 색이 붙으면 문구를 읽기 전에 이미 잘못 안심시킨다.
+ * 색은 행동할 수 있는 상태에만 남긴다.
+ */
+const CLOSED_TAG_STYLE = "bg-ink-100 text-ink-600";
 
 export default function PolicyCard({
   policy,
@@ -47,52 +57,58 @@ export default function PolicyCard({
     : "within";
 
   return (
-    <article
-      className={
-        dimmed
-          ? "rounded-2xl border border-ink-200 bg-sand-50 p-4"
-          : "rounded-2xl border border-ink-200 bg-white p-4"
-      }
-    >
+    /*
+     * 상자가 아니라 목록의 한 줄이다.
+     *
+     * 처음에는 테두리만 걷어내고 흰 카드로 뒀는데, 페이지 배경도 흰색이라
+     * (globals.css 의 body) 카드끼리 전혀 구분되지 않았다. 여백만으로 나뉘려면
+     * 토스 계좌 목록처럼 줄이 한두 줄로 짧아야 하는데, 정책 카드는 이름·기관·
+     * 금액·판정 이유·토글까지 담은 덩어리라 그 방식이 통하지 않는다.
+     *
+     * 그래서 토스가 계좌 그룹을 나눌 때 쓰는 hairline 을 정책 사이에 둔다.
+     * 구분선은 부모 <section> 의 divide-y 가 그린다 — 여기서는 위아래 여백만 잡는다.
+     */
+    <article className={`py-6 ${dimmed ? "opacity-80" : ""}`}>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold leading-snug text-ink-900">{policy.name}</h3>
-          <p className="mt-0.5 text-xs text-ink-500">
-            {policy.agency} · {benefitTypeLabel(policy.benefitType).split(" · ")[0]}
+        {/* break-keep — 한글은 기본값이면 어절 중간에서 끊긴다 ('지원사 / 업'). */}
+        <h3 className="min-w-0 break-keep text-base font-bold leading-snug text-ink-900">
+          {policy.name}
+        </h3>
+
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+            window === "after" ? CLOSED_TAG_STYLE : TAG_STYLE[result.tag]
+          }`}
+        >
+          {result.tag}
+        </span>
+      </div>
+
+      <p className="mt-1 text-xs text-ink-500">
+        {policy.agency} · {benefitTypeLabel(policy.benefitType).split(" · ")[0]}
+        {/* 접수 기간은 태그가 보지 않는 사실이다(위 주석 참고). 태그·금액만 훑는
+            사람에게는 아래 본문의 문장이 늦으므로 여기서 한 번 더 말한다. */}
+        {window === "after" && <span className="font-bold text-ink-600"> · 접수 마감</span>}
+      </p>
+
+      {ceiling && (
+        /* 라벨 작게 위, 값 크게 아래. 금액을 오른쪽 구석에 작게 두면 목록을 훑을 때
+           "무엇을 최대 얼마까지" 라는 질문에 답하지 못한다.
+           마감된 정책의 금액에는 accent 를 쓰지 않는다 — accent 는 '받을 수 있는 돈'
+           신호라, 지금 신청할 수 없는 금액에 주면 가장 큰 혜택처럼 읽힌다. */
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold text-ink-500">공고 상한</p>
+          {/* tabular-nums 를 쓰지 않는다. 자릿수를 세로로 맞출 표가 아니고, 이
+              한글 폰트에서는 등폭 숫자가 눈에 띄게 벌어져 '4 80만원' 처럼 읽힌다. */}
+          <p
+            className={`text-2xl font-extrabold leading-tight ${
+              window === "after" || dimmed ? "text-ink-500" : "text-accent-600"
+            }`}
+          >
+            {ceiling.label}
           </p>
         </div>
-
-        <div className="shrink-0 text-right">
-          <span
-            className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold ${TAG_STYLE[result.tag]}`}
-          >
-            {result.tag}
-          </span>
-
-          {/* 접수 기간은 태그가 보지 않는 사실이라(위 주석 참고) 태그 옆에 함께 붙인다.
-              아래 본문에도 같은 사실이 문장으로 있지만, 태그·금액만 훑는 사람에게는
-              그 문장이 늦다 — 초록 태그와 가장 큰 금액을 보고 카드를 지나친다. */}
-          {window === "after" && (
-            <span className="mt-1 block text-[11px] font-bold text-ink-500">접수 마감</span>
-          )}
-
-          {ceiling && (
-            <>
-              {/* 마감된 정책의 금액은 accent 를 쓰지 않는다. accent 는 '받을 수 있는
-                  돈' 신호인데, 지금 신청할 수 없는 금액에 그 색을 주면 목록에서 가장
-                  큰 혜택처럼 읽힌다 (덱 캡처에서 480만원이 그랬다). */}
-              <p
-                className={`mt-1 text-sm font-extrabold tabular-nums ${
-                  window === "after" ? "text-ink-500" : "text-accent-600"
-                }`}
-              >
-                {ceiling.label}
-              </p>
-              <p className="text-[10px] text-ink-500">공고 상한</p>
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* 왜 이 태그인지는 접지 않는다. 태그만 보고는 이유를 알 수 없다. */}
       {result.tag === "해당 없음" && (

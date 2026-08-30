@@ -9,7 +9,7 @@ import { HomeMark } from "@/app/Stepper";
  */
 export default function FindTopBar({ backHref, backLabel }: { backHref?: string; backLabel?: string }) {
   return (
-    <header className="sticky top-0 z-10 -mx-5 border-b border-ink-100 bg-white px-1 pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-10 -mx-5 bg-white px-1 pt-[env(safe-area-inset-top)]">
       <div className="flex h-14 items-center justify-between">
         {backHref ? (
           <Link

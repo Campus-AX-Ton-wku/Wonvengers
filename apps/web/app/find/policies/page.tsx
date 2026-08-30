@@ -58,16 +58,18 @@ export default function FindPoliciesPage() {
 
   return (
     <main className="step-in mx-auto max-w-lg px-5 pb-10">
-      <FindTopBar backHref="/find" backLabel="질문으로 돌아가기" />
+      <FindTopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
 
       {!loaded ? (
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
       ) : (
         <>
-          {/* 제목은 '지금 받을 수 있는 것'만 센다. 후보는 있는데 전부 마감이면
-              '해당되는 지원금이 없어요' 로 말하면 안 된다 — 대상이 아니라는 뜻으로
-              읽히지만 실제로는 다음 회차를 기다리면 되는 상황이다. */}
-          <h1 className="mt-6 text-2xl font-extrabold text-ink-900">
+          {/* 금액은 앞 화면(/find/result)이 크게 말했다. 여기서 또 보여주면 같은
+              숫자를 두 번 붙는 셈이라 제목만 둔다.
+
+              후보는 있는데 전부 마감이면 '해당되는 지원금이 없어요' 로 말하면 안 된다.
+              대상이 아니라는 뜻으로 읽히지만 실제로는 다음 회차를 기다리면 된다. */}
+          <h1 className="mt-6 text-2xl font-extrabold leading-snug text-ink-900">
             {신청가능.length > 0
               ? `지금 신청할 수 있는 지원금 ${신청가능.length}건`
               : count > 0
@@ -81,7 +83,7 @@ export default function FindPoliciesPage() {
               {summary.map((chip) => (
                 <li
                   key={chip}
-                  className="rounded-full border border-ink-200 bg-sand-50 px-3 py-1 text-xs font-semibold text-ink-600"
+                  className="rounded-full bg-sand-50 px-3 py-1 text-xs font-semibold text-ink-600"
                 >
                   {chip}
                 </li>
@@ -95,9 +97,12 @@ export default function FindPoliciesPage() {
             </Link>
           </div>
 
+          {/* 정책 사이는 hairline 으로 나눈다. 여백만으로는 구분되지 않는다 —
+              페이지도 카드도 흰색이고, 카드가 여러 요소를 담은 덩어리라서다.
+              (토스가 계좌 목록에서 그룹을 나눌 때 쓰는 방식) */}
           <section
             aria-label={`지금 신청할 수 있는 지원금 ${신청가능.length}건`}
-            className="mt-6 flex flex-col gap-3"
+            className="mt-4 divide-y divide-sand-200"
           >
             {신청가능.map(({ policy, result }, i) => (
               <div
@@ -116,20 +121,22 @@ export default function FindPoliciesPage() {
           {마감.length > 0 && (
             <section
               aria-label={`이번 회차는 마감된 지원금 ${마감.length}건`}
-              className="mt-8 flex flex-col gap-3"
+              className="mt-10"
             >
-              <h2 className="text-sm font-bold text-ink-500">
+              <h2 className="border-t-2 border-sand-200 pt-5 text-sm font-bold text-ink-500">
                 이번 회차는 마감된 지원금 {마감.length}건
               </h2>
-              {마감.map(({ policy, result }) => (
-                <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
-              ))}
+              <div className="divide-y divide-sand-200">
+                {마감.map(({ policy, result }) => (
+                  <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
+                ))}
+              </div>
             </section>
           )}
 
           {count === 0 && (
-            <p className="mt-4 rounded-xl border border-ink-200 bg-white p-5 text-sm leading-relaxed text-ink-600">
-              <span aria-hidden="true">🔍</span> 입력한 조건에 해당하는 지원금을 찾지
+            <p className="mt-4 rounded-xl bg-white p-5 text-sm leading-relaxed text-ink-600">
+              입력한 조건에 해당하는 지원금을 찾지
               못했습니다. 아래에서 이유를 확인하고,{" "}
               <Link href="/find" className="font-bold text-brand-700 underline">답변을 바꿔</Link>{" "}
               다시 확인해 보세요.
@@ -141,7 +148,9 @@ export default function FindPoliciesPage() {
               <summary className="cursor-pointer text-sm font-bold text-ink-500">
                 해당되지 않는 지원금 {groups.해당없음.length}건 보기
               </summary>
-              <div className="mt-3 flex flex-col gap-3">
+              {/* 해당 없는 것들은 묶음 하나를 옅은 면에 올려 본문과 갈라 둔다.
+                  카드마다 흐리게 칠하는 것보다 그룹 단위가 읽기 쉽다. */}
+              <div className="mt-3 divide-y divide-sand-200 rounded-2xl bg-sand-50 px-5">
                 {groups.해당없음.map(({ policy, result }) => (
                   <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
                 ))}
@@ -155,7 +164,7 @@ export default function FindPoliciesPage() {
               className="mt-6 block rounded-xl bg-brand-600 p-5 text-center transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
             >
               <span className="block text-base font-bold text-white">
-                <span aria-hidden="true">🧮</span> 이 지원금을 받으면 얼마를 내게 될까?
+                이 지원금을 받으면 얼마를 내게 될까?
               </span>
               <span className="mt-1 block text-xs leading-relaxed text-white/90">
                 계약 조건을 넣으면 지원금을 반영한 최종 예상 주거비를 계산해드려요

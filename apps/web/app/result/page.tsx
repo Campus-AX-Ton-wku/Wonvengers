@@ -9,7 +9,7 @@ import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
-import { ResultAppBar } from "../Stepper";
+import { AppBar } from "../Stepper";
 import Disclosure from "@/app/Disclosure";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
@@ -53,7 +53,7 @@ export default function ResultPage() {
 
   return (
     <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col px-5">
-      <ResultAppBar onBack={() => router.push("/eligibility")} />
+      <AppBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
 
       <main className="flex flex-col gap-6 pb-10 pt-2">
         {/* 아래 카드가 '최대 지원 가능액'·'최종 예상 주거비' 라벨을 이미 단다.
@@ -120,7 +120,7 @@ export default function ResultPage() {
       </section>
 
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
-      <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
+      <section className="rounded-2xl bg-white p-5 text-sm">
         <p className="font-bold text-ink-700">
           <span aria-hidden="true">🧩</span>{" "}
           <span>이 금액은 아래 조합으로 계산했습니다</span>
@@ -158,7 +158,7 @@ export default function ResultPage() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-ink-200 bg-white p-4 text-sm">
+      <section className="rounded-2xl bg-white p-5 text-sm">
         <p className="font-bold text-ink-700">
           <span aria-hidden="true">💳</span> 계약 시 필요한 목돈과 지급 시점은 다릅니다
         </p>
@@ -222,7 +222,7 @@ export default function ResultPage() {
           </p>
         </div>
         {loanProducts.map((product) => (
-          <div key={product.id} className="rounded-2xl border border-ink-200 bg-sand-50 p-4">
+          <div key={product.id} className="rounded-2xl bg-sand-50 p-4">
             <p className="text-sm font-bold text-ink-900">{product.name}</p>
             <p className="text-xs text-ink-500">{product.agency} · {product.regionScope}</p>
             <p className="mt-2 text-xs text-ink-500">{product.summary}</p>
@@ -272,7 +272,7 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
   const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
   // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
   return (
-    <article className="rounded-2xl border border-ink-200 bg-white p-4">
+    <article className="rounded-2xl bg-white p-5">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-bold text-ink-900">{policy.name}</p>

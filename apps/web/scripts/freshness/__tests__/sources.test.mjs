@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromGov24, fromYouth } from "../sources.mjs";
+import { fromGov24, fromYouth, youthCriteriaFingerprint } from "../sources.mjs";
 
 describe("fromYouth", () => {
   it("신청기간 문자열을 ISO 날짜로 가른다", () => {
@@ -59,5 +59,46 @@ describe("fromGov24", () => {
 
     expect(got.ageMin).toBe(null);
     expect(got.ageMax).toBe(null);
+  });
+});
+
+/**
+ * 온통청년은 소득·재산 요건을 자유 서술로 준다.
+ *
+ *   earnEtcCn: "청년가구 - 중위소득 130% 이하 / 원가구 - 중위소득 100% 이하"
+ *
+ * 2026-08-30 에 이 값이 앱과 다른 것을 사람이 손으로 뒤져서 찾았다 — 주간
+ * 점검은 정책명·날짜·나이 다섯 필드만 봐서 못 잡았다. 파싱은 못 하니
+ * (보조금24 텍스트와 같은 이유) 지문으로 변경만 감지한다.
+ */
+describe("youthCriteriaFingerprint", () => {
+  const 기준 = {
+    plcyNo: "20260326005400212297",
+    earnEtcCn: "청년가구 - 중위소득 130% 이하 / 원가구 - 중위소득 100% 이하",
+    srngMthdCn: "소득·재산 기준 등 세부심사",
+    plcySprtCn: "월 20만원 한도 내 최대 12개월",
+    inqCnt: 2626,
+    lastMdfcnDt: "2026-06-05 16:49:04",
+  };
+
+  it("소득 요건이 바뀌면 지문이 달라진다", () => {
+    const after = youthCriteriaFingerprint({
+      ...기준,
+      earnEtcCn: "청년가구 - 중위소득 150% 이하 / 원가구 - 중위소득 100% 이하",
+    });
+
+    expect(after).not.toBe(youthCriteriaFingerprint(기준));
+  });
+
+  it("조회수가 올라도 지문은 그대로다 — 매주 헛알림이 울리면 아무도 안 본다", () => {
+    const after = youthCriteriaFingerprint({ ...기준, inqCnt: 9999 });
+
+    expect(after).toBe(youthCriteriaFingerprint(기준));
+  });
+
+  it("등록 수정 시각만 바뀌어도 지문은 그대로다 — 내용이 같으면 볼 것이 없다", () => {
+    const after = youthCriteriaFingerprint({ ...기준, lastMdfcnDt: "2026-09-01 10:00:00" });
+
+    expect(after).toBe(youthCriteriaFingerprint(기준));
   });
 });

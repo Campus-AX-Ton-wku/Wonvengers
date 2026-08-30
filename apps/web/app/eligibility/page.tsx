@@ -112,10 +112,10 @@ export default function EligibilityPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5">
       {/* 계약조건 2스텝이 앞에 있으므로 전체 진행률에 더해서 보여준다. */}
-      <AppBar onBack={handleBack} current={step + 3} total={steps.length + 2} />
+      <AppBar onBack={handleBack} />
 
       <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
-        <StepHeading emoji={current.emoji} title={current.heading} />
+        <StepHeading title={current.heading} />
 
         {current.questions.map((q) => (
           <QuestionField
