@@ -1,3 +1,5 @@
+import { fingerprintRecord } from "./snapshot.mjs";
+
 /**
  * 각 소스의 레코드를 대조 가능한 하나의 모양으로 정규화한다.
  *
@@ -64,4 +66,35 @@ export function fromGov24(record) {
     ageMax: null,
     updatedAt: 갱신일(record["수정일시"]),
   };
+}
+
+/**
+ * 지문에 넣을 온통청년 필드.
+ *
+ * 요건이 적힌 자유 서술만 고른다. 레코드 전체(60개 필드)를 넣으면 조회수
+ * (inqCnt)와 수정시각(lastMdfcnDt)이 매주 바뀌어 헛알림이 울리고, 그러면
+ * 아무도 보고서를 안 본다.
+ *
+ * 이 필드들이 필요한 이유: 2026-08-30 에 익산형 청년월세의 소득 요건
+ * ("원가구 - 중위소득 100% 이하")이 앱에 아예 없다는 것을 사람이 손으로
+ * 뒤져서 찾았다. 주간 점검은 정책명·날짜·나이만 봐서 못 잡았다.
+ * 파싱은 하지 않는다 — 해석은 사람이 하고, 기계는 "바뀌었다"만 말한다.
+ */
+const YOUTH_CRITERIA_FIELDS = [
+  "earnEtcCn", // 소득 요건 (청년가구·원가구 중위소득 %)
+  "earnMinAmt",
+  "earnMaxAmt",
+  "srngMthdCn", // 선정 방법 — 소득·재산 심사 여부
+  "sbmsnDcmntCn", // 제출 서류 — 재산 신고·부채 증빙 요구가 여기 드러난다
+  "plcySprtCn", // 지원 내용 (금액·개월)
+  "ptcpPrpTrgtCn", // 참여 제한·지원 중지 사유 (중복 수급 관계)
+  "plcyAplyMthdCn", // 신청 방법
+  "sprtSclCnt", // 모집 인원
+  "sprtArvlSeqYn", // 선착순 여부
+];
+
+export function youthCriteriaFingerprint(record) {
+  return fingerprintRecord(
+    Object.fromEntries(YOUTH_CRITERIA_FIELDS.map((k) => [k, record[k]]))
+  );
 }
