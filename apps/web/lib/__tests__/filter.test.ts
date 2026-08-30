@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import { tagPolicy } from "@/lib/filter";
-import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+import type { PolicyMeta, ResolvedAnswers } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -42,7 +42,7 @@ const 전북정책: PolicyMeta = {
   discovery: { ...익산정책.discovery, regions: ["전북특별자치도"] },
 };
 
-const 기본답변: DiscoveryAnswers = {
+const 기본답변: ResolvedAnswers = {
   age: 22,
   region: "전북특별자치도 익산시",
   status: "대학생",
@@ -254,7 +254,7 @@ describe("tagPolicy — 소득 하한(incomeBracketMin)", () => {
 // QA체크리스트 1층 항목("태그가 전부 '확인 필요'로만 나오지 않는다")을 자동화한 것.
 // discovery 값을 공고로 채웠는지 실제 데이터로 확인한다.
 describe("실제 정책 데이터 — 1층 태그", () => {
-  const 익산_대학생: DiscoveryAnswers = {
+  const 익산_대학생: ResolvedAnswers = {
     age: 23,
     region: "전북특별자치도 익산시",
     status: "대학생",

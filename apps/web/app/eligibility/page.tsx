@@ -10,7 +10,7 @@ import WheelDatePicker from "@/app/WheelDatePicker";
 import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
-import { loadAnswers, loadListing, loadProfile, saveProfile } from "@/lib/storage";
+import { loadAnswers, loadListing, loadProfile, saveAnswers, saveProfile } from "@/lib/storage";
 import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
@@ -37,8 +37,6 @@ const DEFAULT_PROFILE: EligibilityProfile = {
 export default function EligibilityPage() {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
-  /** 1층에서 답한 나이. 생년월일을 왜 또 묻는지 설명하는 데 쓴다. */
-  const [floor1Age, setFloor1Age] = useState<number | null>(null);
   const [profile, setProfile] = useState<EligibilityProfile>(DEFAULT_PROFILE);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +49,16 @@ export default function EligibilityPage() {
       return;
     }
     setRegion(listing.region);
-    setFloor1Age(loadAnswers().age);
-    const saved = loadProfile();
-    if (saved) setProfile(saved);
+
+    // 생년월일은 1층과 2층이 나눠 갖는 값이 아니라 하나다. 1층 답을 소스 오브
+    // 트루스로 삼아 여기서는 다시 묻지 않고 채워 둔다 — 고치는 건 그대로 된다
+    // (handleNext 가 고친 값을 1층 답변에도 써서 둘을 붙여 둔다).
+    //
+    // 저장된 프로필이 이기게 두면 안 된다: 1층에서 답하고 2층에 들렀다가 다시
+    // 1층으로 돌아가 날짜를 고치고 오면, 방금 고친 값이 옛 프로필에 막힌다.
+    const saved = loadProfile() ?? DEFAULT_PROFILE;
+    const 일층생년월일 = loadAnswers().birthDate;
+    setProfile({ ...saved, birthDate: 일층생년월일 ?? saved.birthDate });
   }, [router]);
 
   // 지역에 해당하지 않는 정책은 후보에서 빠지고, 그 정책만 쓰던 질문도 함께 사라진다.
@@ -75,6 +80,16 @@ export default function EligibilityPage() {
     }
     setError(null);
     saveProfile(profile); // 스텝마다 저장 — 새로고침해도 답이 남는다.
+
+    // 여기서 고친 생년월일을 1층 답변에도 써 둔다. 1층 답을 프리필의 기준으로
+    // 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때 1층의 옛 값이 다시 이겨서
+    // 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 두는 것이다.
+    if (profile.birthDate) {
+      const answers = loadAnswers();
+      if (answers.birthDate !== profile.birthDate) {
+        saveAnswers({ ...answers, birthDate: profile.birthDate });
+      }
+    }
     if (step < steps.length - 1) return setStep(step + 1);
     router.push("/result");
   }
@@ -101,15 +116,6 @@ export default function EligibilityPage() {
 
       <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
         <StepHeading emoji={current.emoji} title={current.heading} />
-
-        {/* 1층에서 나이를 답한 사람에게 생년월일을 또 묻는 이유를 말해준다.
-            나이만으로는 정책 기준일 기준 만 나이를 계산할 수 없다. */}
-        {floor1Age !== null && current.questions.some((q) => q.key === "birthDate") && (
-          <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-900">
-            앞에서 만 {floor1Age}세라고 답하셨어요. 정책마다 기준일이 달라서, 정확한
-            판정에는 생년월일이 필요합니다.
-          </p>
-        )}
 
         {current.questions.map((q) => (
           <QuestionField

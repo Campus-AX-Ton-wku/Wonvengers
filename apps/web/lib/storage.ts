@@ -40,11 +40,28 @@ export function loadProfile(): EligibilityProfile | null {
 const ANSWERS_KEY = "perky.answers";
 
 export const EMPTY_ANSWERS: DiscoveryAnswers = {
-  age: null,
+  birthDate: null,
   region: null,
   status: null,
   incomeBracket: null,
 };
+
+/**
+ * 저장된 값에서 아는 항목만 골라 담는다.
+ *
+ * 그냥 펼치면(`{ ...EMPTY_ANSWERS, ...JSON.parse(raw) }`) 옛 스키마의 age 가 따라
+ * 들어와 지워진 필드가 살아남는다. 나이는 생년월일로 바뀌었는데 생일을 모르니
+ * age 로 생년월일을 지어낼 수 없다 — 1월 1일 같은 값을 만들면 그 거짓 날짜가
+ * 2층 나이 요건 판정까지 그대로 쓰인다. 그래서 나이만 버리고 나머지 세 답은 살린다.
+ */
+function pickAnswers(saved: Record<string, unknown>): DiscoveryAnswers {
+  return {
+    birthDate: typeof saved.birthDate === "string" ? saved.birthDate : null,
+    region: typeof saved.region === "string" ? saved.region : null,
+    status: (saved.status as DiscoveryAnswers["status"]) ?? null,
+    incomeBracket: typeof saved.incomeBracket === "number" ? saved.incomeBracket : null,
+  };
+}
 
 /**
  * 저장된 1층 답변을 읽는다. 서버 렌더링 중에는 localStorage 가 없으므로 빈 답변을 준다.
@@ -55,7 +72,7 @@ export function loadAnswers(): DiscoveryAnswers {
   try {
     const raw = window.localStorage.getItem(ANSWERS_KEY);
     if (!raw) return EMPTY_ANSWERS;
-    return { ...EMPTY_ANSWERS, ...JSON.parse(raw) };
+    return pickAnswers(JSON.parse(raw) as Record<string, unknown>);
   } catch {
     return EMPTY_ANSWERS;
   }

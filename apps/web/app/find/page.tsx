@@ -5,9 +5,10 @@ import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
-import { ChevronDownIcon } from "@/app/icons";
-import { AGE_MIN, POLICY_AGE_MAX, ageOptionGroups, isAgeOutOfRange } from "@/lib/age";
-import { applicationOpenCount, candidateCount, groupPolicies } from "@/lib/discovery";
+import WheelDatePicker from "@/app/WheelDatePicker";
+import { AGE_MIN, POLICY_AGE_MAX, isAgeOutOfRange, resolveAnswers } from "@/lib/age";
+import { birthYearOptions } from "@/lib/birth";
+import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { EMPTY_ANSWERS, loadAnswers, saveAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
@@ -78,48 +79,34 @@ function Question({
 }
 
 /**
- * 나이 선택. 눌러서 목록을 스크롤해 고른다.
+ * 생년월일 입력. 2층(/eligibility)·계약일과 같은 휠 피커를 쓴다.
  *
- * 한 살씩 −/+ 로 누르는 건 25살까지 일곱 번을 눌러야 한다. 네이티브 <select> 는
- * iOS·안드로이드에서 휠 피커로 뜨고, 데스크톱에서는 스크롤 가능한 목록이 된다 —
- * 직접 만든 스크롤 위젯보다 손에 익고 키보드·스크린리더가 그냥 동작한다.
+ * 나이를 숫자로 고르게 하지 않는 이유가 둘이다.
  *
- * 목록은 <optgroup> 두 개로 나뉜다. 대상 정책이 없는 나이(40~45세)를 지우지 않고
- * 묶어서 보여주는 이유는 lib/age.ts 의 ageOptionGroups 주석에 있다. 네이티브
- * select 라 그룹 라벨이 모바일 휠 피커에도 그대로 뜨고 스크린리더가 읽는다.
+ * 하나, 나이를 저장하면 시간이 지나며 조용히 거짓이 된다. 만 39세로 저장된 사람이
+ * 반년 뒤에도 39세로 판정된다. 정책은 신청일 기준 만 나이로 자르므로 그 차이가
+ * 실제로 결과를 가른다.
+ *
+ * 둘, 나이 목록에는 자격 판정을 붙일 자리가 생긴다. 실제로 붙어 있었다 —
+ * <optgroup> 라벨이 "해당되는 지원금 없음 (만 40세 이상)" 이었다. 나이는 고르는
+ * 선택지가 아니라 이미 정해진 사실인데, 그 사실에 판정을 얹으면 41세가 39세를
+ * 고르게 된다. 받을 수 없는 금액을 받을 수 있다고 믿는 쪽이 훨씬 나쁘다.
+ * 대상 연령은 아래 안내문이 고르기 전부터 말해준다.
  */
-function AgePicker({
-  age,
+function BirthDatePicker({
+  birthDate,
   onChange,
 }: {
-  age: number | null;
-  onChange: (age: number | null) => void;
+  birthDate: string | null;
+  onChange: (birthDate: string) => void;
 }) {
   return (
-    <div className="relative">
-      <select
-        aria-label="나이"
-        value={age ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
-        className={`w-full appearance-none rounded-lg border-2 border-ink-200 bg-white py-3 pl-4 pr-10 text-base font-bold text-ink-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 ${FOCUS_RING}`}
-      >
-        {/* 미선택은 그룹 밖에 둔다. 그룹 안에 넣으면 '있음' 묶음의 첫 항목처럼 읽힌다. */}
-        <option value="">나이를 선택하세요</option>
-        {ageOptionGroups().map((group) => (
-          <optgroup key={group.label} label={group.label}>
-            {group.ages.map((n) => (
-              <option key={n} value={n}>
-                만 {n}세
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-      <ChevronDownIcon
-        size={18}
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-500"
-      />
-    </div>
+    <WheelDatePicker
+      label="생년월일"
+      years={birthYearOptions(new Date().getFullYear())}
+      value={birthDate ?? ""}
+      onChange={onChange}
+    />
   );
 }
 
@@ -140,13 +127,18 @@ export default function FindPage() {
     saveAnswers(next);
   }
 
+  // 판정 코드는 나이만 본다. 생년월일 → 만 나이 변환은 여기 한 곳에서만 한다.
+  // asOf 가 아직 없는 첫 렌더(서버)에서는 나이도 '모름'이다.
+  const resolved = resolveAnswers(answers, asOf ?? null);
+
   // 목록 화면과 같은 함수로 센다. 따로 계산하면 CTA 건수와 목록 건수가 어긋난다.
-  const groups = groupPolicies(policies, answers);
+  const groups = groupPolicies(policies, resolved);
   const count = candidateCount(groups);
-  // 접수가 끝난 정책도 후보에 들어간다. 건수만 크게 말하면 "지금 3건 신청 가능"
-  // 으로 읽히므로 마감 건수를 함께 말한다.
-  const openNow = asOf ? applicationOpenCount(groups, asOf) : null;
-  const closed = openNow === null ? 0 : count - openNow;
+  // 접수가 끝난 정책도 후보에 들어간다. 한 숫자로 말하면 "지금 3건 받을 수 있다"
+  // 로 읽히므로 목록 화면과 같은 기준으로 갈라 센다 (lib/discovery.ts 주석 참고).
+  const { 신청가능, 마감 } = asOf
+    ? splitByApplicationWindow(groups, asOf)
+    : { 신청가능: [], 마감: [] };
 
   return (
     <main className="step-in mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
@@ -158,15 +150,28 @@ export default function FindPage() {
         <Question
           step={1}
           emoji="🎂"
-          title="나이가 어떻게 되시나요?"
+          title="생년월일이 어떻게 되시나요?"
         >
           <div className="w-full">
-            <AgePicker age={answers.age} onChange={(age) => update({ age })} />
+            <BirthDatePicker
+              birthDate={answers.birthDate}
+              onChange={(birthDate) => update({ birthDate })}
+            />
           </div>
-          {isAgeOutOfRange(answers.age) && (
+
+          {/* 대상 연령은 고르기 전부터 말해준다. 자격 조건은 입력 옵션이 아니라
+              필드 밖 안내문이 맡는다 — BirthDatePicker 주석 참고. */}
+          <p className="w-full text-xs leading-relaxed text-ink-500">
+            {resolved.age !== null && (
+              <span className="font-bold text-ink-900">만 {resolved.age}세 · </span>
+            )}
+            지금 담고 있는 정책은 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다.
+          </p>
+
+          {isAgeOutOfRange(resolved.age) && (
             <p className="w-full rounded-lg bg-warn-50 p-3 text-xs leading-relaxed text-warn-800">
-              지금 담고 있는 정책은 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다. 이
-              나이로는 해당되는 지원금이 없습니다.
+              이 나이로는 해당되는 지원금이 없습니다. 목록에서 정책별로 왜 해당되지 않는지
+              볼 수 있습니다.
             </p>
           )}
         </Question>
@@ -238,14 +243,23 @@ export default function FindPage() {
           href="/find/policies"
           className={`block rounded-xl bg-brand-600 py-4 text-center text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 ${FOCUS_RING}`}
         >
-          {count > 0 ? `지원금 ${count}건 보기` : "왜 해당되지 않는지 보기"}
+          {/* 숫자는 지금 신청할 수 있는 것만 센다. 후보가 전부 마감이면 '왜 해당되지
+              않는지 보기' 로 보내면 안 된다 — 대상이 아니라는 뜻으로 읽히지만 실제로는
+              다음 회차를 기다리면 되는 상황이다. */}
+          {신청가능.length > 0
+            ? `지원금 ${신청가능.length}건 보기`
+            : 마감.length > 0
+              ? `마감된 지원금 ${마감.length}건 보기`
+              : "왜 해당되지 않는지 보기"}
         </Link>
         <p className="mt-2 text-center text-xs text-ink-500">
           {count === 0
             ? "지금 답변으로는 해당되는 지원금이 없습니다"
-            : closed > 0
-              ? `지금 신청 가능 ${openNow}건 · 접수 마감 ${closed}건`
-              : `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`}
+            : 신청가능.length === 0
+              ? "지금 신청할 수 있는 지원금이 없습니다 · 다음 모집 공고를 기다려야 합니다"
+              : 마감.length > 0
+                ? `접수 마감 ${마감.length}건도 함께 볼 수 있어요`
+                : `가능성 있음 ${groups.가능.length}건 · 확인 필요 ${groups.확인.length}건`}
         </p>
       </div>
     </main>

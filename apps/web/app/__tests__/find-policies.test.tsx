@@ -5,11 +5,12 @@ import FindPoliciesPage from "@/app/find/policies/page";
 import { EMPTY_ANSWERS, saveAnswers } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
+import { birthDateForAge } from "@/lib/__tests__/fixtures";
 
 /** QA체크리스트 "1층 — 목록" 절을 자동화한 것. */
 
 const 익산_대학생 = {
-  age: 23,
+  birthDate: birthDateForAge(23),
   region: "전북특별자치도 익산시" as const,
   status: "대학생" as const,
   incomeBracket: 1,
@@ -22,7 +23,10 @@ describe("/find/policies", () => {
 
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 5건");
+    // 5건 중 2건은 접수가 끝났다. 제목은 지금 신청할 수 있는 것만 센다.
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "지금 신청할 수 있는 지원금 3건"
+    );
   });
 
   it("답변 요약 칩으로 어떤 답의 결과인지 보여준다", async () => {
@@ -53,8 +57,11 @@ describe("/find/policies", () => {
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });
-    // 익산 23세 대학생·소득 1구간 → 가능 2 + 확인 필요 1 = 3건, 해당 없음 2건
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 3건");
+    // 익산 23세 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세 1건은 마감), 해당 없음 2건
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "지금 신청할 수 있는 지원금 2건"
+    );
+    expect(screen.getByText("이번 회차는 마감된 지원금 1건")).toBeTruthy();
     expect(screen.getByText("해당되지 않는 지원금 2건 보기")).toBeTruthy();
   });
 
@@ -86,7 +93,7 @@ describe("/find/policies", () => {
   });
 
   it("후보가 없으면 이유를 안내하고 2층 CTA 를 숨긴다", async () => {
-    saveAnswers({ ...익산_대학생, age: 55 });
+    saveAnswers({ ...익산_대학생, birthDate: birthDateForAge(55) });
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });
@@ -100,6 +107,70 @@ describe("/find/policies", () => {
 
     await screen.findByRole("heading", { level: 1 });
     expect(screen.getByText(/신청 자격을 확정하는 것이 아닙니다/)).toBeTruthy();
+  });
+});
+
+/**
+ * 접수가 끝난 정책을 '지금 받을 수 있는 것'과 섞지 않는다.
+ *
+ * 1층 태그는 나이·지역·상태·소득만 보므로 마감된 정책도 초록 '가능성 있음' 이 된다
+ * (PRD F3-6, 의도된 결정). 문제는 그 카드가 제목의 건수에 함께 세어진다는 것이고,
+ * 하필 정책 데이터의 첫 항목인 국토부 청년월세가 금액도 가장 커서 — 가장 크고 가장
+ * 위에 있는 초록 카드가 못 받는 것이 됐다.
+ *
+ * 목록에서 지우지는 않는다. 다음 회차에 다시 열리는 사업이라, 없애면 "그런 지원금이
+ * 아예 없다"로 읽혀 또 다른 거짓이 된다.
+ */
+describe("/find/policies 접수 마감 분리", () => {
+  const 신청가능영역 = () => screen.getByRole("region", { name: /지금 신청할 수 있는 지원금/ });
+  const 마감영역 = () => screen.getByRole("region", { name: /이번 회차는 마감된 지원금/ });
+
+  it("마감된 카드는 신청 가능 영역이 아니라 마감 영역에 있다", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
+    expect(within(신청가능영역()).queryByText(/2026-05-29에 접수가 끝났습니다/)).toBeNull();
+    expect(within(마감영역()).getByText(/2026-05-29에 접수가 끝났습니다/)).toBeTruthy();
+  });
+
+  it("가장 큰 금액이 마감 건이어도 첫 카드를 차지하지 않는다", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(document.querySelector("article")?.textContent).not.toMatch(/접수가 끝났습니다/);
+  });
+
+  // 만 18세는 마감된 두 사업(국토부 청년월세 19~34세, 전북 정착 재직자)의 후보가
+  // 아니라, 남는 후보가 상시 접수뿐이다.
+  it("마감 건이 없으면 마감 영역 자체를 내보내지 않는다", async () => {
+    saveAnswers({ ...익산_대학생, birthDate: birthDateForAge(18) });
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.queryByText(/이번 회차는 마감된 지원금/)).toBeNull();
+  });
+
+  /*
+   * 후보가 있긴 한데 전부 마감인 경우. 그냥 '해당되는 지원금이 없어요' 라고 하면
+   * "너는 대상이 아니다"로 읽히는데, 실제로는 다음 회차를 기다리면 되는 상황이다.
+   */
+  it("후보가 전부 마감이면 제목이 그렇게 말하고, 카드는 그대로 보여준다", async () => {
+    saveAnswers({
+      birthDate: birthDateForAge(30),
+      region: "전북특별자치도", // REGION_OPTIONS 의 value (라벨은 "전북특별자치도 (익산시 외)")
+      status: "재직",
+      incomeBracket: 2,
+    });
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "지금 신청할 수 있는 지원금이 없어요"
+    );
+    expect(screen.getByText("이번 회차는 마감된 지원금 2건")).toBeTruthy();
   });
 });
 

@@ -1,4 +1,4 @@
-import type { DiscoveryAnswers, DiscoveryStatus, PolicyMeta, TagResult } from "./types";
+import type { DiscoveryStatus, PolicyMeta, ResolvedAnswers, TagResult } from "./types";
 import { policyAppliesToRegion } from "./region";
 
 /**
@@ -70,7 +70,7 @@ function checkIncome(policy: PolicyMeta, incomeBracket: number | null): CheckRes
   return PASS;
 }
 
-export function tagPolicy(policy: PolicyMeta, answers: DiscoveryAnswers): TagResult {
+export function tagPolicy(policy: PolicyMeta, answers: ResolvedAnswers): TagResult {
   const checks = [
     { field: "나이", ...checkAge(policy, answers.age) },
     { field: "지역", ...checkRegion(policy, answers.region) },

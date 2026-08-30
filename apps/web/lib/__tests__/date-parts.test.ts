@@ -1,26 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { AGE_MAX, AGE_MIN } from "@/lib/age";
+// 생년 목록 자체는 birth.test.ts 가 본다. 여기서는 계약일 목록과 방향만 견준다.
 import { birthYearOptions } from "@/lib/birth";
 import { contractYearOptions, dayOptions, daysInMonth, fromISODate, toISODate } from "@/lib/date";
-
-describe("생년 목록", () => {
-  it("만 18세 생년이 맨 위, 만 45세 생년이 맨 아래다", () => {
-    const years = birthYearOptions(2026);
-    expect(years[0]).toBe(2026 - AGE_MIN); // 2008
-    expect(years.at(-1)).toBe(2026 - AGE_MAX); // 1981
-    expect(years).toHaveLength(AGE_MAX - AGE_MIN + 1);
-  });
-
-  // 이게 원래 불편했던 지점이다 — date 입력은 올해(2026)에서 시작한다.
-  it("올해가 목록에 없다 — 첫 줄이 이미 청년 생년대다", () => {
-    expect(birthYearOptions(2026)).not.toContain(2026);
-    expect(birthYearOptions(2026)).toContain(2007); // '올해 성인' 생년
-  });
-
-  it("해가 바뀌면 목록도 한 칸 따라 내려간다", () => {
-    expect(birthYearOptions(2027)[0]).toBe(2027 - AGE_MIN);
-  });
-});
 
 describe("일 목록", () => {
   it("달마다 마지막 날이 다르다", () => {
