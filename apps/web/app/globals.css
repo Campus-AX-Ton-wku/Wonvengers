@@ -182,3 +182,30 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ── 1층 결과 요약의 금액 등장 ──
+   질문 넷에 답한 보상이라 이 화면에서 유일하게 연출이 있는 순간이다.
+   지수형 ease-out(cubic-bezier 0.16,1,0.3,1)으로 빠르게 나타나 부드럽게 멈춘다.
+
+   기본 상태는 '보이는 것'이고 키프레임이 감춘 데서 시작한다. 그래야
+   prefers-reduced-motion 으로 animation:none 이 되어도 숫자가 그냥 떠 있는다. */
+@keyframes amount-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.amount-reveal {
+  animation: amount-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amount-reveal {
+    animation: none;
+  }
+}

@@ -193,6 +193,7 @@ export default function WheelDatePicker({
   years,
   value,
   onChange,
+  defaultOpen = false,
 }: {
   /** 트리거 버튼의 id. 바깥 <label htmlFor> 과 묶을 때 쓴다. */
   id?: string;
@@ -201,8 +202,16 @@ export default function WheelDatePicker({
   /** YYYY-MM-DD, 아직 안 고르면 "" */
   value: string;
   onChange: (value: string) => void;
+  /**
+   * 마운트할 때 패널을 펼친 채로 시작한다.
+   *
+   * 한 화면에 이 질문 하나뿐인 자리(1층 첫 단계)에서 쓴다. 닫힌 채로 두면 화면
+   * 절반이 비고 사용자가 할 일이 '고르기'를 한 번 누르는 것뿐이다 — 토스가 같은
+   * 자리에서 키보드를 올려 두는 것과 같은 이유다.
+   */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<Parts>(() => fromISODate(value) ?? startingParts(years));
 
   // 저장된 값은 마운트 뒤에 들어온다(localStorage). 그때 초안도 그 자리로 맞춘다.

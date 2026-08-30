@@ -24,6 +24,7 @@ describe("/find/policies", () => {
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
     // 5건 중 2건은 접수가 끝났다. 제목은 지금 신청할 수 있는 것만 센다.
+    // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "지금 신청할 수 있는 지원금 3건"
     );
