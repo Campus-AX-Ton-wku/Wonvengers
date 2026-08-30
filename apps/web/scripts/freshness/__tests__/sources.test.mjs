@@ -16,6 +16,14 @@ describe("fromYouth", () => {
     expect(got.applicationEnd).toBe(null);
   });
 
+  it("등록을 마지막으로 손본 날을 ISO 로 준다", () => {
+    // 이 값이 앱의 verifiedAt 보다 한참 오래됐으면, 어긋남의 원인은
+    // 앱이 아니라 이 등록이 낡은 것일 가능성이 높다.
+    const got = fromYouth({ plcyNm: "x", lastMdfcnDt: "2025-01-16 20:21:20" });
+
+    expect(got.updatedAt).toBe("2025-01-16");
+  });
+
   it("나이 제한 없음(Y)이면 나이를 말하지 않는다 — 0~0 으로 두면 대조가 헛돈다", () => {
     const got = fromYouth({ plcyNm: "x", sprtTrgtAgeLmtYn: "Y", sprtTrgtMinAge: "0", sprtTrgtMaxAge: "0" });
 
@@ -38,6 +46,12 @@ describe("fromGov24", () => {
 
     expect(got.applicationStart).toBe(null);
     expect(got.applicationEnd).toBe(null);
+  });
+
+  it("수정일시 14자리를 ISO 로 준다", () => {
+    const got = fromGov24({ 서비스명: "x", 수정일시: "20260810153819" });
+
+    expect(got.updatedAt).toBe("2026-08-10");
   });
 
   it("지원대상이 자유 서술이면 나이를 말하지 않는다", () => {

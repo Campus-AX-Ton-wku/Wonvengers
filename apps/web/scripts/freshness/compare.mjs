@@ -26,7 +26,7 @@ function statingSources({ app, youth, gov24 }) {
   );
 }
 
-export function compareField({ field, app, youth, gov24, normalize }) {
+export function compareField({ field, app, youth, gov24, normalize, appVerifiedAt, updatedAt }) {
   // 표기 차이를 걸러내되, 보고에는 원문을 그대로 싣는다. 사람이 판단하려면
   // 정규화된 값이 아니라 소스가 실제로 뭐라고 적었는지를 봐야 한다.
   const key = normalize ?? ((v) => v);
@@ -62,8 +62,28 @@ export function compareField({ field, app, youth, gov24, normalize }) {
     };
   }
 
-  // 앱을 뒷받침하는 소스가 없다. 바깥끼리 서로 같을 때만 "서로 일치"라고 말한다 —
-  // 셋 다 다른 경우까지 합의로 적으면 없는 근거를 지어내는 것이다.
+  // 앱을 뒷받침하는 소스가 없더라도, 이견을 낸 등록이 전부 앱 검수일보다
+  // 오래됐으면 "앱을 먼저 의심하라"고 말하면 안 된다. 낡은 쪽은 바깥이다.
+  // (2026-08-30 전북청년 지역정착 — 온통청년이 2025년 회차를 그대로 두고 있었다)
+  const 갱신일들 = 이견.map(([name]) => updatedAt?.[name] ?? null);
+  const 전부낡음 =
+    appVerifiedAt != null &&
+    갱신일들.length > 0 &&
+    갱신일들.every((d) => d != null && d < appVerifiedAt);
+
+  if (전부낡음) {
+    const 표기 = 이견.map(([name]) => `${name} ${updatedAt[name]}`).join("·");
+    return {
+      ...base,
+      verdict: "불일치",
+      needsReview: true,
+      priority: "낮음",
+      detail: `바깥 등록이 앱 검수(${appVerifiedAt})보다 오래됐다 — ${표기}. 바깥이 낡았을 가능성이 높다`,
+    };
+  }
+
+  // 바깥끼리 서로 같을 때만 "서로 일치"라고 말한다 — 셋 다 다른 경우까지
+  // 합의로 적으면 없는 근거를 지어내는 것이다.
   const 바깥합의 = new Set(이견.map(([, value]) => key(value))).size === 1 && 이견.length > 1;
 
   return {

@@ -88,6 +88,58 @@ describe("compareField", () => {
 });
 
 /**
+ * 앱이 혼자 다르다고 늘 앱을 의심할 수는 없다.
+ *
+ * 실제 사례(2026-08-30): 전북청년 지역정착을 앱은 2026-03-06~04-10 이라 하고
+ * 온통청년은 2025-01-13~2025-02-05 라 한다. 그런데 그 온통청년 등록은
+ * lastMdfcnDt 가 2025-01-16 이다 — 1년 반 넘게 손대지 않은 2025년 회차다.
+ * 앱은 2026-08-23 에 공고 원문으로 검수했다. 앱이 맞다.
+ *
+ * 바깥 등록이 앱 검수일보다 오래됐으면 "앱을 먼저 의심하라"고 말하면 안 된다.
+ */
+describe("compareField — 바깥 소스가 낡았을 때", () => {
+  it("이견 소스의 등록이 앱 검수일보다 오래됐으면 우선순위를 낮춘다", () => {
+    const result = compareField({
+      field: "신청시작일",
+      app: "2026-03-06",
+      youth: "2025-01-13",
+      gov24: null,
+      appVerifiedAt: "2026-08-23",
+      updatedAt: { 온통청년: "2025-01-16", 보조금24: null },
+    });
+
+    expect(result.priority).toBe("낮음");
+    expect(result.detail).toContain("2025-01-16");
+  });
+
+  it("이견 소스가 앱 검수 뒤에 갱신됐으면 높음을 유지한다", () => {
+    const result = compareField({
+      field: "신청시작일",
+      app: "2026-03-06",
+      youth: "2026-09-01",
+      gov24: null,
+      appVerifiedAt: "2026-08-23",
+      updatedAt: { 온통청년: "2026-08-28", 보조금24: null },
+    });
+
+    expect(result.priority).toBe("높음");
+  });
+
+  it("갱신일을 모르면 판단을 바꾸지 않는다", () => {
+    const result = compareField({
+      field: "신청시작일",
+      app: "2026-03-06",
+      youth: "2025-01-13",
+      gov24: null,
+      appVerifiedAt: "2026-08-23",
+      updatedAt: { 온통청년: null, 보조금24: null },
+    });
+
+    expect(result.priority).toBe("높음");
+  });
+});
+
+/**
  * 앱은 정책명에 팀이 붙인 주석을 달고 있다 — "(2026년 상시사업 전환)".
  * 이걸 그대로 대조하면 매주 같은 거짓 불일치가 뜨고, 진짜 신호가 묻힌다.
  */

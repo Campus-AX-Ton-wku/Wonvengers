@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 
 import { compareField, normalizeName } from "./freshness/compare.mjs";
 import { diffSnapshots, fingerprintRecord } from "./freshness/snapshot.mjs";
+import { withRetry } from "./freshness/retry.mjs";
 import { fromGov24, fromYouth } from "./freshness/sources.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -68,6 +69,10 @@ const GOV24_KEY = readKey("BOJOGEUM_KEY");
 // ── 소스 호출 ───────────────────────────────────────────────────────────
 
 async function callYouth(params) {
+  return withRetry(() => callYouthOnce(params));
+}
+
+async function callYouthOnce(params) {
   const url = new URL("https://www.youthcenter.go.kr/go/ythip/getPlcy");
   url.searchParams.set("apiKeyNm", YOUTH_KEY);
   url.searchParams.set("rtnType", "json");
@@ -82,6 +87,10 @@ async function callYouth(params) {
 }
 
 async function callGov24(params) {
+  return withRetry(() => callGov24Once(params));
+}
+
+async function callGov24Once(params) {
   const url = new URL("https://api.odcloud.kr/api/gov24/v3/serviceList");
   url.searchParams.set("serviceKey", GOV24_KEY);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
@@ -160,6 +169,11 @@ async function 대조(policy) {
     ageMax: policy.discovery?.ageMax ?? null,
   };
 
+  // 어느 등록이 언제 손봐졌는지. 앱 검수일보다 오래된 등록이 낸 이견은
+  // "앱을 의심하라"가 아니라 "바깥이 낡았다"로 읽어야 한다.
+  const updatedAt = { 온통청년: youth?.updatedAt ?? null, 보조금24: gov24?.updatedAt ?? null };
+  결과.갱신일 = updatedAt;
+
   for (const f of FIELDS) {
     결과.필드.push(
       compareField({
@@ -168,6 +182,8 @@ async function 대조(policy) {
         youth: youth ? f.pick(youth) : null,
         gov24: gov24 ? f.pick(gov24) : null,
         normalize: f.normalize,
+        appVerifiedAt: policy.verifiedAt,
+        updatedAt,
       })
     );
   }

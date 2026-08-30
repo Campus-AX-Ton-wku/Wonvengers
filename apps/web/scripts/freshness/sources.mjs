@@ -15,6 +15,16 @@ const 빈값 = (v) => {
   return s === "" ? null : s;
 };
 
+/**
+ * 소스가 이 등록을 마지막으로 손본 날. "2025-01-16 20:21:20" 도
+ * "20260810153819" 도 앞 8자리가 날짜다.
+ */
+function 갱신일(raw) {
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if (digits.length < 8) return null;
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
 /** "20260415 ~ 20260930" → { start, end }. 종료일이 없으면 end 는 null(상시). */
 export function parseYouthPeriod(raw) {
   const dates = String(raw ?? "").match(/\d{8}/g);
@@ -40,6 +50,7 @@ export function fromYouth(record) {
     applicationEnd: end,
     ageMin: 나이(record.sprtTrgtMinAge),
     ageMax: 나이(record.sprtTrgtMaxAge),
+    updatedAt: 갱신일(record.lastMdfcnDt),
   };
 }
 
@@ -51,5 +62,6 @@ export function fromGov24(record) {
     applicationEnd: null,
     ageMin: null,
     ageMax: null,
+    updatedAt: 갱신일(record["수정일시"]),
   };
 }
