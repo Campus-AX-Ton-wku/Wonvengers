@@ -211,9 +211,16 @@ describe("/find/policies 정책 출처", () => {
         screen.getAllByText(`팀이 ${p.verifiedAt}에 공고 원문과 대조했습니다.`).length
       ).toBeGreaterThan(0);
     }
-    // 익산형 청년월세가 아직 검수 전이다. 조용히 넘기면 미검수 값이 확인된 값처럼 보인다.
-    expect(unverified.length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/아직 공고 원문과 대조하지 않았습니다/)).toHaveLength(
+    // 미검수 정책이 몇 개든 — 지금은 0개다 — 화면 경고 수와 정확히 맞아야 한다.
+    //
+    // 예전에는 여기서 `unverified.length > 0` 을 단언했다. 익산형 청년월세가
+    // verifiedAt: null 이라는 데이터 사실에 기대고 있었는데, 2026-08-30 에 그
+    // 정책을 검수하면서 전제가 깨졌다. 데이터가 바뀌었을 뿐인데 테스트가 깨지는 건
+    // 검증 대상을 잘못 잡은 것이다.
+    //
+    // 미검수 분기가 화면에 어떻게 그려지는지는 policy-verification-notice.test.tsx 가
+    // 픽스처로 확인한다 — policies.json 이 어떻게 바뀌든 그 검증은 계속 돈다.
+    expect(screen.queryAllByText(/아직 공고 원문과 대조하지 않았습니다/)).toHaveLength(
       unverified.length
     );
   });
