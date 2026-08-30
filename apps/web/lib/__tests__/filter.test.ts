@@ -28,6 +28,7 @@ const 익산정책: PolicyMeta = {
   sourceUrl: "https://example.com",
   applyUrl: "https://example.com",
   youthPolicyNo: null,
+  gov24ServiceId: null,
   verifiedAt: "2026-08-13",
   effectiveYear: 2026,
   notes: "테스트",

@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:lib": "vitest run lib",
     "test:ui": "vitest run app",
-    "fetch:youth": "node scripts/fetch-youth-policies.mjs"
+    "fetch:youth": "node scripts/fetch-youth-policies.mjs",
+    "check:freshness": "node scripts/check-policy-freshness.mjs"
   },
   "dependencies": {
     "next": "^15.5.4",

@@ -143,6 +143,18 @@ export interface PolicyMeta {
    * sourceUrl(지역 공고 원문) 하나다.
    */
   youthPolicyNo: string | null;
+  /**
+   * 보조금24(행안부 대한민국 공공서비스 정보)의 서비스ID. null = 그 소스에 없거나 매핑하지 않음.
+   *
+   * 온통청년과 마찬가지로 화면에는 쓰지 않는다. 신선도 감지
+   * (scripts/check-policy-freshness.mjs)에서 3자 대조의 세 번째 축으로만 쓴다.
+   *
+   * 2026-08-30 확인: 익산 사업 2건(익산형 청년월세·전입 청년 이사비)은 보조금24에
+   * 등록 자체가 없다. '청년 주거급여 분리지급'은 보조금24의
+   * "주거급여 (맞춤형 급여)"와 사업 범위가 달라 일부러 매핑하지 않았다 —
+   * 억지로 붙이면 매주 같은 거짓 불일치가 뜬다.
+   */
+  gov24ServiceId: string | null;
   verifiedAt: string | null; // null = 팀 교차검수 전
   effectiveYear: number;
   notes: string;

@@ -1,0 +1,84 @@
+name: 정책 데이터 신선도 감지
+
+# 정책 데이터를 자동으로 고치지 않는다. 어긋난 곳을 찾아 이슈로 올릴 뿐이고,
+# 반영은 사람이 공고 원문을 확인한 뒤 손으로 한다.
+# 이유는 apps/web/scripts/check-policy-freshness.mjs 머리말 참고.
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 매주 월요일 09:00 KST (UTC 00:00)
+  workflow_dispatch: # 손으로도 돌릴 수 있게
+
+permissions:
+  contents: write # 스냅샷 브랜치 갱신
+  issues: write # 검토 요청 이슈 생성
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # develop·main 은 PR 필수에 푸시 허용자가 제한돼 있어 워크플로가 직접 못 올린다.
+      # 스냅샷은 보호되지 않은 전용 브랜치에 따로 둔다.
+      - name: 지난 스냅샷 가져오기
+        run: |
+          if git fetch origin freshness-snapshot --depth=1 2>/dev/null; then
+            git show origin/freshness-snapshot:iksan-snapshot.json \
+              > apps/web/scripts/freshness/iksan-snapshot.json
+            echo "지난 스냅샷을 가져왔다."
+          else
+            echo "지난 스냅샷이 없다 — 이번 실행이 기준선이 된다."
+          fi
+
+      - name: 신선도 검사
+        id: check
+        env:
+          YOUTH_API_KEY: ${{ secrets.YOUTH_API_KEY }}
+          BOJOGEUM_KEY: ${{ secrets.BOJOGEUM_KEY }}
+          FRESHNESS_REPORT: ${{ github.workspace }}/freshness-report.md
+        run: |
+          set +e
+          node apps/web/scripts/check-policy-freshness.mjs
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # 10 = 검토할 것이 있음. 1 이상 다른 값은 실행 자체가 실패한 것이다.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 10 ]; then
+            echo "스크립트가 실패했다 (exit $code)"
+            exit "$code"
+          fi
+
+      - name: 스냅샷 저장
+        run: |
+          snapshot=apps/web/scripts/freshness/iksan-snapshot.json
+          [ -f "$snapshot" ] || exit 0
+          work=$(mktemp -d)
+          cp "$snapshot" "$work/iksan-snapshot.json"
+          cd "$work"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add iksan-snapshot.json
+          git commit -q -m "익산 주거 스냅샷 ${{ github.run_id }}"
+          git push -q --force \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
+            HEAD:freshness-snapshot
+
+      - name: 검토 요청 이슈 만들기
+        if: steps.check.outputs.code == '10'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 라벨이 없으면 gh issue create 가 통째로 실패한다. 먼저 만들어 둔다.
+          gh label create "정책데이터" \
+            --color "0E8A16" \
+            --description "정책 데이터 신선도 검토" 2>/dev/null || true
+          gh issue create \
+            --title "정책 데이터 신선도 검토 — $(TZ=Asia/Seoul date +%Y-%m-%d)" \
+            --label "정책데이터" \
+            --body-file "${{ github.workspace }}/freshness-report.md"
