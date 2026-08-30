@@ -19,3 +19,9 @@ docs/디자인/reference/
 
 # 루트에 굴러다니는 로고 원본 — 정식 마스터는 docs/디자인/아이콘/ 에 있다
 /wonvengers-logo.jpg
+
+# 신선도 감지 산출물 — 보고서는 매 실행마다 새로 만들고,
+# 스냅샷은 보호 브랜치 대신 freshness-snapshot 브랜치에 둔다
+# (develop·main 은 PR 필수라 워크플로가 직접 푸시할 수 없다)
+apps/web/freshness-report.md
+apps/web/scripts/freshness/iksan-snapshot.json
