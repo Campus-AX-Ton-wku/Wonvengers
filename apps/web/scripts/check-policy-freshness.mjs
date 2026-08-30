@@ -32,11 +32,11 @@ import { fileURLToPath } from "node:url";
 import { compareField, normalizeName } from "./freshness/compare.mjs";
 import { diffSnapshots, fingerprintRecord } from "./freshness/snapshot.mjs";
 import { withRetry } from "./freshness/retry.mjs";
-import { fromGov24, fromYouth } from "./freshness/sources.mjs";
+import { fromGov24, fromYouth, youthCriteriaFingerprint } from "./freshness/sources.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(HERE, "..");
-const SNAPSHOT_PATH = join(HERE, "freshness", "iksan-snapshot.json");
+const SNAPSHOT_PATH = join(HERE, "freshness", "freshness-snapshot.json");
 const REPORT_PATH = process.env.FRESHNESS_REPORT ?? join(WEB_ROOT, "freshness-report.md");
 
 /** 팀이 공고를 다시 볼 때가 됐다고 보는 간격. 접수는 수시로 바뀐다. */
@@ -142,8 +142,12 @@ async function 대조(policy) {
     try {
       const r = await callYouth({ plcyNo: policy.youthPolicyNo, pageNum: 1, pageSize: 5 });
       const hit = (r.youthPolicyList ?? []).find((p) => p.plcyNo === policy.youthPolicyNo);
-      if (hit) youth = fromYouth(hit);
-      else 결과.조회실패.push(`온통청년: plcyNo ${policy.youthPolicyNo} 응답에 없음`);
+      if (hit) {
+        youth = fromYouth(hit);
+        // 대조하는 다섯 필드 밖의 요건(소득·재산·중복수급)은 자유 서술이라
+        // 파싱하지 않는다. 지문만 떠서 "바뀌었다"를 잡는다.
+        결과.요건지문 = youthCriteriaFingerprint(hit);
+      } else 결과.조회실패.push(`온통청년: plcyNo ${policy.youthPolicyNo} 응답에 없음`);
     } catch (err) {
       결과.조회실패.push(`온통청년: ${err.message}`);
     }
@@ -190,6 +194,23 @@ async function 대조(policy) {
   return 결과;
 }
 
+// ── 스냅샷 ──────────────────────────────────────────────────────────────
+
+/**
+ * 지난 실행의 기준선. 두 갈래가 한 파일을 공유한다.
+ *   services      — 보조금24 익산 주거 목록
+ *   youthPolicies — 온통청년에 매핑된 정책의 요건 지문
+ */
+function 지난스냅샷() {
+  try {
+    return JSON.parse(readFileSync(SNAPSHOT_PATH, "utf8"));
+  } catch {
+    return null; // 첫 실행이면 기준선이 없다
+  }
+}
+
+const prev = 지난스냅샷();
+
 // ── 2) 익산 주거 목록 감시 ──────────────────────────────────────────────
 
 /** 지문에 넣을 필드. 바뀌면 사람이 봐야 하는 서술들이다. */
@@ -205,20 +226,8 @@ async function 익산감시() {
     };
   }
 
-  let prev = null;
-  try {
-    prev = JSON.parse(readFileSync(SNAPSHOT_PATH, "utf8"));
-  } catch {
-    // 첫 실행이면 기준선이 없다. 비교 없이 기록만 남긴다.
-  }
-
-  const diff = prev ? diffSnapshots(prev.services, next) : null;
-  writeFileSync(
-    SNAPSHOT_PATH,
-    JSON.stringify({ 조회일: todayISO(), 조회조건: IKSAN_QUERY, services: next }, null, 2) + "\n",
-    "utf8"
-  );
-  return { diff, 건수: Object.keys(next).length, 첫실행: !prev };
+  const diff = prev?.services ? diffSnapshots(prev.services, next) : null;
+  return { diff, next, 건수: Object.keys(next).length, 첫실행: !prev?.services };
 }
 
 // ── 실행 ────────────────────────────────────────────────────────────────
@@ -248,6 +257,11 @@ if (빠진소스.length > 0) {
 
 let 검토필요 = false;
 
+/** 온통청년 요건 지문 (이번 실행). 스냅샷에 기록해 다음 주와 비교한다. */
+const youthNext = {};
+/** 보조금24 익산 목록 (이번 실행). 조회에 실패하면 null 로 남는다. */
+let gov24Next = null;
+
 // 1) 3자 대조
 w("## 1. 3자 대조 (앱 · 온통청년 · 보조금24)");
 w();
@@ -257,6 +271,9 @@ if (!YOUTH_KEY && !GOV24_KEY) {
 } else {
   for (const policy of policies) {
     const r = await 대조(policy);
+    if (r.요건지문) {
+      youthNext[policy.youthPolicyNo] = { name: policy.name, fingerprint: r.요건지문 };
+    }
     const 어긋남 = r.필드.filter((f) => f.needsReview);
     const 대조가능 = r.필드.filter((f) => f.verdict !== "대조불가");
 
@@ -292,7 +309,8 @@ if (!GOV24_KEY) {
   w();
 } else {
   try {
-    const { diff, 건수, 첫실행 } = await 익산감시();
+    const { diff, next, 건수, 첫실행 } = await 익산감시();
+    gov24Next = next;
     if (첫실행) {
       w(`기준선을 처음 기록했다 — 현재 ${건수}건. 다음 실행부터 변화를 비교한다.`);
     } else if (diff.신규.length + diff.변경.length + diff.사라짐.length === 0) {
@@ -315,8 +333,42 @@ if (!GOV24_KEY) {
   w();
 }
 
-// 3) verifiedAt 낡음
-w(`## 3. 대조한 지 ${STALE_DAYS}일 넘은 정책`);
+// 3) 온통청년 요건 변경 (소득·재산·중복수급 등 자유 서술)
+w("## 3. 정책 요건 변경 (온통청년)");
+w();
+w("> 소득·재산·제출서류·중복수급 조항은 자유 서술이라 파싱하지 않는다.");
+w("> **바뀌었다는 사실만** 알리고, 무엇이 어떻게 바뀌었는지는 사람이 원문을 본다.");
+w();
+if (!YOUTH_KEY) {
+  w("`YOUTH_API_KEY` 가 없어 건너뛰었다.");
+} else if (Object.keys(youthNext).length === 0) {
+  w("온통청년에 매핑된 정책이 없어 볼 것이 없다.");
+} else if (!prev?.youthPolicies) {
+  w(`기준선을 처음 기록했다 — 정책 ${Object.keys(youthNext).length}건. 다음 실행부터 변화를 비교한다.`);
+} else {
+  const diff = diffSnapshots(prev.youthPolicies, youthNext);
+  if (diff.신규.length + diff.변경.length + diff.사라짐.length === 0) {
+    w(`변화 없음 (정책 ${Object.keys(youthNext).length}건).`);
+  } else {
+    검토필요 = true;
+    for (const [제목, 목록] of [
+      ["요건이 바뀐 정책", diff.변경],
+      ["새로 매핑된 정책", diff.신규],
+      ["더 이상 조회되지 않는 정책", diff.사라짐],
+    ]) {
+      if (목록.length === 0) continue;
+      w(`### ${제목} ${목록.length}건`);
+      for (const x of 목록) {
+        w(`- **${x.name}** — 온통청년 정책번호 \`${x.id}\``);
+      }
+      w();
+    }
+  }
+}
+w();
+
+// 4) verifiedAt 낡음
+w(`## 4. 대조한 지 ${STALE_DAYS}일 넘은 정책`);
 w();
 const 낡음 = policies
   .map((p) => ({ p, 경과: p.verifiedAt ? daysBetween(p.verifiedAt, today) : null }))
@@ -333,6 +385,23 @@ if (낡음.length === 0) {
   }
 }
 w();
+
+// 스냅샷을 마지막에 한 번 쓴다. 두 갈래가 한 파일을 공유하므로, 한쪽 조회가
+// 실패했을 때 그 갈래의 지난 기준선을 지우지 않도록 기존 값을 남긴다.
+writeFileSync(
+  SNAPSHOT_PATH,
+  JSON.stringify(
+    {
+      조회일: today,
+      조회조건: IKSAN_QUERY,
+      services: gov24Next ?? prev?.services ?? {},
+      youthPolicies: Object.keys(youthNext).length > 0 ? youthNext : (prev?.youthPolicies ?? {}),
+    },
+    null,
+    2
+  ) + "\n",
+  "utf8"
+);
 
 const report = md.join("\n");
 writeFileSync(REPORT_PATH, report, "utf8");

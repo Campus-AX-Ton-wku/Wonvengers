@@ -24,4 +24,4 @@ docs/디자인/reference/
 # 스냅샷은 보호 브랜치 대신 freshness-snapshot 브랜치에 둔다
 # (develop·main 은 PR 필수라 워크플로가 직접 푸시할 수 없다)
 apps/web/freshness-report.md
-apps/web/scripts/freshness/iksan-snapshot.json
+apps/web/scripts/freshness/freshness-snapshot.json
