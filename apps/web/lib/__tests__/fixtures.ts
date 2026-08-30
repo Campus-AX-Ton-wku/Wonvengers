@@ -48,3 +48,14 @@ export function makeProfile(overrides: Partial<EligibilityProfile> = {}): Eligib
     ...overrides,
   };
 }
+
+/**
+ * 그 나이가 되는 생년월일.
+ *
+ * 1월 1일생으로 잡으면 올해 생일이 이미 지났으므로 만 나이가 연도 차이와 정확히
+ * 같다 — 픽스처가 오늘 날짜에 흔들리지 않는다. (나이를 숫자로 저장하지 않는
+ * 이유는 lib/types.ts 의 DiscoveryAnswers.birthDate 주석 참고)
+ */
+export function birthDateForAge(age: number, today = new Date()): string {
+  return `${today.getFullYear() - age}-01-01`;
+}

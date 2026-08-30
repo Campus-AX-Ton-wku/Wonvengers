@@ -4,6 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
 import { loadListing, saveAnswers } from "@/lib/storage";
+import { birthDateForAge } from "@/lib/__tests__/fixtures";
 
 vi.mock("next/navigation", () => {
   // 렌더마다 새 객체를 주면 router 를 의존성으로 쓰는 useEffect 가 무한히 다시 돈다.
@@ -143,7 +144,7 @@ describe("/calculate 입력 검증", () => {
 describe("/calculate 1층 답변 이어받기", () => {
   it("1층에서 고른 지역으로 채우고, 채웠다는 사실을 알려준다", () => {
     saveAnswers({
-      age: 23,
+      birthDate: birthDateForAge(23),
       region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
@@ -157,7 +158,12 @@ describe("/calculate 1층 답변 이어받기", () => {
 
   it("사용자가 지역을 직접 바꾸면 안내 문구를 거둔다", async () => {
     const user = userEvent.setup();
-    saveAnswers({ age: 23, region: "전북특별자치도 익산시", status: "재직", incomeBracket: 2 });
+    saveAnswers({
+      birthDate: birthDateForAge(23),
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+    });
     render(<CalculatePage />);
 
     await user.selectOptions(screen.getByRole("combobox"), "그 외 지역");

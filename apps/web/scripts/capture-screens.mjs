@@ -70,7 +70,9 @@ const KEYS = {
 const FIXTURE = {
   /* 1층 답변 — policies.png 의 요약 칩이 이 값으로 그려진다. */
   answers: {
-    age: 24,
+    // 1월 1일생이라 그해 내내 만 24세로 잡힌다 (2026년 기준). 캡처마다 나이가
+    // 흔들리지 않도록 생일이 이미 지난 날짜로 둔다.
+    birthDate: "2002-01-01",
     region: "전북특별자치도 익산시",
     status: "대학생",
     incomeBracket: 2, // 월 100~150만원

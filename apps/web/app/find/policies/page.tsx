@@ -6,7 +6,13 @@ import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import FindTopBar from "@/app/find/FindTopBar";
 import PolicyCard from "@/app/find/PolicyCard";
-import { answerSummary, applicationOpenCount, candidateCount, groupPolicies } from "@/lib/discovery";
+import { resolveAnswers } from "@/lib/age";
+import {
+  answerSummary,
+  candidateCount,
+  groupPolicies,
+  splitByApplicationWindow,
+} from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
@@ -36,12 +42,19 @@ export default function FindPoliciesPage() {
     setLoaded(true);
   }, []);
 
-  const groups = groupPolicies(policies, answers);
+  // 1층과 같은 경계 변환. 생년월일 → 만 나이는 여기서 한 번만 한다 (lib/age.ts).
+  const resolved = resolveAnswers(answers, asOf ?? null);
+
+  const groups = groupPolicies(policies, resolved);
   const count = candidateCount(groups);
-  const summary = answerSummary(answers, brackets);
-  // 접수가 끝난 정책도 후보에 들어가므로 제목 옆에서 나눠 말한다.
-  const openNow = asOf ? applicationOpenCount(groups, asOf) : null;
-  const closed = openNow === null ? 0 : count - openNow;
+  const summary = answerSummary(resolved, brackets);
+
+  // 접수가 끝난 정책도 1층 태그로는 '가능성 있음' 이 된다. 한 목록에 섞으면 제목의
+  // 건수가 못 받는 것까지 세고, 금액이 가장 큰 마감 건이 첫 카드를 차지한다.
+  // 지우지는 않는다 — 다음 회차에 다시 열리는 사업이다 (lib/discovery.ts 주석 참고).
+  const { 신청가능, 마감 } = asOf
+    ? splitByApplicationWindow(groups, asOf)
+    : { 신청가능: [], 마감: [] };
 
   return (
     <main className="step-in mx-auto max-w-lg px-5 pb-10">
@@ -51,14 +64,16 @@ export default function FindPoliciesPage() {
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
       ) : (
         <>
+          {/* 제목은 '지금 받을 수 있는 것'만 센다. 후보는 있는데 전부 마감이면
+              '해당되는 지원금이 없어요' 로 말하면 안 된다 — 대상이 아니라는 뜻으로
+              읽히지만 실제로는 다음 회차를 기다리면 되는 상황이다. */}
           <h1 className="mt-6 text-2xl font-extrabold text-ink-900">
-            {count > 0 ? `지원금 ${count}건` : "해당되는 지원금이 없어요"}
+            {신청가능.length > 0
+              ? `지금 신청할 수 있는 지원금 ${신청가능.length}건`
+              : count > 0
+                ? "지금 신청할 수 있는 지원금이 없어요"
+                : "해당되는 지원금이 없어요"}
           </h1>
-          {closed > 0 && (
-            <p className="mt-1 text-sm font-bold text-warn-800">
-              지금 신청 가능 {openNow}건 · 접수 마감 {closed}건
-            </p>
-          )}
           {/* 무슨 답변으로 나온 결과인지 보여주고, 바로 고치러 갈 수 있게 한다. */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {/* 목록 시맨틱 — 스크린 리더가 "답변 요약, 항목 4개"로 읽는다. */}
@@ -80,8 +95,11 @@ export default function FindPoliciesPage() {
             </Link>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3">
-            {[...groups.가능, ...groups.확인].map(({ policy, result }, i) => (
+          <section
+            aria-label={`지금 신청할 수 있는 지원금 ${신청가능.length}건`}
+            className="mt-6 flex flex-col gap-3"
+          >
+            {신청가능.map(({ policy, result }, i) => (
               <div
                 key={policy.id}
                 className="stagger-in"
@@ -91,7 +109,23 @@ export default function FindPoliciesPage() {
                 <PolicyCard policy={policy} result={result} asOfISO={asOf} />
               </div>
             ))}
-          </div>
+          </section>
+
+          {/* 마감 건은 접지 않는다. 다음 회차를 기다리면 받을 수 있다는 것 자체가
+              사용자에게 필요한 정보라, 숫자와 순서에서만 갈라 두면 충분하다. */}
+          {마감.length > 0 && (
+            <section
+              aria-label={`이번 회차는 마감된 지원금 ${마감.length}건`}
+              className="mt-8 flex flex-col gap-3"
+            >
+              <h2 className="text-sm font-bold text-ink-500">
+                이번 회차는 마감된 지원금 {마감.length}건
+              </h2>
+              {마감.map(({ policy, result }) => (
+                <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
+              ))}
+            </section>
+          )}
 
           {count === 0 && (
             <p className="mt-4 rounded-xl border border-ink-200 bg-white p-5 text-sm leading-relaxed text-ink-600">
