@@ -1,63 +1,175 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import FindPage from "@/app/find/page";
-import { saveAnswers } from "@/lib/storage";
+import { loadAnswers, saveAnswers, saveAnsweredKeys } from "@/lib/storage";
 
 /**
  * QA체크리스트 "1층 — 질문" 절을 자동화한 것. lib 테스트는 판정 규칙을 지키지만,
  * 화면이 그 규칙을 실제로 불러 쓰는지는 잡지 못한다.
+ *
+ * 1층은 한 화면에 한 질문씩 묻고, 답한 질문은 아래로 쌓인다. 진행바가 없는 이유와
+ * 쌓기로 결정한 이유는 app/Stepper.tsx 주석에 있다.
  */
 
-const cta = () =>
-  screen.getByRole("link", { name: /지원금 .*건 보기|마감된 지원금 .*건 보기|왜 해당되지 않는지 보기/ });
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock, replace: vi.fn() }) }));
 
-/**
- * 생년월일은 휠 데이트 피커다 — 트리거를 열고, 컬럼에서 고르고, '확인' 을 눌러야
- * 값이 올라간다. jsdom 에서는 스크롤을 흉내낼 수 없으므로 항목을 직접 클릭한다.
- * (2층 /eligibility 와 같은 컴포넌트라 조작 방법도 같다.)
- */
-const 생일칸 = (part: string) => screen.getByRole("listbox", { name: `생년월일 ${part}` });
-const 생일트리거 = () => screen.getByRole("button", { name: /^생년월일 —/ });
+beforeEach(() => {
+  pushMock.mockClear();
+  window.localStorage.clear();
+});
 
+const 제목 = () => screen.getByRole("heading", { level: 1 }).textContent ?? "";
+const cta = () => screen.getByRole("button", { name: /다음|보기$/ });
+const 뒤로 = () => screen.getByLabelText("이전 단계로");
+
+/** 생년월일 휠 — 트리거를 열고 세 칸을 고른 뒤 '확인'. 2층과 같은 컴포넌트다. */
 async function 생년월일고르기(
   user: ReturnType<typeof userEvent.setup>,
   year: number,
   month: number,
   day: number
 ) {
-  await user.click(생일트리거());
-  await user.click(within(생일칸("년")).getByRole("option", { name: `${year}년` }));
-  await user.click(within(생일칸("월")).getByRole("option", { name: `${month}월` }));
-  await user.click(within(생일칸("일")).getByRole("option", { name: `${day}일` }));
+  // 아직 안 고른 사람에게는 패널이 펼쳐진 채로 뜬다(defaultOpen). 트리거는 토글이라
+  // 그 상태에서 누르면 오히려 닫힌다 — 닫혀 있을 때만 누른다.
+  if (screen.queryByRole("listbox", { name: "생년월일 년" }) === null) {
+    await user.click(screen.getByRole("button", { name: /^생년월일 —/ }));
+  }
+  for (const [칸, 값] of [
+    ["년", `${year}년`],
+    ["월", `${month}월`],
+    ["일", `${day}일`],
+  ] as const) {
+    await user.click(
+      within(screen.getByRole("listbox", { name: `생년월일 ${칸}` })).getByRole("option", {
+        name: 값,
+      })
+    );
+  }
   await user.click(screen.getByRole("button", { name: "확인" }));
 }
 
-/**
- * 그 나이가 되는 생년. 1월 1일생으로 잡으면 올해 생일이 이미 지났으므로 만 나이가
- * 연도 차이와 정확히 같아진다 — 테스트가 오늘 날짜에 흔들리지 않는다.
- */
+/** 1월 1일생이면 올해 생일이 지났으므로 만 나이가 연도 차이와 같다. */
 const 생년 = (나이: number) => new Date().getFullYear() - 나이;
 
-/** 만 <나이>세가 되도록 생년월일을 고른다. */
-const 나이로고르기 = (user: ReturnType<typeof userEvent.setup>, 나이: number) =>
-  생년월일고르기(user, 생년(나이), 1, 1);
+/** 네 질문에 모두 답하고 마지막 단계에 서 있는 상태로 만든다. */
+async function 네질문답하기(user: ReturnType<typeof userEvent.setup>, 나이 = 23) {
+  await 생년월일고르기(user, 생년(나이), 1, 1);
+  await user.click(cta());
+  await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
+  await user.click(cta());
+  await user.click(screen.getByRole("button", { name: "대학생" }));
+  await user.click(cta());
+  await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
+}
 
-describe("/find 생년월일", () => {
+describe("/find 단계형 흐름", () => {
+  it("첫 화면은 생년월일 질문 하나뿐이다 — 네 질문을 한꺼번에 쌓지 않는다", () => {
+    render(<FindPage />);
+
+    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(screen.queryByRole("button", { name: "전북특별자치도 익산시" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "대학생" })).toBeNull();
+  });
+
+  /* 진행률은 쌓인 답이 대신한다. 1층 4 + 계약 2 + 2층 N 을 '3/11' 로 먼저 보여주면
+     시작하기도 전에 질린다 (Stepper.tsx 주석). */
+  it("진행바도 스텝 숫자도 없다", () => {
+    render(<FindPage />);
+
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/\d\s*\/\s*\d/)).toBeNull();
+  });
+
+  it("답하면 다음 질문으로 넘어가고, 답한 질문은 아래로 쌓인다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+
+    expect(제목()).toBe("어디에 살거나\n살 예정인가요?");
+    expect(screen.getByRole("button", { name: "생년월일 고치기" })).toBeTruthy();
+    expect(screen.getByText(new RegExp(`1998년 3월 14일 · 만 ${생년(0) - 1998}세`))).toBeTruthy();
+  });
+
+  it("쌓인 답을 누르면 그 질문으로 돌아간다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "생년월일 고치기" }));
+
+    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+  });
+
+  it("뒤로가기로 앞 질문에 돌아간다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(뒤로());
+
+    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+  });
+
   /*
-   * 대상 연령은 입력 옵션이 아니라 필드 밖 안내문으로 알린다.
-   *
-   * 전에는 <optgroup> 라벨이 "해당되는 지원금 없음 (만 40세 이상)" 이었다. 나이는
-   * 고르는 선택지가 아니라 이미 정해진 사실인데, 그 사실에 판정을 붙여 놓으니
-   * "없다고 써 놓고 왜 고르게 하느냐"가 됐다. 게다가 입력란에 판정을 섞으면
-   * 41세가 39세를 고르게 된다 — 받을 수 없는 금액을 받을 수 있다고 믿게 된다.
+   * null 은 '모름'과 '아직 안 물어봄'을 겸한다. 답하기 전에 '모름'이 켜져 있으면
+   * 고르지도 않은 답을 했다고 화면이 주장하는 셈이다 (lib/storage.ts 의
+   * loadAnsweredKeys 주석).
    */
+  it("답하기 전에는 '모름'이 선택돼 있지 않다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+
+    expect(screen.getByRole("button", { name: "모름" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("'모름'을 고르면 그때 선택되고 요약에도 모름으로 쌓인다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "모름" }));
+    expect(screen.getByRole("button", { name: "모름" }).getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(cta());
+    expect(within(screen.getByRole("button", { name: "사는 곳 고치기" })).getByText("모름")).toBeTruthy();
+  });
+
+  it("다시 들어오면 네 답이 다 쌓인 마지막 단계에서 시작한다 — 답변 고치기 진입점", () => {
+    saveAnswers({
+      birthDate: "1998-03-14",
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+    });
+    saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket"]);
+    render(<FindPage />);
+
+    expect(제목()).toBe("본인의 월 소득은\n어느 정도인가요?");
+    for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기"]) {
+      expect(screen.getByRole("button", { name: label }), label).toBeTruthy();
+    }
+  });
+});
+
+describe("/find 나이 조건", () => {
   it("대상 연령 안내가 고르기 전에도 보인다", () => {
     render(<FindPage />);
     expect(screen.getByText(/만 18~39세/)).toBeTruthy();
   });
 
+  /* 나이는 고르는 선택지가 아니라 이미 정해진 사실이다. 그 사실에 판정을 얹으면
+     41세가 39세를 고른다 — 받을 수 없는 금액을 받을 수 있다고 믿게 된다. */
   it("입력에 자격 판정을 섞지 않는다 — 있음·없음으로 나뉜 목록이 없다", () => {
     const { container } = render(<FindPage />);
 
@@ -65,133 +177,112 @@ describe("/find 생년월일", () => {
     expect(screen.queryByText(/해당되는 지원금 없음/)).toBeNull();
   });
 
-  it("기본은 미선택이고, 생년월일을 고르면 만 나이를 보여준다", async () => {
-    const user = userEvent.setup();
-    render(<FindPage />);
-
-    expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
-
-    await 생년월일고르기(user, 1998, 3, 14);
-
-    expect(screen.getByRole("button", { name: "생년월일 — 1998년 3월 14일" })).toBeTruthy();
-    expect(screen.getByText(new RegExp(`만 ${생년(0) - 1998}세`))).toBeTruthy();
-  });
-
-  // 전북청년 지역정착·익산 이사비가 만 18세부터 대상이다. 목록에서 빼면 대상자를 돌려보낸다.
-  it("만 18세를 고를 수 있고, 범위 밖 안내가 뜨지 않는다", async () => {
-    const user = userEvent.setup();
-    render(<FindPage />);
-
-    await 나이로고르기(user, 18);
-
-    expect(screen.queryByText(/이 나이로는/)).toBeNull();
-  });
-
-  // 후보는 2건이지만 전북 정착은 2026-04-10 에 접수가 끝났다. CTA 숫자는 지금
-  // 신청할 수 있는 것만 센다 — 마감 건은 보조 문구가 따로 말한다.
-  it("만 18세에게도 18세부터 받는 정책이 후보로 남는다", async () => {
-    const user = userEvent.setup();
-    render(<FindPage />);
-
-    await 나이로고르기(user, 18);
-
-    expect(screen.getByText("지원금 1건 보기")).toBeTruthy();
-    expect(screen.getByText(/접수 마감 1건/)).toBeTruthy();
-  });
-
   it("대상 정책이 없는 나이를 고르면 안내 문구가 뜬다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
     expect(screen.queryByText(/이 나이로는/)).toBeNull();
-    await 나이로고르기(user, 42);
+    await 생년월일고르기(user, 생년(42), 1, 1);
     expect(screen.queryByText(/이 나이로는/)).not.toBeNull();
   });
 
-  /*
-   * 전에는 목록 상한이 만 45세라 46세는 아예 답을 못 했다. 사실 값을 임의로
-   * 자르면 그 사람에게 남는 길은 거짓으로 답하거나 앱이 고장났다고 보는 것뿐이다.
-   */
-  it("만 46세 이상도 생년월일을 답할 수 있다", async () => {
+  // 전북청년 지역정착·익산 이사비가 만 18세부터 대상이다. 빼면 대상자를 돌려보낸다.
+  it("만 18세를 고를 수 있고 범위 밖 안내가 뜨지 않는다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    await user.click(생일트리거());
+    await 생년월일고르기(user, 생년(18), 1, 1);
+    expect(screen.queryByText(/이 나이로는/)).toBeNull();
+  });
 
-    expect(within(생일칸("년")).getByRole("option", { name: `${생년(64)}년` })).toBeTruthy();
+  /* 예전에는 목록 상한이 만 45세라 46세는 아예 답을 못 했다. 사실 값을 임의로
+     자르면 그 사람에게 남는 길은 거짓으로 답하거나 앱이 고장났다고 보는 것뿐이다. */
+  it("만 46세 이상도 생년월일을 답할 수 있다", () => {
+
+    render(<FindPage />);
+
+    const 년 = within(screen.getByRole("listbox", { name: "생년월일 년" }));
+    expect(년.getByRole("option", { name: `${생년(64)}년` })).toBeTruthy();
   });
 });
 
-describe("/find 목록으로 넘어가는 CTA", () => {
-  it("아무것도 답하지 않아도 눌러서 목록으로 갈 수 있다", () => {
-    render(<FindPage />);
-    expect(cta().getAttribute("href")).toBe("/find/policies");
-  });
-
-  it("답변을 바꾸면 건수가 바로 바뀐다", async () => {
+describe("/find CTA", () => {
+  /* 답할수록 숫자가 좁혀지는 게 보여야 계속 답할 이유가 된다. 한 화면에 네 질문을
+     두던 시절의 즉시 피드백을 단계형에서도 지킨다. */
+  it("답할 때마다 CTA 건수가 좁혀진다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    // 전부 모름 = 정책 5건 모두 '확인 필요'. 그중 2건은 접수가 끝나 CTA 는 3건.
-    expect(screen.getByText("지원금 3건 보기")).toBeTruthy();
+    // 전부 모름 = 정책 5건 중 접수 중인 3건
+    expect(cta().textContent).toBe("지원금 3건 · 다음");
 
-    // 대상 정책이 없는 나이를 고르면 후보가 0건이 된다
-    await 나이로고르기(user, 45);
-    expect(screen.getByText("왜 해당되지 않는지 보기")).toBeTruthy();
-    expect(screen.getByText(/지금 답변으로는 해당되는 지원금이 없습니다/)).toBeTruthy();
-  });
-
-  // 접수가 끝난 정책도 후보에 들어가므로, 건수만 크게 말하면 "지금 3건 신청 가능"
-  // 으로 읽힌다. 마감 건수가 있으면 그걸 먼저 말한다.
-  it("접수 마감된 정책이 있으면 CTA 보조 문구가 신청 가능·마감 건수를 나눈다", async () => {
-    const user = userEvent.setup();
-    render(<FindPage />);
-
-    await 나이로고르기(user, 23);
+    // 나이·지역만으로는 안 줄어든다 — 남은 정책이 전부 전국 아니면 익산이다
+    await 생년월일고르기(user, 생년(23), 1, 1);
+    await user.click(cta());
     await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
-    await user.click(screen.getByRole("button", { name: "대학생" }));
-    await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
+    expect(cta().textContent).toBe("지원금 3건 · 다음");
 
-    expect(screen.getByText("지원금 2건 보기")).toBeTruthy();
-    // 국토부 청년월세는 2026-05-29 에 접수가 끝났다 — 숫자에 섞지 않고 따로 말한다
-    expect(screen.getByText(/접수 마감 1건도 함께 볼 수 있어요/)).toBeTruthy();
+    // 소득 구간에서 갈린다
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "대학생" }));
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
+    expect(cta().textContent).toBe("지원금 2건 보기");
   });
 
-  /*
-   * 후보는 있는데 전부 마감인 경우. "왜 해당되지 않는지 보기" 로 보내면 안 된다 —
-   * 대상이 아니라는 뜻인데 실제로는 다음 회차를 기다리면 되는 상황이다.
-   */
-  it("후보가 전부 마감이면 그렇게 말하고 목록으로는 계속 보낸다", async () => {
+  // 목록이 아니라 결과 요약으로 보낸다. 네 질문에 답한 보상을 먼저 주고, 목록은
+  // 그 화면의 CTA 가 연다 (docs/기획/2026-08-30-화면-구조-개편-설계.md).
+  it("마지막 단계에서는 결과 요약으로 보낸다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    await 나이로고르기(user, 30);
-    await user.click(screen.getByRole("button", { name: "전북특별자치도 (익산시 외)" }));
-    await user.click(screen.getByRole("button", { name: "재직" }));
+    await 네질문답하기(user);
+    expect(cta().textContent).toBe("지원금 2건 보기");
 
-    expect(screen.getByText("마감된 지원금 2건 보기")).toBeTruthy();
-    expect(screen.getByText(/지금 신청할 수 있는 지원금이 없습니다/)).toBeTruthy();
-    expect(cta().getAttribute("href")).toBe("/find/policies");
+    await user.click(cta());
+    expect(pushMock).toHaveBeenCalledWith("/find/result");
+  });
+
+  it("대상 정책이 없으면 왜 없는지 보러 가게 한다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 네질문답하기(user, 45);
+    expect(cta().textContent).toBe("왜 해당되지 않는지 보기");
+  });
+
+  /* 후보는 있는데 전부 마감인 경우. '왜 해당되지 않는지' 로 보내면 대상이 아니라는
+     뜻으로 읽히지만, 실제로는 다음 회차를 기다리면 되는 상황이다. */
+  it("후보가 전부 마감이면 그렇게 말한다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 생년(30), 1, 1);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "전북특별자치도 (익산시 외)" }));
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "재직" }));
+    await user.click(cta());
+
+    expect(cta().textContent).toBe("왜 지금은 신청할 수 없는지 보기");
   });
 });
 
 describe("/find 답변 보관", () => {
-  it("저장된 답변을 불러와 화면에 되살린다", () => {
-    saveAnswers({
-      birthDate: "1998-03-14",
-      region: "전북특별자치도 익산시",
-      status: "재직",
-      incomeBracket: 2,
-    });
+  it("고른 답은 바로 저장된다 — 새로고침해도 남는다", async () => {
+    const user = userEvent.setup();
     render(<FindPage />);
 
-    expect(screen.getByRole("button", { name: "생년월일 — 1998년 3월 14일" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "재직" }).getAttribute("class")).toContain("brand-600");
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
+
+    expect(loadAnswers().birthDate).toBe("1998-03-14");
+    expect(loadAnswers().region).toBe("전북특별자치도 익산시");
   });
 
   it("이 화면에는 지원금 카드가 없다 (목록은 /find/policies)", () => {
     render(<FindPage />);
-    expect(screen.queryByText(/해당되지 않는 지원금/)).toBeNull();
-    expect(screen.queryByText("공식 페이지 →")).toBeNull();
+    expect(screen.queryByRole("article")).toBeNull();
   });
 });

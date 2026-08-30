@@ -12,7 +12,7 @@ export default function MissingInput() {
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 px-5 py-10 text-center">
       <div>
         <p className="text-2xl font-extrabold text-ink-900">
-          <span aria-hidden="true">🧮</span> 계산할 계약 조건이 없어요
+          계산할 계약 조건이 없어요
         </p>
         <p className="mt-3 text-sm leading-relaxed text-ink-600">
           최종 예상 주거비는 방의 보증금·월세·기간을 넣어야 계산할 수 있습니다.

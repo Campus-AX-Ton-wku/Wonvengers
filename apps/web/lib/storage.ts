@@ -78,6 +78,45 @@ export function loadAnswers(): DiscoveryAnswers {
   }
 }
 
+// ── 1층에서 '답한 질문' 기록 ──
+
+const ANSWERED_KEY = "perky.answered";
+
+/** 1층 질문의 식별자. DiscoveryAnswers 의 키와 같다. */
+export type AnsweredKey = keyof DiscoveryAnswers;
+
+/**
+ * 어떤 질문에 실제로 답했는지만 따로 기록한다.
+ *
+ * 답변 값의 null 은 '모름'과 '아직 안 물어봄'을 겸한다. 판정에는 둘 다 똑같이
+ * '모름'이라 문제가 없지만, 화면에는 문제가 된다 — 아직 고르지도 않은 '모름'
+ * 버튼이 선택된 것처럼 체크되고, 모름으로 답한 질문은 답변 요약에 나타나지
+ * 않으며, 다시 들어오면 이미 답한 질문으로 되돌아간다.
+ *
+ * DiscoveryAnswers 에 넣지 않고 키를 나눈 이유: 이건 판정에 쓰이지 않는 화면
+ * 상태다. 판정 코드(filter·discovery)가 이 값을 볼 일이 없어야 한다.
+ */
+export function loadAnsweredKeys(): AnsweredKey[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(ANSWERED_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed.filter((k) => typeof k === "string") as AnsweredKey[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveAnsweredKeys(keys: AnsweredKey[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ANSWERED_KEY, JSON.stringify(keys));
+  } catch {
+    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
+  }
+}
+
 /** 답변을 브라우저에만 저장한다. 서버로 보내지 않는다. (PRD F0-13) */
 export function saveAnswers(answers: DiscoveryAnswers): void {
   if (typeof window === "undefined") return;

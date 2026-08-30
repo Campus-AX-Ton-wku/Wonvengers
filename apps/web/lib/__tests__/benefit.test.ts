@@ -3,6 +3,7 @@ import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
 import {
   benefitCeiling,
+  largestTotalCeiling,
   benefitFormula,
   benefitTypeLabel,
   estimatePolicyAmount,
@@ -121,5 +122,47 @@ describe("benefitCeiling", () => {
       expect(ceiling!.amount, policy.id).toBeGreaterThan(0);
       expect(ceiling!.label, policy.id).toMatch(/만원|원$/);
     }
+  });
+});
+
+/**
+ * 목록 화면 헤드라인이 쓰는 '가장 큰 한 건'.
+ *
+ * 합산하지 않는다 — 중복 수급 제한(exclusiveGroup) 때문에 상한을 더하면 거짓이 된다.
+ * 정확한 조합은 계약 조건이 있어야 bestCombination 이 계산할 수 있으므로 1층에서는
+ * 불가능하다.
+ */
+describe("largestTotalCeiling", () => {
+  const 실제정책 = policiesData as PolicyMeta[];
+
+  it("총액 상한이 가장 큰 정책을 고른다", () => {
+    // 국토부 청년월세 월 20만원 × 24개월 = 480만원이 가장 크다
+    expect(largestTotalCeiling(실제정책)?.label).toBe("최대 480만원");
+  });
+
+  it("합산하지 않는다 — 어떤 한 정책의 상한과 같아야 한다", () => {
+    const 최대 = largestTotalCeiling(실제정책);
+    const 개별상한 = 실제정책.map((p) => benefitCeiling(p)?.amount).filter((a) => a !== undefined);
+
+    expect(개별상한).toContain(최대?.amount);
+    expect(최대!.amount).toBeLessThan(개별상한.reduce((s, a) => s + a!, 0));
+  });
+
+  /*
+   * 주거급여 분리지급은 지원 개월 수가 정해져 있지 않아 총액 상한이 없다.
+   * '월 21만원'과 '총 480만원'은 서로 비교할 수 있는 값이 아니므로 후보에서 뺀다.
+   */
+  it("총액이 정해지지 않은 정책은 후보로 삼지 않는다", () => {
+    // 주거급여 분리지급 — 월 상한만 있고 지원 개월 수가 정해져 있지 않다
+    const 월상한만 = 실제정책.filter(
+      (p) => p.benefitType !== "lump_sum" && p.monthlyCap != null && p.maxMonths == null
+    );
+
+    expect(월상한만.length).toBeGreaterThan(0);
+    expect(largestTotalCeiling(월상한만)).toBeNull();
+  });
+
+  it("고를 정책이 없으면 없다고 한다", () => {
+    expect(largestTotalCeiling([])).toBeNull();
   });
 });
