@@ -82,16 +82,23 @@ export function AppBar({
 export function BottomCta({
   onClick,
   children,
+  disabled = false,
 }: {
   onClick: () => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 -mx-5 mt-auto bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
       <button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-xl bg-brand-600 py-4 text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 ${FOCUS_RING}`}
+        disabled={disabled}
+        className={`w-full rounded-xl py-4 text-base font-bold text-white transition-colors ${FOCUS_RING} ${
+          disabled
+            ? "cursor-not-allowed bg-ink-300"
+            : "bg-brand-600 hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700"
+        }`}
       >
         {children}
       </button>

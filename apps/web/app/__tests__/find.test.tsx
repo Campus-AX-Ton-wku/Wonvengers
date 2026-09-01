@@ -217,6 +217,27 @@ describe("/find 나이 조건", () => {
 });
 
 describe("/find CTA", () => {
+  it("현재 질문에 답하기 전에는 다음으로 갈 수 없다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
+    await user.click(cta());
+    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+
+    await 생년월일고르기(user, 생년(23), 1, 1);
+    expect((cta() as HTMLButtonElement).disabled).toBe(false);
+    await user.click(cta());
+
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
+    await user.click(cta());
+    expect(제목()).toBe("어디에 살거나\n살 예정인가요?");
+
+    // 명시적으로 고른 '모름'은 유효한 답이다.
+    await user.click(screen.getByRole("button", { name: "모름" }));
+    expect((cta() as HTMLButtonElement).disabled).toBe(false);
+  });
+
   /* 답할수록 숫자가 좁혀지는 게 보여야 계속 답할 이유가 된다. 한 화면에 네 질문을
      두던 시절의 즉시 피드백을 단계형에서도 지킨다. */
   it("답할 때마다 CTA 건수가 좁혀진다", async () => {
