@@ -20,14 +20,14 @@ const FOCUS_RING =
 /**
  * 앱바 가운데 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다.
  *
- * text-sm(14px)은 h-14 앱바 안에서 너무 작아 브랜드로 읽히지 않았다. 양옆 48px
- * 터치 타깃 사이 공간이 넉넉해서 20px 까지는 줄바꿈·겹침 없이 들어간다.
+ * 내부 화면에서는 사용자의 질문과 결과가 브랜드보다 먼저 읽혀야 한다. 홈으로
+ * 돌아갈 표식이라는 역할만 남기고 본문과 같은 16px로 둔다.
  */
 export function HomeMark() {
   return (
     <Link
       href="/"
-      className={`rounded px-2 py-1 text-xl font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
+      className={`rounded px-2 py-1 text-base font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
     >
       Perky
     </Link>
@@ -61,7 +61,7 @@ export function AppBar({
   backLabel?: string;
 }) {
   return (
-    <header className="sticky top-0 z-10 bg-white pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-10 -mx-5 bg-white px-1 pt-[env(safe-area-inset-top)]">
       <div className="flex h-14 items-center justify-between px-1">
         <button
           type="button"
@@ -82,16 +82,23 @@ export function AppBar({
 export function BottomCta({
   onClick,
   children,
+  disabled = false,
 }: {
   onClick: () => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 -mx-5 mt-auto bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
       <button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-xl bg-brand-600 py-4 text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 ${FOCUS_RING}`}
+        disabled={disabled}
+        className={`w-full rounded-2xl py-4 text-base font-bold text-white transition-colors ${FOCUS_RING} ${
+          disabled
+            ? "cursor-not-allowed bg-ink-300"
+            : "bg-brand-600 hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700"
+        }`}
       >
         {children}
       </button>
@@ -147,14 +154,14 @@ export function OptionButton({
 /**
  * 질문 그 자체가 화면 제목이다. 번호도 이모지도 붙이지 않는다.
  *
- * 제목의 줄바꿈(\n)을 그대로 살린다. 자동 줄바꿈에 맡기면 "생년월일이 어떻게 /
- * 되시나요?" 처럼 어절 중간에서 끊긴다. 두 줄짜리 질문은 의미 단위로 끊어야 읽힌다.
+ * 한 줄에 들어가는 제목은 억지로 나누지 않고, 좁은 화면에서만 브라우저가 균형 있게
+ * 줄을 나눈다. 화면별로 \n을 박아 두면 폭이 충분해도 오른쪽이 비는 문제가 생긴다.
  */
 export function StepHeading({ title }: { title: string }) {
   return (
     /* leading-tight(1.25)은 26px 한글에서 윗선이 잘린다. 한글은 라틴보다 글자틀이
        크고 받침이 아래로 내려가므로 1.35 는 있어야 두 줄이 안 붙는다. */
-    <h1 className="whitespace-pre-line text-[26px] font-extrabold leading-[1.35] tracking-tight text-ink-900">
+    <h1 className="text-balance text-[26px] font-extrabold leading-[1.35] tracking-tight text-ink-900">
       {title}
     </h1>
   );

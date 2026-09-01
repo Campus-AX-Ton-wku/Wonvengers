@@ -79,10 +79,10 @@ export default function PolicyCard({
      */
     <Link
       href={`/find/policies/${policy.id}`}
-      className="block rounded-2xl px-4 py-5 transition-colors hover:bg-sand-50 active:bg-sand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+      className="block rounded-3xl bg-white px-5 py-5 shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
     >
       <span
-        className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-bold ${STATUS_STYLE[status]}`}
+        className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold ${STATUS_STYLE[status]}`}
       >
         {status}
       </span>
@@ -91,7 +91,7 @@ export default function PolicyCard({
       <h3 className="mt-2 break-keep text-base font-bold leading-snug text-ink-900">
         {policy.name}
       </h3>
-      <p className="mt-0.5 text-xs text-ink-500">{policy.agency}</p>
+      <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         {/* tabular-nums 를 쓰지 않는다. 이 한글 폰트에서는 등폭 숫자가 눈에 띄게
@@ -106,7 +106,7 @@ export default function PolicyCard({
         <ChevronRightIcon size={20} className="shrink-0 text-ink-200" />
       </div>
 
-      {note && <p className="mt-2 break-keep text-xs leading-relaxed text-ink-600">{note}</p>}
+      {note && <p className="mt-2 break-keep text-sm leading-relaxed text-ink-600">{note}</p>}
     </Link>
   );
 }

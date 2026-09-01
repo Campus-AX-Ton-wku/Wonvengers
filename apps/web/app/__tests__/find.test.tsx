@@ -71,7 +71,7 @@ describe("/find 단계형 흐름", () => {
   it("첫 화면은 생년월일 질문 하나뿐이다 — 네 질문을 한꺼번에 쌓지 않는다", () => {
     render(<FindPage />);
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
     expect(screen.queryByRole("button", { name: "전북특별자치도 익산시" })).toBeNull();
     expect(screen.queryByRole("button", { name: "대학생" })).toBeNull();
   });
@@ -92,7 +92,7 @@ describe("/find 단계형 흐름", () => {
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
 
-    expect(제목()).toBe("어디에 살거나\n살 예정인가요?");
+    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
     expect(screen.getByRole("button", { name: "생년월일 고치기" })).toBeTruthy();
     expect(screen.getByText(new RegExp(`1998년 3월 14일 · 만 ${생년(0) - 1998}세`))).toBeTruthy();
   });
@@ -105,7 +105,7 @@ describe("/find 단계형 흐름", () => {
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "생년월일 고치기" }));
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
   });
 
   it("뒤로가기로 앞 질문에 돌아간다", async () => {
@@ -116,7 +116,7 @@ describe("/find 단계형 흐름", () => {
     await user.click(cta());
     await user.click(뒤로());
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
   });
 
   /*
@@ -158,7 +158,7 @@ describe("/find 단계형 흐름", () => {
     saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket", "housingType"]);
     render(<FindPage />);
 
-    expect(제목()).toBe("현재 어떤 형태로\n거주하고 있나요?");
+    expect(제목()).toBe("현재 어떤 형태로 거주하고 있나요?");
     for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기", "월 소득 고치기"]) {
       expect(screen.getByRole("button", { name: label }), label).toBeTruthy();
     }
@@ -217,6 +217,27 @@ describe("/find 나이 조건", () => {
 });
 
 describe("/find CTA", () => {
+  it("현재 질문에 답하기 전에는 다음으로 갈 수 없다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
+    await user.click(cta());
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
+
+    await 생년월일고르기(user, 생년(23), 1, 1);
+    expect((cta() as HTMLButtonElement).disabled).toBe(false);
+    await user.click(cta());
+
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
+    await user.click(cta());
+    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
+
+    // 명시적으로 고른 '모름'은 유효한 답이다.
+    await user.click(screen.getByRole("button", { name: "모름" }));
+    expect((cta() as HTMLButtonElement).disabled).toBe(false);
+  });
+
   /* 답할수록 숫자가 좁혀지는 게 보여야 계속 답할 이유가 된다. 한 화면에 네 질문을
      두던 시절의 즉시 피드백을 단계형에서도 지킨다. */
   it("답할 때마다 CTA 건수가 좁혀진다", async () => {

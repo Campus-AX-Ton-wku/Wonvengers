@@ -20,7 +20,7 @@ export default function Disclosure({
 }) {
   return (
     <details className={`group ${className}`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg bg-sand-50 px-3 py-2 text-xs font-bold text-ink-600 transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl bg-sand-50 px-3.5 py-3 text-sm font-bold text-ink-600 transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 [&::-webkit-details-marker]:hidden">
         <span>{label}</span>
         <ChevronDownIcon size={16} className="shrink-0 transition-transform group-open:rotate-180" />
       </summary>

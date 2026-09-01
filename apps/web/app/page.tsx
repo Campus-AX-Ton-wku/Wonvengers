@@ -31,23 +31,20 @@ const MAX_BENEFIT: { won: number; asOf: string } | null = null;
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-9 px-6 py-12">
-      {/* 워드마크만 남긴다. 건물 그래픽은 지웠다 — 워드마크·헤드라인·설명·CTA 가
-          이미 위에서 아래로 읽히는데, 그래픽이 그 사이에 끼어 시선을 한 번 끊었다.
-          왼쪽 정렬은 아래 헤드라인·설명과 같은 축을 쓰기 위한 것이다. 가운데 정렬이면
-          시선이 좌우로 한 번 튄다.
-          워드마크가 크지만 <h1> 은 아니다. 문서 개요에서 제목 자리는 사실이 갖는다. */}
+    <main className="mx-auto flex min-h-dvh max-w-lg flex-col bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+      {/* 브랜드는 출발점을 알려주는 작은 표식이다. 이 화면에서 가장 먼저 읽혀야 할
+          것은 이름이 아니라 사용자가 얻는 결과다. */}
       <p
-        className="rise-in text-8xl font-extrabold tracking-tight text-ink-900"
+        className="rise-in text-2xl font-extrabold tracking-tight text-ink-900"
         style={{ animationDelay: "0ms" }}
       >
         Perky
       </p>
 
-      <div>
+      <div className="flex flex-1 flex-col justify-center pb-12">
         {/* 헤드라인이 사실을 나른다 — 지역과 개수가 제목 자리를 갖는다. */}
         <h1
-          className="rise-in text-4xl font-extrabold leading-[1.25] tracking-tight text-ink-900"
+          className="rise-in break-keep text-4xl font-extrabold leading-[1.24] tracking-tight text-ink-900"
           style={{ animationDelay: "230ms" }}
         >
           {MAX_BENEFIT ? (
@@ -66,7 +63,7 @@ export default function Home() {
         </h1>
 
         <p
-          className="rise-in mt-4 text-base leading-relaxed text-ink-600"
+          className="rise-in mt-5 break-keep text-base leading-relaxed text-ink-600"
           style={{ animationDelay: "300ms" }}
         >
           국가·전북·익산에 흩어진 정책을 한 화면에 모아
@@ -78,7 +75,7 @@ export default function Home() {
       <div className="rise-in" style={{ animationDelay: "370ms" }}>
         <Link
           href="/find"
-          className="block rounded-xl bg-brand-600 px-6 py-4 text-center text-lg font-bold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
+          className="block rounded-2xl bg-brand-600 px-6 py-4 text-center text-lg font-bold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
         >
           내 지원금 찾아보기
         </Link>

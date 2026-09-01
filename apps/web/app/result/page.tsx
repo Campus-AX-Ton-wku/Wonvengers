@@ -10,6 +10,7 @@ import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { AppBar } from "../Stepper";
+import { AlertIcon, BankIcon, StackIcon, WalletIcon } from "@/app/icons";
 import Disclosure from "@/app/Disclosure";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
@@ -52,22 +53,22 @@ export default function ResultPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col px-5">
+    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col bg-white px-5">
       <AppBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
 
-      <main className="flex flex-col gap-6 pb-10 pt-2">
+      <main className="flex flex-col gap-5 pb-10 pt-3">
         {/* 아래 카드가 '최대 지원 가능액'·'최종 예상 주거비' 라벨을 이미 단다.
             제목이 같은 말을 반복하면 캡처 한 장에서 같은 문구가 두 번 나오고,
             두 줄이 화면 상단을 먹어 금액 카드가 아래로 밀린다.
             금액은 넣지 않는다 — app/page.tsx 의 MAX_BENEFIT 주석과 같은 태도로,
             확정되지 않은 금액을 가장 큰 약속으로 쓰지 않는다. */}
-        <h1 className="text-center text-xl font-extrabold leading-snug text-ink-900">
+        <h1 className="text-center text-2xl font-extrabold leading-snug text-ink-900">
           내 예상 결과예요
         </h1>
 
         {activeExample && (
           <p
-            className={`rounded-xl p-3 text-xs font-bold leading-relaxed ${
+            className={`rounded-2xl p-4 text-sm font-bold leading-relaxed ${
               isVerifiedExample(activeExample)
                 ? "bg-ok-50 text-ok-700"
                 : "bg-warn-50 text-warn-800"
@@ -78,7 +79,7 @@ export default function ResultPage() {
           </p>
         )}
 
-      <section className="amount-in rounded-2xl border-2 border-brand-600 bg-brand-50 p-5">
+      <section className="amount-in rounded-3xl bg-brand-50 p-6 shadow-sm">
         {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
             중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
             accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1
@@ -90,25 +91,28 @@ export default function ResultPage() {
             text-5xl 로 올렸다가 되돌렸다 — 390px 폭에서 '304만 4,000원' 이 두 줄로
             넘치고 '원' 만 다음 줄에 떨어졌다. 만 단위 표기가 원 단위보다 길어질 수
             있다는 걸 캡처를 보고 알았다. break-keep 은 단위 사이에서 끊기는 것도 막는다. */}
-        <p className="text-xs font-semibold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
+        <p className="text-sm font-semibold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
         <p className="break-keep text-4xl font-extrabold text-accent-600 tabular-nums">
           {formatKoreanMoney(summary.maxSupportAmount)}
         </p>
 
-        <div className="my-3 h-px bg-brand-200" />
+        <div className="my-5 h-px bg-brand-200" />
 
-        <p className="text-xs font-semibold text-ink-500">최종 예상 주거비 (명목 지출 − 최대 지원 가능액)</p>
-        <p className="break-keep text-xl font-extrabold text-ink-900 tabular-nums">
+        <p className="text-sm font-semibold text-ink-500">최종 예상 주거비 (명목 지출 − 최대 지원 가능액)</p>
+        <p className="mt-1 break-keep text-2xl font-extrabold text-ink-900 tabular-nums">
           {formatKoreanMoney(summary.finalEstimatedHousingCost)}
         </p>
-        <p className="mt-1 text-xs text-ink-500">
+        <p className="mt-1 text-sm text-ink-500">
           명목 총 지출 {formatKoreanMoney(summary.nominalTotalCost)} 기준
         </p>
 
         {unknownConditions.length > 0 && (
-          <div className="mt-3 rounded-lg bg-white/70 p-3 text-xs text-warn-800">
-            <p className="font-bold">⚠️ 이 금액에는 아직 확인되지 않은 조건이 포함되어 있습니다</p>
-            <ul className="mt-1 list-disc pl-4">
+          <div className="mt-4 rounded-2xl bg-white/70 p-4 text-sm text-warn-800">
+            <p className="flex items-start gap-2 font-bold">
+              <AlertIcon size={18} className="mt-0.5 shrink-0" />
+              <span>이 금액에는 아직 확인되지 않은 조건이 포함되어 있습니다</span>
+            </p>
+            <ul className="mt-2 list-disc pl-5">
               {unknownConditions.map((u, i) => (
                 <li key={i}>
                   [{u.policy}] {u.label}
@@ -120,32 +124,33 @@ export default function ResultPage() {
       </section>
 
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
-      <section className="rounded-2xl bg-white p-5 text-sm">
-        <p className="font-bold text-ink-700">
-          <span aria-hidden="true">🧩</span>{" "}
+      <section className="rounded-3xl bg-white p-5 text-sm shadow-sm">
+        <p className="flex items-center gap-3 font-bold text-ink-700">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+            <StackIcon size={20} />
+          </span>
           <span>이 금액은 아래 조합으로 계산했습니다</span>
         </p>
         {included.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
             {included.map((item) => (
-              <li key={item.id} className="flex items-baseline justify-between gap-3 text-ink-600">
-                <span className="text-xs">{item.name}</span>
-                <span className="shrink-0 text-xs font-bold text-ink-900 tabular-nums">
+              <li key={item.id} className="flex items-baseline justify-between gap-3 text-sm text-ink-600">
+                <span>{item.name}</span>
+                <span className="shrink-0 font-bold text-ink-900 tabular-nums">
                   {formatKoreanMoney(item.amount)}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-ink-500">
+          <p className="mt-3 text-sm leading-relaxed text-ink-500">
             합산할 수 있는 정책이 없습니다. 아래 목록에서 각 정책의 미충족·확인 필요 조건을 보세요.
           </p>
         )}
 
         {overlapExcluded.length > 0 && (
-          <div className="mt-3 rounded-lg bg-sand-50 p-3">
-            <p className="text-xs font-bold text-ink-600">중복 수급이 안 돼서 빠진 정책</p>
-            <ul className="mt-1 flex flex-col gap-1 text-xs leading-relaxed text-ink-500">
+          <Disclosure label={`중복 수급으로 빠진 정책 ${overlapExcluded.length}개`}>
+            <ul className="flex flex-col gap-2 px-1 text-sm leading-relaxed text-ink-500">
               {overlapExcluded.map((x) => (
                 <li key={x.policy.id}>
                   <strong className="text-ink-600">{x.policy.name}</strong> —{" "}
@@ -154,13 +159,16 @@ export default function ResultPage() {
                 </li>
               ))}
             </ul>
-          </div>
+          </Disclosure>
         )}
       </section>
 
-      <section className="rounded-2xl bg-white p-5 text-sm">
-        <p className="font-bold text-ink-700">
-          <span aria-hidden="true">💳</span> 계약 시 필요한 목돈과 지급 시점은 다릅니다
+      <section className="rounded-3xl bg-white p-5 text-sm shadow-sm">
+        <p className="flex items-center gap-3 font-bold text-ink-700">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+            <WalletIcon size={20} />
+          </span>
+          <span>계약 시 필요한 목돈과 지급 시점은 달라요</span>
         </p>
         <p className="mt-1 text-ink-500">
           계약 당일 필요한 현금: <strong>{formatKoreanMoney(upfrontCash)}</strong> (보증금
@@ -198,7 +206,7 @@ export default function ResultPage() {
                 </Disclosure>
               ) : (
                 <>
-                  <h2 className="mb-2 text-sm font-bold text-ink-500">
+                  <h2 className="mb-3 text-base font-bold text-ink-700">
                     {group.status} ({group.items.length})
                   </h2>
                   {cards}
@@ -211,10 +219,13 @@ export default function ResultPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-sm font-bold text-ink-500">
-            <span aria-hidden="true">🏦</span> 이용 가능한 대출·보증 상품 ({loanProducts.length})
+          <h2 className="flex items-center gap-3 text-base font-bold text-ink-700">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+              <BankIcon size={20} />
+            </span>
+            <span>이용 가능한 대출·보증 상품 ({loanProducts.length})</span>
           </h2>
-          <p className="mt-1 text-[11px] text-ink-500">
+          <p className="mt-3 text-sm leading-relaxed text-ink-500">
             아래는 현금 지원금이 아닌 대출·보증료 상품입니다. 이자 절감액을 계산하지 않으며, 위 "최대
             지원 가능액"에도 포함되지 않습니다 — 대출과 지원금을 같은 금액으로 섞으면 실제보다 많이
             받는 것처럼 보일 수 있기 때문입니다. 자격·한도는 안내일 뿐이니 정확한 조건은 취급 기관에
@@ -222,11 +233,11 @@ export default function ResultPage() {
           </p>
         </div>
         {loanProducts.map((product) => (
-          <div key={product.id} className="rounded-2xl bg-sand-50 p-4">
-            <p className="text-sm font-bold text-ink-900">{product.name}</p>
+          <div key={product.id} className="rounded-3xl bg-white p-5 shadow-sm">
+            <p className="text-base font-bold text-ink-900">{product.name}</p>
             <p className="text-xs text-ink-500">{product.agency} · {product.regionScope}</p>
-            <p className="mt-2 text-xs text-ink-500">{product.summary}</p>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs">
+            <p className="mt-2 text-sm leading-relaxed text-ink-500">{product.summary}</p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
               <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
                 공식 출처
               </a>
@@ -235,12 +246,12 @@ export default function ResultPage() {
               </a>
             </div>
             <Disclosure label="검수 상태 · 참고사항">
-              <p className="text-[11px] text-ink-500">
+              <p className="text-xs text-ink-500">
                 {product.effectiveYear}년 기준 ·{" "}
                 {product.verifiedAt ? `${product.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
               </p>
               {product.notes && (
-                <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{product.notes}</p>
+                <p className="mt-1 text-xs leading-relaxed text-ink-500">{product.notes}</p>
               )}
             </Disclosure>
           </div>
@@ -257,7 +268,7 @@ export default function ResultPage() {
 
       <button
         onClick={() => router.push("/eligibility")}
-        className="rounded-xl border border-ink-200 py-3 text-sm font-bold text-ink-600 transition-colors hover:border-ink-500 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+        className="rounded-xl bg-white py-3 text-sm font-bold text-ink-600 shadow-sm transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
       >
         답변 수정하기
       </button>
@@ -272,10 +283,10 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
   const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
   // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
   return (
-    <article className="rounded-2xl bg-white p-5">
+    <article className="rounded-3xl bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-bold text-ink-900">{policy.name}</p>
+          <p className="text-base font-bold text-ink-900">{policy.name}</p>
           <p className="text-xs text-ink-500">{policy.agency} · {policy.regionScope}</p>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${STATUS_STYLE[result.status]}`}>
@@ -284,21 +295,23 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
       </div>
 
       {/* F4-3: 지원 형태 · 지급 시점 · 적용 산식 · 총 예상액 */}
-      <p className="mt-2 text-xs font-semibold text-ink-600">
+      <p className="mt-3 text-sm font-semibold text-ink-600">
         {benefitTypeLabel(policy.benefitType)} · {payoutTiming(policy)}
       </p>
-      <p className="mt-0.5 text-xs text-ink-500">{policy.benefitSummary}</p>
+      <p className="mt-1 text-sm leading-relaxed text-ink-500">{policy.benefitSummary}</p>
 
       {showFormula && (
-        <div className="mt-2 rounded-lg bg-sand-50 p-2.5">
+        <div className="mt-3 rounded-2xl bg-sand-50 p-3.5">
           <p className="text-sm font-bold text-brand-900">
             이 정책 단독 예상액: {formatKoreanMoney(result.estimatedAmount)}
           </p>
           {/* 산식은 원 단위로 남긴다. 이 줄의 목적은 공고 원문과 대조하는 검산이고,
               공고가 원 단위로 적혀 있다. 만원으로 바꾸면 대조가 어려워진다. */}
-          <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
-            {benefitFormula(policy, listing)}
-          </p>
+          <Disclosure label="계산식 보기" className="mt-2">
+            <p className="px-1 text-xs leading-relaxed text-ink-500">
+              {benefitFormula(policy, listing)}
+            </p>
+          </Disclosure>
         </div>
       )}
 
@@ -317,7 +330,7 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
           result.unknownLabels.length +
           result.failedLabels.length ===
           0 && (
-          <p className="text-xs text-ink-500">
+          <p className="text-sm text-ink-500">
             신청 기간이 아니라 요건을 판정하지 않았습니다.
           </p>
         )}
@@ -325,16 +338,16 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
 
       {/* 검수 메모는 팀이 공고와 대조한 기록이다. 사용자가 볼 값이긴 하지만 길다. */}
       <Disclosure label="검수 상태 · 참고사항">
-        <p className="text-[11px] text-ink-500">
+        <p className="text-xs text-ink-500">
           {policy.effectiveYear}년 기준 ·{" "}
           {policy.verifiedAt ? `${policy.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
         </p>
         {policy.notes && (
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-500">{policy.notes}</p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-500">{policy.notes}</p>
         )}
       </Disclosure>
 
-      <div className="mt-3 flex flex-wrap gap-3 text-xs">
+      <div className="mt-4 flex flex-wrap gap-3 text-sm">
         <a href={policy.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
           공고 원문
         </a>
@@ -359,8 +372,8 @@ function requirementCounts(result: PolicyResult): string {
 function RequirementList({ title, items, tone }: { title: string; items: string[]; tone: string }) {
   return (
     <div className="mt-2">
-      <p className={`text-xs font-bold ${tone}`}>{title}</p>
-      <ul className="mt-1 list-disc pl-4 text-xs text-ink-500">
+      <p className={`text-sm font-bold ${tone}`}>{title}</p>
+      <ul className="mt-1 list-disc pl-4 text-sm leading-relaxed text-ink-500">
         {items.map((item, i) => (
           <li key={i}>{item}</li>
         ))}

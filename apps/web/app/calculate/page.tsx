@@ -138,7 +138,7 @@ export default function InputPage() {
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (
           <>
-            <StepHeading title={"어떤 방을\n보고 계신가요?"} />
+            <StepHeading title="어떤 방을 보고 계신가요?" />
 
             <Field label="거주 예정 지역">
               <select
@@ -196,7 +196,7 @@ export default function InputPage() {
           </>
         ) : (
           <>
-            <StepHeading title={"비용과 기간을\n알려주세요"} />
+            <StepHeading title="비용과 기간을 알려주세요" />
 
             <Field label="월 관리비 (만원)">
               <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />

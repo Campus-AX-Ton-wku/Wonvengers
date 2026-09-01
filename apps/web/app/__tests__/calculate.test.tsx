@@ -125,6 +125,15 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     await user.click(screen.getByRole("button", { name: "다음" }));
   }
 
+  it("짧은 페이지 제목은 강제로 줄을 나누지 않는다", async () => {
+    const user = userEvent.setup();
+    await goToStep2(user);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "비용과 기간을 알려주세요"
+    );
+  });
+
   it("연도 목록이 작년부터 오름차순이다 (생년월일과 반대 방향)", async () => {
     const user = userEvent.setup();
     await goToStep2(user);

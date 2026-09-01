@@ -54,13 +54,13 @@ const HOUSING_TYPES: { value: HousingType; label: string }[] = [
   { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
 ];
 
-/** 질문 순서. 화면 제목의 줄바꿈은 의미 단위로 직접 끊는다 (StepHeading 주석 참고). */
+/** 질문 순서. 줄바꿈은 화면 폭에 맞춰 StepHeading이 균형 있게 처리한다. */
 const QUESTIONS = [
-  { key: "birthDate", label: "생년월일", title: "생년월일이\n어떻게 되시나요?" },
-  { key: "region", label: "사는 곳", title: "어디에 살거나\n살 예정인가요?" },
-  { key: "status", label: "현재 상태", title: "현재 상태가\n어떻게 되시나요?" },
-  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은\n어느 정도인가요?" },
-  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로\n거주하고 있나요?" },
+  { key: "birthDate", label: "생년월일", title: "생년월일이 어떻게 되시나요?" },
+  { key: "region", label: "사는 곳", title: "어디에 살거나 살 예정인가요?" },
+  { key: "status", label: "현재 상태", title: "현재 상태가 어떻게 되시나요?" },
+  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은 어느 정도인가요?" },
+  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로 거주하고 있나요?" },
 ] as const satisfies readonly { key: AnsweredKey; label: string; title: string }[];
 
 const QUESTION_KEYS = QUESTIONS.map((q) => q.key);
@@ -146,6 +146,9 @@ export default function FindPage() {
     .reverse();
 
   const isLast = step === QUESTIONS.length - 1;
+  // null 이 실제 답인 질문(지역·상태·소득)이 있으므로 값이 아니라 응답 기록으로
+  // 판단한다. 사용자가 명시적으로 '모름'을 고른 경우에는 다음으로 갈 수 있다.
+  const hasCurrentAnswer = answered.includes(QUESTIONS[step].key);
 
   function handleBack() {
     if (step === 0) return router.push("/");
@@ -153,6 +156,7 @@ export default function FindPage() {
   }
 
   function handleNext() {
+    if (!hasCurrentAnswer) return;
     // 마지막 답을 하면 결과 요약으로. 목록은 그 다음이다.
     if (isLast) return router.push("/find/result");
     setStep(step + 1);
@@ -291,7 +295,9 @@ export default function FindPage() {
         <AnsweredStack items={쌓인답} />
       </main>
 
-      <BottomCta onClick={handleNext}>{ctaLabel}</BottomCta>
+      <BottomCta onClick={handleNext} disabled={!hasCurrentAnswer}>
+        {ctaLabel}
+      </BottomCta>
     </div>
   );
 }
