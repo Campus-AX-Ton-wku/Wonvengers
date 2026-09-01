@@ -33,7 +33,8 @@ export function estimatePolicyAmount(policy: PolicyMeta, listing: ListingInput):
     return Math.max(0, Math.round((policy.monthlyCap ?? 0) * eligibleMonths));
   }
 
-  // lump_sum
+  // lump_sum — 2층이 그 지출을 입력받는 정책만 계산한다 (types.ts 의 lumpSumBasis).
+  if (policy.lumpSumBasis !== "oneTimeMoveCost") return 0;
   return Math.min(policy.lumpSumCap ?? Infinity, listing.oneTimeMoveCost);
 }
 
@@ -57,6 +58,9 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput): strin
     return `월 ${won(policy.monthlyCap ?? 0)} × ${months}개월 = ${won(total)}`;
   }
 
+  if (policy.lumpSumBasis !== "oneTimeMoveCost") {
+    return `이 화면은 이 지원금이 보는 지출을 입력받지 않아 예상액을 계산하지 않습니다 (공고 상한 ${won(policy.lumpSumCap ?? 0)})`;
+  }
   return `실제 일시 지출 ${won(listing.oneTimeMoveCost)}과 상한 ${won(policy.lumpSumCap ?? 0)} 중 작은 값 = ${won(total)}`;
 }
 

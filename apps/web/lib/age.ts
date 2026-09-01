@@ -49,9 +49,3 @@ function ageOn(birthDate: string | null, asOfISO: string | null): number | null 
   const age = calcAge(birthDate, asOfISO);
   return Number.isFinite(age) ? age : null;
 }
-
-/** 이 나이를 대상으로 하는 정책이 아예 없는지. 화면에서 안내 문구를 띄우는 데 쓴다. */
-export function isAgeOutOfRange(age: number | null): boolean {
-  if (age === null) return false;
-  return age < AGE_MIN || age > POLICY_AGE_MAX;
-}

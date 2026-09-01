@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import FindPoliciesPage from "@/app/find/policies/page";
 import ResultPage from "@/app/result/page";
-import { saveAnswers, saveListing, saveProfile } from "@/lib/storage";
-import { birthDateForAge, makeListing, makeProfile } from "@/lib/__tests__/fixtures";
+import { saveListing, saveProfile } from "@/lib/storage";
+import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 
 vi.mock("next/navigation", () => {
   const router = { push: vi.fn(), replace: vi.fn() };
@@ -12,34 +11,23 @@ vi.mock("next/navigation", () => {
 });
 
 /**
- * 정책 카드 세부사항 접기.
+ * 2층 결과 화면의 정책 카드 접기.
  *
  * jsdom 은 레이아웃을 하지 않아 "보이는지"를 직접 물을 수 없다. 대신 요구사항을
  * 구조로 확인한다 — 세부 내용은 닫힌 <details> 안에 있어야 하고, 항상 보여야 하는
  * 것(신청 링크·금액·태그)은 카드 안의 <details> 밖에 있어야 한다.
  *
- * 주의: '해당되지 않는 지원금 N건 보기' 그룹 자체가 <details> 라서, 그 안의 카드는
- * 무엇이든 details 안에 있다. 카드 단위로 좁혀서 본다.
+ * 주의: '대상아님' 그룹 자체가 <details> 라서, 그 안의 카드는 무엇이든 details
+ * 안에 있다. 카드 단위로 좁혀서 본다.
  *
- * 카드를 위치로 집지 않는다. 예전에는 topCards()[0] 이 곧 국토부 청년월세였는데,
- * 그건 그 정책이 데이터의 첫 항목이자 접수가 끝난 사업이라는 우연이었다 — 지금은
- * 마감 건을 아래 영역으로 내리므로 첫 카드가 아니다. 이름으로 찾는다.
+ * 1층 카드에는 토글이 없다. 공고 문구·요건·출처는 상세 화면으로 내려갔다
+ * (app/find/PolicyCard.tsx, app/__tests__/find-policy-detail.test.tsx).
  */
 
-/** 목록 맨 위(해당 없음 그룹 밖)의 정책 카드들 */
+/** 결과 화면 맨 위(대상아님 그룹 밖)의 정책 카드들 */
 function topCards(): HTMLElement[] {
   return screen.getAllByRole("article").filter((card) => card.closest("details") === null);
 }
-
-/** 이름으로 카드를 집는다. 목록 어느 영역에 있든 상관없다. */
-function 카드(정책명: string | RegExp): HTMLElement {
-  const card = screen.getByText(정책명).closest("article");
-  expect(card, `"${정책명}" 카드를 찾지 못했다`).not.toBeNull();
-  return card as HTMLElement;
-}
-
-/** 국토부 청년월세 — 2026-05-29 에 접수가 끝나 '마감된 지원금' 영역에 있다. */
-const 청년월세카드 = () => 카드("청년월세 지원 (2026년 상시사업 전환)");
 
 function 카드안_토글(card: HTMLElement, text: string | RegExp): HTMLDetailsElement {
   const node = within(card).getByText(text);
@@ -47,59 +35,6 @@ function 카드안_토글(card: HTMLElement, text: string | RegExp): HTMLDetails
   expect(details, `"${text}" 가 카드 안 토글에 들어 있지 않다`).not.toBeNull();
   return details!;
 }
-
-describe("1층 정책 카드", () => {
-  const 익산_대학생 = {
-    birthDate: birthDateForAge(23),
-    region: "전북특별자치도 익산시" as const,
-    status: "대학생" as const,
-    incomeBracket: 1,
-  };
-
-  async function renderList() {
-    saveAnswers(익산_대학생);
-    render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
-  }
-
-  it("'추가로 확인할 것'은 닫힌 토글 안에 있다", async () => {
-    await renderList();
-    const details = 카드안_토글(청년월세카드(), "추가로 확인할 것");
-    expect(details.open).toBe(false);
-  });
-
-  it("토글 라벨에 항목 수가 적혀 있어 열지 않고도 분량을 안다", async () => {
-    await renderList();
-    expect(within(청년월세카드()).getByText(/자세히 보기 · 확인할 항목 \d+개/)).toBeTruthy();
-  });
-
-  it("신청 기간과 공고 출처도 토글 안으로 들어간다", async () => {
-    await renderList();
-    expect(카드안_토글(청년월세카드(), /신청 기간 2026-03-30/).open).toBe(false);
-    // 출처는 접어 두지만 카드마다 반드시 있다 — 이 숫자가 어디서 왔는지 물을 수 있어야 한다.
-    expect(카드안_토글(청년월세카드(), /2026-08-23에 공고 원문과 대조했습니다/).open).toBe(false);
-  });
-
-  it("정책명·태그·상한 금액·접수 종료 안내는 토글 밖에 남는다", async () => {
-    await renderList();
-    const card = 청년월세카드();
-
-    expect(within(card).getByText("청년월세 지원 (2026년 상시사업 전환)").closest("details")).toBeNull();
-    expect(within(card).getByText(/2026-05-29에 접수가 끝났습니다/).closest("details")).toBeNull();
-    // 목록의 목적이 "무엇을 최대 얼마까지 받나"를 훑는 것이므로 금액은 접지 않는다
-    expect(within(card).getByText("최대 480만원").closest("details")).toBeNull();
-    expect(within(card).getByText("공고 상한").closest("details")).toBeNull();
-  });
-
-  // 카드를 한 화면에 여러 장 훑을 수 있게, 긴 공고 문구와 신청 정보는 토글로 내렸다.
-  it("공고 문구와 공식 페이지 링크는 토글 안으로 내려갔다", async () => {
-    await renderList();
-    const card = 청년월세카드();
-
-    expect(within(card).getByText(/생애 1회 최대 24개월/).closest("details")).not.toBeNull();
-    expect(within(card).getByRole("link", { name: "공식 페이지 →" }).closest("details")).not.toBeNull();
-  });
-});
 
 describe("2층 정책 카드", () => {
   async function renderResult() {

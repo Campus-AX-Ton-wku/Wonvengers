@@ -95,12 +95,46 @@ describe("온통청년 정책번호 (발굴 스크립트용)", () => {
 });
 
 describe("policies.json 의 1층 discovery 블록", () => {
-  it("나이 범위가 있고 하한이 상한보다 크지 않다", () => {
+  /*
+   * ageMin/ageMax 의 null 은 '확인 전'이 아니라 '나이 제한 없음'이다 — 전세보증금
+   * 반환보증 보증료 지원처럼 전 연령을 지원하는 사업이 있다 (types.ts 주석).
+   * 둘 중 하나만 null 인 것은 허용한다: 하한만 있고 상한이 없는 사업이 가능하다.
+   */
+  it("나이 범위는 숫자거나 '제한 없음'(null)이고, 하한이 상한보다 크지 않다", () => {
     for (const p of policies) {
       const d = p.discovery;
-      expect(typeof d?.ageMin, `${p.id}: discovery.ageMin 없음`).toBe("number");
-      expect(typeof d?.ageMax, `${p.id}: discovery.ageMax 없음`).toBe("number");
-      expect(d.ageMin <= d.ageMax, `${p.id}: ageMin 이 ageMax 보다 큼`).toBe(true);
+      for (const key of ["ageMin", "ageMax"] as const) {
+        const v = d?.[key];
+        expect(v === null || typeof v === "number", `${p.id}: discovery.${key} 형식 오류`).toBe(true);
+      }
+      if (d.ageMin !== null && d.ageMax !== null) {
+        expect(d.ageMin <= d.ageMax, `${p.id}: ageMin 이 ageMax 보다 큼`).toBe(true);
+      }
+    }
+  });
+
+  // 주거 형태 제한이 있는 정책만 값을 갖는다. null 은 '따지지 않는다'는 뜻이다.
+  it("housingTypes 는 null 이거나 빈 배열이 아닌 올바른 값이다", () => {
+    const 허용 = ["월세", "연세", "전세", "그 외"];
+    for (const p of policies) {
+      const v = p.discovery?.housingTypes;
+      if (v === null || v === undefined) {
+        expect(v, `${p.id}: housingTypes 가 없음 (제한 없으면 null 을 명시할 것)`).toBeNull();
+        continue;
+      }
+      expect(v.length, `${p.id}: housingTypes 가 빈 배열`).toBeGreaterThan(0);
+      for (const t of v) expect(허용, `${p.id}: 알 수 없는 주거 형태 ${t}`).toContain(t);
+    }
+  });
+
+  // lump_sum 은 2층이 어떤 지출로 계산하는지 밝혀야 한다. 빠뜨리면 이사비를
+  // 기준으로 엉뚱한 예상액이 붙는다 (types.ts 의 lumpSumBasis).
+  it("lump_sum 정책은 lumpSumBasis 를 갖는다", () => {
+    for (const p of policies.filter((x) => x.benefitType === "lump_sum")) {
+      expect(
+        ["oneTimeMoveCost", "notCalculable"],
+        `${p.id}: lumpSumBasis 없음`
+      ).toContain(p.lumpSumBasis);
     }
   });
 

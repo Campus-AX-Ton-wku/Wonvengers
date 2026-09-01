@@ -14,6 +14,14 @@ export function calcAge(birthDateISO: string, asOfISO: string): number {
   return age;
 }
 
+/**
+ * 화면에 찍는 날짜. 저장·판정은 계속 ISO(2026-05-29)를 쓰고, 사람에게 보이는
+ * 자리에서만 2026.05.29 로 바꾼다. 카드와 상세 화면이 갈라지지 않게 한 곳에 둔다.
+ */
+export function formatDotDate(iso: string): string {
+  return iso.replace(/-/g, ".");
+}
+
 export function isWithinWindow(
   asOfISO: string,
   startISO: string,

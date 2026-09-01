@@ -165,6 +165,7 @@ describe("1층에서 받은 생년월일", () => {
     region: "전북특별자치도 익산시",
     status: "재직" as const,
     incomeBracket: 2,
+    housingType: null,
   };
 
   it("1층에서 답한 생년월일이 채워진 채로 열린다", async () => {

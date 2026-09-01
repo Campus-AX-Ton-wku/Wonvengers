@@ -13,6 +13,7 @@ function makeResult(overrides: Partial<PolicyMeta> & { status: PolicyResult["sta
       statuses: null,
       incomeBracketMin: null,
       incomeBracketMax: null,
+      housingTypes: null,
     },
     name: "p",
     agency: "",

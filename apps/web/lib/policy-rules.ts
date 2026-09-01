@@ -179,10 +179,45 @@ const youthHousingBenefitSplit: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 전세보증금반환보증 보증료 지원.
+ *
+ * 나이 요건이 없다 — 정부24 안내와 온통청년 등록 모두 연령 제한을 두지 않는다.
+ * '청년'은 자격이 아니라 소득 상한(연 5천/6천/7.5천만원)을 가르는 구분이다.
+ *
+ * 나머지 핵심 요건(보증 가입 여부·보증금 3억원 이하·연소득)은 계약 화면이
+ * 입력받지 않는다. 지어내지 않고 '확인 필요'로 남긴다 — 그래야 카드가
+ * '예상적용'으로 잘못 확정되지 않는다 (PRD F2-1).
+ */
+const jeonseGuaranteeFee: RuleFn = (p) => [
+  boolCheck("hasNoHouse", "무주택 임차인", p.hasNoHouse, true),
+  boolCheck("isContractHolder", "임대차계약 명의자 본인", p.isContractHolder, true),
+  {
+    key: "guaranteeEnrolled",
+    label: "전세보증금반환보증 가입 및 보증료 납부",
+    result: "unknown",
+    howToConfirm:
+      "HUG·HF·SGI 중 한 곳에 가입한 보증서와 보증료 납부 증빙이 있어야 합니다. 이 앱은 가입 여부를 입력받지 않습니다.",
+  },
+  {
+    key: "depositUnder300M",
+    label: "임차보증금 3억원 이하",
+    result: "unknown",
+    howToConfirm: "전세 계약서의 보증금을 확인하세요. 이 앱은 전세 계약을 입력받지 않습니다.",
+  },
+  {
+    key: "annualIncomeCeiling",
+    label: "연소득 기준 (청년 5천만원 · 청년외 6천만원 · 신혼부부 7.5천만원 이하)",
+    result: "unknown",
+    howToConfirm: "국세청 소득금액증명 또는 건강보험 자격득실확인서로 확인하세요.",
+  },
+];
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
   "jeonbuk-youth-settlement-support": jeonbukSettlement,
   "iksan-newcomer-moving-cost-support": iksanMovingCost,
   "youth-housing-benefit-split-payment": youthHousingBenefitSplit,
+  "jeonse-return-guarantee-fee-subsidy": jeonseGuaranteeFee,
 };

@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
 import EligibilityPage from "@/app/eligibility/page";
 import ResultPage from "@/app/result/page";
-import { loadListing, saveListing, saveProfile } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadListing, saveAnswers, saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 
 const { pushMock, replaceMock } = vi.hoisted(() => ({
@@ -29,6 +29,9 @@ vi.mock("next/navigation", () => {
 beforeEach(() => {
   pushMock.mockClear();
   replaceMock.mockClear();
+  // 1층 답변이 테스트끼리 새지 않게 비운다 — 계약 형태 이어받기가 순서에 따라
+  // 켜졌다 꺼졌다 하면 무엇을 검증한 것인지 알 수 없다.
+  saveAnswers(EMPTY_ANSWERS);
 });
 
 describe("입력 없이 결과 화면에 들어왔을 때", () => {
@@ -66,6 +69,35 @@ describe("계약 형태", () => {
       const button = screen.getByRole("button", { name: type });
       expect(button.getAttribute("aria-pressed"), type).toBe("false");
     }
+  });
+
+  /*
+   * 1층에서 이미 '월세'·'연세'를 답한 사람에게 같은 질문을 다시 하지 않는다.
+   *
+   * 기본값을 켜 두는 것과 다르다 — 사용자가 직접 고른 답을 옮기는 것이라
+   * F1-1 의 '고르게 한다' 를 어기지 않는다. 옮겼다는 사실은 화면에 밝힌다.
+   */
+  it("1층에서 답한 주거 형태를 계약 형태로 이어받는다", () => {
+    saveAnswers({ ...EMPTY_ANSWERS, housingType: "연세" });
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("button", { name: "연세" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "월세" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByText(/앞에서 답한 주거 형태로 골랐어요/)).toBeTruthy();
+  });
+
+  // 전세·그 외는 이 화면이 다루는 계약이 아니다. 둘 중 하나로 단정하면 월 환산액이
+  // 통째로 틀어진다 — 기본값을 두지 않는 이유와 같다.
+  it("전세·그 외는 계약 형태로 옮기지 않는다", () => {
+    saveAnswers({ ...EMPTY_ANSWERS, housingType: "전세" });
+    render(<CalculatePage />);
+
+    for (const type of ["월세", "연세"]) {
+      expect(screen.getByRole("button", { name: type }).getAttribute("aria-pressed"), type).toBe(
+        "false"
+      );
+    }
+    expect(screen.queryByText(/앞에서 답한 주거 형태로 골랐어요/)).toBeNull();
   });
 
   it("고르지 않고 다음을 누르면 넘어가지 않고 이유를 말한다", async () => {
