@@ -69,7 +69,7 @@ export default function FindPoliciesPage() {
   const 신청불가 = [...마감, ...groups.해당없음];
 
   return (
-    <main className="step-in mx-auto min-h-dvh max-w-lg bg-sand-100 px-5 pb-10">
+    <main className="step-in mx-auto min-h-dvh max-w-lg bg-white px-5 pb-10">
       <FindTopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
 
       {!loaded || !asOf ? (

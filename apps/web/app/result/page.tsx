@@ -53,7 +53,7 @@ export default function ResultPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col bg-sand-100 px-5">
+    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col bg-white px-5">
       <AppBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
 
       <main className="flex flex-col gap-5 pb-10 pt-3">
