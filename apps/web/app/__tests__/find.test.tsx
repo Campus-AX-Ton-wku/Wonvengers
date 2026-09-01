@@ -92,7 +92,7 @@ describe("/find 단계형 흐름", () => {
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
 
-    expect(제목()).toBe("어디에 살거나\n살 예정인가요?");
+    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
     expect(screen.getByRole("button", { name: "생년월일 고치기" })).toBeTruthy();
     expect(screen.getByText(new RegExp(`1998년 3월 14일 · 만 ${생년(0) - 1998}세`))).toBeTruthy();
   });
@@ -158,7 +158,7 @@ describe("/find 단계형 흐름", () => {
     saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket", "housingType"]);
     render(<FindPage />);
 
-    expect(제목()).toBe("현재 어떤 형태로\n거주하고 있나요?");
+    expect(제목()).toBe("현재 어떤 형태로 거주하고 있나요?");
     for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기", "월 소득 고치기"]) {
       expect(screen.getByRole("button", { name: label }), label).toBeTruthy();
     }
@@ -231,7 +231,7 @@ describe("/find CTA", () => {
 
     expect((cta() as HTMLButtonElement).disabled).toBe(true);
     await user.click(cta());
-    expect(제목()).toBe("어디에 살거나\n살 예정인가요?");
+    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
 
     // 명시적으로 고른 '모름'은 유효한 답이다.
     await user.click(screen.getByRole("button", { name: "모름" }));

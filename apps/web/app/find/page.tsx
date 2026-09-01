@@ -54,13 +54,13 @@ const HOUSING_TYPES: { value: HousingType; label: string }[] = [
   { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
 ];
 
-/** 질문 순서. 화면 제목의 줄바꿈은 의미 단위로 직접 끊는다 (StepHeading 주석 참고). */
+/** 질문 순서. 줄바꿈은 화면 폭에 맞춰 StepHeading이 균형 있게 처리한다. */
 const QUESTIONS = [
   { key: "birthDate", label: "생년월일", title: "생년월일이 어떻게 되시나요?" },
-  { key: "region", label: "사는 곳", title: "어디에 살거나\n살 예정인가요?" },
-  { key: "status", label: "현재 상태", title: "현재 상태가\n어떻게 되시나요?" },
-  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은\n어느 정도인가요?" },
-  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로\n거주하고 있나요?" },
+  { key: "region", label: "사는 곳", title: "어디에 살거나 살 예정인가요?" },
+  { key: "status", label: "현재 상태", title: "현재 상태가 어떻게 되시나요?" },
+  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은 어느 정도인가요?" },
+  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로 거주하고 있나요?" },
 ] as const satisfies readonly { key: AnsweredKey; label: string; title: string }[];
 
 const QUESTION_KEYS = QUESTIONS.map((q) => q.key);

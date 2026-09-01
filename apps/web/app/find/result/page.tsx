@@ -90,11 +90,11 @@ export default function FindResultPage() {
             ) : (
               <>
                 <h1
-                  className="amount-reveal whitespace-pre-line text-[28px] font-extrabold leading-snug text-ink-900"
+                  className="amount-reveal text-balance text-[28px] font-extrabold leading-snug text-ink-900"
                   style={{ animationDelay: "0.04s" }}
                 >
                   {count > 0
-                    ? "지금 신청할 수 있는\n지원금이 없어요"
+                    ? "지금 신청할 수 있는 지원금이 없어요"
                     : "아쉽게도 해당되는 지원금이 없어요"}
                 </h1>
                 {count > 0 && (

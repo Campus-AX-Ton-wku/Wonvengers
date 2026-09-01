@@ -36,9 +36,9 @@ const policies = policiesJson as PolicyMeta[];
  * 사람에게는 둘 중 하나로 단정하지 않고 '주거비'라고 부른다.
  */
 function ctaLabel(housingType: HousingType | null): string {
-  if (housingType === "월세") return "지원받으면\n내 월세는 얼마일까?";
-  if (housingType === "연세") return "지원받으면\n내 연세 부담은 얼마나 줄까?";
-  return "지원받으면\n내 주거비는 얼마일까?";
+  if (housingType === "월세") return "지원받으면 내 월세는 얼마일까?";
+  if (housingType === "연세") return "지원받으면 내 연세 부담은 얼마나 줄까?";
+  return "지원받으면 내 주거비는 얼마일까?";
 }
 
 export default function FindPoliciesPage() {
@@ -165,7 +165,7 @@ export default function FindPoliciesPage() {
                 href="/calculate"
                 className="mt-8 flex items-center justify-between gap-3 rounded-2xl bg-brand-600 px-5 py-5 transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
               >
-                <span className="whitespace-pre-line text-left text-lg font-bold leading-snug text-white">
+                <span className="text-balance text-left text-lg font-bold leading-snug text-white">
                   {ctaLabel(resolved.housingType)}
                 </span>
                 <ChevronRightIcon size={22} className="shrink-0 text-white/80" />
