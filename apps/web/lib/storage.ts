@@ -44,6 +44,7 @@ export const EMPTY_ANSWERS: DiscoveryAnswers = {
   region: null,
   status: null,
   incomeBracket: null,
+  housingType: null,
 };
 
 /**
@@ -60,6 +61,7 @@ function pickAnswers(saved: Record<string, unknown>): DiscoveryAnswers {
     region: typeof saved.region === "string" ? saved.region : null,
     status: (saved.status as DiscoveryAnswers["status"]) ?? null,
     incomeBracket: typeof saved.incomeBracket === "number" ? saved.incomeBracket : null,
+    housingType: (saved.housingType as DiscoveryAnswers["housingType"]) ?? null,
   };
 }
 

@@ -67,3 +67,12 @@ export function ChevronDownIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** 목록 줄 오른쪽. "누르면 더 있다"를 말한다. */
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 5l7 7-7 7" />
+    </Svg>
+  );
+}
