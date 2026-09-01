@@ -12,6 +12,8 @@ import {
   scrollTopForIndex,
   typeAheadMatch,
 } from "@/lib/wheel";
+import { Button } from "@/app/components/Button";
+import { CalendarDays, ICON_MD } from "@/app/components/icons";
 
 /**
  * 스크롤형 휠 데이트 피커 (Wheel Date Picker). 실기기 확인을 거쳐 채택했다 (2026-08-27).
@@ -31,9 +33,6 @@ import {
  */
 
 type Parts = { year: number; month: number; day: number };
-
-const FOCUS_RING =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700";
 
 /* globals.css 의 prefers-reduced-motion 규칙은 CSS 애니메이션만 끈다.
    scrollTo({behavior:"smooth"}) 는 별개라 여기서 직접 물어본다. */
@@ -164,7 +163,7 @@ function Column({
       tabIndex={0}
       onScroll={handleScroll}
       onKeyDown={handleKeyDown}
-      className={`no-scrollbar flex-1 snap-y snap-proximity overflow-y-scroll rounded-lg ${FOCUS_RING}`}
+      className="focus-ring no-scrollbar flex-1 snap-y snap-proximity overflow-y-scroll rounded-xl"
       style={{ height: WHEEL_HEIGHT, paddingTop: WHEEL_PAD, paddingBottom: WHEEL_PAD }}
     >
       {values.map((v) => (
@@ -242,23 +241,26 @@ export default function WheelDatePicker({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={`${label} — ${shownText ?? "선택 안 함"}`}
-        className={`input flex items-center justify-between text-left ${
-          shown ? "font-semibold text-ink-900" : "text-ink-500"
-        } ${FOCUS_RING}`}
+        className={`input focus-ring flex items-center justify-between gap-2 text-left ${
+          shown ? "font-bold text-ink-900" : "text-ink-500"
+        }`}
       >
-        <span>{shownText ?? "날짜 선택"}</span>
-        <span aria-hidden="true" className="text-xs text-ink-500">
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-500" />
+          <span className="truncate">{shownText ?? "날짜 선택"}</span>
+        </span>
+        <span aria-hidden="true" className="shrink-0 text-xs font-bold text-brand-700">
           {open ? "닫기" : "고르기"}
         </span>
       </button>
 
       {open && (
-        <div className="rounded-xl border border-ink-200 bg-white p-2">
+        <div className="rounded-card border border-ink-200 bg-surface p-2 shadow-card">
           {/* 가운데 한 줄이 선택 위치다. 밴드는 장식이므로 터치를 먹지 않는다. */}
           <div className="relative">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 z-10 rounded-lg bg-brand-50"
+              className="pointer-events-none absolute inset-x-0 z-10 rounded-xl bg-brand-50 ring-1 ring-inset ring-brand-200"
               style={{ top: WHEEL_PAD, height: ITEM_HEIGHT }}
             />
             <div className="relative z-20 flex gap-1">
@@ -286,16 +288,16 @@ export default function WheelDatePicker({
             </div>
           </div>
 
-          <button
-            type="button"
+          <Button
+            size="md"
+            className="mt-2"
             onClick={() => {
               onChange(toISODate(draft.year, draft.month, draft.day));
               setOpen(false);
             }}
-            className={`mt-2 w-full rounded-lg bg-brand-600 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-700 ${FOCUS_RING}`}
           >
             확인
-          </button>
+          </Button>
         </div>
       )}
     </div>

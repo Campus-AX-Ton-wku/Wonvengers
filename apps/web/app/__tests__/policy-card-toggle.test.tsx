@@ -97,7 +97,7 @@ describe("1층 정책 카드", () => {
     const card = 청년월세카드();
 
     expect(within(card).getByText(/생애 1회 최대 24개월/).closest("details")).not.toBeNull();
-    expect(within(card).getByRole("link", { name: "공식 페이지 →" }).closest("details")).not.toBeNull();
+    expect(within(card).getByRole("link", { name: "공식 페이지" }).closest("details")).not.toBeNull();
   });
 });
 

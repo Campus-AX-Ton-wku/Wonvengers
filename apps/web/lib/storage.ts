@@ -117,6 +117,47 @@ export function saveAnsweredKeys(keys: AnsweredKey[]): void {
   }
 }
 
+// ── 온보딩 ──
+
+/**
+ * 온보딩을 보았는지. 완료·건너뛰기 둘 다 같은 값으로 기록한다 — 사용자에게는
+ * "다시 보고 싶지 않다" 는 같은 뜻이고, 둘을 나눠 저장하면 재노출 규칙이 두 갈래가 된다.
+ *
+ * 이 키는 app/layout.tsx 의 인라인 스크립트도 읽는다. 리터럴이 그쪽에도 있으니
+ * 값을 바꾸려면 두 곳을 함께 고칠 것 (layout 은 React 가 뜨기 전에 실행돼야 해서
+ * 이 모듈을 import 할 수 없다).
+ */
+export const ONBOARDED_KEY = "perky.onboarded";
+
+export function hasSeenOnboarding(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(ONBOARDED_KEY) === "1";
+  } catch {
+    // 시크릿 모드 등에서 읽기가 막히면 '봤다'로 친다. 매번 온보딩에 갇히는 것보다 낫다.
+    return true;
+  }
+}
+
+export function markOnboardingSeen(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ONBOARDED_KEY, "1");
+  } catch {
+    // 저장이 막혀도 앱은 계속 동작해야 한다.
+  }
+}
+
+/** 개발·QA 용. 다음 방문에 온보딩을 다시 보게 한다. */
+export function resetOnboarding(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ONBOARDED_KEY);
+  } catch {
+    // 무시
+  }
+}
+
 /** 답변을 브라우저에만 저장한다. 서버로 보내지 않는다. (PRD F0-13) */
 export function saveAnswers(answers: DiscoveryAnswers): void {
   if (typeof window === "undefined") return;

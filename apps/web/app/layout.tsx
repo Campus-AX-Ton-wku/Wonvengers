@@ -2,6 +2,41 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
+/*
+ * ── 이 앱의 디자인 계약 (2026-09-02 전면 리디자인) ─────────────────────────
+ *
+ * THESIS
+ *   흩어진 청년 주거 지원금을 찾아주는 탐험 가이드. 공공 안내문의 회색 표도,
+ *   금융앱의 무표정한 파랑도 아니다 — 안내자가 있는 화면이다.
+ *
+ * OWN-WORLD
+ *   Perky 의 몸 파랑(#1a6bef)이 액션·선택·링크·정보를 전부 갖는다. 모자와 동전의
+ *   금색(#8a5a00 글씨 / #fff6e0 면)은 금액에만 붙는다. 지면은 아주 옅은
+ *   블루(#f4f8ff), 카드는 흰색 + 낮고 넓은 남색 그림자. 모서리 16/20px.
+ *   아이콘은 lucide outline 한 벌, 제목은 Pretendard 800 두 줄 이내.
+ *   콘텐츠를 다 지워도 이 셋(파랑 액션 · 금색 금액 · 옅은 파란 지면)으로 알아본다.
+ *
+ * STORY
+ *   "내가 받을 수 있는 게 있긴 한가?" 로 들어와, 질문 넷에 답하고, 금액 한 줄과
+ *   신청 페이지 링크를 들고 나간다. 앱 안에서 신청은 끝나지 않는다.
+ *
+ * FIRST VIEWPORT (랜딩)
+ *   지면 위 큰 Perky(wave), 그 아래 워드마크와 두 줄 제목, 화면 폭을 다 쓴 파란
+ *   CTA '내 혜택 찾아보기'. 장식 없음. 첫 방문자는 이 화면 전에 온보딩 3장을 본다.
+ *
+ * FORM
+ *   브리프가 지정한 방향(Perky 캐릭터 세계 + 의미 기반 토큰 + 온보딩 3단계).
+ *   방향이 이미 고정돼 있어 컨셉 추첨은 돌리지 않았다.
+ *
+ * FINISH
+ *   unreviewed and undocumented is unfinished; this build ends with the finish
+ *   review, the verdict, DESIGN.md, and every shipping raster carrying its
+ *   provenance.
+ *
+ * (React 는 주석 노드를 렌더하지 않아 이 계약은 소스에만 남는다. 이 파일이
+ *  화면을 고칠 때마다 다시 열게 되는 파일이라 여기 둔다.)
+ */
+
 /**
  * Pretendard 를 직접 싣는다.
  *
@@ -40,9 +75,29 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "청년 주거지원 실부담 계산기",
+  title: "Perky · 청년 주거지원 실부담 계산기",
   description: "계약 조건을 입력하면 청년 주거지원 정책을 판정하고 최종 예상 주거비를 계산합니다.",
 };
+
+/**
+ * 첫 방문자를 온보딩으로 보내는 스크립트. React 가 뜨기 전에 실행된다.
+ *
+ * useEffect 로 하면 랜딩이 한 프레임 그려진 뒤 화면이 갈아치워진다 — 깜빡임이
+ * 고장으로 읽힌다. <head> 앞에서 동기 실행하면 페인트 전에 이동한다
+ * (다크모드 플래시를 막는 것과 같은 방법).
+ *
+ * 이 스크립트가 실패해도 앱은 멀쩡하다: JS 가 꺼져 있거나 localStorage 가 막혀
+ * 있으면 그냥 랜딩이 뜬다. 온보딩은 없으면 아쉬운 것이지 없으면 못 쓰는 것이 아니다.
+ *
+ * 조건이 pathname === "/" 인 이유: 목록·결과 링크로 바로 들어온 사람을 온보딩으로
+ * 끌고 가면 자기가 열려던 화면을 못 본다.
+ *
+ * 키 문자열은 lib/storage.ts 의 ONBOARDED_KEY 와 같아야 한다. 이 스크립트는
+ * 번들보다 먼저 돌아야 해서 모듈을 import 할 수 없다.
+ */
+const ONBOARDING_REDIRECT = `try{
+if(location.pathname==="/"&&!localStorage.getItem("perky.onboarded")){location.replace("/onboarding")}
+}catch(e){}`;
 
 /* viewport-fit=cover 로 노치·홈 인디케이터 영역까지 지면을 넓히고,
    safe-area-inset 여백은 각 컴포넌트에서 준다. 확대는 접근성상 막지 않는다. */
@@ -59,7 +114,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" className={pretendard.variable}>
-      <body className="min-h-screen bg-white text-ink-900">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: ONBOARDING_REDIRECT }} />
+      </head>
+      <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>
     </html>
   );
 }

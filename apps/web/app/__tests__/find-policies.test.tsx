@@ -190,7 +190,7 @@ describe("/find/policies 정책 출처", () => {
     render(<FindPoliciesPage />);
     await screen.findByRole("heading", { level: 1 });
 
-    const links = screen.getAllByRole("link", { name: "공고 원문 →" });
+    const links = screen.getAllByRole("link", { name: "공고 원문" });
     expect(links).toHaveLength(policies.length);
 
     const shown = new Set(links.map((a) => a.getAttribute("href")));
