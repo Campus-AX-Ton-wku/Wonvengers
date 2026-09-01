@@ -76,3 +76,30 @@ export function ChevronRightIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** 결과 화면의 설명 항목. 같은 선 두께의 아이콘만 써서 플랫폼별 이모지 차이를 없앤다. */
+export function StackIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3L3.5 7.5 12 12l8.5-4.5L12 3z" />
+      <path d="M5 11l7 3.8 7-3.8M5 15l7 3.8 7-3.8" />
+    </Svg>
+  );
+}
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 6.5A2.5 2.5 0 016.5 4H19v16H6.5A2.5 2.5 0 014 17.5v-11z" />
+      <path d="M4 8h15M15 12h4v4h-4a2 2 0 010-4z" />
+    </Svg>
+  );
+}
+
+export function BankIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 9h18L12 4 3 9zM5 19h14M6 9v7M10 9v7M14 9v7M18 9v7M3 20h18" />
+    </Svg>
+  );
+}

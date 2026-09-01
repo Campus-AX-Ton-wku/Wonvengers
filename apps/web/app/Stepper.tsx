@@ -20,14 +20,14 @@ const FOCUS_RING =
 /**
  * 앱바 가운데 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다.
  *
- * text-sm(14px)은 h-14 앱바 안에서 너무 작아 브랜드로 읽히지 않았다. 양옆 48px
- * 터치 타깃 사이 공간이 넉넉해서 20px 까지는 줄바꿈·겹침 없이 들어간다.
+ * 내부 화면에서는 사용자의 질문과 결과가 브랜드보다 먼저 읽혀야 한다. 홈으로
+ * 돌아갈 표식이라는 역할만 남기고 본문과 같은 16px로 둔다.
  */
 export function HomeMark() {
   return (
     <Link
       href="/"
-      className={`rounded px-2 py-1 text-xl font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
+      className={`rounded px-2 py-1 text-base font-extrabold tracking-tight text-ink-900 transition-colors hover:text-brand-700 ${FOCUS_RING}`}
     >
       Perky
     </Link>
@@ -61,7 +61,7 @@ export function AppBar({
   backLabel?: string;
 }) {
   return (
-    <header className="sticky top-0 z-10 bg-white pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-10 -mx-5 bg-white px-1 pt-[env(safe-area-inset-top)]">
       <div className="flex h-14 items-center justify-between px-1">
         <button
           type="button"
@@ -94,7 +94,7 @@ export function BottomCta({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`w-full rounded-xl py-4 text-base font-bold text-white transition-colors ${FOCUS_RING} ${
+        className={`w-full rounded-2xl py-4 text-base font-bold text-white transition-colors ${FOCUS_RING} ${
           disabled
             ? "cursor-not-allowed bg-ink-300"
             : "bg-brand-600 hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700"

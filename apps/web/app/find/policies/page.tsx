@@ -69,7 +69,7 @@ export default function FindPoliciesPage() {
   const 신청불가 = [...마감, ...groups.해당없음];
 
   return (
-    <main className="step-in mx-auto max-w-lg px-5 pb-10">
+    <main className="step-in mx-auto min-h-dvh max-w-lg bg-sand-100 px-5 pb-10">
       <FindTopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
 
       {!loaded || !asOf ? (
@@ -105,7 +105,7 @@ export default function FindPoliciesPage() {
           {/* 카드 사이는 여백으로 가른다. 구분선을 함께 쓰면 목록이 표처럼 읽힌다. */}
           <section
             aria-label={`받을 수 있는 주거 혜택 ${신청가능.length}개`}
-            className="mt-6 space-y-2"
+            className="mt-6 space-y-3"
           >
             {신청가능.map(({ policy, result }, i) => (
               <div
@@ -140,7 +140,7 @@ export default function FindPoliciesPage() {
                   className="shrink-0 text-ink-200 transition-transform group-open:rotate-90"
                 />
               </summary>
-              <div className="mt-1 space-y-2">
+              <div className="mt-2 space-y-3">
                 {신청불가.map(({ policy, result }) => (
                   <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
                 ))}
@@ -172,7 +172,7 @@ export default function FindPoliciesPage() {
               </Link>
             ))}
 
-          <p className="mt-8 text-xs leading-relaxed text-ink-500">
+          <p className="mt-8 text-sm leading-relaxed text-ink-500">
             이 화면은 나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과이며,
             <strong> 신청 자격을 확정하는 것이 아닙니다.</strong> 무주택 여부, 가구 소득, 복지 자격
             등 남은 조건과 최종 지원 여부는 각 기관이 심사해 결정합니다. 반드시 공식 페이지에서

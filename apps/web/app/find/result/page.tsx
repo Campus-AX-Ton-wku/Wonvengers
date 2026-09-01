@@ -112,7 +112,7 @@ export default function FindResultPage() {
           <div className="sticky bottom-0 -mx-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
             <Link
               href="/find/policies"
-              className="block rounded-xl bg-brand-600 py-4 text-center text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+              className="block rounded-2xl bg-brand-600 py-4 text-center text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
             >
               {신청가능.length > 0
                 ? `지원금 ${신청가능.length}건 자세히 보기`

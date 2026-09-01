@@ -71,7 +71,7 @@ describe("/find 단계형 흐름", () => {
   it("첫 화면은 생년월일 질문 하나뿐이다 — 네 질문을 한꺼번에 쌓지 않는다", () => {
     render(<FindPage />);
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
     expect(screen.queryByRole("button", { name: "전북특별자치도 익산시" })).toBeNull();
     expect(screen.queryByRole("button", { name: "대학생" })).toBeNull();
   });
@@ -105,7 +105,7 @@ describe("/find 단계형 흐름", () => {
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "생년월일 고치기" }));
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
   });
 
   it("뒤로가기로 앞 질문에 돌아간다", async () => {
@@ -116,7 +116,7 @@ describe("/find 단계형 흐름", () => {
     await user.click(cta());
     await user.click(뒤로());
 
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
   });
 
   /*
@@ -223,7 +223,7 @@ describe("/find CTA", () => {
 
     expect((cta() as HTMLButtonElement).disabled).toBe(true);
     await user.click(cta());
-    expect(제목()).toBe("생년월일이\n어떻게 되시나요?");
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
 
     await 생년월일고르기(user, 생년(23), 1, 1);
     expect((cta() as HTMLButtonElement).disabled).toBe(false);
