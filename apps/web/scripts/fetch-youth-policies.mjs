@@ -45,8 +45,28 @@ const REPO_ROOT = join(WEB_ROOT, "..", "..");
 
 const API = "https://www.youthcenter.go.kr/go/ythip/getPlcy";
 
-/** 1층 발견 목록을 늘릴 때 훑을 범위. 익산 시군구 코드 + 주거 대분류. */
-const DISCOVERY_QUERY = { lclsfNm: "주거", zipCd: "52140" };
+/**
+ * 1층 발견 목록을 늘릴 때 훑을 범위.
+ *
+ * 예전에는 `zipCd: "52140"` 을 쿼리로 넘겼는데 필터가 걸리지 않았다 — 익산으로
+ * 조회했는데 경상북도 의성군 사업이 섞여 들어오고 정작 익산 이사비는 빠졌다.
+ *
+ * 응답의 `zipCd` 는 그 정책이 적용되는 시군구 코드를 전부 나열한 목록이다
+ * (전국 사업이면 229개가 다 들어 있다). 그래서 대분류만 걸어 전부 받은 뒤
+ * 여기서 직접 거른다. 전국 사업도 이 방식이라야 잡힌다 — 예전 쿼리로는
+ * 전세보증금반환보증 보증료 지원 같은 국토부 사업이 아예 안 나왔다.
+ */
+const DISCOVERY_QUERY = { lclsfNm: "주거" };
+
+/** 전북특별자치도 익산시. 이 코드가 zipCd 목록에 있으면 익산 청년이 신청할 수 있다. */
+const TARGET_ZIP = "52140";
+
+/** 한 번에 받을 수 있는 최대 건수와, 그 페이지를 몇 장까지 넘길지. */
+const PAGE_SIZE = 100;
+const MAX_PAGES = 10;
+
+/** 전세·대출·보증 관련 후보. 주거형태 확장(월세 → 전세)에서 먼저 볼 줄이다. */
+const JEONSE_PATTERN = /전세|임차보증금|보증금|대출|보증료/;
 
 // ── 인증키 ──────────────────────────────────────────────────────────────
 
@@ -104,7 +124,28 @@ function pickRecord(p) {
     supportScale: Number(p.sprtSclCnt) || 0,
     firstComeFirstServed: p.sprtArvlSeqYn === "Y",
     lastModifiedAt: emptyToNull(p.lastMdfcnDt),
+    // 아래 넷은 후보를 추릴 때 사람이 읽는 값이다. 여기서 파싱하지 않는다 —
+    // 자유 서술이라 금액·소득 기준을 코드로 뽑으면 조용히 틀린 값이 들어간다.
+    // policies.json 의 monthlyCap·incomeBracketMax 는 공고 원문을 보고 손으로 넣는다.
+    supportContent: emptyToNull(p.plcySprtCn),
+    incomeNote: emptyToNull(p.earnEtcCn),
+    documents: emptyToNull(p.sbmsnDcmntCn),
+    applyMethod: emptyToNull(p.plcyAplyMthdCn),
+    /** 적용 시군구 코드 목록. 전국 사업이면 229개가 들어 있어 저장은 하지 않는다. */
+    appliesToTarget: String(p.zipCd ?? "").split(",").includes(TARGET_ZIP),
   };
+}
+
+/** 대분류 하나를 끝까지 넘겨 받는다. 주거 대분류는 지금 282건이라 3페이지다. */
+async function fetchAllPages(key, params) {
+  const out = [];
+  for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
+    const result = await callApi(key, { ...params, pageNum, pageSize: PAGE_SIZE });
+    const list = result.youthPolicyList ?? [];
+    out.push(...list);
+    if (list.length < PAGE_SIZE) break;
+  }
+  return out;
 }
 
 // ── 앱 데이터와의 대조 ──────────────────────────────────────────────────
@@ -205,9 +246,9 @@ for (const policy of policies) {
 // 2) 1층 확장용 후보 목록
 let candidateMd = "";
 try {
-  const pool = await callApi(key, { ...DISCOVERY_QUERY, pageNum: 1, pageSize: 100 });
+  const rows = (await fetchAllPages(key, DISCOVERY_QUERY)).map(pickRecord);
+  const 익산 = rows.filter((r) => r.appliesToTarget);
   const mapped = new Set(policies.map((p) => p.youthPolicyNo).filter(Boolean));
-  const rows = (pool.youthPolicyList ?? []).map(pickRecord);
 
   const line = (r) =>
     `| ${r.name ?? "-"} | ${r.agency ?? "-"} | ${r.mediumCategory ?? "-"} | ${r.applyPeriod ?? "미기재"} | ` +
@@ -218,27 +259,58 @@ try {
     "| 정책명 | 주관기관 | 중분류 | 신청기간 | 나이 | 규모 | 신청URL | 최종수정 | plcyNo |\n" +
     "|---|---|---|---|---|---|---|---|---|";
 
-  const fresh = rows.filter((r) => !mapped.has(r.plcyNo));
-  const already = rows.filter((r) => mapped.has(r.plcyNo));
+  /** 자유 서술은 표에 넣으면 읽을 수 없다. 후보를 고를 만큼만 잘라 목록으로 낸다. */
+  const 줄여서 = (text, limit) => {
+    if (!text) return null;
+    const 한줄 = text.replace(/\s+/g, " ").trim();
+    return 한줄.length > limit ? `${한줄.slice(0, limit)}…` : 한줄;
+  };
+
+  const 상세 = (r) =>
+    [
+      `### ${r.name}`,
+      ``,
+      `- 주관: ${r.agency ?? "-"} · 신청기간: ${r.applyPeriod ?? "미기재"} · 나이: ${
+        r.ageUnlimited ? "제한없음" : `${r.ageMin}~${r.ageMax}`
+      }`,
+      `- plcyNo: \`${r.plcyNo}\`${r.applyUrl ? ` · [신청](${r.applyUrl})` : ""}${
+        r.referenceUrl ? ` · [참고](${r.referenceUrl})` : ""
+      }`,
+      r.supportContent ? `- 지원내용: ${줄여서(r.supportContent, 400)}` : null,
+      r.incomeNote ? `- 소득조건: ${줄여서(r.incomeNote, 200)}` : null,
+      r.documents ? `- 제출서류: ${줄여서(r.documents, 200)}` : null,
+      r.applyMethod ? `- 신청방법: ${줄여서(r.applyMethod, 200)}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+  const fresh = 익산.filter((r) => !mapped.has(r.plcyNo));
+  const already = 익산.filter((r) => mapped.has(r.plcyNo));
+  const 전세후보 = fresh.filter((r) => JEONSE_PATTERN.test(`${r.name} ${r.supportContent ?? ""}`));
 
   candidateMd =
-    `# 온통청년 주거 정책 후보 (익산 기준)\n\n` +
+    `# 온통청년 주거 정책 후보 (익산 적용분)\n\n` +
     `> 자동 생성 — \`npm run fetch:youth\` 로 갱신한다. 조회일 **${today}**\n` +
-    `> 조회 조건: 대분류 \`주거\` + 시군구코드 \`52140\` (전북특별자치도 익산시), 총 ${rows.length}건\n\n` +
-    `PRD 3-2 의 1층 목표는 정책 **8~12개**다. 현재 \`policies.json\` 에 ${policies.length}개가 있다.\n` +
-    `아래에서 현금성 주거 지원금만 골라 공고 원문을 확인한 뒤 추가한다.\n\n` +
+    `> 조회 조건: 대분류 \`주거\` 전건(${rows.length}건)을 받아, 응답의 \`zipCd\` 목록에\n` +
+    `> 시군구코드 \`${TARGET_ZIP}\`(전북특별자치도 익산시)가 있는 **${익산.length}건**만 남겼다.\n` +
+    `> 전국 사업은 zipCd 에 229개 코드가 모두 들어 있어 이 방식으로 함께 잡힌다.\n\n` +
+    `PRD 3-2 의 1층 목표는 정책 **8~12개**다. 현재 \`policies.json\` 에 ${policies.length}개가 있다.\n\n` +
     `> [!WARNING]\n` +
-    `> 이 목록은 후보일 뿐이다. 지역 코드로 걸렀는데도 다른 시·도 사업이 섞여 들어오고,\n` +
-    `> 사업 계획(예: "주거포털 개선")처럼 개인이 신청할 수 없는 항목도 포함된다.\n` +
-    `> 반드시 공고 원문을 열어 확인하고, \`verifiedAt\` 을 채운 뒤 \`policies.json\` 에 넣는다.\n\n` +
-    `## 아직 앱에 없는 후보 (${fresh.length}건)\n\n${header}\n${fresh.map(line).join("\n")}\n\n` +
+    `> 이 목록은 후보일 뿐이다. 사업 계획(예: "주거포털 개선")처럼 개인이 신청할 수 없는\n` +
+    `> 항목도 지역 조건만 맞으면 여기 들어온다. 아래 '지원내용'은 온통청년 **등록 정보**를\n` +
+    `> 그대로 옮긴 것이고 등록이 낡은 사례가 실제로 있었다. 반드시 공고 원문을 열어\n` +
+    `> 확인하고 \`verifiedAt\` 을 채운 뒤 \`policies.json\` 에 넣는다.\n\n` +
+    `## 전세 · 대출 · 보증 관련 후보 (${전세후보.length}건)\n\n` +
+    `주거형태를 월세에서 전세까지 넓힐 때 먼저 볼 줄이다.\n\n` +
+    `${전세후보.map(상세).join("\n\n") || "_해당 없음_"}\n\n` +
+    `## 아직 앱에 없는 후보 전체 (${fresh.length}건)\n\n${header}\n${fresh.map(line).join("\n")}\n\n` +
     `## 이미 앱에 매핑된 정책 (${already.length}건)\n\n${header}\n${already.map(line).join("\n")}\n`;
 
   const outDir = join(REPO_ROOT, "docs", "기획");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "온통청년-주거후보.md"), candidateMd, "utf8");
 } catch (err) {
-  console.error(`후보 목록 조회 실패 (색인은 정상 생성됨): ${err.message}`);
+  console.error(`후보 목록 조회 실패 (대조 보고는 정상): ${err.message}`);
 }
 
 // ── 사람이 읽는 보고 ────────────────────────────────────────────────────

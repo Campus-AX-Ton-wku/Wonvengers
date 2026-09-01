@@ -84,7 +84,7 @@ export default function FindResultPage() {
                   }`}
                   style={{ animationDelay: 최대상한 ? "0.26s" : "0.12s" }}
                 >
-                  지원금 {신청가능.length}건
+                  지원금 {신청가능.length}건이 있어요
                 </h1>
               </>
             ) : (
@@ -93,16 +93,18 @@ export default function FindResultPage() {
                   className="amount-reveal whitespace-pre-line text-[28px] font-extrabold leading-snug text-ink-900"
                   style={{ animationDelay: "0.04s" }}
                 >
-                  {count > 0 ? "지금 신청할 수 있는\n지원금이 없어요" : "해당되는 지원금이 없어요"}
-                </h1>
-                <p
-                  className="amount-reveal mt-3 text-sm leading-relaxed text-ink-600"
-                  style={{ animationDelay: "0.16s" }}
-                >
                   {count > 0
-                    ? "조건에는 맞지만 이번 회차 접수가 모두 끝났습니다. 다음 모집 공고를 기다려야 합니다."
-                    : "지금 답변으로는 조건에 맞는 지원금을 찾지 못했습니다. 답변을 바꿔 다시 확인해 보세요."}
-                </p>
+                    ? "지금 신청할 수 있는\n지원금이 없어요"
+                    : "아쉽게도 해당되는 지원금이 없어요"}
+                </h1>
+                {count > 0 && (
+                  <p
+                    className="amount-reveal mt-3 text-sm leading-relaxed text-ink-600"
+                    style={{ animationDelay: "0.16s" }}
+                  >
+                    조건에는 맞지만 이번 회차 접수가 모두 끝났습니다. 다음 모집 공고를 기다려야 합니다.
+                  </p>
+                )}
               </>
             )}
           </div>

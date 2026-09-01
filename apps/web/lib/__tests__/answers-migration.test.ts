@@ -22,6 +22,7 @@ describe("나이 → 생년월일 스키마 이전", () => {
       region: null,
       status: null,
       incomeBracket: null,
+      housingType: null,
     });
   });
 
@@ -56,6 +57,7 @@ describe("나이 → 생년월일 스키마 이전", () => {
       region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
+      housingType: null,
     });
 
     expect(loadAnswers().birthDate).toBe("1998-03-14");

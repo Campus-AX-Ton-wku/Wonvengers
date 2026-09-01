@@ -43,6 +43,14 @@ export default function InputPage() {
    * 그러면 월 환산액이 1/12 로 줄어 지원금이 크게 어긋난다.
    */
   const [contractTypeChosen, setContractTypeChosen] = useState(false);
+  /**
+   * 계약 형태를 1층 '주거 형태' 답에서 이어받았는지. 지역과 같은 표시를 붙인다.
+   *
+   * 기본값을 켜 두는 것과 다르다 — 사용자가 직접 고른 답을 옮겨 오는 것이라
+   * F1-1 의 '고르게 한다' 를 어기지 않는다. 그래서 전세·그 외·무응답은 옮기지
+   * 않는다: 그 답들은 월세인지 연세인지를 말해주지 않는다.
+   */
+  const [contractTypeFromFloor1, setContractTypeFromFloor1] = useState(false);
 
   useEffect(() => {
     const saved = loadListing();
@@ -53,12 +61,20 @@ export default function InputPage() {
       return;
     }
 
-    // 2층에 처음 들어온 경우 1층에서 이미 고른 지역을 다시 묻지 않는다.
+    // 2층에 처음 들어온 경우 1층에서 이미 고른 것을 다시 묻지 않는다.
     // 같은 질문을 두 번 하면 1층과 2층이 별개의 앱처럼 느껴진다.
-    const region = loadAnswers().region;
-    if (region && isRegionValue(region)) {
-      setForm((prev) => ({ ...prev, region }));
+    const answers = loadAnswers();
+    if (answers.region && isRegionValue(answers.region)) {
+      setForm((prev) => ({ ...prev, region: answers.region as string }));
       setRegionFromFloor1(true);
+    }
+    // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
+    // 계약이 아니고, 무응답은 아무것도 말해주지 않는다.
+    const housingType = answers.housingType;
+    if (housingType === "월세" || housingType === "연세") {
+      setForm((prev) => ({ ...prev, contractType: housingType }));
+      setContractTypeChosen(true);
+      setContractTypeFromFloor1(true);
     }
   }, []);
 
@@ -159,6 +175,11 @@ export default function InputPage() {
                   </OptionButton>
                 ))}
               </div>
+              {contractTypeFromFloor1 && (
+                <p className="mt-2 text-xs font-normal text-brand-700">
+                  <span aria-hidden="true">✓</span> 앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.
+                </p>
+              )}
             </FieldGroup>
 
             <Field label="보증금 (만원)">

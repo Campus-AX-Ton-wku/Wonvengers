@@ -71,6 +71,7 @@ describe("/calculate 1층 답변 이어받기", () => {
       region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
+      housingType: null,
     });
     render(<CalculatePage />);
 
@@ -86,6 +87,7 @@ describe("/calculate 1층 답변 이어받기", () => {
       region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
+      housingType: null,
     });
     render(<CalculatePage />);
 

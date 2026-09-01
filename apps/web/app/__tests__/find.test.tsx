@@ -54,8 +54,8 @@ async function 생년월일고르기(
 /** 1월 1일생이면 올해 생일이 지났으므로 만 나이가 연도 차이와 같다. */
 const 생년 = (나이: number) => new Date().getFullYear() - 나이;
 
-/** 네 질문에 모두 답하고 마지막 단계에 서 있는 상태로 만든다. */
-async function 네질문답하기(user: ReturnType<typeof userEvent.setup>, 나이 = 23) {
+/** 다섯 질문에 모두 답하고 마지막 단계에 서 있는 상태로 만든다. */
+async function 다섯질문답하기(user: ReturnType<typeof userEvent.setup>, 나이 = 23) {
   await 생년월일고르기(user, 생년(나이), 1, 1);
   await user.click(cta());
   await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
@@ -63,6 +63,8 @@ async function 네질문답하기(user: ReturnType<typeof userEvent.setup>, 나�
   await user.click(screen.getByRole("button", { name: "대학생" }));
   await user.click(cta());
   await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
+  await user.click(cta());
+  await user.click(screen.getByRole("button", { name: "월세" }));
 }
 
 describe("/find 단계형 흐름", () => {
@@ -145,18 +147,19 @@ describe("/find 단계형 흐름", () => {
     expect(within(screen.getByRole("button", { name: "사는 곳 고치기" })).getByText("모름")).toBeTruthy();
   });
 
-  it("다시 들어오면 네 답이 다 쌓인 마지막 단계에서 시작한다 — 답변 고치기 진입점", () => {
+  it("다시 들어오면 답이 다 쌓인 마지막 단계에서 시작한다 — 답변 고치기 진입점", () => {
     saveAnswers({
       birthDate: "1998-03-14",
       region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
+      housingType: "월세",
     });
-    saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket"]);
+    saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket", "housingType"]);
     render(<FindPage />);
 
-    expect(제목()).toBe("본인의 월 소득은\n어느 정도인가요?");
-    for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기"]) {
+    expect(제목()).toBe("현재 어떤 형태로\n거주하고 있나요?");
+    for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기", "월 소득 고치기"]) {
       expect(screen.getByRole("button", { name: label }), label).toBeTruthy();
     }
   });
@@ -177,17 +180,24 @@ describe("/find 나이 조건", () => {
     expect(screen.queryByText(/해당되는 지원금 없음/)).toBeNull();
   });
 
-  it("대상 정책이 없는 나이를 고르면 안내 문구가 뜬다", async () => {
+  /*
+   * 안내는 상수(만 18~39세)가 아니라 실제 판정 결과로 낸다.
+   *
+   * 전세보증금반환보증 보증료 지원이 들어오면서 '나이 제한 없음' 정책이 생겼다.
+   * 상수로 판단하면 42세에게 "해당되는 지원금이 없다"고 말하는데, 그 사람은
+   * 이 사업의 대상이다 — 앱이 있는 지원금을 없다고 말하게 된다.
+   */
+  it("나이 제한이 없는 정책이 있으면 범위 밖 나이에도 안내를 띄우지 않는다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
     expect(screen.queryByText(/이 나이로는/)).toBeNull();
     await 생년월일고르기(user, 생년(42), 1, 1);
-    expect(screen.queryByText(/이 나이로는/)).not.toBeNull();
+    expect(screen.queryByText(/이 나이로는/)).toBeNull();
   });
 
   // 전북청년 지역정착·익산 이사비가 만 18세부터 대상이다. 빼면 대상자를 돌려보낸다.
-  it("만 18세를 고를 수 있고 범위 밖 안내가 뜨지 않는다", async () => {
+  it("만 18세를 고를 수 있다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
@@ -213,20 +223,25 @@ describe("/find CTA", () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    // 전부 모름 = 정책 5건 중 접수 중인 3건
-    expect(cta().textContent).toBe("지원금 3건 · 다음");
+    // 전부 모름 = 정책 6건 중 접수 중인 4건
+    expect(cta().textContent).toBe("지원금 4건 · 다음");
 
     // 나이·지역만으로는 안 줄어든다 — 남은 정책이 전부 전국 아니면 익산이다
     await 생년월일고르기(user, 생년(23), 1, 1);
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
-    expect(cta().textContent).toBe("지원금 3건 · 다음");
+    expect(cta().textContent).toBe("지원금 4건 · 다음");
 
-    // 소득 구간에서 갈린다
+    // 소득 구간에서 한 번, 주거 형태에서 한 번 더 갈린다
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "대학생" }));
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
+    expect(cta().textContent).toBe("지원금 3건 · 다음");
+
+    // 월세를 고르면 전세 전용인 보증료 지원이 빠진다
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "월세" }));
     expect(cta().textContent).toBe("지원금 2건 보기");
   });
 
@@ -236,7 +251,7 @@ describe("/find CTA", () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    await 네질문답하기(user);
+    await 다섯질문답하기(user);
     expect(cta().textContent).toBe("지원금 2건 보기");
 
     await user.click(cta());
@@ -247,7 +262,7 @@ describe("/find CTA", () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    await 네질문답하기(user, 45);
+    await 다섯질문답하기(user, 45);
     expect(cta().textContent).toBe("왜 해당되지 않는지 보기");
   });
 
@@ -263,6 +278,9 @@ describe("/find CTA", () => {
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "재직" }));
     await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "월 100~150만원" }));
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "월세" }));
 
     expect(cta().textContent).toBe("왜 지금은 신청할 수 없는지 보기");
   });

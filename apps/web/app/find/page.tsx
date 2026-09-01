@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { AGE_MIN, POLICY_AGE_MAX, isAgeOutOfRange, resolveAnswers } from "@/lib/age";
+import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
 import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO, fromISODate } from "@/lib/date";
@@ -17,7 +17,13 @@ import {
   saveAnsweredKeys,
   type AnsweredKey,
 } from "@/lib/storage";
-import type { DiscoveryAnswers, DiscoveryStatus, IncomeBracket, PolicyMeta } from "@/lib/types";
+import type {
+  DiscoveryAnswers,
+  DiscoveryStatus,
+  HousingType,
+  IncomeBracket,
+  PolicyMeta,
+} from "@/lib/types";
 import { REGION_OPTIONS } from "@/lib/region";
 import { AnsweredStack, AppBar, BottomCta, OptionButton, StepHeading } from "@/app/Stepper";
 
@@ -37,6 +43,16 @@ import { AnsweredStack, AppBar, BottomCta, OptionButton, StepHeading } from "@/a
 const brackets = bracketsJson as IncomeBracket[];
 const policies = policiesJson as PolicyMeta[];
 const STATUSES: DiscoveryStatus[] = ["대학생", "재직", "구직"];
+/**
+ * 주거 형태. 연세는 월세와 따로 둔다 — 대학가의 실제 관행이고 2층이 월 환산해
+ * 계산하는 계약이다 (types.ts 의 HousingType 주석). '모름' 버튼은 두지 않는다.
+ */
+const HOUSING_TYPES: { value: HousingType; label: string }[] = [
+  { value: "월세", label: "월세" },
+  { value: "연세", label: "연세 (1년치 선납)" },
+  { value: "전세", label: "전세" },
+  { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
+];
 
 /** 질문 순서. 화면 제목의 줄바꿈은 의미 단위로 직접 끊는다 (StepHeading 주석 참고). */
 const QUESTIONS = [
@@ -44,6 +60,7 @@ const QUESTIONS = [
   { key: "region", label: "사는 곳", title: "어디에 살거나\n살 예정인가요?" },
   { key: "status", label: "현재 상태", title: "현재 상태가\n어떻게 되시나요?" },
   { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은\n어느 정도인가요?" },
+  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로\n거주하고 있나요?" },
 ] as const satisfies readonly { key: AnsweredKey; label: string; title: string }[];
 
 const QUESTION_KEYS = QUESTIONS.map((q) => q.key);
@@ -116,6 +133,7 @@ export default function FindPage() {
     regionLabel(answers.region),
     answers.status,
     bracketLabel(answers.incomeBracket),
+    answers.housingType,
   ];
 
   /** 지금 질문보다 앞선 것 중 답한 것만, 가장 최근에 답한 것이 위로 오게 쌓는다. */
@@ -185,9 +203,9 @@ export default function FindPage() {
             {/* 대상 연령은 고르기 전부터 말해준다. 자격 조건을 입력 옵션에 얹으면
                 41세가 39세를 고른다 — 받을 수 없는 금액을 받을 수 있다고 믿게 된다. */}
             <p className="text-sm leading-relaxed text-ink-500">
-              지금 담고 있는 정책은 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다.
+              지금 담고 있는 정책은 대부분 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다.
             </p>
-            {isAgeOutOfRange(resolved.age) && (
+            {answers.birthDate !== null && count === 0 && (
               <p className="rounded-xl bg-warn-50 p-4 text-sm leading-relaxed text-warn-800">
                 이 나이로는 해당되는 지원금이 없습니다. 목록에서 정책별로 왜 해당되지
                 않는지 볼 수 있습니다.
@@ -253,6 +271,20 @@ export default function FindPage() {
             >
               모름
             </OptionButton>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="flex flex-col gap-2">
+            {HOUSING_TYPES.map((h) => (
+              <OptionButton
+                key={h.value}
+                active={answers.housingType === h.value}
+                onClick={() => update("housingType", { housingType: h.value })}
+              >
+                {h.label}
+              </OptionButton>
+            ))}
           </div>
         )}
 

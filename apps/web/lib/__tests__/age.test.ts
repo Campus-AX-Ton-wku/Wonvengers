@@ -1,44 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { AGE_MIN, POLICY_AGE_MAX, isAgeOutOfRange, resolveAnswers } from "@/lib/age";
+import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import type { DiscoveryAnswers } from "@/lib/types";
 
-describe("isAgeOutOfRange", () => {
-  it("대상 정책이 없는 나이를 알려준다", () => {
-    expect(isAgeOutOfRange(17)).toBe(true);
-    expect(isAgeOutOfRange(40)).toBe(true);
-  });
-
-  // 입력 범위(만 18~64세)를 정책 범위보다 넓게 열어 둔 이유가 이 안내다.
-  // 답할 수는 있지만 대상이 아닌 사람에게 왜 해당되지 않는지 말해줘야 한다.
-  it("답할 수 있지만 대상 정책이 없는 나이도 범위 밖으로 본다", () => {
-    expect(isAgeOutOfRange(45)).toBe(true);
-    expect(isAgeOutOfRange(64)).toBe(true);
-  });
-
-  it("18~39세는 범위 안이다", () => {
-    expect(isAgeOutOfRange(18)).toBe(false);
-    expect(isAgeOutOfRange(23)).toBe(false);
-    expect(isAgeOutOfRange(39)).toBe(false);
-  });
-
-  it("모름은 범위를 벗어난 것으로 보지 않는다", () => {
-    expect(isAgeOutOfRange(null)).toBe(false);
-  });
-});
-
-/**
- * 1층은 나이 대신 생년월일을 받는다. 판정 코드(filter·discovery)는 여전히 나이만
- * 보므로, 화면 경계에서 한 번 나이로 바꿔 넘긴다.
- *
- * 저장하는 값이 생년월일이어야 하는 이유: 나이를 저장하면 시간이 지나면서 조용히
- * 거짓이 된다. 만 39세로 저장된 사람은 반년 뒤에도 39세로 판정된다.
- */
 describe("resolveAnswers", () => {
   const 답변: DiscoveryAnswers = {
     birthDate: "1998-03-14",
     region: "전북특별자치도 익산시",
     status: "재직",
     incomeBracket: 2,
+    housingType: null,
   };
 
   it("생년월일을 기준일 시점의 만 나이로 바꾼다", () => {
