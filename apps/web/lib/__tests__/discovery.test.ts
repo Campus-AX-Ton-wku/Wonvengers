@@ -59,6 +59,7 @@ describe("groupPolicies", () => {
       "pyeongtaek-youth-rent-support",
       "eumseong-youth-rent-support",
       "goryeong-youth-rent-support",
+      "incheon-jemulpogu-welcome-pay",
     ]);
   });
 

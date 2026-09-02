@@ -500,12 +500,14 @@ const districtMovingCostOrBrokerageFee: RuleFn = (p, asOf) => [
 ];
 
 /**
- * 인천 동구 청년 웰컴페이(이사비) 지원사업.
+ * 인천 동구·제물포구 청년 웰컴페이(이사비) 지원사업 — 조건이 동일해 공유한다.
  *
- * 전입일자(2025-11-01 이후)는 ListingInput/EligibilityProfile 어디에도 없어
- * 판정하지 못한다 — '확인 필요'로 남긴다(policies.json notes 참고).
+ * 2026-07-01 인천형 행정체제 개편으로 동구가 제물포구로 재편됐다
+ * (policies.json의 incheon-jemulpogu-welcome-pay notes 참고). 전입일자
+ * (2025-11-01 이후)는 ListingInput/EligibilityProfile 어디에도 없어
+ * 판정하지 못한다 — '확인 필요'로 남긴다.
  */
-const incheonDonggu: RuleFn = (p, asOf) => {
+const incheonDongguOrJemulpogu: RuleFn = (p, asOf) => {
   const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
   const ceiling = medianIncomeCeiling(householdSize, 1.5);
 
@@ -627,7 +629,8 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "busan-youth-brokerage-moving-cost-support": busanBrokerageMovingCost,
   "sejong-youth-rent-support": sejongYouthRent,
   "incheon-junggu-moving-cost-support": districtMovingCostOrBrokerageFee,
-  "incheon-donggu-welcome-pay": incheonDonggu,
+  "incheon-donggu-welcome-pay": incheonDongguOrJemulpogu,
+  "incheon-jemulpogu-welcome-pay": incheonDongguOrJemulpogu,
   "gwangju-seogu-brokerage-fee-1000won": districtMovingCostOrBrokerageFee,
   "incheon-yeongjonggu-moving-cost-support": incheonYeongjonggu,
   "pyeongtaek-youth-rent-support": pyeongtaekYouthRent,
