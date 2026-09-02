@@ -1,4 +1,4 @@
-import type { PolicyMeta } from "./types";
+import type { LoanProductMeta, PolicyMeta } from "./types";
 
 /**
  * 지역 선택지 하나. data/policies.json 의 regionScope 값과 같은 어휘를 쓴다.
@@ -79,4 +79,14 @@ export function policyAppliesToRegion(regionScope: string, region: string): bool
 /** 사용자 지역에 해당하는 정책만 남긴다. 여기서 빠진 정책의 질문은 아예 묻지 않는다. */
 export function policiesForRegion(policies: PolicyMeta[], region: string): PolicyMeta[] {
   return policies.filter((p) => policyAppliesToRegion(p.regionScope, region));
+}
+
+/**
+ * 사용자 지역에 해당하는 대출·보증 상품만 남긴다. policiesForRegion 과 매칭 규칙
+ * (policyAppliesToRegion)을 그대로 공유한다 — 결과 화면이 loan-products.json 을
+ * 지역 구분 없이 통째로 보여주던 문제(익산·군산 전용 상품이 다른 지역 사용자에게도
+ * 노출됨)를 policies.json 과 다른 방식으로 또 풀지 않기 위해서다.
+ */
+export function loanProductsForRegion(products: LoanProductMeta[], region: string): LoanProductMeta[] {
+  return products.filter((p) => policyAppliesToRegion(p.regionScope, region));
 }

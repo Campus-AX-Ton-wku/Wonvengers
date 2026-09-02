@@ -152,3 +152,42 @@ describe("강조 위계", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).not.toMatch(/\d/);
   });
 });
+
+/**
+ * "이용 가능한 대출·보증 상품" 섹션이 loan-products.json 을 지역 구분 없이
+ * 통째로 보여주던 버그의 회귀 테스트. lib/__tests__/region.test.ts 의
+ * loanProductsForRegion 단위 테스트와 짝이다 — 여기서는 실제 데이터
+ * (data/loan-products.json)로 화면에 실제로 걸러져 나오는지까지 본다.
+ */
+describe("대출·보증 상품 — 지역 필터", () => {
+  it("익산 사용자에게는 익산 전용 대출상품이 보인다", async () => {
+    saveListing(makeListing({ region: "전북특별자치도 익산시", oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.getByText("신혼부부·청년 주택구입 대출이자 지원사업")).toBeTruthy();
+  });
+
+  it("익산과 무관한 지역 사용자에게는 익산·군산 전용 대출상품이 안 보인다", async () => {
+    saveListing(makeListing({ region: "그 외 지역", oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.queryByText("신혼부부·청년 주택구입 대출이자 지원사업")).toBeNull();
+    expect(screen.queryByText("신혼부부 주거자금 대출이자 지원사업")).toBeNull();
+  });
+
+  it("전국 대출상품(버팀목 전세자금대출 등)은 지역과 무관하게 항상 보인다 — 여기서 회귀가 나면 안 된다", async () => {
+    for (const region of ["전북특별자치도 익산시", "전북특별자치도", "그 외 지역"] as const) {
+      saveListing(makeListing({ region, oneTimeMoveCost: 600000 }));
+      saveProfile(makeProfile());
+      const { unmount } = render(<ResultPage />);
+      await screen.findByText(지원금_라벨);
+
+      expect(screen.getByText("청년전용 버팀목 전세자금대출")).toBeTruthy();
+      unmount();
+    }
+  });
+});
