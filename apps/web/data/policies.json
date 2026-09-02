@@ -301,5 +301,134 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "ulsan-youth-household-housing-cost-support",
+    "name": "울산 청년가구 주거비 지원사업",
+    "agency": "울산광역시",
+    "regionScope": "울산광역시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-03-31",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "임차료(월세) 최대 월 10만원 + 임차보증금 이자 최대 월 5만원, 합산 최대 월 15만원을 최대 4년(48개월) 실비 지원 (전세 등 월세 없는 거주는 임차보증금 이자 월 5만원만 해당)",
+    "monthlyCap": 150000,
+    "maxMonths": 48,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome",
+      "receivingOtherRentSupport"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.bukgu.ulsan.kr/hyomun/lay1/bbs/S609T934C935/A/60/view.do?article_seq=311687",
+    "applyUrl": "https://www.ulsan.go.kr/s/house/main.ulsan",
+    "youthPolicyNo": "20260409005400212656",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "울산광역시 공고 제2026-347호(2026-02-13, 효문동 행정복지센터 게시본으로 원문 대조, 2026-09-02) — 신청기간 2026.3.3(화) 09:00~3.31(화) 18:00, 오늘 기준으로는 이미 마감됨. 지원대상: 신청일 기준 울산광역시 주민등록·만 19~39세 무주택 미혼 청년가구 세대주(예외: 39세 이하 형제자매만 세대원인 1인가구 아닌 경우도 신청 가능, 부모·조부모가 세대원이면 제외 — 이 세부 조건은 이 앱이 입력받지 않아 '확인 필요'로 남겼다). 대상주택: 임차보증금 1억원 이하·월세 50만원 이하(임차보증금·월세 자체는 ListingInput에 있지만 판정 함수가 EligibilityProfile만 받아 계산에 반영하지 않는다). 소득기준(가구당 중위소득 150% 이하, 1인 월 3,846,357원)은 income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5) 계산과 반올림 오차 수준으로 일치해 그대로 썼다. ⚠️ 선정방법이 '심사배점표 합산 순위'인 경쟁 선발(예산 범위 내 인원)이라, 이 앱이 '조건충족시가능'으로 판정해도 실제로는 예산 소진 시 탈락할 수 있다 — F3-x 공통 문구로 이미 고지되지만 이 정책은 경쟁이 특히 뚜렷해 notes에 별도 기록한다. ⚠️ 제외대상에 '국비지원 청년월세 지원 사업 대상자'·'울산 청년 주택임차보증금 이자 지원사업 대상자'가 명시돼 있어 이 앱의 이미 등록된 국토부 청년월세 지원(moland-youth-rent-support, 전국)과 동시 수급 불가다 — receivingOtherRentSupport 체크로 대신 판정하고, exclusiveGroup을 moland와 같은 'youth-rent-cash-support'로 맞췄다. ⚠️ '청년 월세 지원'(plcyNo 20260409005400212654, 울산광역시 자체 등록)과 '전세보증금 반환보증 보증료 지원'(울산판)은 원문 대조 결과 국토부·정부24의 전국 정책(이미 등록된 moland-youth-rent-support·jeonse-return-guarantee-fee-subsidy)을 울산시가 그대로 재등록한 것으로 확인해(www.ulsan.go.kr/s/house 안내 문구가 '국토교통부/울산광역시' 공동 표기, 보증료 상한도 국토부 40만원과 동일 구조) 별도 등록하지 않았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "울산광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-youth-monthly-rent-support-35to39",
+    "name": "인천형 청년월세 지원 (35~39세)",
+    "agency": "인천광역시",
+    "regionScope": "인천광역시",
+    "applicationStart": "2026-03-30",
+    "applicationEnd": "2026-05-29",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 24개월 (총 최대 480만원) — 국비 청년월세 지원(19~34세)과 같은 기준을 인천시가 35~39세까지 확대",
+    "monthlyCap": 200000,
+    "maxMonths": 24,
+    "requiredInputs": [
+      "birthDate",
+      "livesApartFromParents",
+      "canRegisterResidence",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "useOriginHousehold",
+      "ownHouseholdMonthlyIncome",
+      "originHouseholdMonthlyIncome",
+      "receivingOtherRentSupport"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://youth.incheon.go.kr/dwelling/monthly.jsp",
+    "applyUrl": "https://youth.incheon.go.kr/dwelling/monthly.jsp",
+    "youthPolicyNo": "20260406005400212464",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '인천시 청년월세 지원사업' 원문으로 확인(2026-09-02). 원문이 스스로 두 갈래로 나눠 안내한다 — '19~34세: 국토부(전국) 청년월세 지원사업 / 35~39세: 인천형 청년월세 지원'. 19~34세는 이미 등록된 moland-youth-rent-support(전국, 같은 기관·같은 신청기간·같은 금액)가 그대로 커버하므로, 이 항목은 인천시가 그 위에 얹은 35~39세 확대분만 discovery.ageMin=35로 등록했다 — 19~34세 인천 사용자에게 두 카드가 겹쳐 뜨는 것을 막는다. 신청기간 2026.3.30 09:00~5.29 16:00(오늘 기준 마감), 지원내용·소득재산기준(청년독립가구 중위60%·원가구 중위100%, 재산 청년 1억2,200만원·원가구 4억7,000만원 이하)까지 moland와 완전히 동일해 requiredInputs·판정 로직도 moland를 그대로 재사용했다. exclusiveGroup을 moland와 같은 'youth-rent-cash-support'로 맞춰 둘 다 걸리는 경우가 생겨도(나이 구간이 갈려 실제로는 안 겹친다) 중복 합산되지 않게 했다. ⚠️ '39세 초과 의무복무 제대군인 연령 연장(최대 3세)'은 이 앱이 병역 이행 여부를 입력받지 않아 반영하지 못한다.",
+    "discovery": {
+      "ageMin": 35,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시"
+      ],
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMin": null,
+      "incomeBracketMax": 3,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-brokerage-fee-1000won",
+    "name": "천원 복비 (주택 중개보수 지원)",
+    "agency": "인천광역시",
+    "regionScope": "인천광역시",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "lump_sum",
+    "benefitSummary": "주택 중개보수 실비 최대 30만원(부가가치세 제외) 지원, 자부담 1천원 공제 후 입금 (임차보증금 1억원 이하, 2026-01-01 이후 체결한 2년 이상 임대차 계약)",
+    "lumpSumCap": 300000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=398",
+    "applyUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=398",
+    "youthPolicyNo": "20260406005400212460",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '천원 복비(주택 중개보수 지원)' 원문으로 확인(2026-09-02). 지원대상: 인천광역시 거주·전입 무주택자, 만 18~39세 청년(신혼부부·기초수급자·차상위·한부모도 별도 대상이지만 이 앱은 청년 경로만 다룬다). 접수는 '매월 말까지 → 익월 20일경 지급'으로 연중 상시라 applicationEnd 를 null(상시)로 뒀다 — 실제 종료일이 없는 게 아니라 예산(3억원, 1,000가구×30만원) 소진 시 조기 마감될 수 있다는 점은 jeonse-return-guarantee-fee-subsidy와 같은 방식으로 처리했다. ⚠️ 원문에 소득 기준이 없다(신청서류에 소득증빙이 아니라 재산세 세목별과세증명서만 요구 — 무주택 확인용으로 보인다) — incomeBracketMax를 null(무관)로 뒀다. ⚠️ 다음 조건은 판정 함수가 EligibilityProfile만 받고 ListingInput(계약 정보)을 안 받아 계산하지 못한다: (1) 임차보증금 1억원 이하, (2) 2년 이상 임대차 계약(2년 미만 단기 제외), (3) 2026-01-01 이후 체결. (4) '다른 기관·부서·단체에서 중개보수 지원을 받은 경우 지급 제외'도 판정하지 않는다 — receivingOtherRentSupport는 '월세·주거비' 중복 수급을 묻는 필드라 '중개보수' 중복과 의미가 달라 재사용하지 않았다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
   }
 ]

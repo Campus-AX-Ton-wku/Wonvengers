@@ -157,8 +157,8 @@ describe("largestTotalCeiling", () => {
   const 실제정책 = policiesData as PolicyMeta[];
 
   it("총액 상한이 가장 큰 정책을 고른다", () => {
-    // 국토부 청년월세 월 20만원 × 24개월 = 480만원이 가장 크다
-    expect(largestTotalCeiling(실제정책)?.label).toBe("최대 480만원");
+    // 울산 청년가구 주거비 지원사업 월 15만원 × 48개월 = 720만원이 가장 크다
+    expect(largestTotalCeiling(실제정책)?.label).toBe("최대 720만원");
   });
 
   it("합산하지 않는다 — 어떤 한 정책의 상한과 같아야 한다", () => {

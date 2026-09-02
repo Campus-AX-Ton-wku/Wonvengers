@@ -44,6 +44,9 @@ describe("groupPolicies", () => {
       "jeonbuk-youth-settlement-support",
       "jeonse-return-guarantee-fee-subsidy",
       "seoul-youth-moving-cost-support",
+      "ulsan-youth-household-housing-cost-support",
+      "incheon-youth-monthly-rent-support-35to39",
+      "incheon-brokerage-fee-1000won",
     ]);
   });
 

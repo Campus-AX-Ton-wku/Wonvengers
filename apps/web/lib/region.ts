@@ -46,6 +46,18 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [],
     catchAll: { value: "서울특별시", label: "서울특별시", chipLabel: "서울" },
   },
+  {
+    // 울산 청년가구 주거비 지원사업(전국화 Phase 2, 광역 2번째 시도)을 위해 추가했다.
+    name: "울산광역시",
+    districts: [],
+    catchAll: { value: "울산광역시", label: "울산광역시", chipLabel: "울산" },
+  },
+  {
+    // 인천형 청년월세 지원·천원 복비(전국화 Phase 2, 광역 3번째 시도)를 위해 추가했다.
+    name: "인천광역시",
+    districts: [],
+    catchAll: { value: "인천광역시", label: "인천광역시", chipLabel: "인천" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */

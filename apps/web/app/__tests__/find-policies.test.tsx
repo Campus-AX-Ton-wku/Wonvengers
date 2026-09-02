@@ -35,10 +35,11 @@ describe("/find/policies", () => {
 
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
-    // 6건 중 2건은 접수가 끝났다. 제목은 지금 신청할 수 있는 것만 센다.
+    // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 시도 한정 정책도 다 후보에
+    // 남는다 — 10건 중 마감이 아닌 5건. 제목은 지금 신청할 수 있는 것만 센다.
     // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 4개"
+      "받을 수 있는 주거 혜택 5개"
     );
   });
 
@@ -66,14 +67,14 @@ describe("/find/policies", () => {
 
     await screen.findByRole("heading", { level: 1 });
     // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세 1건은
-    // 마감), 해당 없음 4건(전세 전용인 보증료 지원·서울 전용인 이사비 지원 포함)
+    // 마감), 해당 없음 7건(전세 전용인 보증료 지원·서울·울산·인천 전용 정책 포함)
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "받을 수 있는 주거 혜택 2개"
     );
 
     const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 2개" });
     expect(within(신청가능영역).getAllByRole("link")).toHaveLength(2);
-    expect(screen.getByText("신청할 수 없는 지원금 5개")).toBeTruthy();
+    expect(screen.getByText("신청할 수 없는 지원금 8개")).toBeTruthy();
   });
 
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
