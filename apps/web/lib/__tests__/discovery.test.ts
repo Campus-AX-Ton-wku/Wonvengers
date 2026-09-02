@@ -55,6 +55,10 @@ describe("groupPolicies", () => {
       "incheon-junggu-moving-cost-support",
       "incheon-donggu-welcome-pay",
       "gwangju-seogu-brokerage-fee-1000won",
+      "incheon-yeongjonggu-moving-cost-support",
+      "pyeongtaek-youth-rent-support",
+      "eumseong-youth-rent-support",
+      "goryeong-youth-rent-support",
     ]);
   });
 

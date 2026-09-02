@@ -60,8 +60,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [
       { value: "인천광역시 중구", label: "인천광역시 중구", chipLabel: "인천 중구" },
       { value: "인천광역시 동구", label: "인천광역시 동구", chipLabel: "인천 동구" },
+      { value: "인천광역시 영종구", label: "인천광역시 영종구", chipLabel: "인천 영종구" },
     ],
-    catchAll: { value: "인천광역시", label: "인천광역시 (중구·동구 외)", chipLabel: "인천 (중구·동구 외)" },
+    catchAll: {
+      value: "인천광역시",
+      label: "인천광역시 (중구·동구·영종구 외)",
+      chipLabel: "인천 (중구·동구·영종구 외)",
+    },
   },
   {
     // 제주청년 희망충전 월세지원·중개수수료·이사비 지원(전국화 Phase 2, 광역
@@ -91,6 +96,26 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     name: "광주광역시",
     districts: [{ value: "광주광역시 서구", label: "광주광역시 서구", chipLabel: "광주 서구" }],
     catchAll: { value: "광주광역시", label: "광주광역시 (서구 외)", chipLabel: "광주 (서구 외)" },
+  },
+  {
+    // 평택시 청년 월세 지원(시군구 확장 2라운드)을 위해 처음 추가했다. 경기도는
+    // 도 단위 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과 겹치는
+    // 셈이지만, 향후 경기도 자체 정책이 나오면 그대로 받을 자리로 남겨 둔다.
+    name: "경기도",
+    districts: [{ value: "경기도 평택시", label: "경기도 평택시", chipLabel: "평택시" }],
+    catchAll: { value: "경기도", label: "경기도 (평택시 외)", chipLabel: "경기도 (평택시 외)" },
+  },
+  {
+    // 음성군 청년월세 지원사업(시군구 확장 2라운드)을 위해 처음 추가했다.
+    name: "충청북도",
+    districts: [{ value: "충청북도 음성군", label: "충청북도 음성군", chipLabel: "음성군" }],
+    catchAll: { value: "충청북도", label: "충청북도 (음성군 외)", chipLabel: "충청북도 (음성군 외)" },
+  },
+  {
+    // 고령군 청년 월세 주거비 지원사업(시군구 확장 2라운드)을 위해 처음 추가했다.
+    name: "경상북도",
+    districts: [{ value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" }],
+    catchAll: { value: "경상북도", label: "경상북도 (고령군 외)", chipLabel: "경상북도 (고령군 외)" },
   },
 ];
 

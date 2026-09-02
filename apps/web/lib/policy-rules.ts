@@ -528,6 +528,88 @@ const incheonDonggu: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 인천 영종구 청년 이사비 지원사업.
+ *
+ * 중구·동구와 같은 형태에 가구 소득 중위120% 이하 조건만 다르다.
+ */
+const incheonYeongjonggu: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.2);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 120% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
+/**
+ * 평택시 청년 월세 지원.
+ *
+ * '1인가구'는 householdSize===1로 직접 판정한다. 임차보증금·월세 상한은
+ * ListingInput 이 필요해 판정하지 않는다(policies.json notes 참고).
+ */
+const pyeongtaekYouthRent: RuleFn = (p, asOf) => {
+  const ceiling = medianIncomeCeiling(1, 1.2);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    {
+      key: "singleHousehold",
+      label: "1인가구",
+      result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
+    },
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 120% 이하 (월 ${ceiling.toLocaleString()}원 이하, 1인가구 기준)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
+/** 음성군 청년월세 지원사업. */
+const eumseongYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
+/**
+ * 고령군 청년 월세 주거비 지원사업.
+ *
+ * 원문(공고문 PDF)을 직접 열람하지 못해 '1인가구' 요건만 householdSize로
+ * 판정하고 나머지(소득 기준 등)는 확인된 게 없어 추가하지 않았다.
+ */
+const goryeongYouthRent: RuleFn = (p, asOf) => [
+  ageCheck(p.birthDate, asOf, 18, 45),
+  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+  {
+    key: "singleHousehold",
+    label: "청년 1인가구",
+    result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
+  },
+];
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -547,4 +629,8 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "incheon-junggu-moving-cost-support": districtMovingCostOrBrokerageFee,
   "incheon-donggu-welcome-pay": incheonDonggu,
   "gwangju-seogu-brokerage-fee-1000won": districtMovingCostOrBrokerageFee,
+  "incheon-yeongjonggu-moving-cost-support": incheonYeongjonggu,
+  "pyeongtaek-youth-rent-support": pyeongtaekYouthRent,
+  "eumseong-youth-rent-support": eumseongYouthRent,
+  "goryeong-youth-rent-support": goryeongYouthRent,
 };
