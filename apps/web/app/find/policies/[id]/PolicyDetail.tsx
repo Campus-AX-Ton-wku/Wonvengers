@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
-import { AppShell, CARD_STATUS_BADGE, StatusBadge, TopBar } from "@/app/components";
+import {
+  AppShell,
+  CARD_STATUS_BADGE,
+  Disclosure,
+  LinkButton,
+  StatusBadge,
+  StickyBottomAction,
+  TopBar,
+} from "@/app/components";
 import { ICON_SM, ShieldCheck, TriangleAlert } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { benefitCeiling } from "@/lib/benefit";
@@ -63,12 +71,6 @@ function targetRows(policy: PolicyMeta): { label: string; value: string }[] {
         ? policy.discovery.housingTypes.join(" · ")
         : "따지지 않음",
     },
-    {
-      label: "신청 기간",
-      value: `${formatDotDate(policy.applicationStart)} ~ ${
-        policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
-      }`,
-    },
   ];
 }
 
@@ -96,6 +98,9 @@ export default function PolicyDetail({ id }: { id: string }) {
   const result = tagPolicy(policy, resolved);
   const status = asOf ? cardStatus(policy, result, asOf) : null;
   const ceiling = benefitCeiling(policy);
+  const applicationPeriod = `${formatDotDate(policy.applicationStart)} ~ ${
+    policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
+  }`;
   // 정책이 요구하는 입력 항목의 사람이 읽는 라벨. 2층 질문과 같은 출처를 쓴다.
   const 남은조건 = getRequiredQuestions([policy])
     .filter((q) => q.key !== "birthDate")
@@ -104,119 +109,159 @@ export default function PolicyDetail({ id }: { id: string }) {
   return (
     <AppShell className="step-in">
       <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
-      <main className="pb-10">
-
-      {/* 상태 배지는 기준일이 있어야 정해진다. 없는 동안 자리만 비워 두면 값이
-          들어올 때 아래 내용이 밀리지 않는다. */}
-      <div className="mt-5 flex h-6 items-center">
-        {status && (
-          <StatusBadge tone={CARD_STATUS_BADGE[status].tone} icon={CARD_STATUS_BADGE[status].icon}>
-            {status}
-          </StatusBadge>
-        )}
-      </div>
-
-      <h1 className="mt-2.5 text-2xl font-extrabold leading-snug text-ink-900">{policy.name}</h1>
-      <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
-
-      {ceiling && (
-        <div className="mt-6">
-          <div className="rounded-card bg-accent-50 px-5 py-4">
-            <p className="text-xs font-bold text-accent-700">공고 상한</p>
-            <p className="mt-1 text-[34px] font-extrabold leading-none text-accent-600">
-              {ceiling.label}
-            </p>
-          </div>
-          <p className="mt-3 text-sm leading-relaxed text-ink-600">{policy.benefitSummary}</p>
-          <p className="mt-1 text-xs text-ink-500">
-            공고 기준 상한이며, 실제 지원액은 심사에 따라 달라집니다.
-          </p>
-        </div>
-      )}
-
-      {/* 왜 이 상태인지. 배지만 보고는 알 수 없다 (PRD F0-5). */}
-      {result.tag === "해당 없음" && (
-        <div className="mt-6 rounded-card bg-ink-100 p-4">
-          <p className="text-sm font-bold text-ink-900">대상이 아닌 이유</p>
-          <ul className="mt-1 list-disc pl-4 text-sm leading-relaxed text-ink-600">
-            {result.failReasons.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {result.tag === "확인 필요" && (
-        <div className="mt-6 rounded-card bg-warn-50 p-4">
-          <p className="flex items-start gap-2 text-sm font-bold text-warn-800">
-            <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
-            <span>{result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.</span>
-          </p>
-          <Link
-            href="/find"
-            className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
-          >
-            조건 수정하기
-          </Link>
-        </div>
-      )}
-
-      {status === "접수 마감" && policy.applicationEnd && (
-        <p className="mt-6 text-sm leading-relaxed text-ink-600">
-          <strong className="text-ink-900">
-            {formatDotDate(policy.applicationEnd)}에 접수가 끝났습니다.
-          </strong>{" "}
-          다음 모집 공고를 기다려야 합니다.
-        </p>
-      )}
-
-      {status === "신청 예정" && (
-        <p className="mt-6 text-sm leading-relaxed text-ink-600">
-          <strong className="text-ink-900">
-            {formatDotDate(policy.applicationStart)}부터 접수합니다.
-          </strong>
-        </p>
-      )}
-
-      <section aria-label="지원 대상" className="mt-8">
-        <h2 className="text-sm font-bold text-ink-900">지원 대상</h2>
-        <dl className="mt-2 space-y-2">
-          {targetRows(policy).map((row) => (
-            <div key={row.label} className="flex justify-between gap-4 text-sm">
-              <dt className="shrink-0 text-ink-500">{row.label}</dt>
-              <dd className="text-right font-semibold text-ink-900">{row.value}</dd>
+      <main className="flex flex-col gap-3 pb-6 pt-1">
+        <header>
+          <p className="text-[11px] font-bold leading-4 text-ink-500">혜택 상세</p>
+          <div className="mt-0.5 flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-extrabold leading-[34px] text-ink-900">{policy.name}</h1>
+            <div className="flex min-h-6 shrink-0 items-center pt-1">
+              {status && (
+                <StatusBadge tone={CARD_STATUS_BADGE[status].tone} icon={CARD_STATUS_BADGE[status].icon}>
+                  {status}
+                </StatusBadge>
+              )}
             </div>
-          ))}
-        </dl>
-      </section>
-
-      {남은조건.length > 0 && (
-        <section aria-label="추가로 확인할 것" className="mt-8">
-          <h2 className="text-sm font-bold text-ink-900">신청 전 확인할 것</h2>
-          <p className="mt-1 text-xs leading-relaxed text-ink-500">
-            이 화면의 판정은 나이 · 지역 · 상태 · 소득만 본 결과입니다. 아래 항목은 각 기관이
-            심사합니다.
+          </div>
+          <p className="mt-1 text-xs leading-[18px] text-ink-500">
+            운영 기관 · <span>{policy.agency}</span>
           </p>
-          <ul className="mt-2 list-disc pl-4 text-sm leading-relaxed text-ink-600">
-            {남은조건.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+        </header>
+
+        <section className="mt-2 rounded-control bg-accent-50 p-4" aria-label="지원 요약">
+          <p className="text-xs font-medium leading-[18px] text-ink-500">예상 지원 또는 절약</p>
+          <p className="mt-1 text-[32px] font-black leading-10 text-ok-700">
+            {ceiling?.label ?? "공고 기준으로 확인"}
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-ink-600">{policy.benefitSummary}</p>
+          {ceiling && (
+            <p className="mt-1 text-[11px] leading-4 text-ink-500">
+              공고 기준 상한이며 실제 지원액은 심사에 따라 달라집니다.
+            </p>
+          )}
         </section>
-      )}
 
-      <SourceNotice sourceUrl={policy.sourceUrl} verifiedAt={policy.verifiedAt} />
+        <section
+          className={`rounded-control px-4 py-3.5 ${
+            result.tag === "가능성 있음"
+              ? "bg-ok-50"
+              : result.tag === "확인 필요"
+                ? "bg-warn-50"
+                : "bg-ink-100"
+          }`}
+          aria-labelledby="recommendation-title"
+        >
+          <h2
+            id="recommendation-title"
+            className={`text-sm font-bold leading-[22px] ${
+              result.tag === "가능성 있음"
+                ? "text-ok-700"
+                : result.tag === "확인 필요"
+                  ? "text-warn-800"
+                  : "text-ink-900"
+            }`}
+          >
+            {result.tag === "해당 없음" ? "대상이 아닌 이유" : "왜 추천됐나요?"}
+          </h2>
+          {result.tag === "가능성 있음" && (
+            <p className="mt-1 text-[11px] leading-4 text-ink-500">
+              입력한 기본 조건이 공고의 지원 대상과 일치해요.
+            </p>
+          )}
+          {result.tag === "확인 필요" && (
+            <p className="mt-1 text-[11px] leading-4 text-ink-600">
+              {result.unknownFields.join(" · ")} 정보를 확인하면 더 정확히 안내할 수 있어요.
+            </p>
+          )}
+          {result.tag === "해당 없음" && (
+            <ul className="mt-1 list-disc pl-4 text-[11px] leading-4 text-ink-600">
+              {result.failReasons.map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          )}
+        </section>
 
-      <a
-        href={policy.applyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="focus-ring mt-8 block rounded-control bg-brand-600 py-4 text-center text-base font-bold text-white shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
-      >
-        공식 신청 페이지로 이동
-      </a>
+        <section className="rounded-control bg-surface px-4 py-3.5 shadow-card" aria-labelledby="before-apply-title">
+          <h2 id="before-apply-title" className="text-sm font-bold leading-[22px] text-ink-900">
+            신청 전 확인
+          </h2>
+          <dl className="mt-2 flex flex-col gap-2.5">
+            <DetailRow label="자격 조건" value={result.tag === "확인 필요" ? "추가 확인 필요" : "내 정보와 대조"} />
+            <DetailRow label="모집 기간" value={applicationPeriod} />
+            <DetailRow label="준비 서류" value="공식 공고 기준" />
+            <DetailRow label="신청 방법" value="공식 사이트" />
+          </dl>
+        </section>
+
+        {status === "접수 마감" && policy.applicationEnd && (
+          <p className="rounded-control bg-ink-100 p-4 text-sm leading-[22px] text-ink-600">
+            <strong className="text-ink-900">{formatDotDate(policy.applicationEnd)}에 접수가 끝났습니다.</strong>{" "}
+            다음 모집 공고를 기다려야 합니다.
+          </p>
+        )}
+
+        {status === "신청 예정" && (
+          <p className="rounded-control bg-brand-50 p-4 text-sm leading-[22px] text-ink-600">
+            <strong className="text-ink-900">{formatDotDate(policy.applicationStart)}부터 접수합니다.</strong>
+          </p>
+        )}
+
+        {result.tag === "확인 필요" && (
+          <div className="rounded-control bg-warn-50 p-4">
+            <p className="flex items-start gap-2 text-sm font-bold leading-[22px] text-warn-800">
+              <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
+              <span>{result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.</span>
+            </p>
+            <Link
+              href="/find"
+              className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
+            >
+              조건 수정하기
+            </Link>
+          </div>
+        )}
+
+        <Disclosure label="지원 대상 자세히 보기">
+          <section aria-label="지원 대상" className="px-1 pb-1">
+            <dl className="space-y-2">
+              {targetRows(policy).map((row) => (
+                <DetailRow key={row.label} label={row.label} value={row.value} />
+              ))}
+            </dl>
+          </section>
+        </Disclosure>
+
+        {남은조건.length > 0 && (
+          <Disclosure label={`기관 심사에서 확인할 조건 ${남은조건.length}개`}>
+            <p className="px-1 text-xs leading-relaxed text-ink-500">
+              아래 항목은 입력값만으로 확정하지 않으며 신청 기관이 심사합니다.
+            </p>
+            <ul className="mt-2 list-disc pl-5 text-sm leading-relaxed text-ink-600">
+              {남은조건.map((condition) => <li key={condition}>{condition}</li>)}
+            </ul>
+          </Disclosure>
+        )}
+
+        <SourceNotice sourceUrl={policy.sourceUrl} verifiedAt={policy.verifiedAt} />
       </main>
+
+      <StickyBottomAction>
+        {status === "신청 가능" ? (
+          <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
+        ) : status === "확인 필요" ? (
+          <LinkButton href="/find" size="screen">조건 확인하기</LinkButton>
+        ) : (
+          <LinkButton href="/find/policies" size="screen" variant="secondary">다른 혜택 보기</LinkButton>
+        )}
+      </StickyBottomAction>
     </AppShell>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-h-[34px] items-center justify-between gap-4 text-sm">
+      <dt className="shrink-0 text-[11px] leading-4 text-ink-500">{label}</dt>
+      <dd className="text-right text-xs font-medium leading-[18px] text-ink-900">{value}</dd>
+    </div>
   );
 }
 

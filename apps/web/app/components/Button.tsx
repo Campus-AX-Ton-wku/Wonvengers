@@ -11,11 +11,11 @@ import Link from "next/link";
  *   secondary — primary 옆에 서는 대안. 면은 옅은 파랑, 글씨는 진한 파랑.
  *   quiet     — 되돌아가기·고치기처럼 흐름을 벗어나는 동작. 테두리만.
  *
- * 크기는 lg(56px)와 md(44px) 둘뿐이다. 둘 다 손가락이 닿는 44px 이상이다.
+ * 크기는 lg(56px), screen(52px), md(44px)이며 모두 손가락이 닿는 44px 이상이다.
  */
 
 export type ButtonVariant = "primary" | "secondary" | "quiet";
-export type ButtonSize = "lg" | "md";
+export type ButtonSize = "lg" | "md" | "screen";
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary:
@@ -29,6 +29,8 @@ const VARIANT: Record<ButtonVariant, string> = {
 const SIZE: Record<ButtonSize, string> = {
   lg: "min-h-14 px-6 py-4 text-base",
   md: "min-h-11 px-4 py-2.5 text-sm",
+  // 결과 예외·신청 흐름의 Figma 계약. 기존 lg(56px)를 바꾸지 않고 52px만 추가한다.
+  screen: "min-h-[52px] px-5 py-3.5 text-base",
 };
 
 export function buttonClass({

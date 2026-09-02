@@ -1,4 +1,4 @@
-import { Ban, CircleCheck, CircleSlash, Clock, ICON_SM, Info, TriangleAlert } from "./icons";
+import { Ban, CircleAlert, CircleCheck, CircleSlash, Clock, ICON_SM, Info, TriangleAlert } from "./icons";
 import type { DiscoveryCardStatus } from "@/lib/types";
 
 /**
@@ -11,13 +11,15 @@ import type { DiscoveryCardStatus } from "@/lib/types";
  * `getByText("가능성 있음")` 으로 배지 자체를 집어 색 클래스를 검사한다 —
  * 한 겹 더 감싸면 클래스가 붙은 요소를 놓친다.
  */
-export type BadgeTone = "ok" | "warn" | "neutral" | "muted" | "info";
+export type BadgeTone = "ok" | "warn" | "danger" | "neutral" | "muted" | "info";
 
 const TONE: Record<BadgeTone, { className: string; Icon: typeof CircleCheck }> = {
   /** 조건에 맞고 지금 행동할 수 있다. */
   ok: { className: "bg-ok-50 text-ok-700", Icon: CircleCheck },
   /** 판단을 보류했다. 사용자가 더 답하면 풀린다. */
   warn: { className: "bg-warn-50 text-warn-800", Icon: TriangleAlert },
+  /** 신청 가능하지만 공식 마감까지 7일 이하인 긴급 행동 상태다. */
+  danger: { className: "bg-danger-50 text-danger-700", Icon: CircleAlert },
   /** 대상이 아니다. */
   neutral: { className: "bg-ink-100 text-ink-700", Icon: CircleSlash },
   /**

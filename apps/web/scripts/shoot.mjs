@@ -120,6 +120,17 @@ const SHOTS = [
     path: "/find/policies/iksan-newcomer-moving-cost-support",
     full: true,
   },
+  {
+    name: "mobile-policy-prepare",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    full: true,
+  },
+  {
+    name: "mobile-policy-handoff",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    click: "공식 신청 사이트로 이동",
+    full: true,
+  },
   { name: "mobile-calculate", path: "/calculate", full: true },
   { name: "mobile-eligibility", path: "/eligibility", full: true },
   { name: "mobile-result", path: "/result", full: true },
@@ -133,6 +144,17 @@ const DESKTOP_SHOTS = [
     path: "/find/policies/iksan-newcomer-moving-cost-support",
     full: true,
   },
+  {
+    name: "desktop-policy-prepare",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    full: true,
+  },
+  {
+    name: "desktop-policy-handoff",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    click: "공식 신청 사이트로 이동",
+    full: true,
+  },
   { name: "desktop-result", path: "/result", full: true },
 ];
 
@@ -142,6 +164,17 @@ const NARROW_SHOTS = [
   {
     name: "narrow-policy-detail",
     path: "/find/policies/iksan-newcomer-moving-cost-support",
+    full: true,
+  },
+  {
+    name: "narrow-policy-prepare",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    full: true,
+  },
+  {
+    name: "narrow-policy-handoff",
+    path: "/find/policies/iksan-newcomer-moving-cost-support/prepare",
+    click: "공식 신청 사이트로 이동",
     full: true,
   },
   { name: "narrow-result", path: "/result", full: true },

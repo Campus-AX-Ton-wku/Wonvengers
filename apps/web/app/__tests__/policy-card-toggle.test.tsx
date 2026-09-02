@@ -29,8 +29,8 @@ function topCards(): HTMLElement[] {
   return screen.getAllByRole("article").filter((card) => card.closest("details") === null);
 }
 
-function 카드안_토글(card: HTMLElement, text: string | RegExp): HTMLDetailsElement {
-  const node = within(card).getByText(text);
+function 상세_토글(container: HTMLElement, text: string | RegExp): HTMLDetailsElement {
+  const node = within(container).getByText(text);
   const details = node.closest("details") as HTMLDetailsElement | null;
   expect(details, `"${text}" 가 카드 안 토글에 들어 있지 않다`).not.toBeNull();
   return details!;
@@ -48,33 +48,39 @@ describe("2층 정책 카드", () => {
 
   it("요건 목록(충족·미충족·확인 필요)은 닫힌 토글 안에 있다", async () => {
     await renderResult();
-    const details = 카드안_토글(topCards()[0], "충족");
+    const resultItem = topCards()[0].closest(".stagger-in") as HTMLElement;
+    const details = 상세_토글(resultItem, "충족");
     expect(details.open).toBe(false);
   });
 
   it("요건 토글 라벨에 충족 건수가 적혀 있다", async () => {
     await renderResult();
-    expect(within(topCards()[0]).getByText(/요건 자세히 보기 · 충족 \d+/)).toBeTruthy();
+    const resultItem = topCards()[0].closest(".stagger-in") as HTMLElement;
+    expect(within(resultItem).getByText(/요건 자세히 보기 · 충족 \d+/)).toBeTruthy();
   });
 
   it("검수 메모(notes)와 확인 날짜는 '검수 상태' 토글 안에 있다", async () => {
     await renderResult();
-    const card = topCards().find((c) => within(c).queryByText(/복지로 공지/) !== null);
-    expect(card, "국토부 카드를 찾지 못했다").toBeTruthy();
+    const title = screen.getByRole("heading", { name: /익산시 전입 청년 이사비/ });
+    const card = title.closest("article")!;
+    const resultItem = card.closest(".stagger-in") as HTMLElement;
+    expect(card, "익산시 이사비 카드를 찾지 못했다").toBeTruthy();
 
-    const details = 카드안_토글(card!, /복지로 공지/);
+    const details = 상세_토글(resultItem, /익산청년시청/);
     expect(details.open).toBe(false);
     expect(within(details).getByText(/2026년 기준/)).toBeTruthy();
-    expect(within(card!).getByText("검수 상태 · 참고사항")).toBeTruthy();
+    expect(within(resultItem).getByText("검수 상태 · 참고사항")).toBeTruthy();
   });
 
-  it("상태 태그·예상액·산식·신청 링크는 토글 밖에 남는다", async () => {
+  it("상태·금액·준비 CTA·공식 신청 링크는 토글 밖에 남는다", async () => {
     await renderResult();
     const card = topCards()[0];
 
     expect(within(card).getByText(/^(예상적용|조건충족시가능)$/).closest("details")).toBeNull();
-    expect(within(card).getByText(/이 정책 단독 예상액/).closest("details")).toBeNull();
-    expect(within(card).getByRole("link", { name: "신청 페이지로 이동" }).closest("details")).toBeNull();
+    expect(within(card).getByText(/받을 수 있는 예상 금액/).closest("details")).toBeNull();
+    expect(within(card).getByRole("link", { name: /신청 준비 시작하기|마감 전 신청 준비하기/ }).closest("details")).toBeNull();
+    expect(within(card).getByRole("link", { name: /공식 신청 페이지에서 진행/ }).closest("details")).toBeNull();
+    expect(within(card).queryByText("예상 금액 계산식 보기")).toBeNull();
   });
 
   it("최대 지원 가능액과 조합 목록은 접히지 않는다", async () => {
@@ -83,25 +89,19 @@ describe("2층 정책 카드", () => {
     expect(screen.getByText("이 금액은 아래 조합으로 계산했습니다").closest("details")).toBeNull();
   });
 
-  /* 받을 수 없는 정책이 목록의 절반을 차지하면 받을 수 있는 것이 아래로 밀린다.
-     이 픽스처는 대상아님 1건 · 신청불가 2건 · 예상적용 2건이 나온다. */
-  it("'대상아님' 그룹은 접혀 있고 라벨에 건수가 있다", async () => {
+  it("대상아님·신청불가 정책은 Figma 결과 카드 variant로 만들지 않는다", async () => {
     await renderResult();
-
-    const label = screen.getByText(/^대상아님 \(\d+\)$/);
-    const details = label.closest("details") as HTMLDetailsElement | null;
-    expect(details, "대상아님 그룹이 토글이 아니다").not.toBeNull();
-    expect(details!.open).toBe(false);
-    // 접었어도 안에 카드가 있어야 한다 — 왜 대상이 아닌지는 열면 그대로 나온다
-    expect(within(details!).getAllByRole("article").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^대상아님 \(\d+\)$/)).toBeNull();
+    expect(screen.queryByText(/^신청불가 \(\d+\)$/)).toBeNull();
+    for (const card of topCards()) {
+      expect(within(card).queryByText("대상아님")).toBeNull();
+      expect(within(card).queryByText("신청불가")).toBeNull();
+    }
   });
 
-  it("받을 수 있는 정책과 신청불가는 접지 않는다", async () => {
+  it("공식 결과 카드는 하나의 접근성 영역에 그대로 노출한다", async () => {
     await renderResult();
-
-    for (const status of ["예상적용", "신청불가"]) {
-      const heading = screen.getByText(new RegExp(`^${status} \\(\\d+\\)$`));
-      expect(heading.closest("details"), `${status} 그룹이 접혀 있다`).toBeNull();
-    }
+    const region = screen.getByRole("region", { name: /맞춤 혜택 \d+개/ });
+    expect(within(region).getAllByRole("article").length).toBe(topCards().length);
   });
 });
