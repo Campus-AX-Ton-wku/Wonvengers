@@ -1023,5 +1023,46 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "sancheong-youth-rent-support",
+    "name": "산청군 청년월세 지원사업 (경상남도)",
+    "agency": "경상남도 산청군",
+    "regionScope": "경상남도 산청군",
+    "applicationStart": "2026-03-04",
+    "applicationEnd": "2026-03-20",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(국비 청년월세가 못 미치는 소득 구간을 경상남도가 보완, 시·군별로 다른 신청기간으로 집행)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://baro.gyeongnam.go.kr/baro/serviceView.es?mid=a10202000000&service_no=476",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "경남바로서비스(baro.gyeongnam.go.kr) '2026년 경상남도 「청년월세 지원사업」 신청 접수 안내(산청군)' 원문으로 확인(2026-09-03). 경남·부산 라운드(2026-09-02)에서 '도 단위 등록만으로는 시·군마다 신청기간이 달라 등록 불가'로 보류했던 그 사업(경상남도 교육청년국 등록, 중위60%초과~150%이하)의 산청군 시행분이다 — 시군구 확장으로 산청군의 구체적 신청기간이 확인돼 등록했다. 지원대상: 산청군 거주(예정), 부모와 별도 거주, 19~49세(도 단위 등록의 19~39세보다 넓다 — 산청군 자체 조례상 청년 정의가 더 넓은 것으로 보인다), 중위소득 60% 초과~150% 이하(rangeCheck로 하한 초과도 판정), 임차보증금 1억원 이하·월세 60만원 이하(ListingInput 필요해 판정 안 함). 원문에 실제 선정인원은 12명뿐(모집 정원 99명은 온라인 접수 창구 확대일 뿐)이라고 명시 — 경쟁이 매우 치열하다. ⚠️ '국토부 청년월세 참여자·경남 청년월세 기수급자(2022~2025) 중복 신청 불가'는 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목이라(도 단위 등록만 있었음) youthPolicyNo를 null로 뒀다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "경상남도 산청군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
   }
 ]

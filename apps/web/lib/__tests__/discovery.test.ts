@@ -62,6 +62,7 @@ describe("groupPolicies", () => {
       "incheon-jemulpogu-welcome-pay",
       "goesan-youth-worker-farmer-housing-cost-support",
       "hadong-youth-housing-cost-support",
+      "sancheong-youth-rent-support",
     ]);
   });
 

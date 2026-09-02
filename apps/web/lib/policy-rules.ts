@@ -646,6 +646,31 @@ const hadongYouthHousingCost: RuleFn = (p, asOf) => [
   boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
 ];
 
+/**
+ * 산청군 청년월세 지원사업 (경상남도).
+ *
+ * 국비 청년월세(중위60% 이하)가 못 미치는 60%초과~150%이하 구간만 지원한다
+ * — 이 하한 조건은 rangeCheck로 판정한다(iksan-youth-rent-support와 같은 패턴).
+ */
+const sancheongYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const lowerCeiling = medianIncomeCeiling(householdSize, 0.6);
+  const upperCeiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 49),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    rangeCheck(
+      "ownHouseholdIncomeBand",
+      `가구 소득 중위소득 60% 초과 150% 이하 (월 ${(lowerCeiling + 1).toLocaleString()}~${upperCeiling.toLocaleString()}원)`,
+      p.ownHouseholdMonthlyIncome,
+      lowerCeiling,
+      upperCeiling
+    ),
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -672,4 +697,5 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "goryeong-youth-rent-support": goryeongYouthRent,
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,
+  "sancheong-youth-rent-support": sancheongYouthRent,
 };
