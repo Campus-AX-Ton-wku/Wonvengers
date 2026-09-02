@@ -66,6 +66,8 @@ describe("groupPolicies", () => {
       "sancheong-youth-rent-support",
       "hapcheon-youth-rent-support",
       "tongyeong-youth-settlement-support",
+      "changwon-youth-rent-support",
+      "yongin-brokerage-moving-cost-support",
     ]);
   });
 

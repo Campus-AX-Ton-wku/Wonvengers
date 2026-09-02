@@ -459,6 +459,41 @@ const busanBrokerageMovingCost: RuleFn = (p, asOf) => {
 };
 
 /**
+ * 용인청년 중개보수 및 이사비 지원사업.
+ *
+ * 전입일자 요건(2026.1.1~6.30 전입/이사)·거래금액(2억원 이하)은 서울 이사비
+ * 지원사업과 같은 이유로 판정하지 못한다(policies.json notes 참고). 원문에
+ * '부모와 별도 거주'가 명시돼 있지 않아 넣지 않았다.
+ */
+const yonginBrokerageMovingCost: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.8);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 180% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "movedInFirstHalf2026",
+      label: "2026.1.1~6.30 용인시로 전입 또는 용인시 내 이사 후 전입신고 완료",
+      result: "unknown",
+      howToConfirm: "전입신고일이 이 기간 안인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
+    },
+    {
+      key: "dealAmountUnder200M",
+      label: "전·월세 보증금 2억원 이하",
+      result: "unknown",
+      howToConfirm: "계약서의 보증금으로 직접 확인하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
+    },
+  ];
+};
+
+/**
  * 세종 청년 주거임대료 지원사업.
  *
  * 재산 1억2,200만원 이하는 EligibilityProfile에 맞는 문턱값이 없어 판정하지
@@ -701,6 +736,38 @@ const sancheongYouthRent: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 창원시 청년월세 지원사업 (경상남도).
+ *
+ * 산청군·합천군과 같은 프레임(중위60%초과~150%이하)이지만 나이가 19~39세로
+ * 더 좁다. '세대주가 청년인 가구' 요건은 세대 구성을 입력받지 않아 unknown
+ * 리터럴로 남긴다(울산 청년가구 주거비 지원사업과 같은 처리).
+ */
+const changwonYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const lowerCeiling = medianIncomeCeiling(householdSize, 0.6);
+  const upperCeiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    rangeCheck(
+      "ownHouseholdIncomeBand",
+      `가구 소득 중위소득 60% 초과 150% 이하 (월 ${(lowerCeiling + 1).toLocaleString()}~${upperCeiling.toLocaleString()}원)`,
+      p.ownHouseholdMonthlyIncome,
+      lowerCeiling,
+      upperCeiling
+    ),
+    {
+      key: "householdHead",
+      label: "세대주가 청년 본인",
+      result: "unknown",
+      howToConfirm: "주민등록등본으로 세대주 여부를 확인하세요. 이 앱은 세대 구성을 입력받지 않습니다.",
+    },
+  ];
+};
+
 /** 합천군 청년 월세 지원사업 (경상남도) — 산청군과 같은 프레임, 나이만 18세부터. */
 const hapcheonYouthRent: RuleFn = (p, asOf) => {
   const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
@@ -773,4 +840,6 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "sancheong-youth-rent-support": sancheongYouthRent,
   "hapcheon-youth-rent-support": hapcheonYouthRent,
   "tongyeong-youth-settlement-support": tongyeongYouthSettlement,
+  "changwon-youth-rent-support": changwonYouthRent,
+  "yongin-brokerage-moving-cost-support": yonginBrokerageMovingCost,
 };

@@ -1185,5 +1185,87 @@
         "연세"
       ]
     }
+  },
+  {
+    "id": "changwon-youth-rent-support",
+    "name": "창원시 청년월세 지원사업 (경상남도)",
+    "agency": "경상남도 창원시",
+    "regionScope": "경상남도 창원시",
+    "applicationStart": "2026-03-16",
+    "applicationEnd": "2026-03-27",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(산청군·합천군과 같은 경상남도 프레임)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.changwon.go.kr/cwportal/10430.web?amode=view&idx=874033&gcode=1009",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "창원시 새소식 '2026년 「창원시 청년월세 지원사업」 참여자 모집 공고'(2026-03-10) 원문으로 확인. 산청군·합천군과 같은 '경남 청년 월세 지원'(중위60%초과~150%이하) 프레임의 창원시 시행분이지만, 나이가 19~39세로 두 군(18~49세)보다 좁다. 지원대상: 창원시 거주 19~39세, 세대주가 청년인 가구, 임차보증금1억원 이하·월세60만원 이하, 부모와 별도거주 무주택 세대주, 가구 소득 중위60%초과~150%이하(rangeCheck), 선정인원 258명(생애1회). 원문에 '국토교통부 청년월세 지원사업과 창원시 청년월세 지원사업은 중복 지원이 불가'라고 명시돼 있지만, 두 사업의 소득 구간이 애초에 겹치지 않아(moland는 60%이하, 이 정책은 60%초과) exclusiveGroup 태그 없이도 동시에 '가능'으로 뜨지 않는다(산청군·합천군과 같은 처리). ⚠️ '세대주가 청년인 가구' 요건은 이 앱이 세대 구성을 입력받지 않아 unknown으로 남긴다. 온통청년 '주거' 대분류 전수 스캔에는 도 단위 '청년 월세 지원(60%초과~150%이하)'만 잡혔고 창원시 개별 등록은 없었다(youthPolicyNo null, 구미형과 같은 처리) — 창원시청 홈페이지를 직접 훑어 찾았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경상남도 창원시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "yongin-brokerage-moving-cost-support",
+    "name": "용인청년 중개보수 및 이사비 지원사업",
+    "agency": "경기도 용인시",
+    "regionScope": "경기도 용인시",
+    "applicationStart": "2026-07-09",
+    "applicationEnd": "2026-07-15",
+    "benefitType": "lump_sum",
+    "benefitSummary": "부동산 중개보수와 이사비를 합쳐 실제 지출한 금액 중 최대 40만원까지 생애 1회 지원",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "http://www.yongin.go.kr/user/bbs/BD_selectBbs.do?q_bbsCode=1001&q_bbscttSn=20260630102205137&q_clCode=1",
+    "applyUrl": "https://www.yongin.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "용인시청 시정소식 '용인청년 중개보수 및 이사비 지원사업 신청자 모집'(2026-06-30 등록, 담당 청년정책과) 원문으로 확인. 서울·부산·제주 이사비 지원사업과 같은 유형. 신청기간 2026.7.9~7.15로 이미 마감. 지원대상: 2026.1.1~6.30 용인시로 전입하거나 용인시 내 이사 후 전입신고를 완료한 19~39세 무주택 청년, 전·월세 보증금 2억원 이하, 가구 소득 중위180% 이하. 원문에 '부모와 별도 거주'는 명시돼 있지 않아 넣지 않았다(서울·부산 이사비 지원사업과 다른 점). ⚠️ 전입일자 요건(2026.1.1~6.30)과 거래금액(보증금 2억원 이하)은 이 앱이 입력받지 않아 판정하지 않는다. 온라인 신청은 '잡아바어플라이'라는 별도 플랫폼을 쓰는데 정확한 URL을 원문에서 찾지 못해 applyUrl은 용인시청 홈페이지로 뒀다. 같은 청년정책과가 운영하는 '청년 부동산 중개보수 감면사업'(지정 중개업소 이용 시 즉시 20% 할인)은 부산 남구·부산진구 사례와 같은 즉시할인형이라 이 앱의 lump_sum(사후 실비 환급) 모델과 안 맞아 등록하지 않았다. 용인청년 전월세 보증금 대출이자 지원(loan-products 후보)은 원문 미대조로 다음 라운드에 남긴다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(youthPolicyNo null, 구미형·창원시와 같은 처리)이라 용인시청 홈페이지를 직접 훑어 찾았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경기도 용인시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
   }
 ]

@@ -105,12 +105,20 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "광주광역시", label: "광주광역시 (서구 외)", chipLabel: "광주 (서구 외)" },
   },
   {
-    // 평택시 청년 월세 지원(시군구 확장 2라운드)을 위해 처음 추가했다. 경기도는
-    // 도 단위 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과 겹치는
+    // 평택시 청년 월세 지원(시군구 확장 2라운드)에 이어 용인청년 중개보수 및
+    // 이사비 지원사업(8라운드)을 위해 districts 를 늘렸다. 경기도는 도 단위
+    // 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과 겹치는
     // 셈이지만, 향후 경기도 자체 정책이 나오면 그대로 받을 자리로 남겨 둔다.
     name: "경기도",
-    districts: [{ value: "경기도 평택시", label: "경기도 평택시", chipLabel: "평택시" }],
-    catchAll: { value: "경기도", label: "경기도 (평택시 외)", chipLabel: "경기도 (평택시 외)" },
+    districts: [
+      { value: "경기도 평택시", label: "경기도 평택시", chipLabel: "평택시" },
+      { value: "경기도 용인시", label: "경기도 용인시", chipLabel: "용인시" },
+    ],
+    catchAll: {
+      value: "경기도",
+      label: "경기도 (평택시·용인시 외)",
+      chipLabel: "경기도 (그 외)",
+    },
   },
   {
     // 음성군 청년월세 지원사업(시군구 확장 2라운드)에 이어 괴산군 청년취업자·
@@ -143,17 +151,19 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
   {
     // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)을 위해 처음 추가했다.
     // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)·산청군 청년월세
-    // 지원사업(5라운드)에 이어 합천군·통영시(6라운드)를 위해 districts 를 늘렸다.
+    // 지원사업(5라운드)에 이어 합천군·통영시(6라운드)·창원시(8라운드)를 위해
+    // districts 를 늘렸다.
     name: "경상남도",
     districts: [
       { value: "경상남도 하동군", label: "경상남도 하동군", chipLabel: "하동군" },
       { value: "경상남도 산청군", label: "경상남도 산청군", chipLabel: "산청군" },
       { value: "경상남도 합천군", label: "경상남도 합천군", chipLabel: "합천군" },
       { value: "경상남도 통영시", label: "경상남도 통영시", chipLabel: "통영시" },
+      { value: "경상남도 창원시", label: "경상남도 창원시", chipLabel: "창원시" },
     ],
     catchAll: {
       value: "경상남도",
-      label: "경상남도 (하동군·산청군·합천군·통영시 외)",
+      label: "경상남도 (하동군·산청군·합천군·통영시·창원시 외)",
       chipLabel: "경상남도 (그 외)",
     },
   },
