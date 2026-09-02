@@ -185,6 +185,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
       chipLabel: "경상남도 (그 외)",
     },
   },
+  {
+    // 강진군 청년 취업자 주거비 지원사업(시군구 확장 17라운드)을 위해 처음 추가했다
+    // — 17개 시도 중 전남만 이번 라운드까지 한 번도 등록된 정책이 없었다.
+    name: "전라남도",
+    districts: [{ value: "전라남도 강진군", label: "전라남도 강진군", chipLabel: "강진군" }],
+    catchAll: { value: "전라남도", label: "전라남도 (강진군 외)", chipLabel: "전남 (강진군 외)" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */

@@ -750,6 +750,43 @@ const ulleungYouthRent: RuleFn = (p, asOf) => {
 };
 
 /**
+ * 강진군 청년 취업자 주거비 지원사업.
+ *
+ * 원문 ③(노동) 요건은 "최근 6개월 이내 3개월 이상 노동 중" 또는 "사업자(전남 소재,
+ * 개업 6개월 이전+3개월 이상 운영)"인데, 이 앱은 재직/재학/미취업만 물어 재직 기간·
+ * 사업자 여부는 판정하지 못한다 — isStudentOrEmployed === "employed"만 근사 pass로,
+ * 나머지(재학·미취업)는 fail로 처리한다. ④(주거) 전세 대출금 5천만원 이상 또는
+ * 월세 60만원 이하 요건은 이 앱이 임차료 금액을 입력받지 않아 unknown으로 남긴다.
+ */
+const gangjinYouthWorkerRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 18, 45),
+    {
+      key: "employedOrBusinessOwner",
+      label: "노동자(최근 6개월 내 3개월 이상 재직) 또는 사업자(전남 소재, 개업 6개월 이전+3개월 이상 운영)",
+      result: p.isStudentOrEmployed === "unknown" ? "unknown" : p.isStudentOrEmployed === "employed" ? "pass" : "fail",
+      howToConfirm: "재직증명서 또는 사업자등록증명원으로 재직·운영 기간을 확인하세요. 이 앱은 재직 기간이나 사업자 등록 여부는 정확히 묻지 않습니다.",
+    },
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    {
+      key: "rentOrJeonseThreshold",
+      label: "전세(대출금 5천만원 이상) 또는 월세(60만원 이하) 거주, 강진군 소재 주택 임차",
+      result: "unknown",
+      howToConfirm: "임대차계약서로 전세 대출금(5천만원 이상) 또는 월세(60만원 이하) 여부를 확인하세요. 이 앱은 임차료·대출금 금액을 신청 자격 판정에 쓰지 않습니다.",
+    },
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
+/**
  * 괴산군 청년취업자 및 청년농업인 주거비 지원.
  *
  * '관내 기업 취업 또는 농업경영체 등록 5년 이내'는 이 앱이 취업·창업 이력을
@@ -942,6 +979,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "gumi-youth-rent-support": gumiYouthRent,
   "goryeong-youth-rent-support": goryeongYouthRent,
   "ulleung-youth-rent-support": ulleungYouthRent,
+  "gangjin-youth-worker-rent-support": gangjinYouthWorkerRent,
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,
   "sancheong-youth-rent-support": sancheongYouthRent,

@@ -71,6 +71,7 @@ describe("groupPolicies", () => {
       "namhae-youth-rent-support",
       "daejeon-youth-rent-support",
       "ulleung-youth-rent-support",
+      "gangjin-youth-worker-rent-support",
     ]);
   });
 
