@@ -664,18 +664,31 @@ const gumiYouthRent: RuleFn = (p, asOf) => {
 /**
  * 고령군 청년 월세 주거비 지원사업.
  *
- * 원문(공고문 PDF)을 직접 열람하지 못해 '1인가구' 요건만 householdSize로
- * 판정하고 나머지(소득 기준 등)는 확인된 게 없어 추가하지 않았다.
+ * 원문은 "청년 1인가구 또는 청년 신혼부부"를 대상으로 하지만, 이 앱은 혼인
+ * 여부를 입력받지 않아 신혼부부(2인 이상 가구)는 판정하지 못한다 — 1인가구
+ * 요건만 householdSize로 확인하고, 실제로는 자격이 되는 신혼부부 가구가
+ * '해당없음'으로 잘못 분류될 수 있다는 한계를 그대로 남긴다.
  */
-const goryeongYouthRent: RuleFn = (p, asOf) => [
-  ageCheck(p.birthDate, asOf, 18, 45),
-  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
-  {
-    key: "singleHousehold",
-    label: "청년 1인가구",
-    result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
-  },
-];
+const goryeongYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.8);
+
+  return [
+    ageCheck(p.birthDate, asOf, 18, 45),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    {
+      key: "singleHousehold",
+      label: "청년 1인가구 (신혼부부는 이 앱이 혼인 여부를 안 물어 판정 못 함)",
+      result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
+    },
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 180% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
 
 /**
  * 괴산군 청년취업자 및 청년농업인 주거비 지원.
