@@ -20,8 +20,7 @@ import { markOnboardingSeen } from "@/lib/storage";
  * 여기로 온다. 이 화면 자체는 언제든 직접 열 수 있다 — 그게 개발·QA 의 재확인
  * 경로이고, 랜딩 하단의 '앱 소개 다시 보기' 링크가 같은 곳을 가리킨다.
  *
- * 완료와 건너뛰기는 같은 값을 저장한다. 사용자에게는 "다시 보고 싶지 않다" 는
- * 같은 뜻이고, 나눠 저장하면 재노출 규칙이 두 갈래가 된다.
+ * 마지막 단계 완료 시에만 온보딩 완료를 저장한다.
  *
  * ── SSR ──────────────────────────────────────────────────────────
  * 렌더에 localStorage 를 읽지 않는다. 읽으면 서버 HTML 과 첫 클라이언트 렌더가
@@ -98,17 +97,6 @@ export default function OnboardingPage() {
 
   return (
     <AppShell>
-      <header className="flex h-14 items-center justify-end pt-[env(safe-area-inset-top)]">
-        <button
-          type="button"
-          onClick={() => leave("/find")}
-          /* -mr-3 + px-3 — 글자 오른쪽 끝이 본문 오른쪽 끝과 맞는다. 타깃은 그대로 44px. */
-          className="focus-ring -mr-3 flex min-h-11 items-center rounded-control px-3 text-sm font-bold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
-        >
-          건너뛰기
-        </button>
-      </header>
-
       {/*
         한 장을 통째로 갈아 끼운다. key 가 바뀌면 slide-in 이 다시 돈다 —
         캐릭터가 먼저 자리를 잡고 글이 따라 온다.
