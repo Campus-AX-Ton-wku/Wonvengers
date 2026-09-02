@@ -20,7 +20,7 @@ export { IconButton, IconLink } from "./IconButton";
 export { default as PerkyCharacter, PERKY_STATES } from "./PerkyCharacter";
 export type { PerkyState } from "./PerkyCharacter";
 export { ResultSummary } from "./ResultSummary";
-export { StatusBadge } from "./StatusBadge";
+export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";
 export type { BadgeTone } from "./StatusBadge";
 export { AnsweredStack, StepHeader } from "./StepHeader";
 export type { AnsweredItem } from "./StepHeader";

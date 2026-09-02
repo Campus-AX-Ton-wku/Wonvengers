@@ -110,12 +110,31 @@ export type BenefitType = "rent_capped_monthly" | "flat_monthly" | "lump_sum";
  * 저소득 청년 전원에게 '가능성 있음'이 잘못 표시된다.
  */
 export interface PolicyDiscovery {
-  ageMin: number;
-  ageMax: number;
+  /**
+   * null = 나이 제한 없음. 확인 전이라는 뜻이 아니다.
+   *
+   * 온통청년 등록에 `sprtTrgtAgeLmtYn` 플래그가 따로 있는 항목이다. 전세보증금
+   * 반환보증 보증료 지원이 여기 해당한다 — 전 연령을 지원하고, '청년'은 자격
+   * 요건이 아니라 소득 상한(5천/6천/7.5천만원)을 가르는 구분이다. 이걸 만
+   * 19~34세로 적어 넣으면 없는 제한을 만들어 대상자를 탈락시킨다.
+   */
+  ageMin: number | null;
+  ageMax: number | null;
   regions: string[]; // region.ts 의 REGION_OPTIONS 값과 같은 어휘를 쓴다
   statuses: DiscoveryStatus[] | null;
   incomeBracketMin: number | null; // null = 하한 없음 또는 확인 전
   incomeBracketMax: number | null;
+  /**
+   * 이 정책이 인정하는 주거 형태. null = 주거 형태를 따지지 않는 정책.
+   *
+   * incomeBracketMin 과 같은 예외를 쓴다 — 주거 형태 제한이 있는 정책이 소수라,
+   * null 을 '모름'으로 읽으면 나머지 전부가 이유 없이 '확인 필요'가 된다.
+   * 이사비·정착지원금처럼 계약 형태와 무관한 사업이 여기 해당한다.
+   *
+   * 값이 있는 정책은 공고가 계약 형태를 요건으로 적은 경우다. 국토부·익산형
+   * 청년월세는 월세 계약만, 보증금반환보증 보증료 지원은 전세 계약만 받는다.
+   */
+  housingTypes: HousingType[] | null;
 }
 
 export interface PolicyMeta {
@@ -131,6 +150,19 @@ export interface PolicyMeta {
   monthlyCap?: number; // 월 상한액
   maxMonths?: number; // 지급 가능 개월 수
   lumpSumCap?: number; // 일시 지급 상한액
+  /**
+   * lump_sum 정책의 2층 예상액을 무엇으로 계산하는가.
+   *
+   * "oneTimeMoveCost" — 계약 화면이 받는 일시 지출(이사비·중개보수) 기준.
+   * "notCalculable"  — 2층이 그 지출을 입력받지 않는다. 예상액을 0 으로 둔다.
+   *
+   * 보증금반환보증 보증료 지원을 넣으면서 생긴 구분이다. lump_sum 이 하나뿐일
+   * 때는 '일시 지출' 칸 하나로 충분했지만, 보증료는 이사비가 아니다. 이걸 그냥
+   * 두면 이사비 30만원을 넣은 사람에게 보증료 지원 30만원이 붙어 최대 지원
+   * 가능액이 부풀려진다. 값이 없으면 계산하지 않는다 — 금액을 넘겨 말하지
+   * 않는 쪽이 안전하다.
+   */
+  lumpSumBasis?: "oneTimeMoveCost" | "notCalculable";
   requiredInputs: RequiredInputKey[];
   exclusiveGroup: string[]; // 동시 합산 불가 그룹 id들
   sourceUrl: string;
@@ -204,8 +236,31 @@ export interface CalculationSummary {
 
 export type DiscoveryStatus = "대학생" | "재직" | "구직";
 
-/** 1층 질문 4개에 대한 답. null 은 사용자가 '모름'을 선택했다는 뜻이다. */
+/**
+ * 현재 주거 형태.
+ *
+ * 월세만 다루던 때는 물어볼 필요가 없었다. 전세 상품(보증료 지원)이 들어오면서
+ * 갈라야 한다 — 전세 사는 사람에게 월세 지원금을 '가능성 있음'으로 보여주면
+ * 신청했다가 반려된다.
+ *
+ * **연세를 월세와 따로 둔다.** 대학가에서 실제로 쓰이는 계약 형태이고 다른 앱이
+ * 다루지 않는 것이라, 이 앱은 2층에서 연세 선납액을 월 환산해 지원금을 계산한다
+ * (PRD F1-1·F1-5, lib/rent.ts). 그래서 월세 지원 사업의 housingTypes 에는
+ * 월세와 연세가 함께 들어간다 — 연세를 빼면 1층이 '대상 아님'이라고 말한 사람을
+ * 2층이 계산해 주는 모순이 된다.
+ *
+ * '그 외'는 공공임대·기숙사·가족과 거주를 합친 값이다. 넷으로 나눠 두었더니
+ * 판정 결과가 모두 같았다(주거 형태를 따지지 않는 정책만 남는다). 결과를 바꾸지
+ * 않는 구분은 고를 것만 늘린다. 사글세·전대차처럼 이름만 다른 월세는 '월세'다.
+ *
+ * '모름'을 두지 않는다. 나이·소득과 달리 자기가 어떤 계약에 사는지는 답할 수
+ * 있는 사실이므로, 하나를 골라야 다음으로 갈 수 있다.
+ */
+export type HousingType = "월세" | "연세" | "전세" | "그 외";
+
+/** 1층 질문 5개에 대한 답. null 은 사용자가 '모름'을 선택했거나 아직 답하지 않았다는 뜻이다. */
 export interface DiscoveryAnswers {
+  housingType: HousingType | null;
   /**
    * YYYY-MM-DD. 나이(숫자)가 아니라 생년월일을 저장한다 — 나이를 저장하면 시간이
    * 지나며 조용히 거짓이 된다. 만 39세로 저장된 사람이 반년 뒤에도 39세로 판정된다.
@@ -227,6 +282,20 @@ export interface DiscoveryAnswers {
 export type ResolvedAnswers = Omit<DiscoveryAnswers, "birthDate"> & { age: number | null };
 
 export type DiscoveryTag = "가능성 있음" | "확인 필요" | "해당 없음";
+
+/**
+ * 1층 카드에 붙는 상태. 태그(DiscoveryTag)와 접수 기간을 합친 값이다.
+ *
+ * 태그만으로는 사용자가 다음에 뭘 해야 하는지 알 수 없다 — '가능성 있음' 은
+ * 지금 신청하라는 뜻일 수도, 다음 회차를 기다리라는 뜻일 수도 있었다.
+ * 판정 규칙은 그대로 두고 표현만 행동 단위로 바꾼 값이다 (discovery.cardStatus).
+ */
+export type DiscoveryCardStatus =
+  | "신청 가능"
+  | "확인 필요"
+  | "신청 예정"
+  | "접수 마감"
+  | "대상 아님";
 
 export interface TagResult {
   tag: DiscoveryTag;

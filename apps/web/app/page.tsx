@@ -71,8 +71,7 @@ export default function Home() {
               <>
                 익산 청년이 받을 수 있는
                 <br />
-                주거 지원금{" "}
-                <span className="text-brand-600">{POLICY_COUNT}개</span>
+                주거 지원금 <span className="text-brand-600">{POLICY_COUNT}개</span>
               </>
             )}
           </h1>
@@ -87,7 +86,10 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="rise-in flex w-full flex-col items-center gap-1" style={{ animationDelay: "310ms" }}>
+        <div
+          className="rise-in flex w-full flex-col items-center gap-1"
+          style={{ animationDelay: "310ms" }}
+        >
           <LinkButton href="/find">내 지원금 찾아보기</LinkButton>
 
           {/* 온보딩을 다시 보는 길. 자동 노출은 첫 방문에 한 번뿐이라, 이 링크가

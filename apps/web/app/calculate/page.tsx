@@ -55,6 +55,14 @@ export default function InputPage() {
    * 그러면 월 환산액이 1/12 로 줄어 지원금이 크게 어긋난다.
    */
   const [contractTypeChosen, setContractTypeChosen] = useState(false);
+  /**
+   * 계약 형태를 1층 '주거 형태' 답에서 이어받았는지. 지역과 같은 표시를 붙인다.
+   *
+   * 기본값을 켜 두는 것과 다르다 — 사용자가 직접 고른 답을 옮겨 오는 것이라
+   * F1-1 의 '고르게 한다' 를 어기지 않는다. 그래서 전세·그 외·무응답은 옮기지
+   * 않는다: 그 답들은 월세인지 연세인지를 말해주지 않는다.
+   */
+  const [contractTypeFromFloor1, setContractTypeFromFloor1] = useState(false);
 
   useEffect(() => {
     const saved = loadListing();
@@ -65,12 +73,20 @@ export default function InputPage() {
       return;
     }
 
-    // 2층에 처음 들어온 경우 1층에서 이미 고른 지역을 다시 묻지 않는다.
+    // 2층에 처음 들어온 경우 1층에서 이미 고른 것을 다시 묻지 않는다.
     // 같은 질문을 두 번 하면 1층과 2층이 별개의 앱처럼 느껴진다.
-    const region = loadAnswers().region;
-    if (region && isRegionValue(region)) {
-      setForm((prev) => ({ ...prev, region }));
+    const answers = loadAnswers();
+    if (answers.region && isRegionValue(answers.region)) {
+      setForm((prev) => ({ ...prev, region: answers.region as string }));
       setRegionFromFloor1(true);
+    }
+    // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
+    // 계약이 아니고, 무응답은 아무것도 말해주지 않는다.
+    const housingType = answers.housingType;
+    if (housingType === "월세" || housingType === "연세") {
+      setForm((prev) => ({ ...prev, contractType: housingType }));
+      setContractTypeChosen(true);
+      setContractTypeFromFloor1(true);
     }
   }, []);
 
@@ -134,18 +150,11 @@ export default function InputPage() {
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (
           <>
-            <StepHeader title={"어떤 방을\n보고 계신가요?"} />
+            <StepHeader title="어떤 방을 보고 계신가요?" />
 
             <Field
               label="거주 예정 지역"
-              hint={
-                regionFromFloor1 ? (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-700">
-                    <Check size={ICON_SM - 2} aria-hidden="true" strokeWidth={3} />
-                    앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.
-                  </span>
-                ) : undefined
-              }
+              hint={regionFromFloor1 ? <CarriedOver>앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.</CarriedOver> : undefined}
             >
               <select
                 className="input"
@@ -176,6 +185,9 @@ export default function InputPage() {
                   </ChoiceCard>
                 ))}
               </div>
+              {contractTypeFromFloor1 && (
+                <CarriedOver>앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
+              )}
             </FieldGroup>
 
             <Field label="보증금 (만원)">
@@ -192,7 +204,7 @@ export default function InputPage() {
           </>
         ) : (
           <>
-            <StepHeader title={"비용과 기간을\n알려주세요"} />
+            <StepHeader title="비용과 기간을 알려주세요" />
 
             <Field label="월 관리비 (만원)">
               <MoneyInput placeholder="0" value={form.managementFee} onChange={(v) => update("managementFee", v ?? 0)} />
@@ -250,7 +262,7 @@ export default function InputPage() {
 
             {/* 계산 결과의 신뢰가 이 한 줄에 걸려 있다(PRD F1-10). 다른 입력칸과
                 같은 무게로 두면 습관적으로 지나친다 — 면을 주고 조금 띄워 둔다. */}
-            <label className="focus-within:ring-4 focus-within:ring-brand-100 flex cursor-pointer items-start gap-3 rounded-control bg-ink-50 px-4 py-4 text-sm font-medium leading-relaxed text-ink-700 transition-colors hover:bg-brand-50">
+            <label className="flex cursor-pointer items-start gap-3 rounded-control bg-ink-50 px-4 py-4 text-sm font-medium leading-relaxed text-ink-700 transition-colors focus-within:ring-4 focus-within:ring-brand-100 hover:bg-brand-50">
               <input
                 type="checkbox"
                 className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer"
@@ -269,5 +281,15 @@ export default function InputPage() {
         <Button onClick={handleNext}>다음</Button>
       </StickyBottomAction>
     </AppShell>
+  );
+}
+
+/** 앞 화면의 답을 그대로 옮겨 왔다는 표시. 색만으로 말하지 않도록 체크를 붙인다. */
+function CarriedOver({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-700">
+      <Check size={ICON_SM - 2} strokeWidth={3} aria-hidden="true" className="shrink-0" />
+      {children}
+    </span>
   );
 }

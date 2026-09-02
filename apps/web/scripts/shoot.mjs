@@ -64,8 +64,15 @@ const SEED = {
     region: "전북특별자치도 익산시",
     status: "대학생",
     incomeBracket: 1,
+    housingType: "월세",
   }),
-  "perky.answered": JSON.stringify(["birthDate", "region", "status", "incomeBracket"]),
+  "perky.answered": JSON.stringify([
+    "birthDate",
+    "region",
+    "status",
+    "incomeBracket",
+    "housingType",
+  ]),
   "housing-benefit:listing": JSON.stringify({
     region: "전북특별자치도 익산시",
     contractType: "월세",
@@ -108,6 +115,11 @@ const SHOTS = [
   { name: "mobile-find", path: "/find" },
   { name: "mobile-find-result", path: "/find/result" },
   { name: "mobile-find-policies", path: "/find/policies", full: true },
+  {
+    name: "mobile-policy-detail",
+    path: "/find/policies/iksan-newcomer-moving-cost-support",
+    full: true,
+  },
   { name: "mobile-calculate", path: "/calculate", full: true },
   { name: "mobile-eligibility", path: "/eligibility", full: true },
   { name: "mobile-result", path: "/result", full: true },
@@ -116,12 +128,22 @@ const SHOTS = [
 const DESKTOP_SHOTS = [
   { name: "desktop-landing", path: "/" },
   { name: "desktop-find-policies", path: "/find/policies", full: true },
+  {
+    name: "desktop-policy-detail",
+    path: "/find/policies/iksan-newcomer-moving-cost-support",
+    full: true,
+  },
   { name: "desktop-result", path: "/result", full: true },
 ];
 
 const NARROW_SHOTS = [
   { name: "narrow-landing", path: "/" },
   { name: "narrow-find-policies", path: "/find/policies", full: true },
+  {
+    name: "narrow-policy-detail",
+    path: "/find/policies/iksan-newcomer-moving-cost-support",
+    full: true,
+  },
   { name: "narrow-result", path: "/result", full: true },
 ];
 

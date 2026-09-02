@@ -18,6 +18,7 @@ const 익산정책: PolicyMeta = {
     statuses: ["대학생", "재직"],
     incomeBracketMin: null,
     incomeBracketMax: 3,
+    housingTypes: null,
   },
   applicationStart: "2026-03-01",
   applicationEnd: "2026-11-30",
@@ -48,6 +49,7 @@ const 기본답변: ResolvedAnswers = {
   region: "전북특별자치도 익산시",
   status: "대학생",
   incomeBracket: 2,
+  housingType: null,
 };
 
 describe("tagPolicy — 가능성 있음", () => {
@@ -118,6 +120,7 @@ describe("tagPolicy — 확인 필요", () => {
       region: null,
       status: null,
       incomeBracket: null,
+      housingType: null,
     });
     expect(r.tag).toBe("확인 필요");
     expect(r.unknownFields).toEqual(["나이", "지역", "현재 상태", "소득 구간"]);
@@ -260,6 +263,7 @@ describe("실제 정책 데이터 — 1층 태그", () => {
     region: "전북특별자치도 익산시",
     status: "대학생",
     incomeBracket: 1,
+    housingType: "월세",
   };
 
   it("네 질문에 모두 답하면 '확인 필요'만 나오지는 않는다", () => {
@@ -316,5 +320,57 @@ describe("실제 정책 데이터 — 1층 태그", () => {
   it("국토부 청년월세는 소득 1구간 청년에게 가능성 있음이다", () => {
     const moland = policies.find((p) => p.id === "moland-youth-rent-support")!;
     expect(tagPolicy(moland, 익산_대학생).tag).toBe("가능성 있음");
+  });
+});
+
+/**
+ * 주거 형태 판정.
+ *
+ * 전세 상품이 들어오면서 갈라야 할 축이 하나 늘었다. 전세 사는 사람에게 월세
+ * 지원금을 '가능성 있음'으로 보여주면 신청했다가 반려된다.
+ */
+describe("주거 형태", () => {
+  const 월세전용 = {
+    ...익산정책,
+    discovery: { ...익산정책.discovery, housingTypes: ["월세"] as const },
+  } as unknown as PolicyMeta;
+
+  it("맞는 주거 형태면 통과한다", () => {
+    expect(tagPolicy(월세전용, { ...기본답변, housingType: "월세" }).tag).toBe("가능성 있음");
+  });
+
+  it("다른 주거 형태면 해당 없음이고 이유를 말한다", () => {
+    const r = tagPolicy(월세전용, { ...기본답변, housingType: "전세" });
+    expect(r.tag).toBe("해당 없음");
+    expect(r.failReasons.join()).toMatch(/월세 거주자만 신청할 수 있습니다/);
+  });
+
+  it("답하지 않았으면 추정하지 않고 확인 필요로 남긴다", () => {
+    const r = tagPolicy(월세전용, { ...기본답변, housingType: null });
+    expect(r.tag).toBe("확인 필요");
+    expect(r.unknownFields).toContain("주거 형태");
+  });
+
+  /*
+   * 연세를 월세 지원 사업에서 빼면 1층과 2층이 어긋난다 — 2층은 연세 선납액을
+   * 월 환산해 같은 정책의 지원금을 계산한다 (lib/rent.ts, PRD F1-5).
+   */
+  it("월세 지원 사업은 연세 계약도 대상으로 본다", () => {
+    const moland = policies.find((p) => p.id === "moland-youth-rent-support")!;
+    expect(moland.discovery.housingTypes).toContain("연세");
+    expect(tagPolicy(moland, { age: 23, region: "전국", status: "대학생", incomeBracket: 1, housingType: "연세" }).tag)
+      .toBe("가능성 있음");
+  });
+
+  // 공공임대·기숙사·가족과 거주를 한 값으로 합쳤다. 넷으로 나눠도 판정 결과가
+  // 같았기 때문이다 (types.ts 의 HousingType 주석).
+  it("'그 외'는 월세·전세 전용 정책의 대상이 아니다", () => {
+    expect(tagPolicy(월세전용, { ...기본답변, housingType: "그 외" }).tag).toBe("해당 없음");
+  });
+
+  // 이사비·정착지원금처럼 계약 형태와 무관한 사업이다. null 을 '모름'으로 읽으면
+  // 그런 정책 전부가 이유 없이 '확인 필요'가 된다.
+  it("주거 형태를 따지지 않는 정책은 답하지 않아도 통과한다", () => {
+    expect(tagPolicy(익산정책, { ...기본답변, housingType: null }).tag).toBe("가능성 있음");
   });
 });

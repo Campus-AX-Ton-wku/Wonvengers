@@ -52,9 +52,30 @@ describe("benefitFormula", () => {
 
   it("식의 결과는 실제 계산 금액과 항상 같다", () => {
     const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 4800000, months: 12 });
-    for (const policy of policies) {
+    // 계약 화면이 그 지출을 받지 않는 정책은 예상액을 내지 않는다. 식 대신 왜
+    // 계산하지 않는지를 말한다 (types.ts 의 lumpSumBasis).
+    const 계산하는것 = policies.filter(
+      (p) => p.benefitType !== "lump_sum" || p.lumpSumBasis === "oneTimeMoveCost"
+    );
+    expect(계산하는것.length).toBeGreaterThan(0);
+    for (const policy of 계산하는것) {
       const amount = estimatePolicyAmount(policy, listing).toLocaleString();
       expect(benefitFormula(policy, listing), policy.id).toContain(`= ${amount}원`);
+    }
+  });
+
+  /*
+   * 보증금반환보증 보증료 지원처럼 2층이 그 지출을 입력받지 않는 lump_sum 은
+   * 예상액이 0 이어야 한다. 이걸 빠뜨리면 이사비 30만원을 넣은 사람에게 보증료
+   * 30만원이 붙어 최대 지원 가능액이 부풀려진다.
+   */
+  it("계산 근거가 없는 일시금은 예상액을 0 으로 둔다", () => {
+    const listing = makeListing({ oneTimeMoveCost: 300000 });
+    const 계산불가 = policies.filter((p) => p.lumpSumBasis === "notCalculable");
+    expect(계산불가.length).toBeGreaterThan(0);
+    for (const policy of 계산불가) {
+      expect(estimatePolicyAmount(policy, listing), policy.id).toBe(0);
+      expect(benefitFormula(policy, listing), policy.id).toMatch(/계산하지 않습니다/);
     }
   });
 });

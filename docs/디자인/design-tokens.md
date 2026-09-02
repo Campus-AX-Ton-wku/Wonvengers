@@ -80,14 +80,21 @@
 
 ### 상태
 
+톤은 `StatusBadge` 가 단독으로 갖는다. 1층 카드 상태(`DiscoveryCardStatus`) 5종은
+`CARD_STATUS_BADGE` 표가 톤과 아이콘을 함께 정하고, 목록·상세가 같은 표를 쓴다.
+
 | 상태 | 면 / 글자 | 대비 | 아이콘 |
 |---|---|---|---|
-| 가능성 있음 · 예상적용 | `ok-50` `#e6f6ee` / `ok-700` `#0d6b43` | 5.87:1 | `CircleCheck` |
+| 신청 가능 · 예상적용 | `ok-50` `#e6f6ee` / `ok-700` `#0d6b43` | 5.87:1 | `CircleCheck` |
 | 확인 필요 · 조건충족시가능 | `warn-50` `#fff1e6` / `warn-800` `#9a3412` | 6.60:1 | `TriangleAlert` |
-| 해당 없음 · 대상아님 | `ink-100` / `ink-700` | 6.55:1 | `CircleSlash` |
+| 신청 예정 | `brand-50` / `brand-800` | 7.10:1 | `Clock` |
 | 접수 마감 · 신청불가 | `ink-100` / `ink-600` | 5.44:1 | `Ban` |
+| 대상 아님 · 대상아님 | `ink-100` / `ink-700` | 6.55:1 | `CircleSlash` |
 | 정보 | `brand-50` / `brand-800` | 7.10:1 | `Info` |
 | 입력 오류 | `danger-50` `#fdecec` / `danger-700` `#a11f18` | 8.0:1 | `CircleAlert` |
+
+**'신청 예정'만 파랑이다.** 초록을 주면 지금 신청할 수 있다는 뜻이 되고, 회색을
+주면 끝난 사업처럼 읽힌다. 기다리면 되는 상태는 그 둘 중 어느 쪽도 아니다.
 
 `warn`(주황 `#9a3412`)과 `accent`(금색 `#8a5a00`)는 색상환에서 20° 밖에 안 떨어져
 있다. 그래도 헷갈리지 않는 이유는 **맥락과 크기가 완전히 다르고**(작은 배지 vs 큰
@@ -148,7 +155,7 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `IconButton` / `IconLink` | 44px 타깃. `label` 이 **필수** |
 | `Card` | `plain` · `flat` · `info` · `notice` |
 | `ChoiceCard` | 세로 선택지. 선택 표시는 색 + 체크 + `aria-pressed` |
-| `StatusBadge` | 상태 6종. 아이콘이 항상 붙는다 |
+| `StatusBadge` / `CARD_STATUS_BADGE` | 상태 배지와 1층 카드 상태 5종의 톤·아이콘 표 |
 | `StepHeader` / `AnsweredStack` | 질문 제목 · 답한 질문 쌓기(진행률 대신) |
 | `Field` / `FieldGroup` / `FieldError` / `MoneyInput` / `NumberInput` | 입력 |
 | `Disclosure` | `<details>` 기반 접기. 라벨에 건수를 적는다 |
@@ -162,14 +169,19 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 
 ### 지켜야 할 DOM 구조
 
-테스트가 세 곳의 형제 관계를 짚는다. 사이에 래퍼를 끼우면 깨진다.
+테스트가 짚는 곳들이다. 사이에 래퍼를 끼우면 깨진다.
 
-- `app/find/PolicyCard.tsx` — 루트가 `<article>`, `공고 상한` 라벨의 **바로 다음
-  형제**가 금액, 상태 배지의 **부모의 바로 다음 형제**가 기관·마감 줄
 - `app/components/ResultSummary.tsx` — 루트가 `<section>`, 두 금액 라벨의 **바로 다음
   형제**가 각각 금액. 지원금 쪽만 `accent`, 글씨 등급도 지원금이 더 커야 한다
 - `StatusBadge` — 라벨이 **직접 자식 텍스트 노드**여야 한다. 한 겹 더 감싸면
   `getByText` 가 색 클래스가 붙은 요소를 놓친다
+- `app/find/policies/page.tsx` — 목록 영역이 `role="region"` 에
+  `aria-label="받을 수 있는 주거 혜택 N개"`, 접힌 묶음이 `<details>` 안의
+  `신청할 수 없는 지원금 N개`
+- `app/find/PolicyCard.tsx` — 카드 전체가 `<a>` 이고 `href` 는 `/find/policies/<id>`
+- `app/find/policies/[id]/PolicyDetail.tsx` — 출처 링크의 접근성 이름은
+  **`공고 원문 →` 그대로** 다. 앱에서 유니코드 화살표가 남은 유일한 자리이고,
+  테스트가 이 문자열을 고정한다
 
 ---
 
@@ -184,7 +196,7 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `guide` | 온보딩 2 (안내) |
 | `success` | 온보딩 3 (결과) |
 | `found` | `/find/result` — 지원금을 찾았을 때 |
-| `empty` | `/find/result`·`/find/policies` — 못 찾았을 때 |
+| `empty` | `/find/result` — 못 찾았을 때 |
 | `thinking` | `/result` — 계산할 입력이 없을 때 |
 | `basic` | 기본값 |
 

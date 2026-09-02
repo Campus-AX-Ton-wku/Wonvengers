@@ -20,6 +20,7 @@ const 익산_대학생 = {
   region: "전북특별자치도 익산시" as const,
   status: "대학생" as const,
   incomeBracket: 1,
+  housingType: "월세" as const,
 };
 
 async function render요약(answers: Parameters<typeof saveAnswers>[0]) {
@@ -38,7 +39,7 @@ describe("/find/result", () => {
 
     expect(screen.getByText("지금 신청할 수 있는")).toBeTruthy();
     expect(screen.getByText("최대 50만원")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 2건");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 2건이 있어요");
   });
 
   /*
@@ -75,19 +76,20 @@ describe("/find/result", () => {
       region: "전북특별자치도",
       status: "재직",
       incomeBracket: 2,
+      housingType: "월세" as const,
     });
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "지금 신청할 수 있는\n지원금이 없어요"
+      "지금 신청할 수 있는 지원금이 없어요"
     );
     expect(screen.getByText(/다음 모집 공고를 기다려야 합니다/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /어떤 지원금이었는지 보기/ })).toBeTruthy();
   });
 
   it("후보가 아예 없으면 그렇게 말한다", async () => {
-    await render요약({ ...익산_대학생, birthDate: birthDateForAge(55) });
+    await render요약({ ...익산_대학생, birthDate: birthDateForAge(55), housingType: "그 외" as const });
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("해당되는 지원금이 없어요");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("아쉽게도 해당되는 지원금이 없어요");
     expect(screen.getByRole("link", { name: /왜 해당되지 않는지 보기/ })).toBeTruthy();
   });
 

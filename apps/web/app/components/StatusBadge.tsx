@@ -1,4 +1,5 @@
-import { Ban, CircleCheck, CircleSlash, ICON_SM, Info, TriangleAlert } from "./icons";
+import { Ban, CircleCheck, CircleSlash, Clock, ICON_SM, Info, TriangleAlert } from "./icons";
+import type { DiscoveryCardStatus } from "@/lib/types";
 
 /**
  * 판정 상태 배지.
@@ -25,6 +26,24 @@ const TONE: Record<BadgeTone, { className: string; Icon: typeof CircleCheck }> =
    */
   muted: { className: "bg-ink-100 text-ink-600", Icon: Ban },
   info: { className: "bg-brand-50 text-brand-800", Icon: Info },
+};
+
+/**
+ * 1층 카드 상태 → 톤·아이콘. 목록·상세가 같은 표를 쓴다.
+ *
+ * '신청 예정'은 파랑(정보)이고 시계다 — 초록을 주면 지금 신청할 수 있다는 뜻이
+ * 되고, 회색을 주면 끝난 사업처럼 읽힌다. 기다리면 되는 상태는 그 둘 중 어느
+ * 쪽도 아니다.
+ */
+export const CARD_STATUS_BADGE: Record<
+  DiscoveryCardStatus,
+  { tone: BadgeTone; icon: typeof CircleCheck }
+> = {
+  "신청 가능": { tone: "ok", icon: CircleCheck },
+  "확인 필요": { tone: "warn", icon: TriangleAlert },
+  "신청 예정": { tone: "info", icon: Clock },
+  "접수 마감": { tone: "muted", icon: Ban },
+  "대상 아님": { tone: "neutral", icon: CircleSlash },
 };
 
 export function StatusBadge({

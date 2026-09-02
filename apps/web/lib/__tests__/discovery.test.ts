@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import bracketsJson from "@/data/income-brackets.json";
 import {
+  answerLine,
   answerSummary,
+  cardStatus,
   applicationOpenCount,
   splitByApplicationWindow,
   candidateCount,
   groupPolicies,
 } from "@/lib/discovery";
-import type { IncomeBracket, PolicyMeta, ResolvedAnswers } from "@/lib/types";
+import type { IncomeBracket, PolicyMeta, ResolvedAnswers, TagResult } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
 const brackets = bracketsJson as IncomeBracket[];
@@ -18,6 +20,7 @@ const 익산_대학생: ResolvedAnswers = {
   region: "전북특별자치도 익산시",
   status: "대학생",
   incomeBracket: 1,
+  housingType: "월세",
 };
 
 // 질문 화면과 목록 화면이 같은 분류를 써야 한다. 두 곳에서 따로 계산하면
@@ -28,21 +31,23 @@ describe("groupPolicies", () => {
     expect(g.가능.length + g.확인.length + g.해당없음.length).toBe(policies.length);
   });
 
-  it("익산 23세 대학생·소득 1구간이면 가능 2건 · 확인 필요 1건 · 해당 없음 2건이다", () => {
+  it("익산 23세 월세 거주 대학생·소득 1구간의 분류", () => {
     const g = groupPolicies(policies, 익산_대학생);
     expect(g.가능.map((t) => t.policy.id)).toEqual([
       "moland-youth-rent-support",
       "iksan-newcomer-moving-cost-support",
     ]);
     expect(g.확인.map((t) => t.policy.id)).toEqual(["youth-housing-benefit-split-payment"]);
+    // 보증료 지원은 전세 계약자만 받는다 — 월세 거주자에게는 해당 없음이다.
     expect(g.해당없음.map((t) => t.policy.id)).toEqual([
       "iksan-youth-rent-support",
       "jeonbuk-youth-settlement-support",
+      "jeonse-return-guarantee-fee-subsidy",
     ]);
   });
 
   it("아무것도 답하지 않으면 해당 없음이 하나도 없다", () => {
-    const g = groupPolicies(policies, { age: null, region: null, status: null, incomeBracket: null });
+    const g = groupPolicies(policies, { age: null, region: null, status: null, incomeBracket: null, housingType: null });
     expect(g.해당없음).toHaveLength(0);
     expect(g.확인).toHaveLength(policies.length);
   });
@@ -72,7 +77,7 @@ describe("answerSummary", () => {
   });
 
   it("답하지 않은 항목은 '모름'으로 남긴다", () => {
-    expect(answerSummary({ age: null, region: null, status: null, incomeBracket: null }, brackets)).toEqual([
+    expect(answerSummary({ age: null, region: null, status: null, incomeBracket: null, housingType: null }, brackets)).toEqual([
       "나이 모름",
       "지역 모름",
       "상태 모름",
@@ -102,6 +107,9 @@ describe("applicationOpenCount", () => {
     region: "전북특별자치도 익산시",
     status: "대학생",
     incomeBracket: 1,
+    // 주거형태를 고정한다. null 이면 주거형태 제한이 있는 정책이 '확인 필요'로
+    // 남아, '전부 해당 없음' 을 전제한 검증이 성립하지 않는다.
+    housingType: "월세",
   };
 
   it("접수 기간 안에 있는 후보만 센다", () => {
@@ -139,6 +147,9 @@ describe("splitByApplicationWindow", () => {
     region: "전북특별자치도 익산시",
     status: "대학생",
     incomeBracket: 1,
+    // 주거형태를 고정한다. null 이면 주거형태 제한이 있는 정책이 '확인 필요'로
+    // 남아, '전부 해당 없음' 을 전제한 검증이 성립하지 않는다.
+    housingType: "월세",
   };
 
   it("접수가 끝난 후보를 신청 가능한 쪽에서 빼낸다", () => {
@@ -181,5 +192,75 @@ describe("splitByApplicationWindow", () => {
         applicationOpenCount(g, asOf)
       );
     }
+  });
+});
+
+describe("answerLine", () => {
+  it("나이 · 지역 · 상태를 한 줄로 잇는다", () => {
+    expect(answerLine(익산_대학생)).toBe("23세 · 익산시 · 대학생");
+  });
+
+  // 소득은 이 줄에 두지 않는다 — '조건 수정' 화면에 그대로 있다.
+  it("소득 구간은 넣지 않는다", () => {
+    expect(answerLine({ ...익산_대학생, incomeBracket: 5 })).toBe("23세 · 익산시 · 대학생");
+  });
+
+  it("답하지 않은 항목은 '모름'으로 남긴다", () => {
+    expect(answerLine({ age: null, region: null, status: null, incomeBracket: null, housingType: null })).toBe(
+      "나이 모름 · 지역 모름 · 상태 모름"
+    );
+  });
+
+  it("칩 목록과 같은 어휘를 쓴다", () => {
+    expect(answerSummary(익산_대학생, brackets).slice(0, 3).join(" · ")).toBe(
+      answerLine(익산_대학생)
+    );
+  });
+});
+
+/**
+ * 태그와 접수 기간을 사용자가 할 행동 하나로 합친다. 새로 판정하지 않는다 —
+ * 우선순위만 정한다: 대상이 아니면 기간을 볼 필요가 없고, 기간 밖이면 남은
+ * 조건을 확인해도 지금은 신청할 수 없다.
+ */
+describe("cardStatus", () => {
+  const 정책 = (over: Partial<PolicyMeta>) =>
+    ({ applicationStart: "2026-01-01", applicationEnd: "2026-12-31", ...over }) as PolicyMeta;
+  const 태그 = (tag: TagResult["tag"]): TagResult => ({
+    tag,
+    failReasons: [],
+    unknownFields: [],
+  });
+
+  it("접수 중이고 조건이 맞으면 '신청 가능'", () => {
+    expect(cardStatus(정책({}), 태그("가능성 있음"), "2026-06-01")).toBe("신청 가능");
+  });
+
+  it("모름이 남아 있으면 '확인 필요'", () => {
+    expect(cardStatus(정책({}), 태그("확인 필요"), "2026-06-01")).toBe("확인 필요");
+  });
+
+  it("접수 시작 전이면 '신청 예정'", () => {
+    expect(cardStatus(정책({}), 태그("가능성 있음"), "2025-12-31")).toBe("신청 예정");
+  });
+
+  it("접수가 끝났으면 '접수 마감'", () => {
+    expect(cardStatus(정책({}), 태그("가능성 있음"), "2027-01-01")).toBe("접수 마감");
+  });
+
+  it("마감일이 없으면 상시 접수다 — 언제 봐도 마감이 아니다", () => {
+    expect(cardStatus(정책({ applicationEnd: null }), 태그("가능성 있음"), "2099-01-01")).toBe(
+      "신청 가능"
+    );
+  });
+
+  // 대상이 아닌 사람에게 '접수 마감'이라고 하면 다음 회차를 기다리면 된다고 읽힌다.
+  it("대상이 아니면 접수 기간과 상관없이 '대상 아님'", () => {
+    expect(cardStatus(정책({}), 태그("해당 없음"), "2027-01-01")).toBe("대상 아님");
+    expect(cardStatus(정책({}), 태그("해당 없음"), "2026-06-01")).toBe("대상 아님");
+  });
+
+  it("접수 기간 밖이면 모름이 남아 있어도 지금 신청할 수는 없다", () => {
+    expect(cardStatus(정책({}), 태그("확인 필요"), "2027-01-01")).toBe("접수 마감");
   });
 });
