@@ -7,7 +7,7 @@ import type { PerkyState } from "@/app/components";
 import { markOnboardingSeen } from "@/lib/storage";
 
 /**
- * 첫 방문자에게만 한 번 보여주는 3장짜리 소개.
+ * 앱 시작 시 보여주는 3장짜리 소개.
  *
  * ── 왜 이 화면이 필요한가 ────────────────────────────────────────────
  * 이 앱은 반복 사용자가 없다. 방을 알아보는 중에, 모바일에서, 처음이자 아마도
@@ -16,7 +16,7 @@ import { markOnboardingSeen } from "@/lib/storage";
  * 찾아주고(발견), 물어보고(안내), 금액을 보여준다(결과).
  *
  * ── 노출 규칙 ────────────────────────────────────────────────────
- * 자동 노출은 app/layout.tsx 의 인라인 스크립트가 한다. `/` 에 처음 온 사람만
+ * 자동 노출은 app/layout.tsx 의 인라인 스크립트가 한다. `/` 로 들어오면
  * 여기로 온다. 이 화면 자체는 언제든 직접 열 수 있다 — 그게 개발·QA 의 재확인
  * 경로이고, 랜딩 하단의 '앱 소개 다시 보기' 링크가 같은 곳을 가리킨다.
  *
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
       <header className="flex h-14 items-center justify-end pt-[env(safe-area-inset-top)]">
         <button
           type="button"
-          onClick={() => leave("/")}
+          onClick={() => leave("/find")}
           /* -mr-3 + px-3 — 글자 오른쪽 끝이 본문 오른쪽 끝과 맞는다. 타깃은 그대로 44px. */
           className="focus-ring -mr-3 flex min-h-11 items-center rounded-control px-3 text-sm font-bold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
         >
