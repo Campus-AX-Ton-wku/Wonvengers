@@ -3,16 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
-import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/lib/types";
+import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
 import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
-import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
+import {
+  AppShell,
+  Button,
+  ChoiceCard,
+  Field,
+  FieldError,
+  FieldGroup,
+  MoneyInput,
+  NumberInput,
+  StepHeader,
+  StickyBottomAction,
+  TopBar,
+} from "@/app/components";
+import { Check, ICON_SM } from "@/app/components/icons";
 
 const policies = policiesData as PolicyMeta[];
 
@@ -132,15 +144,18 @@ export default function InputPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5">
-      <AppBar onBack={handleBack} />
+    <AppShell>
+      <TopBar onBack={handleBack} backLabel="이전 단계로" />
 
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (
           <>
-            <StepHeading title={"어떤 방을\n보고 계신가요?"} />
+            <StepHeader title="어떤 방을 보고 계신가요?" />
 
-            <Field label="거주 예정 지역">
+            <Field
+              label="거주 예정 지역"
+              hint={regionFromFloor1 ? <CarriedOver>앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.</CarriedOver> : undefined}
+            >
               <select
                 className="input"
                 value={form.region}
@@ -153,17 +168,12 @@ export default function InputPage() {
                   </option>
                 ))}
               </select>
-              {regionFromFloor1 && (
-                <p className="text-xs font-normal text-brand-700">
-                  <span aria-hidden="true">✓</span> 앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.
-                </p>
-              )}
             </Field>
 
             <FieldGroup label="계약 형태">
               <div className="flex flex-col gap-2">
                 {(["월세", "연세"] as ContractType[]).map((type) => (
-                  <OptionButton
+                  <ChoiceCard
                     key={type}
                     active={contractTypeChosen && form.contractType === type}
                     onClick={() => {
@@ -172,34 +182,32 @@ export default function InputPage() {
                     }}
                   >
                     {type}
-                  </OptionButton>
+                  </ChoiceCard>
                 ))}
               </div>
               {contractTypeFromFloor1 && (
-                <p className="mt-2 text-xs font-normal text-brand-700">
-                  <span aria-hidden="true">✓</span> 앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.
-                </p>
+                <CarriedOver>앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
               )}
             </FieldGroup>
 
             <Field label="보증금 (만원)">
-              <NumberInput money value={form.deposit} onChange={(v) => update("deposit", v)} />
+              <MoneyInput placeholder="0" value={form.deposit} onChange={(v) => update("deposit", v ?? 0)} />
             </Field>
 
             <Field label={form.contractType === "연세" ? "연세 선납액 (만원)" : "월세액 (만원)"}>
-              <NumberInput
-                money
+              <MoneyInput
+                placeholder="0"
                 value={form.rentOrYearlyAmount}
-                onChange={(v) => update("rentOrYearlyAmount", v)}
+                onChange={(v) => update("rentOrYearlyAmount", v ?? 0)}
               />
             </Field>
           </>
         ) : (
           <>
-            <StepHeading title={"비용과 기간을\n알려주세요"} />
+            <StepHeader title="비용과 기간을 알려주세요" />
 
             <Field label="월 관리비 (만원)">
-              <NumberInput money value={form.managementFee} onChange={(v) => update("managementFee", v)} />
+              <MoneyInput placeholder="0" value={form.managementFee} onChange={(v) => update("managementFee", v ?? 0)} />
             </Field>
 
             {/* 휠 데이트 피커. /eligibility 의 생년월일도 같은 컴포넌트를 쓴다 —
@@ -214,19 +222,23 @@ export default function InputPage() {
             </FieldGroup>
 
             <Field label="거주 예정 개월 수">
-              <NumberInput value={form.months} onChange={(v) => update("months", v)} />
+              <NumberInput
+                placeholder="0"
+                value={form.months === 0 ? null : form.months}
+                onChange={(v) => update("months", v ?? 0)}
+              />
             </Field>
 
             <Field label="이사비 등 정책이 요구하는 일시 지출 (만원, 없으면 0)">
-              <NumberInput
-                money
+              <MoneyInput
+                placeholder="0"
                 value={form.oneTimeMoveCost}
-                onChange={(v) => update("oneTimeMoveCost", v)}
+                onChange={(v) => update("oneTimeMoveCost", v ?? 0)}
               />
             </Field>
 
             {form.contractType === "연세" && monthlyEquivalent > 0 && (
-              <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-900">
+              <p className="rounded-control bg-brand-50 px-4 py-3 text-sm text-brand-900">
                 연세 {form.rentOrYearlyAmount.toLocaleString()}원 ÷ {form.months}개월 = 월 환산{" "}
                 <strong>{monthlyEquivalent.toLocaleString()}원</strong>
               </p>
@@ -248,10 +260,12 @@ export default function InputPage() {
               </select>
             </Field>
 
-            <label className="flex items-start gap-3 rounded-xl bg-sand-50 px-4 py-4 text-sm leading-relaxed text-ink-600">
+            {/* 계산 결과의 신뢰가 이 한 줄에 걸려 있다(PRD F1-10). 다른 입력칸과
+                같은 무게로 두면 습관적으로 지나친다 — 면을 주고 조금 띄워 둔다. */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-control bg-ink-50 px-4 py-4 text-sm font-medium leading-relaxed text-ink-700 transition-colors focus-within:ring-4 focus-within:ring-brand-100 hover:bg-brand-50">
               <input
                 type="checkbox"
-                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-brand-600)]"
+                className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer"
                 checked={form.confirmedMatchesActualContract}
                 onChange={(e) => update("confirmedMatchesActualContract", e.target.checked)}
               />
@@ -260,80 +274,22 @@ export default function InputPage() {
           </>
         )}
 
-        {error && (
-          <p role="alert" className="text-sm font-semibold text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <FieldError>{error}</FieldError>}
       </main>
 
-      <BottomCta onClick={handleNext}>다음</BottomCta>
-    </div>
+      <StickyBottomAction>
+        <Button onClick={handleNext}>다음</Button>
+      </StickyBottomAction>
+    </AppShell>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** 앞 화면의 답을 그대로 옮겨 왔다는 표시. 색만으로 말하지 않도록 체크를 붙인다. */
+function CarriedOver({ children }: { children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-2 text-sm font-semibold text-ink-700">
-      {label}
+    <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-700">
+      <Check size={ICON_SM - 2} strokeWidth={3} aria-hidden="true" className="shrink-0" />
       {children}
-    </label>
-  );
-}
-
-/**
- * 라벨이 붙은 버튼 그룹.
- *
- * Field(<label>)로 감싸면 안 된다 — button 은 labelable 요소라서 첫 버튼이
- * label 전체 텍스트를 자기 접근성 이름으로 가져간다("계약 형태 월세 연세, 버튼").
- */
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div role="group" aria-label={label} className="flex flex-col gap-2 text-sm font-semibold text-ink-700">
-      <span>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-/**
- * 숫자 입력. 음수는 입력되는 순간 0으로 막고, 금액이면 만·억 단위로 읽어준다 (F1-8).
- * '다음'을 누를 때까지 기다리면 금액 단위 실수를 늦게 알게 된다.
- *
- * money 인 칸은 만원 단위로 주고받는다 — 3 을 넣으면 30,000원이 저장된다.
- * value/onChange 는 그대로 원 단위이므로 계산·저장 쪽은 아무것도 바뀌지 않는다.
- */
-function NumberInput({
-  value,
-  onChange,
-  money = false,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  money?: boolean;
-}) {
-  const shown = money ? wonToManwon(value) : Number.isFinite(value) && value !== 0 ? value : null;
-  return (
-    <div className="flex flex-col gap-1">
-      {/* 0 을 값으로 보여주면 사용자가 지우고 입력해야 한다. 빈 칸 + placeholder 로 둔다. */}
-      <input
-        type="number"
-        inputMode={money ? "decimal" : "numeric"}
-        step={money ? "any" : 1}
-        className="input"
-        value={shown ?? ""}
-        onChange={(e) => {
-          const typed = Math.max(0, Number(e.target.value) || 0);
-          onChange(money ? manwonToWon(typed) : typed);
-        }}
-        min={0}
-        placeholder="0"
-      />
-      {money && value > 0 && (
-        <p aria-hidden="true" className="text-xs font-semibold text-brand-700">
-          {formatKoreanMoney(value)}
-        </p>
-      )}
-    </div>
+    </span>
   );
 }

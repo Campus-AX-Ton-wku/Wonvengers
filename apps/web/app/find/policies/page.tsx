@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import FindTopBar from "@/app/find/FindTopBar";
 import PolicyCard from "@/app/find/PolicyCard";
-import { ChevronRightIcon } from "@/app/icons";
+import { AppShell, TopBar } from "@/app/components";
+import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
@@ -36,9 +36,9 @@ const policies = policiesJson as PolicyMeta[];
  * 사람에게는 둘 중 하나로 단정하지 않고 '주거비'라고 부른다.
  */
 function ctaLabel(housingType: HousingType | null): string {
-  if (housingType === "월세") return "지원받으면\n내 월세는 얼마일까?";
-  if (housingType === "연세") return "지원받으면\n내 연세 부담은 얼마나 줄까?";
-  return "지원받으면\n내 주거비는 얼마일까?";
+  if (housingType === "월세") return "지원받으면 내 월세는 얼마일까?";
+  if (housingType === "연세") return "지원받으면 내 연세 부담은 얼마나 줄까?";
+  return "지원받으면 내 주거비는 얼마일까?";
 }
 
 export default function FindPoliciesPage() {
@@ -69,8 +69,9 @@ export default function FindPoliciesPage() {
   const 신청불가 = [...마감, ...groups.해당없음];
 
   return (
-    <main className="step-in mx-auto max-w-lg px-5 pb-10">
-      <FindTopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
+    <AppShell className="step-in">
+      <TopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
+      <main className="pb-10">
 
       {!loaded || !asOf ? (
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
@@ -81,7 +82,7 @@ export default function FindPoliciesPage() {
 
               후보는 있는데 전부 마감이면 '해당되는 것이 없어요' 로 말하면 안 된다.
               대상이 아니라는 뜻으로 읽히지만 실제로는 다음 회차를 기다리면 된다. */}
-          <h1 className="mt-6 text-2xl font-extrabold leading-snug text-ink-900">
+          <h1 className="mt-4 text-2xl font-extrabold leading-snug text-ink-900">
             {신청가능.length > 0
               ? `받을 수 있는 주거 혜택 ${신청가능.length}개`
               : count > 0
@@ -95,17 +96,17 @@ export default function FindPoliciesPage() {
             <p className="min-w-0 truncate text-sm text-ink-500">{answerLine(resolved)}</p>
             <Link
               href="/find"
-              className="flex shrink-0 items-center gap-0.5 rounded-lg py-1 pl-2 text-sm font-semibold text-ink-600 transition-colors hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+              className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
             >
               조건 수정
-              <ChevronRightIcon size={16} className="text-ink-200" />
+              <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
             </Link>
           </div>
 
           {/* 카드 사이는 여백으로 가른다. 구분선을 함께 쓰면 목록이 표처럼 읽힌다. */}
           <section
             aria-label={`받을 수 있는 주거 혜택 ${신청가능.length}개`}
-            className="mt-6 space-y-2"
+            className="mt-6 space-y-3"
           >
             {신청가능.map(({ policy, result }, i) => (
               <div
@@ -133,14 +134,15 @@ export default function FindPoliciesPage() {
               있으면 실제로 받을 수 있는 50만원보다 크게 읽힌다. */}
           {신청불가.length > 0 && (
             <details className="group mt-6" open={신청가능.length === 0}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-4 text-sm font-bold text-ink-600 transition-colors hover:bg-sand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 [&::-webkit-details-marker]:hidden">
+              <summary className="focus-ring flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-control bg-ink-50 px-4 py-3 text-sm font-bold text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-800 [&::-webkit-details-marker]:hidden">
                 <span>신청할 수 없는 지원금 {신청불가.length}개</span>
-                <ChevronRightIcon
-                  size={18}
-                  className="shrink-0 text-ink-200 transition-transform group-open:rotate-90"
+                <ChevronRight
+                  size={ICON_SM + 2}
+                  aria-hidden="true"
+                  className="shrink-0 text-ink-300 transition-transform group-open:rotate-90"
                 />
               </summary>
-              <div className="mt-1 space-y-2">
+              <div className="mt-2 space-y-3">
                 {신청불가.map(({ policy, result }) => (
                   <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
                 ))}
@@ -156,30 +158,39 @@ export default function FindPoliciesPage() {
               방법이 없다. 문구만 전세용으로 바꾸면 눌러서 막히는 길이 된다. */}
           {count > 0 &&
             (resolved.housingType === "전세" ? (
-              <p className="mt-8 rounded-2xl bg-sand-50 px-5 py-4 text-sm leading-relaxed text-ink-600">
+              <p className="mt-8 rounded-card bg-ink-100 px-5 py-4 text-sm leading-relaxed text-ink-600">
                 전세 부담이 얼마나 줄어드는지는 아직 계산해드리지 못합니다. 지금은 월세·연세 계약만
                 계산할 수 있어요.
               </p>
             ) : (
               <Link
                 href="/calculate"
-                className="mt-8 flex items-center justify-between gap-3 rounded-2xl bg-brand-600 px-5 py-5 transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
+                className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
               >
-                <span className="whitespace-pre-line text-left text-lg font-bold leading-snug text-white">
+                <span className="text-balance text-left text-lg font-bold leading-snug text-white">
                   {ctaLabel(resolved.housingType)}
                 </span>
-                <ChevronRightIcon size={22} className="shrink-0 text-white/80" />
+                <ChevronRight size={ICON_MD + 2} aria-hidden="true" className="shrink-0 text-white/80" />
               </Link>
             ))}
 
-          <p className="mt-8 text-xs leading-relaxed text-ink-500">
-            이 화면은 나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과이며,
-            <strong> 신청 자격을 확정하는 것이 아닙니다.</strong> 무주택 여부, 가구 소득, 복지 자격
-            등 남은 조건과 최종 지원 여부는 각 기관이 심사해 결정합니다. 반드시 공식 페이지에서
-            확인하세요.
-          </p>
+          {/* 고지는 본문과 같은 무게로 두지 않는다. 회색 면에 작은 글씨, 아이콘 하나.
+              그러나 접지는 않는다 — 접을 수 있는 고지는 고지가 아니다. */}
+          <div className="mt-8 flex gap-2.5 rounded-card bg-ink-100 p-4">
+            <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
+            <p className="text-xs leading-relaxed text-ink-600">
+              이 화면은 나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과이며,
+              <strong className="font-bold text-ink-900">
+                {" "}
+                신청 자격을 확정하는 것이 아닙니다.
+              </strong>{" "}
+              무주택 여부, 가구 소득, 복지 자격 등 남은 조건과 최종 지원 여부는 각 기관이 심사해
+              결정합니다. 반드시 공식 페이지에서 확인하세요.
+            </p>
+          </div>
         </>
       )}
-    </main>
+      </main>
+    </AppShell>
   );
 }

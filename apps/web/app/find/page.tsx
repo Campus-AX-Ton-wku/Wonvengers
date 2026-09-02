@@ -25,7 +25,16 @@ import type {
   PolicyMeta,
 } from "@/lib/types";
 import { REGION_OPTIONS } from "@/lib/region";
-import { AnsweredStack, AppBar, BottomCta, OptionButton, StepHeading } from "@/app/Stepper";
+import {
+  AnsweredStack,
+  AppShell,
+  Button,
+  ChoiceCard,
+  StepHeader,
+  StickyBottomAction,
+  TopBar,
+} from "@/app/components";
+import { ICON_SM, TriangleAlert } from "@/app/components/icons";
 
 /**
  * 1층 · 발견 — 질문 네 개를 한 번에 하나씩 묻는다.
@@ -54,13 +63,13 @@ const HOUSING_TYPES: { value: HousingType; label: string }[] = [
   { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
 ];
 
-/** 질문 순서. 화면 제목의 줄바꿈은 의미 단위로 직접 끊는다 (StepHeading 주석 참고). */
+/** 질문 순서. 줄바꿈은 화면 폭에 맞춰 StepHeader 가 균형 있게 처리한다. */
 const QUESTIONS = [
-  { key: "birthDate", label: "생년월일", title: "생년월일이\n어떻게 되시나요?" },
-  { key: "region", label: "사는 곳", title: "어디에 살거나\n살 예정인가요?" },
-  { key: "status", label: "현재 상태", title: "현재 상태가\n어떻게 되시나요?" },
-  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은\n어느 정도인가요?" },
-  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로\n거주하고 있나요?" },
+  { key: "birthDate", label: "생년월일", title: "생년월일이 어떻게 되시나요?" },
+  { key: "region", label: "사는 곳", title: "어디에 살거나 살 예정인가요?" },
+  { key: "status", label: "현재 상태", title: "현재 상태가 어떻게 되시나요?" },
+  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은 어느 정도인가요?" },
+  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로 거주하고 있나요?" },
 ] as const satisfies readonly { key: AnsweredKey; label: string; title: string }[];
 
 const QUESTION_KEYS = QUESTIONS.map((q) => q.key);
@@ -146,6 +155,9 @@ export default function FindPage() {
     .reverse();
 
   const isLast = step === QUESTIONS.length - 1;
+  // null 이 실제 답인 질문(지역·상태·소득)이 있으므로 값이 아니라 응답 기록으로
+  // 판단한다. 사용자가 명시적으로 '모름'을 고른 경우에는 다음으로 갈 수 있다.
+  const hasCurrentAnswer = answered.includes(QUESTIONS[step].key);
 
   function handleBack() {
     if (step === 0) return router.push("/");
@@ -153,6 +165,7 @@ export default function FindPage() {
   }
 
   function handleNext() {
+    if (!hasCurrentAnswer) return;
     // 마지막 답을 하면 결과 요약으로. 목록은 그 다음이다.
     if (isLast) return router.push("/find/result");
     setStep(step + 1);
@@ -172,22 +185,21 @@ export default function FindPage() {
 
   if (!loaded) {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5">
-        <AppBar onBack={() => router.push("/")} />
+      <AppShell>
+        <TopBar onBack={() => router.push("/")} backLabel="이전 단계로" />
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
-      </div>
+      </AppShell>
     );
   }
 
   const current = QUESTIONS[step];
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5">
-      <AppBar onBack={handleBack} />
+    <AppShell>
+      <TopBar onBack={handleBack} backLabel="이전 단계로" />
 
-      {/* pb-24 는 하단 고정 CTA 높이만큼. 없으면 마지막으로 쌓인 답이 CTA 뒤에 깔린다. */}
-      <main key={step} className="step-in flex flex-1 flex-col gap-7 pb-28 pt-7">
-        <StepHeading title={current.title} />
+      <main key={step} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
+        <StepHeader title={current.title} />
 
         {step === 0 && (
           <div className="flex flex-col gap-3">
@@ -206,9 +218,13 @@ export default function FindPage() {
               지금 담고 있는 정책은 대부분 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다.
             </p>
             {answers.birthDate !== null && count === 0 && (
-              <p className="rounded-xl bg-warn-50 p-4 text-sm leading-relaxed text-warn-800">
-                이 나이로는 해당되는 지원금이 없습니다. 목록에서 정책별로 왜 해당되지
-                않는지 볼 수 있습니다.
+              /* 색만으로 말하지 않는다 — 주황 면 위에 경고 아이콘을 함께 둔다. */
+              <p className="flex items-start gap-2 rounded-control bg-warn-50 p-4 text-sm leading-relaxed text-warn-800">
+                <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
+                <span>
+                  이 나이로는 해당되는 지원금이 없습니다. 목록에서 정책별로 왜 해당되지
+                  않는지 볼 수 있습니다.
+                </span>
               </p>
             )}
           </div>
@@ -217,73 +233,73 @@ export default function FindPage() {
         {step === 1 && (
           <div className="flex flex-col gap-2">
             {REGION_OPTIONS.map((r) => (
-              <OptionButton
+              <ChoiceCard
                 key={r.value}
                 active={answers.region === r.value}
                 onClick={() => update("region", { region: r.value })}
               >
                 {r.label}
-              </OptionButton>
+              </ChoiceCard>
             ))}
-            <OptionButton
+            <ChoiceCard
               active={answered.includes("region") && answers.region === null}
               onClick={() => update("region", { region: null })}
             >
               모름
-            </OptionButton>
+            </ChoiceCard>
           </div>
         )}
 
         {step === 2 && (
           <div className="flex flex-col gap-2">
             {STATUSES.map((s) => (
-              <OptionButton
+              <ChoiceCard
                 key={s}
                 active={answers.status === s}
                 onClick={() => update("status", { status: s })}
               >
                 {s}
-              </OptionButton>
+              </ChoiceCard>
             ))}
-            <OptionButton
+            <ChoiceCard
               active={answered.includes("status") && answers.status === null}
               onClick={() => update("status", { status: null })}
             >
               모름
-            </OptionButton>
+            </ChoiceCard>
           </div>
         )}
 
         {step === 3 && (
           <div className="flex flex-col gap-2">
             {brackets.map((b) => (
-              <OptionButton
+              <ChoiceCard
                 key={b.bracket}
                 active={answers.incomeBracket === b.bracket}
                 onClick={() => update("incomeBracket", { incomeBracket: b.bracket })}
               >
                 {b.label}
-              </OptionButton>
+              </ChoiceCard>
             ))}
-            <OptionButton
+            <ChoiceCard
               active={answered.includes("incomeBracket") && answers.incomeBracket === null}
               onClick={() => update("incomeBracket", { incomeBracket: null })}
             >
               모름
-            </OptionButton>
+            </ChoiceCard>
           </div>
         )}
 
         {step === 4 && (
           <div className="flex flex-col gap-2">
             {HOUSING_TYPES.map((h) => (
-              <OptionButton
+              <ChoiceCard
                 key={h.value}
                 active={answers.housingType === h.value}
                 onClick={() => update("housingType", { housingType: h.value })}
               >
                 {h.label}
-              </OptionButton>
+              </ChoiceCard>
             ))}
           </div>
         )}
@@ -291,7 +307,11 @@ export default function FindPage() {
         <AnsweredStack items={쌓인답} />
       </main>
 
-      <BottomCta onClick={handleNext}>{ctaLabel}</BottomCta>
-    </div>
+      <StickyBottomAction>
+        <Button onClick={handleNext} disabled={!hasCurrentAnswer}>
+          {ctaLabel}
+        </Button>
+      </StickyBottomAction>
+    </AppShell>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
+import { AppShell, LinkButton, PerkyCharacter, Wordmark } from "@/app/components";
 
 /*
  * 정책 개수는 데이터에서 센다. 하드코딩하면 정책이 늘거나 줄 때 랜딩이 거짓말을 한다.
@@ -29,60 +30,78 @@ const POLICY_COUNT = policiesJson.length;
  */
 const MAX_BENEFIT: { won: number; asOf: string } | null = null;
 
+/**
+ * 랜딩.
+ *
+ * 첫 방문자는 이 화면을 보기 전에 온보딩 3장을 본다 (app/layout.tsx 의 인라인
+ * 스크립트). 그래서 여기는 소개가 아니라 출발점이다 — 사실 한 줄과 버튼 하나.
+ *
+ * 캐릭터는 wave 다. 이 화면의 상태는 "인사" 하나뿐이고, 한 화면에 한 포즈만 쓴다.
+ * 위에서 아래로 캐릭터 → 브랜드 → 사실 → 설명 → 버튼 한 축으로 읽힌다.
+ */
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-9 px-6 py-12">
-      {/* 워드마크만 남긴다. 건물 그래픽은 지웠다 — 워드마크·헤드라인·설명·CTA 가
-          이미 위에서 아래로 읽히는데, 그래픽이 그 사이에 끼어 시선을 한 번 끊었다.
-          왼쪽 정렬은 아래 헤드라인·설명과 같은 축을 쓰기 위한 것이다. 가운데 정렬이면
-          시선이 좌우로 한 번 튄다.
-          워드마크가 크지만 <h1> 은 아니다. 문서 개요에서 제목 자리는 사실이 갖는다. */}
-      <p
-        className="rise-in text-8xl font-extrabold tracking-tight text-ink-900"
-        style={{ animationDelay: "0ms" }}
-      >
-        Perky
-      </p>
+    <AppShell className="justify-center">
+      <main className="flex flex-col items-center gap-7 py-10 text-center">
+        <PerkyCharacter
+          state="wave"
+          size={480}
+          priority
+          className="rise-in h-auto w-[min(46vw,176px)]"
+        />
 
-      <div>
-        {/* 헤드라인이 사실을 나른다 — 지역과 개수가 제목 자리를 갖는다. */}
-        <h1
-          className="rise-in text-4xl font-extrabold leading-[1.25] tracking-tight text-ink-900"
-          style={{ animationDelay: "230ms" }}
-        >
-          {MAX_BENEFIT ? (
-            <>
-              익산 청년이 받을 수 있는
-              <br />
-              최대 {(MAX_BENEFIT.won / 10000).toLocaleString("ko-KR")}만원
-            </>
-          ) : (
-            <>
-              익산 청년이 받을 수 있는
-              <br />
-              주거 지원금 {POLICY_COUNT}개
-            </>
-          )}
-        </h1>
+        {/* 워드마크가 크지만 <h1> 은 아니다. 문서 개요에서 제목 자리는 사실이 갖는다. */}
+        <div className="rise-in" style={{ animationDelay: "80ms" }}>
+          <Wordmark size="lg" />
+        </div>
 
-        <p
-          className="rise-in mt-4 text-base leading-relaxed text-ink-600"
-          style={{ animationDelay: "300ms" }}
-        >
-          국가·전북·익산에 흩어진 정책을 한 화면에 모아
-          <br />
-          내가 받을 수 있는 것만 골라 보여드립니다.
-        </p>
-      </div>
+        <div className="flex flex-col gap-3">
+          {/* 헤드라인이 사실을 나른다 — 지역과 개수가 제목 자리를 갖는다. */}
+          <h1
+            className="rise-in text-[28px] font-extrabold leading-[1.35] tracking-tight text-ink-900"
+            style={{ animationDelay: "170ms" }}
+          >
+            {MAX_BENEFIT ? (
+              <>
+                익산 청년이 받을 수 있는
+                <br />
+                최대 {(MAX_BENEFIT.won / 10000).toLocaleString("ko-KR")}만원
+              </>
+            ) : (
+              <>
+                익산 청년이 받을 수 있는
+                <br />
+                주거 지원금 <span className="text-brand-600">{POLICY_COUNT}개</span>
+              </>
+            )}
+          </h1>
 
-      <div className="rise-in" style={{ animationDelay: "370ms" }}>
-        <Link
-          href="/find"
-          className="block rounded-xl bg-brand-600 px-6 py-4 text-center text-lg font-bold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 active:bg-brand-700"
+          <p
+            className="rise-in text-[15px] leading-relaxed text-ink-600"
+            style={{ animationDelay: "240ms" }}
+          >
+            국가·전북·익산에 흩어진 정책을 한 화면에 모아
+            <br />
+            내가 받을 수 있는 것만 골라 보여드립니다.
+          </p>
+        </div>
+
+        <div
+          className="rise-in flex w-full flex-col items-center gap-1"
+          style={{ animationDelay: "310ms" }}
         >
-          내 지원금 찾아보기
-        </Link>
-      </div>
-    </main>
+          <LinkButton href="/find">내 지원금 찾아보기</LinkButton>
+
+          {/* 온보딩을 다시 보는 길. 자동 노출은 첫 방문에 한 번뿐이라, 이 링크가
+              없으면 한 번 건너뛴 사람과 QA 는 저장소를 지우는 수밖에 없다. */}
+          <Link
+            href="/onboarding"
+            className="focus-ring flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-ink-500 transition-colors hover:text-brand-700"
+          >
+            앱 소개 다시 보기
+          </Link>
+        </div>
+      </main>
+    </AppShell>
   );
 }

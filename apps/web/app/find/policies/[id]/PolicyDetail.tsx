@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
-import FindTopBar from "@/app/find/FindTopBar";
+import { AppShell, CARD_STATUS_BADGE, StatusBadge, TopBar } from "@/app/components";
+import { ICON_SM, ShieldCheck, TriangleAlert } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
@@ -12,12 +13,7 @@ import { formatDotDate, todayISO } from "@/lib/date";
 import { tagPolicy } from "@/lib/filter";
 import { getRequiredQuestions } from "@/lib/questions";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
-import type {
-  DiscoveryAnswers,
-  DiscoveryCardStatus,
-  IncomeBracket,
-  PolicyMeta,
-} from "@/lib/types";
+import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
 
 /**
  * 정책 하나의 전부.
@@ -28,14 +24,6 @@ import type {
 
 const brackets = bracketsJson as IncomeBracket[];
 const policies = policiesJson as PolicyMeta[];
-
-const STATUS_STYLE: Record<DiscoveryCardStatus, string> = {
-  "신청 가능": "bg-ok-50 text-ok-700",
-  "확인 필요": "bg-warn-50 text-warn-800",
-  "신청 예정": "bg-brand-50 text-brand-800",
-  "접수 마감": "bg-ink-100 text-ink-600",
-  "대상 아님": "bg-ink-100 text-ink-600",
-};
 
 const bracketLabel = (bracket: number | null) =>
   brackets.find((b) => b.bracket === bracket)?.label ?? null;
@@ -97,10 +85,10 @@ export default function PolicyDetail({ id }: { id: string }) {
 
   if (!policy) {
     return (
-      <main className="mx-auto max-w-lg px-5 pb-10">
-        <FindTopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+      <AppShell>
+        <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
         <p className="mt-10 text-center text-sm text-ink-500">찾을 수 없는 지원금입니다.</p>
-      </main>
+      </AppShell>
     );
   }
 
@@ -114,33 +102,32 @@ export default function PolicyDetail({ id }: { id: string }) {
     .map((q) => q.label);
 
   return (
-    <main className="step-in mx-auto max-w-lg px-5 pb-10">
-      <FindTopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+    <AppShell className="step-in">
+      <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+      <main className="pb-10">
 
       {/* 상태 배지는 기준일이 있어야 정해진다. 없는 동안 자리만 비워 두면 값이
           들어올 때 아래 내용이 밀리지 않는다. */}
-      <div className="mt-6 flex h-6 items-center">
+      <div className="mt-5 flex h-6 items-center">
         {status && (
-          <span
-            className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${STATUS_STYLE[status]}`}
-          >
+          <StatusBadge tone={CARD_STATUS_BADGE[status].tone} icon={CARD_STATUS_BADGE[status].icon}>
             {status}
-          </span>
+          </StatusBadge>
         )}
       </div>
 
-      <h1 className="mt-2 break-keep text-2xl font-extrabold leading-snug text-ink-900">
-        {policy.name}
-      </h1>
+      <h1 className="mt-2.5 text-2xl font-extrabold leading-snug text-ink-900">{policy.name}</h1>
       <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
 
       {ceiling && (
         <div className="mt-6">
-          <p className="text-xs font-semibold text-ink-500">공고 상한</p>
-          <p className="text-[34px] font-extrabold leading-none text-accent-600">{ceiling.label}</p>
-          <p className="mt-2 break-keep text-sm leading-relaxed text-ink-600">
-            {policy.benefitSummary}
-          </p>
+          <div className="rounded-card bg-accent-50 px-5 py-4">
+            <p className="text-xs font-bold text-accent-700">공고 상한</p>
+            <p className="mt-1 text-[34px] font-extrabold leading-none text-accent-600">
+              {ceiling.label}
+            </p>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-ink-600">{policy.benefitSummary}</p>
           <p className="mt-1 text-xs text-ink-500">
             공고 기준 상한이며, 실제 지원액은 심사에 따라 달라집니다.
           </p>
@@ -149,7 +136,7 @@ export default function PolicyDetail({ id }: { id: string }) {
 
       {/* 왜 이 상태인지. 배지만 보고는 알 수 없다 (PRD F0-5). */}
       {result.tag === "해당 없음" && (
-        <div className="mt-6 rounded-xl bg-ink-100 p-4">
+        <div className="mt-6 rounded-card bg-ink-100 p-4">
           <p className="text-sm font-bold text-ink-900">대상이 아닌 이유</p>
           <ul className="mt-1 list-disc pl-4 text-sm leading-relaxed text-ink-600">
             {result.failReasons.map((reason) => (
@@ -160,13 +147,14 @@ export default function PolicyDetail({ id }: { id: string }) {
       )}
 
       {result.tag === "확인 필요" && (
-        <div className="mt-6 rounded-xl bg-warn-50 p-4">
-          <p className="text-sm font-bold text-warn-800">
-            {result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.
+        <div className="mt-6 rounded-card bg-warn-50 p-4">
+          <p className="flex items-start gap-2 text-sm font-bold text-warn-800">
+            <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <span>{result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.</span>
           </p>
           <Link
             href="/find"
-            className="mt-1 inline-block text-sm font-bold text-brand-700 underline hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+            className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
           >
             조건 수정하기
           </Link>
@@ -196,7 +184,7 @@ export default function PolicyDetail({ id }: { id: string }) {
           {targetRows(policy).map((row) => (
             <div key={row.label} className="flex justify-between gap-4 text-sm">
               <dt className="shrink-0 text-ink-500">{row.label}</dt>
-              <dd className="break-keep text-right font-semibold text-ink-900">{row.value}</dd>
+              <dd className="text-right font-semibold text-ink-900">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -223,11 +211,12 @@ export default function PolicyDetail({ id }: { id: string }) {
         href={policy.applyUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-8 block rounded-2xl bg-ink-900 py-4 text-center text-base font-bold text-white transition-colors hover:bg-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+        className="focus-ring mt-8 block rounded-control bg-brand-600 py-4 text-center text-base font-bold text-white shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
       >
         공식 신청 페이지로 이동
       </a>
-    </main>
+      </main>
+    </AppShell>
   );
 }
 
@@ -253,15 +242,19 @@ export function SourceNotice({
         href={sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-block text-sm font-semibold text-brand-700 underline hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+        className="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
       >
         공고 원문 →
       </a>
       {verifiedAt ? (
-        <p className="mt-1 text-xs text-ink-500">팀이 {verifiedAt}에 공고 원문과 대조했습니다.</p>
+        <p className="flex items-start gap-1.5 text-xs text-ink-500">
+          <ShieldCheck size={ICON_SM - 2} aria-hidden="true" className="mt-0.5 shrink-0" />
+          <span>팀이 {verifiedAt}에 공고 원문과 대조했습니다.</span>
+        </p>
       ) : (
-        <p className="mt-1 text-xs font-semibold text-warn-800">
-          아직 공고 원문과 대조하지 않았습니다. 신청 전에 원문을 직접 확인하세요.
+        <p className="flex items-start gap-1.5 text-xs font-bold text-warn-800">
+          <TriangleAlert size={ICON_SM - 2} aria-hidden="true" className="mt-0.5 shrink-0" />
+          <span>아직 공고 원문과 대조하지 않았습니다. 신청 전에 원문을 직접 확인하세요.</span>
         </p>
       )}
     </section>

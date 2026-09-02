@@ -80,7 +80,7 @@ describe("/find/result", () => {
     });
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "지금 신청할 수 있는\n지원금이 없어요"
+      "지금 신청할 수 있는 지원금이 없어요"
     );
     expect(screen.getByText(/다음 모집 공고를 기다려야 합니다/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /어떤 지원금이었는지 보기/ })).toBeTruthy();

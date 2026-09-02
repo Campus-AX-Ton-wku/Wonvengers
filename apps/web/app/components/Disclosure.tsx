@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "@/app/icons";
+import { ChevronDown, ICON_SM } from "./icons";
 
 /**
  * 카드 안 세부사항 접기.
@@ -8,8 +8,10 @@ import { ChevronDownIcon } from "@/app/icons";
  *
  * 라벨에는 항목 수를 넣는다. 열지 않고도 안에 뭐가 얼마나 있는지 알 수 있어야
  * 접은 값이 사라진 것처럼 보이지 않는다.
+ *
+ * summary 의 높이는 44px 이상이다 — 목록에서 가장 자주 눌리는 타깃이다.
  */
-export default function Disclosure({
+export function Disclosure({
   label,
   children,
   className = "mt-3",
@@ -20,11 +22,17 @@ export default function Disclosure({
 }) {
   return (
     <details className={`group ${className}`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg bg-sand-50 px-3 py-2 text-xs font-bold text-ink-600 transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 [&::-webkit-details-marker]:hidden">
+      <summary className="focus-ring flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-control bg-ink-50 px-3.5 py-2.5 text-xs font-bold text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-800 [&::-webkit-details-marker]:hidden">
         <span>{label}</span>
-        <ChevronDownIcon size={16} className="shrink-0 transition-transform group-open:rotate-180" />
+        <ChevronDown
+          size={ICON_SM}
+          aria-hidden="true"
+          className="shrink-0 transition-transform group-open:rotate-180"
+        />
       </summary>
       <div className="mt-2">{children}</div>
     </details>
   );
 }
+
+export default Disclosure;

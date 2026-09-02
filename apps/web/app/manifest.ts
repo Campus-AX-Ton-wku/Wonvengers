@@ -24,9 +24,9 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     /* 브라우저 UI 색. brand-600 — 앱의 기본 액션색과 같은 값을 쓴다. */
-    theme_color: "#567c8d",
-    /* 스플래시 배경. body 가 흰 배경이므로 여기서 색이 튀면 깜빡인다. */
-    background_color: "#ffffff",
+    theme_color: "#1a6bef",
+    /* 스플래시 배경. body 지면(canvas)과 같은 값이라 뜰 때 깜빡이지 않는다. */
+    background_color: "#f4f8ff",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       /* app/icon.png 이 /icon.png 로 나가므로 512 를 따로 두지 않는다 (같은 파일 155KB 중복). */
