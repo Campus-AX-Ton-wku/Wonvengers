@@ -781,6 +781,39 @@ const changwonYouthRent: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 남해군 청년 월세 지원사업 (경상남도).
+ *
+ * 산청군·합천군·창원시와 같은 프레임(중위60%초과~150%이하)이지만 나이는
+ * 19~45세. '본인 명의 임대차 계약' + '무주택 세대주'를 둘 다 요구한다 —
+ * 세대주 여부는 세대 구성을 입력받지 않아 unknown으로 남긴다(창원시와 같은 처리).
+ */
+const namhaeYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const lowerCeiling = medianIncomeCeiling(householdSize, 0.6);
+  const upperCeiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 45),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    rangeCheck(
+      "ownHouseholdIncomeBand",
+      `가구 소득 중위소득 60% 초과 150% 이하 (월 ${(lowerCeiling + 1).toLocaleString()}~${upperCeiling.toLocaleString()}원)`,
+      p.ownHouseholdMonthlyIncome,
+      lowerCeiling,
+      upperCeiling
+    ),
+    {
+      key: "householdHead",
+      label: "무주택 세대주가 청년 본인",
+      result: "unknown",
+      howToConfirm: "주민등록등본으로 세대주 여부를 확인하세요. 이 앱은 세대 구성을 입력받지 않습니다.",
+    },
+  ];
+};
+
 /** 합천군 청년 월세 지원사업 (경상남도) — 산청군과 같은 프레임, 나이만 18세부터. */
 const hapcheonYouthRent: RuleFn = (p, asOf) => {
   const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
@@ -851,6 +884,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,
   "sancheong-youth-rent-support": sancheongYouthRent,
+  "namhae-youth-rent-support": namhaeYouthRent,
   "hapcheon-youth-rent-support": hapcheonYouthRent,
   "tongyeong-youth-settlement-support": tongyeongYouthSettlement,
   "changwon-youth-rent-support": changwonYouthRent,

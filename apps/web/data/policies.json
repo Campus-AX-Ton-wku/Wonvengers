@@ -1268,5 +1268,47 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "namhae-youth-rent-support",
+    "name": "남해군 청년 월세 지원사업 (경상남도)",
+    "agency": "경상남도 남해군",
+    "regionScope": "경상남도 남해군",
+    "applicationStart": "2026-01-19",
+    "applicationEnd": "2026-02-06",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(산청군·합천군·창원시와 같은 경상남도 프레임)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://baro.gyeongnam.go.kr/baro/serviceView.es?mid=a10202000000&service_no=440",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "경남바로서비스 '2026년 경상남도 - 남해군 청년월세 지원 사업 안내' 원문으로 확인. 산청군·합천군·창원시와 같은 경남 프레임(중위60%초과~150%이하)의 남해군 시행분. 지원대상: 남해군 거주 19~45세, 부모와 별도거주 무주택 세대주, 본인 명의 임대차계약, 임차보증금1억원·월세60만원 이하. 모집인원 100명이지만 실제 선정은 소득인정액 낮은 순 12명뿐(산청군과 같은 패턴 — 경쟁 치열). ⚠️ '2022년 이후 경상남도 청년월세지원사업 수급 이력자 제외'는 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(도 단위 등록만 있었음)이라 youthPolicyNo를 null로 뒀다. 같은 남해군에 별도로 있는 '[남해군]청년주택 임차보증금 이자 지원사업'(임차보증금 대출이자 지원, 신청기간 2026.7.14~8.12)은 loan-products.json에 별도 등록했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 45,
+      "regions": [
+        "경상남도 남해군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
   }
 ]

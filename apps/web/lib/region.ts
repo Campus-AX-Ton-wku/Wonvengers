@@ -160,8 +160,8 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
   {
     // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)을 위해 처음 추가했다.
     // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)·산청군 청년월세
-    // 지원사업(5라운드)에 이어 합천군·통영시(6라운드)·창원시(8라운드)를 위해
-    // districts 를 늘렸다.
+    // 지원사업(5라운드)에 이어 합천군·통영시(6라운드)·창원시(8라운드)·
+    // 남해군(13라운드)을 위해 districts 를 늘렸다.
     name: "경상남도",
     districts: [
       { value: "경상남도 하동군", label: "경상남도 하동군", chipLabel: "하동군" },
@@ -169,10 +169,11 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
       { value: "경상남도 합천군", label: "경상남도 합천군", chipLabel: "합천군" },
       { value: "경상남도 통영시", label: "경상남도 통영시", chipLabel: "통영시" },
       { value: "경상남도 창원시", label: "경상남도 창원시", chipLabel: "창원시" },
+      { value: "경상남도 남해군", label: "경상남도 남해군", chipLabel: "남해군" },
     ],
     catchAll: {
       value: "경상남도",
-      label: "경상남도 (하동군·산청군·합천군·통영시·창원시 외)",
+      label: "경상남도 (하동군·산청군·합천군·통영시·창원시·남해군 외)",
       chipLabel: "경상남도 (그 외)",
     },
   },
