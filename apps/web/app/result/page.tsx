@@ -98,13 +98,15 @@ export default function ResultPage() {
 
         {activeExample && (
           <p
-            className={`flex items-start gap-2 rounded-card p-4 text-sm font-bold leading-relaxed ${
-              isVerifiedExample(activeExample)
-                ? "bg-ok-50 text-ok-700"
-                : "bg-warn-50 text-warn-800"
-            }`}
+            className="flex items-start gap-2 rounded-card border border-ink-200 bg-surface p-4 text-sm font-semibold leading-relaxed text-ink-600"
           >
-            <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <Info
+              size={ICON_SM}
+              aria-hidden="true"
+              className={`mt-0.5 shrink-0 ${
+                isVerifiedExample(activeExample) ? "text-ok-700" : "text-brand-700"
+              }`}
+            />
             <span>
               예시 매물({activeExample.label}) 조건으로 계산한 결과입니다 —{" "}
               {exampleBadge(activeExample)}
