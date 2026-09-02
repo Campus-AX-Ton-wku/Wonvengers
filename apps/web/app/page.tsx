@@ -1,4 +1,3 @@
-import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import { AppShell, LinkButton, PerkyCharacter, Wordmark } from "@/app/components";
 
@@ -33,8 +32,8 @@ const MAX_BENEFIT: { won: number; asOf: string } | null = null;
 /**
  * 랜딩.
  *
- * 첫 방문자는 이 화면을 보기 전에 온보딩 3장을 본다 (app/layout.tsx 의 인라인
- * 스크립트). 그래서 여기는 소개가 아니라 출발점이다 — 사실 한 줄과 버튼 하나.
+ * 루트로 진입하면 이 화면을 보기 전에 온보딩 3장을 본다 (app/layout.tsx 의 인라인
+ * 스크립트). JavaScript가 꺼진 환경을 위한 가벼운 출발점으로도 남는다.
  *
  * 캐릭터는 wave 다. 이 화면의 상태는 "인사" 하나뿐이고, 한 화면에 한 포즈만 쓴다.
  * 위에서 아래로 캐릭터 → 브랜드 → 사실 → 설명 → 버튼 한 축으로 읽힌다.
@@ -91,15 +90,6 @@ export default function Home() {
           style={{ animationDelay: "310ms" }}
         >
           <LinkButton href="/find">내 지원금 찾아보기</LinkButton>
-
-          {/* 온보딩을 다시 보는 길. 자동 노출은 첫 방문에 한 번뿐이라, 이 링크가
-              없으면 한 번 건너뛴 사람과 QA 는 저장소를 지우는 수밖에 없다. */}
-          <Link
-            href="/onboarding"
-            className="focus-ring flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-ink-500 transition-colors hover:text-brand-700"
-          >
-            앱 소개 다시 보기
-          </Link>
         </div>
       </main>
     </AppShell>

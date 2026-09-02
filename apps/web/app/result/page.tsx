@@ -4,16 +4,8 @@ import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
 import housingSupplyData from "@/data/housing-supply.json";
 import exampleListingsData from "@/data/example-listings.json";
-import type {
-  ExampleListing,
-  HousingSupplyMeta,
-  ListingInput,
-  LoanProductMeta,
-  PolicyResult,
-  PolicyStatus,
-} from "@/lib/types";
+import type { ExampleListing, HousingSupplyMeta, LoanProductMeta } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
-import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
@@ -24,10 +16,8 @@ import {
   Button,
   Disclosure,
   ResultSummary,
-  StatusBadge,
   TopBar,
 } from "@/app/components";
-import type { BadgeTone } from "@/app/components";
 import {
   ExternalLink,
   ICON_MD,
@@ -40,35 +30,49 @@ import {
 } from "@/app/components/icons";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
+import BenefitResultCard, { BenefitResultDetails } from "./BenefitResultCard";
+import { ResultLoading, ResultState } from "./ResultState";
+import { benefitResultCards } from "@/lib/benefit-result";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
 const allHousingSupply = housingSupplyData as HousingSupplyMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
 
-const STATUS_ORDER: PolicyStatus[] = ["예상적용", "조건충족시가능", "대상아님", "신청불가"];
-/**
- * 판정 상태 → 배지 톤. 색은 StatusBadge 한 곳에서만 정한다.
- *
- * '신청불가'와 '대상아님'을 나눠 두는 이유: 둘 다 못 받지만 이유가 다르다.
- * 대상아님은 조건이 안 맞는 것이고, 신청불가는 지금 접수 기간이 아닌 것이다.
- */
-const STATUS_TONE: Record<PolicyStatus, BadgeTone> = {
-  예상적용: "ok",
-  조건충족시가능: "warn",
-  대상아님: "neutral",
-  신청불가: "muted",
-};
-
 export default function ResultPage() {
   const router = useRouter();
-  const { listing, summary, asOf, status } = useResultData();
+  const { listing, summary, asOf, status, expiredAt, retry } = useResultData();
 
+  if (status === "loading") return <ResultLoading />;
   if (status === "missing") return <MissingInput />;
+  if (status === "error") return <ResultState kind="error" onRetry={retry} />;
+  if (status === "empty") return <ResultState kind="empty" />;
+  if (status === "expired") return <ResultState kind="expired" endDate={expiredAt} />;
   if (!listing || !summary) {
-    return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
+    return <ResultState kind="error" onRetry={retry} />;
   }
 
   const { included, unknownConditions } = summaryHighlights(summary);
+  const cards = benefitResultCards(summary.results, asOf);
+  const cardResults = cards.map((card) => ({
+    card,
+    result: summary.results.find((result) => result.policy.id === card.policyId)!,
+  }));
+  const leadState = cards[0]?.state ?? "eligible";
+  const leadCards = cards.filter((card) => card.state === leadState);
+  const leadDeadlineDays = leadCards
+    .map((card) => card.deadlineDays)
+    .filter((days): days is number => days !== null)
+    .sort((a, b) => a - b)[0];
+  const resultHeadline = leadState === "urgent"
+    ? `마감이 가까운 혜택 ${leadCards.length}개`
+    : leadState === "check"
+      ? `조건 확인이 필요한 혜택 ${leadCards.length}개`
+      : `바로 신청 가능한 혜택 ${leadCards.length}개`;
+  const resultSupport = leadState === "urgent"
+    ? leadDeadlineDays === 0 ? "오늘 안에 신청을 준비해주세요" : `${leadDeadlineDays}일 안에 신청해야 해요`
+    : leadState === "check"
+      ? summary.maxSupportAmount > 0 ? `확인 후 최대 ${formatKoreanMoney(summary.maxSupportAmount)} 가능` : "조건을 확인하면 예상 금액을 계산할 수 있어요"
+      : summary.maxSupportAmount > 0 ? `최대 ${formatKoreanMoney(summary.maxSupportAmount)} 받을 수 있어요` : "신청 전에 공고상 지원 한도를 확인해주세요";
 
   // 정책 카드와 같은 규칙으로 지역을 거른다 — 안 거르면 익산·군산 전용 대출상품이
   // 그 외 지역 사용자에게도 그대로 보인다.
@@ -82,24 +86,20 @@ export default function ResultPage() {
   // 공유되기 때문에, 가상 조건으로 나온 금액이 실제 사례로 오해되면 안 된다.
   const activeExample = exampleListings.find((e) => e.id === listing.exampleId) ?? null;
 
-  const grouped = STATUS_ORDER.map((status) => ({
-    status,
-    items: summary.results.filter((r) => r.status === status),
-  })).filter((g) => g.items.length > 0);
-
   return (
     <AppShell className="step-in">
       <TopBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
 
       <main className="flex flex-col gap-5 pb-10 pt-3">
-        {/* 아래 카드가 '최대 지원 가능액'·'최종 예상 주거비' 라벨을 이미 단다.
-            제목이 같은 말을 반복하면 캡처 한 장에서 같은 문구가 두 번 나오고,
-            두 줄이 화면 상단을 먹어 금액 카드가 아래로 밀린다.
-            금액은 넣지 않는다 — app/page.tsx 의 MAX_BENEFIT 주석과 같은 태도로,
-            확정되지 않은 금액을 가장 큰 약속으로 쓰지 않는다. */}
-        <h1 className="text-center text-2xl font-extrabold leading-snug text-ink-900">
-          내 예상 결과예요
-        </h1>
+        <header>
+          <p className="text-[11px] font-bold text-ink-500">맞춤 혜택 결과</p>
+          <h1 className="mt-0.5 text-[21px] font-extrabold leading-[1.4] text-ink-900">
+            {resultHeadline}
+          </h1>
+          <p className={`mt-0.5 text-sm font-bold ${leadState === "urgent" ? "text-danger-700" : "text-brand-700"}`}>
+            {resultSupport}
+          </p>
+        </header>
 
         {activeExample && (
           <p
@@ -174,42 +174,19 @@ export default function ResultPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-4">
-        {grouped.map((group) => {
-          const cards = (
-            <div className="flex flex-col gap-3">
-              {group.items.map((r, i) => (
-                <div
-                  key={r.policy.id}
-                  className="stagger-in"
-                  style={{ animationDelay: `${Math.min(i * 45, 225)}ms` }}
-                >
-                  <PolicyCard result={r} listing={listing} />
-                </div>
-              ))}
+      <section className="flex flex-col gap-3" aria-label={`맞춤 혜택 ${cardResults.length}개`}>
+        {cardResults.map(({ card, result }, index) => (
+          <div
+            key={card.policyId}
+            className="stagger-in"
+            style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}
+          >
+            <BenefitResultCard card={card} result={result} />
+            <div className="mt-2">
+              <BenefitResultDetails result={result} listing={listing} />
             </div>
-          );
-
-          /* '대상아님'은 접는다. 받을 수 없는 정책이 목록의 절반을 차지하면 받을 수 있는
-             것이 아래로 밀린다. 라벨에 건수를 남기므로 접었다고 값이 사라지지 않는다 —
-             왜 대상이 아닌지는 카드를 열면 그대로 있다 (1층 '해당되지 않는 지원금'과 같은 처리). */
-          return (
-            <div key={group.status}>
-              {group.status === "대상아님" ? (
-                <Disclosure label={`${group.status} (${group.items.length})`} className="">
-                  {cards}
-                </Disclosure>
-              ) : (
-                <>
-                  <h2 className="mb-3 text-base font-bold text-ink-700">
-                    {group.status} ({group.items.length})
-                  </h2>
-                  {cards}
-                </>
-              )}
-            </div>
-          );
-        })}
+          </div>
+        ))}
       </section>
 
       <section className="flex flex-col gap-3">
@@ -378,108 +355,5 @@ function ExternalRefLink({
       {children}
       <ExternalLink size={ICON_SM - 2} aria-hidden="true" />
     </a>
-  );
-}
-
-function PolicyCard({ result, listing }: { result: PolicyResult; listing: ListingInput }) {
-  const { policy } = result;
-  // 대상아님·신청불가는 받을 금액이 없으니 산식을 보여주면 오해를 준다.
-  const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
-  // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
-  return (
-    <article className="rounded-card bg-surface p-5 shadow-card">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-base font-bold text-ink-900">{policy.name}</p>
-          <p className="text-xs text-ink-500">{policy.agency} · {policy.regionScope}</p>
-        </div>
-        <StatusBadge tone={STATUS_TONE[result.status]}>{result.status}</StatusBadge>
-      </div>
-
-      {/* F4-3: 지원 형태 · 지급 시점 · 적용 산식 · 총 예상액 */}
-      <p className="mt-3 text-sm font-semibold text-ink-600">
-        {benefitTypeLabel(policy.benefitType)} · {payoutTiming(policy)}
-      </p>
-      <p className="mt-1 text-sm leading-relaxed text-ink-500">{policy.benefitSummary}</p>
-
-      {showFormula && (
-        <div className="mt-3 rounded-control bg-accent-50 p-3.5">
-          <p className="text-sm font-bold text-accent-700">
-            이 정책 단독 예상액: {formatKoreanMoney(result.estimatedAmount)}
-          </p>
-          {/* 산식은 원 단위로 남긴다. 이 줄의 목적은 공고 원문과 대조하는 검산이고,
-              공고가 원 단위로 적혀 있다. 만원으로 바꾸면 대조가 어려워진다. */}
-          <Disclosure label="계산식 보기" className="mt-2">
-            <p className="px-1 text-xs leading-relaxed text-ink-500">
-              {benefitFormula(policy, listing)}
-            </p>
-          </Disclosure>
-        </div>
-      )}
-
-      {/* 요건 목록은 정책마다 6~8줄이라 다 펼치면 화면을 다 먹는다. 라벨에 건수를 적는다. */}
-      <Disclosure label={`요건 자세히 보기 · ${requirementCounts(result)}`}>
-        {result.passedLabels.length > 0 && (
-          <RequirementList title="충족" items={result.passedLabels} tone="text-ok-700" />
-        )}
-        {result.unknownLabels.length > 0 && (
-          <RequirementList title="확인 필요" items={result.unknownLabels} tone="text-warn-800" />
-        )}
-        {result.failedLabels.length > 0 && (
-          <RequirementList title="미충족" items={result.failedLabels} tone="text-ink-500" />
-        )}
-        {result.passedLabels.length +
-          result.unknownLabels.length +
-          result.failedLabels.length ===
-          0 && (
-          <p className="text-sm text-ink-500">
-            신청 기간이 아니라 요건을 판정하지 않았습니다.
-          </p>
-        )}
-      </Disclosure>
-
-      {/* 검수 메모는 팀이 공고와 대조한 기록이다. 사용자가 볼 값이긴 하지만 길다. */}
-      <Disclosure label="검수 상태 · 참고사항">
-        <p className="text-xs text-ink-500">
-          {policy.effectiveYear}년 기준 ·{" "}
-          {policy.verifiedAt ? `${policy.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
-        </p>
-        {policy.notes && (
-          <p className="mt-1 text-xs leading-relaxed text-ink-500">{policy.notes}</p>
-        )}
-      </Disclosure>
-
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <a href={policy.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
-          공고 원문
-        </a>
-        <a href={policy.applyUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline">
-          신청 페이지로 이동
-        </a>
-      </div>
-    </article>
-  );
-}
-
-/** 토글을 열지 않고도 안에 뭐가 있는지 알 수 있게 라벨에 넣는 건수. 0건은 적지 않는다. */
-function requirementCounts(result: PolicyResult): string {
-  const parts = [
-    result.passedLabels.length > 0 ? `충족 ${result.passedLabels.length}` : null,
-    result.unknownLabels.length > 0 ? `확인 필요 ${result.unknownLabels.length}` : null,
-    result.failedLabels.length > 0 ? `미충족 ${result.failedLabels.length}` : null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "판정하지 않음";
-}
-
-function RequirementList({ title, items, tone }: { title: string; items: string[]; tone: string }) {
-  return (
-    <div className="mt-2">
-      <p className={`text-sm font-bold ${tone}`}>{title}</p>
-      <ul className="mt-1 list-disc pl-4 text-sm leading-relaxed text-ink-500">
-        {items.map((item, i) => (
-          <li key={i}>{item}</li>
-        ))}
-      </ul>
-    </div>
   );
 }

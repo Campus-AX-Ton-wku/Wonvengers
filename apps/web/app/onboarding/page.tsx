@@ -7,7 +7,7 @@ import type { PerkyState } from "@/app/components";
 import { markOnboardingSeen } from "@/lib/storage";
 
 /**
- * 첫 방문자에게만 한 번 보여주는 3장짜리 소개.
+ * 앱 시작 시 보여주는 3장짜리 소개.
  *
  * ── 왜 이 화면이 필요한가 ────────────────────────────────────────────
  * 이 앱은 반복 사용자가 없다. 방을 알아보는 중에, 모바일에서, 처음이자 아마도
@@ -16,12 +16,11 @@ import { markOnboardingSeen } from "@/lib/storage";
  * 찾아주고(발견), 물어보고(안내), 금액을 보여준다(결과).
  *
  * ── 노출 규칙 ────────────────────────────────────────────────────
- * 자동 노출은 app/layout.tsx 의 인라인 스크립트가 한다. `/` 에 처음 온 사람만
+ * 자동 노출은 app/layout.tsx 의 인라인 스크립트가 한다. `/` 로 들어오면
  * 여기로 온다. 이 화면 자체는 언제든 직접 열 수 있다 — 그게 개발·QA 의 재확인
  * 경로이고, 랜딩 하단의 '앱 소개 다시 보기' 링크가 같은 곳을 가리킨다.
  *
- * 완료와 건너뛰기는 같은 값을 저장한다. 사용자에게는 "다시 보고 싶지 않다" 는
- * 같은 뜻이고, 나눠 저장하면 재노출 규칙이 두 갈래가 된다.
+ * 마지막 단계 완료 시에만 온보딩 완료를 저장한다.
  *
  * ── SSR ──────────────────────────────────────────────────────────
  * 렌더에 localStorage 를 읽지 않는다. 읽으면 서버 HTML 과 첫 클라이언트 렌더가
@@ -46,7 +45,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "발견",
     title: "흩어진 청년 혜택을\n한곳에서 찾아드려요",
     description:
-      "국가·지자체에 나뉘어 있는 주거 지원금을 한 목록으로 모아 둡니다.",
+      "국가·지자체에 나뉘어 있는 주거 지원금을\n한 목록으로 모아 둡니다.",
   },
   {
     character: "guide",
@@ -54,7 +53,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "안내",
     title: "몇 가지 질문으로\n나에게 맞는 혜택을 안내해요",
     description:
-      "생년월일·사는 곳·현재 상태·소득 구간 네 가지만 답하면 됩니다. 답변은 이 브라우저에만 저장돼요.",
+      "생년월일·사는 곳·현재 상태·소득 구간\n네 가지만 답하면 됩니다.",
   },
   {
     character: "success",
@@ -62,7 +61,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "결과",
     title: "받을 수 있는 지원과\n실제 부담을 한눈에 확인해요",
     description:
-      "최대 얼마를 받을 수 있고, 그러면 실제로 얼마를 내게 되는지까지 계산해 드립니다.",
+      "최대 얼마를 받을 수 있고, 그러면 실제로\n얼마를 내게 되는지까지 계산해 드립니다.",
   },
 ];
 
@@ -98,17 +97,6 @@ export default function OnboardingPage() {
 
   return (
     <AppShell>
-      <header className="flex h-14 items-center justify-end pt-[env(safe-area-inset-top)]">
-        <button
-          type="button"
-          onClick={() => leave("/")}
-          /* -mr-3 + px-3 — 글자 오른쪽 끝이 본문 오른쪽 끝과 맞는다. 타깃은 그대로 44px. */
-          className="focus-ring -mr-3 flex min-h-11 items-center rounded-control px-3 text-sm font-bold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
-        >
-          건너뛰기
-        </button>
-      </header>
-
       {/*
         한 장을 통째로 갈아 끼운다. key 가 바뀌면 slide-in 이 다시 돈다 —
         캐릭터가 먼저 자리를 잡고 글이 따라 온다.
