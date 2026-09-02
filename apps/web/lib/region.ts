@@ -157,10 +157,11 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [
       { value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" },
       { value: "경상북도 구미시", label: "경상북도 구미시", chipLabel: "구미시" },
+      { value: "경상북도 울릉군", label: "경상북도 울릉군", chipLabel: "울릉군" },
     ],
     catchAll: {
       value: "경상북도",
-      label: "경상북도 (고령군·구미시 외)",
+      label: "경상북도 (고령군·구미시·울릉군 외)",
       chipLabel: "경상북도 (그 외)",
     },
   },

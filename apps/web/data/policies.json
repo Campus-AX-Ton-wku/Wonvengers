@@ -1350,5 +1350,44 @@
         "연세"
       ]
     }
+  },
+  {
+    "id": "ulleung-youth-rent-support",
+    "name": "울릉섬 청년 주거비 지원사업",
+    "agency": "경상북도 울릉군",
+    "regionScope": "경상북도 울릉군",
+    "applicationStart": "2026-08-07",
+    "applicationEnd": "2026-08-21",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 1년 지원 (총 최대 240만원) — 청년 1인가구 또는 청년 신혼부부(월 최대30만원) 대상",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.ulleung.go.kr/ko/page.do?board_code=&srchSDate=&srchKwd=%EC%B2%AD%EB%85%84&srchColumn=title&srchDept=&srchEDate=&mnu_uid=571&not_ancmt_mgt_no=23529&pageNo=1&cmd=2",
+    "applyUrl": "https://www.ulleung.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "울릉군청 고시공고 게시판(미래전략과) '울릉섬 청년 주거비 지원사업 2차 모집 공고'(등록일 2026-08-05) 원문으로 확인 — 8·10·13라운드에서 세 번 시도 끝에 찾았다. 사이트 통합검색(Search/front/Search.jsp)이 이 고시공고 게시판을 인덱싱하지 않아 계속 못 찾았는데, 게시판 자체의 '제목' 검색으로는 바로 나왔다 — 다음에 비슷한 상황을 만나면 통합검색보다 해당 게시판 자체 검색을 먼저 시도한다. 지원대상: 19~49세(1977.1.1~2007.12.31 출생), 울릉군에 2026.1.1 이전 전입신고한 무주택 1인 청년가구 또는 신혼부부, 가구소득인정액 기준중위소득150% 이하, 월세(월임대료80만원 이하) 주택 거주. 사업규모 52명(1인가구청년43명·신혼부부9명). 지원내용: 1년 지원, 월 최대20만원(신혼부부30만원). ⚠️ 이번에 확인한 건 2차(2026.8.7~8.21)다 — 앞서 1차 공고와 변경 공고도 있었으나(둘 다 이번 라운드에 원문 열람, 조건은 2차와 동일) 정확한 1차 신청기간은 이번 라운드에서 추가로 열람하지 않았다. 오늘(2026-09-03) 기준 2차도 이미 마감. ⚠️ 신혼부부(2인 이상 가구)도 대상이지만 이 앱은 혼인 여부를 입력받지 않아 1인가구 요건만으로 판정한다. ⚠️ '2026.1.1 이전 전입신고'는 전입일자를 입력받지 않아 판정하지 않는다. 경상북도에 세 번째로 추가하는 시군구(고령군·구미시에 이어)라 REGION_HIERARCHY에 울릉군을 추가했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "경상북도 울릉군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세"
+      ]
+    }
   }
 ]

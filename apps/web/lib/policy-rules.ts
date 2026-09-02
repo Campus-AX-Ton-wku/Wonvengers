@@ -715,6 +715,41 @@ const goryeongYouthRent: RuleFn = (p, asOf) => {
 };
 
 /**
+ * 울릉섬 청년 주거비 지원사업.
+ *
+ * 원문은 "무주택 1인 청년가구 및 신혼부부"를 대상으로 하지만, 이 앱은 혼인
+ * 여부를 입력받지 않아 신혼부부(2인 이상 가구)는 판정하지 못한다 — 고령군과
+ * 같은 처리(1인가구 요건만 확인). "2026.1.1 이전 전입신고"는 전입일자를
+ * 입력받지 않아 unknown으로 남긴다.
+ */
+const ulleungYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 49),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    {
+      key: "singleHousehold",
+      label: "청년 1인가구 (신혼부부는 이 앱이 혼인 여부를 안 물어 판정 못 함)",
+      result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
+    },
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "movedInBeforeJan2026",
+      label: "2026-01-01 이전 울릉군 전입신고",
+      result: "unknown",
+      howToConfirm: "전입신고일이 2026-01-01 이전인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
+    },
+  ];
+};
+
+/**
  * 괴산군 청년취업자 및 청년농업인 주거비 지원.
  *
  * '관내 기업 취업 또는 농업경영체 등록 5년 이내'는 이 앱이 취업·창업 이력을
@@ -906,6 +941,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "eumseong-youth-rent-support": eumseongYouthRent,
   "gumi-youth-rent-support": gumiYouthRent,
   "goryeong-youth-rent-support": goryeongYouthRent,
+  "ulleung-youth-rent-support": ulleungYouthRent,
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,
   "sancheong-youth-rent-support": sancheongYouthRent,
