@@ -1,4 +1,3 @@
-import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import { AppShell, LinkButton, PerkyCharacter, Wordmark } from "@/app/components";
 
@@ -91,14 +90,6 @@ export default function Home() {
           style={{ animationDelay: "310ms" }}
         >
           <LinkButton href="/find">내 지원금 찾아보기</LinkButton>
-
-          {/* 온보딩 소개를 다시 보는 길. */}
-          <Link
-            href="/onboarding"
-            className="focus-ring flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-ink-500 transition-colors hover:text-brand-700"
-          >
-            앱 소개 다시 보기
-          </Link>
         </div>
       </main>
     </AppShell>
