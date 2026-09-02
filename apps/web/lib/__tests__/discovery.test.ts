@@ -47,6 +47,9 @@ describe("groupPolicies", () => {
       "ulsan-youth-household-housing-cost-support",
       "incheon-youth-monthly-rent-support-35to39",
       "incheon-brokerage-fee-1000won",
+      "jeju-youth-hope-charge-monthly-rent-35to39",
+      "jeju-brokerage-fee-support",
+      "jeju-youth-moving-cost-support",
     ]);
   });
 

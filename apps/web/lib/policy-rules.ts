@@ -357,6 +357,78 @@ const incheonBrokerageFee: RuleFn = (p, asOf) => [
   },
 ];
 
+/**
+ * 제주청년 희망충전 월세지원(35~39세).
+ *
+ * 인천형(35~39세)과 달리 원가구 소득 요건이 원문에 없다 — 본인 가구 소득
+ * 중위60%·재산 1억2,200만원 이하만 있다. 재산 요건은 EligibilityProfile에
+ * 맞는 문턱값이 없어(assetsUnder107M은 익산 전용) 판정하지 않는다.
+ */
+const jejuYouthRent35to39: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ownCeiling = medianIncomeCeiling(householdSize, 0.6);
+
+  return [
+    ageCheck(p.birthDate, asOf, 35, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 60% 이하 (월 ${ownCeiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ownCeiling
+    ),
+    {
+      key: "assetsUnder122M",
+      label: "재산 1억 2,200만원 이하",
+      result: "unknown",
+      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
+    },
+  ];
+};
+
+/**
+ * 제주 청년 및 주거취약계층 주택 중개수수료 지원사업.
+ *
+ * 3억원 이하 주택 매매·임대차 계약 여부는 ListingInput 이 필요해 판정하지
+ * 못한다 — '확인 필요'로 남긴다(policies.json notes 참고).
+ */
+const jejuBrokerageFee: RuleFn = (p, asOf) => [
+  ageCheck(p.birthDate, asOf, 19, 39),
+  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+  boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+  {
+    key: "dealAmountUnder300M",
+    label: "3억원 이하 주택 매매·임대차 계약 (2년 1회, 최대 3회)",
+    result: "unknown",
+    howToConfirm: "계약서의 거래금액을 확인하세요. 이 앱은 계약 정보로 판정하지 않습니다.",
+  },
+];
+
+/**
+ * 제주 청년 이사비 지원사업.
+ *
+ * 상반기(2026.02.03~05.08)만 등록했다 — 하반기는 '2026.09월(예정)'이라고만
+ * 있고 정확한 날짜가 없다(policies.json notes 참고).
+ */
+const jejuMovingCost: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.8);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 180% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -368,4 +440,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "ulsan-youth-household-housing-cost-support": ulsanYouthHouseholdHousingCost,
   "incheon-youth-monthly-rent-support-35to39": incheonYouthRent35to39,
   "incheon-brokerage-fee-1000won": incheonBrokerageFee,
+  "jeju-youth-hope-charge-monthly-rent-35to39": jejuYouthRent35to39,
+  "jeju-brokerage-fee-support": jejuBrokerageFee,
+  "jeju-youth-moving-cost-support": jejuMovingCost,
 };

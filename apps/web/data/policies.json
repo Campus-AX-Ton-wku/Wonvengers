@@ -430,5 +430,129 @@
       "incomeBracketMax": null,
       "housingTypes": null
     }
+  },
+  {
+    "id": "jeju-youth-hope-charge-monthly-rent-35to39",
+    "name": "제주청년 희망충전 월세지원 (35~39세)",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 최대 12개월(총 최대 240만원) — 국비 청년월세 지원(19~34세)이 포괄하지 못하는 35~39세를 제주도가 별도로 지원",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "livesApartFromParents",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.jeju.go.kr/lifecycle/policy/list.htm?act=view&seq=60",
+    "applyUrl": "https://www.jeju.go.kr/lifecycle/policy/list.htm?act=view&seq=60",
+    "youthPolicyNo": "20260422005400212846",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주in情플랫폼(jeju.go.kr) '제주청년 희망충전 월세지원' 원문으로 확인(2026-09-02). 인천형 청년월세 지원(35~39세)과 같은 유형 — 국비 청년월세(moland, 19~34세, 전국)가 커버 못 하는 35~39세만 제주도가 별도 지원한다. 다만 인천과 달리 '원가구 소득' 요건이 원문에 없다(본인 가구 소득 중위60%·재산 1억2,200만원 이하만 있음) — 35세 이상은 부모 소득을 안 보는 게 자연스러워 useOriginHousehold 관련 입력을 요구하지 않았다. 신청기간이 '상시접수'라 applicationEnd를 null로 뒀다(incheon-brokerage-fee-1000won과 같은 처리). ⚠️ 재산 1억 2,200만원 이하는 이 앱이 판정하지 않는다 — EligibilityProfile의 assetsUnder107M은 익산시 전용 문턱값(1억 700만원)이라 그대로 재사용하면 다른 기준을 잘못 판정하게 된다. exclusiveGroup을 moland·incheon-youth-monthly-rent-support-35to39와 같은 'youth-rent-cash-support'로 맞췄다.",
+    "discovery": {
+      "ageMin": 35,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMin": null,
+      "incomeBracketMax": 3,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "jeju-brokerage-fee-support",
+    "name": "청년 및 주거취약계층 주택 중개수수료 지원사업",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-01-19",
+    "applicationEnd": "2026-12-31",
+    "benefitType": "lump_sum",
+    "benefitSummary": "주택 중개수수료 실비 최대 30만원(부가가치세 포함) 지원, 2년 1회 최대 3회 (3억원 이하 주택 매매·임대차 계약, 예산 소진 시 조기 마감)",
+    "lumpSumCap": 300000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.jejuhwc.co.kr/finance/cost-support/brokerage-fees.htm",
+    "applyUrl": "https://www.gov.kr",
+    "youthPolicyNo": "20260421005400212798",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주특별자치도 주거복지센터(jejuhwc.co.kr) '청년 및 주거취약계층 중개수수료 지원' 원문으로 확인(2026-09-02). 지원대상은 19~39세 무주택 청년(신혼부부·기초수급자·차상위·한부모도 별도 대상이지만 이 앱은 청년 경로만 다룬다). 인천 천원 복비와 달리 자부담 공제(1천원)가 없고 소득 기준도 원문에 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️ '3억원 이하 주택 매매·임대차 계약'은 판정 함수가 EligibilityProfile만 받고 ListingInput(계약 정보)을 안 받아 계산하지 못한다. ⚠️ '2년 1회 최대 3회'·'다른 기관 중복 지원 제외' 조건도 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "jeju-youth-moving-cost-support",
+    "name": "제주 청년 이사비 지원사업",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-02-03",
+    "applicationEnd": "2026-05-08",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·입주청소비 실비 최대 40만원 지원 (2026-01-01 이후 제주 전입·전입신고, 연 2회 상·하반기 모집 중 상반기 값만 등록)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.jejuhwc.co.kr/finance/cost-support/movingexpenses.htm",
+    "applyUrl": "https://www.gov.kr/portal/rcvfvrSvc/dtlEx/650000001086",
+    "youthPolicyNo": "20260421005400212797",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주특별자치도 주거복지센터(jejuhwc.co.kr) '청년이사비 지원' 원문으로 확인(2026-09-02). 서울 청년 부동산 중개보수·이사비 지원사업과 같은 유형 — 연 2회(상·하반기) 모집 중 확정된 상반기(2026.02.03~05.08)만 등록했다(하반기는 '2026.09월(예정)'이라고만 있고 정확한 날짜가 없음). 지원대상: 2026-01-01 이후 제주 전입 또는 도내 이사 후 전입신고 완료한 19~39세 청년, 가구 소득 중위180% 이하, 본인 무주택. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.8)로 계산했다. 신청인은 '임대차계약서상 계약자 청년 본인'이라 명시돼 있어 isContractHolder를 넣었다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
   }
 ]

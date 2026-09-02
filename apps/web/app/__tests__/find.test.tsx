@@ -244,8 +244,8 @@ describe("/find CTA", () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    // 전부 모름 = 정책 10건 중 접수 중인 5건
-    expect(cta().textContent).toBe("지원금 5건 · 다음");
+    // 전부 모름 = 정책 13건 중 접수 중인 7건
+    expect(cta().textContent).toBe("지원금 7건 · 다음");
 
     // 나이·지역만으로는 안 줄어든다 — 남은 정책이 전부 전국 아니면 익산이다
     await 생년월일고르기(user, 생년(23), 1, 1);

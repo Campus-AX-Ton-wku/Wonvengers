@@ -58,6 +58,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [],
     catchAll: { value: "인천광역시", label: "인천광역시", chipLabel: "인천" },
   },
+  {
+    // 제주청년 희망충전 월세지원·중개수수료·이사비 지원(전국화 Phase 2, 광역
+    // 5번째 시도)을 위해 추가했다.
+    name: "제주특별자치도",
+    districts: [],
+    catchAll: { value: "제주특별자치도", label: "제주특별자치도", chipLabel: "제주" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */
