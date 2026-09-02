@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import FindTopBar from "@/app/find/FindTopBar";
+import {
+  AppShell,
+  LinkButton,
+  PerkyCharacter,
+  StickyBottomAction,
+  TopBar,
+} from "@/app/components";
 import { resolveAnswers } from "@/lib/age";
 import { largestTotalCeiling } from "@/lib/benefit";
 import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
@@ -51,19 +56,29 @@ export default function FindResultPage() {
     ? splitByApplicationWindow(groups, asOf)
     : { 신청가능: [] };
   const 최대상한 = largestTotalCeiling(신청가능.map((t) => t.policy));
+  // 캐릭터 포즈가 결과를 먼저 말한다: 찾았으면 found, 없으면 empty.
+  // 한 화면에 한 포즈만 쓴다.
+  const 찾음 = 신청가능.length > 0;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-4">
-      <FindTopBar backHref="/find" backLabel="질문으로 돌아가기" />
+    <AppShell>
+      <TopBar backHref="/find" backLabel="질문으로 돌아가기" />
 
       {!loaded ? (
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
       ) : (
         <>
           {/* 화면 한가운데. 이 숫자 말고는 볼 것이 없어야 한다. */}
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            {신청가능.length > 0 ? (
-              <>
+          <main className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
+            <PerkyCharacter
+              state={찾음 ? "found" : "empty"}
+              size={440}
+              priority
+              className="amount-reveal h-auto w-[min(42vw,156px)]"
+            />
+
+            {찾음 ? (
+              <div>
                 <p
                   className="amount-reveal text-base font-semibold text-ink-500"
                   style={{ animationDelay: "0.04s" }}
@@ -71,6 +86,8 @@ export default function FindResultPage() {
                   지금 신청할 수 있는
                 </p>
                 {최대상한 && (
+                  /* 금색은 '받을 수 있는 돈' 신호다. 이 화면에서 이 색을 쓰는 건
+                     이 한 줄뿐이라 눈이 여기로 먼저 간다. */
                   <p
                     className="amount-reveal mt-2 text-[46px] font-extrabold leading-none text-accent-600"
                     style={{ animationDelay: "0.12s" }}
@@ -86,9 +103,9 @@ export default function FindResultPage() {
                 >
                   지원금 {신청가능.length}건이 있어요
                 </h1>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex flex-col gap-3">
                 <h1
                   className="amount-reveal text-balance text-[28px] font-extrabold leading-snug text-ink-900"
                   style={{ animationDelay: "0.04s" }}
@@ -99,30 +116,27 @@ export default function FindResultPage() {
                 </h1>
                 {count > 0 && (
                   <p
-                    className="amount-reveal mt-3 text-sm leading-relaxed text-ink-600"
+                    className="amount-reveal text-sm leading-relaxed text-ink-600"
                     style={{ animationDelay: "0.16s" }}
                   >
                     조건에는 맞지만 이번 회차 접수가 모두 끝났습니다. 다음 모집 공고를 기다려야 합니다.
                   </p>
                 )}
-              </>
+              </div>
             )}
-          </div>
+          </main>
 
-          <div className="sticky bottom-0 -mx-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-            <Link
-              href="/find/policies"
-              className="block rounded-2xl bg-brand-600 py-4 text-center text-base font-bold text-white transition-colors hover:bg-brand-700 active:scale-[0.99] active:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
-            >
-              {신청가능.length > 0
+          <StickyBottomAction>
+            <LinkButton href="/find/policies">
+              {찾음
                 ? `지원금 ${신청가능.length}건 자세히 보기`
                 : count > 0
                   ? "어떤 지원금이었는지 보기"
                   : "왜 해당되지 않는지 보기"}
-            </Link>
-          </div>
+            </LinkButton>
+          </StickyBottomAction>
         </>
       )}
-    </main>
+    </AppShell>
   );
 }

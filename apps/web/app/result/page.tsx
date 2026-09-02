@@ -9,9 +9,24 @@ import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
-import { AppBar } from "../Stepper";
-import { AlertIcon, BankIcon, StackIcon, WalletIcon } from "@/app/icons";
-import Disclosure from "@/app/Disclosure";
+import {
+  AppShell,
+  Button,
+  Disclosure,
+  ResultSummary,
+  StatusBadge,
+  TopBar,
+} from "@/app/components";
+import type { BadgeTone } from "@/app/components";
+import {
+  ExternalLink,
+  ICON_MD,
+  ICON_SM,
+  Info,
+  Landmark,
+  ListChecks,
+  Wallet,
+} from "@/app/components/icons";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
 
@@ -19,14 +34,17 @@ const loanProducts = loanProductsData as LoanProductMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
 
 const STATUS_ORDER: PolicyStatus[] = ["예상적용", "조건충족시가능", "대상아님", "신청불가"];
-/* sand-200 위 글씨는 대비가 모자란다 (ink-600 4.27:1, ink-500 3.94:1 — 본문 기준 4.5:1 미달).
-   design-tokens.md 의 '해당 없음' 태그 규격대로 ink-100 면으로 바꾼다
-   (ink-700 5.75:1, ink-600 4.76:1). sand-200 은 구분선·진행 바 트랙 전용이다. */
-const STATUS_STYLE: Record<PolicyStatus, string> = {
-  예상적용: "bg-ok-50 text-ok-700",
-  조건충족시가능: "bg-warn-50 text-warn-800",
-  대상아님: "bg-ink-100 text-ink-700",
-  신청불가: "bg-ink-100 text-ink-600",
+/**
+ * 판정 상태 → 배지 톤. 색은 StatusBadge 한 곳에서만 정한다.
+ *
+ * '신청불가'와 '대상아님'을 나눠 두는 이유: 둘 다 못 받지만 이유가 다르다.
+ * 대상아님은 조건이 안 맞는 것이고, 신청불가는 지금 접수 기간이 아닌 것이다.
+ */
+const STATUS_TONE: Record<PolicyStatus, BadgeTone> = {
+  예상적용: "ok",
+  조건충족시가능: "warn",
+  대상아님: "neutral",
+  신청불가: "muted",
 };
 
 export default function ResultPage() {
@@ -53,8 +71,8 @@ export default function ResultPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="step-in mx-auto flex min-h-screen max-w-lg flex-col bg-white px-5">
-      <AppBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
+    <AppShell className="step-in">
+      <TopBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
 
       <main className="flex flex-col gap-5 pb-10 pt-3">
         {/* 아래 카드가 '최대 지원 가능액'·'최종 예상 주거비' 라벨을 이미 단다.
@@ -68,69 +86,32 @@ export default function ResultPage() {
 
         {activeExample && (
           <p
-            className={`rounded-2xl p-4 text-sm font-bold leading-relaxed ${
+            className={`flex items-start gap-2 rounded-card p-4 text-sm font-bold leading-relaxed ${
               isVerifiedExample(activeExample)
                 ? "bg-ok-50 text-ok-700"
                 : "bg-warn-50 text-warn-800"
             }`}
           >
-            예시 매물({activeExample.label}) 조건으로 계산한 결과입니다 —{" "}
-            {exampleBadge(activeExample)}
+            <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <span>
+              예시 매물({activeExample.label}) 조건으로 계산한 결과입니다 —{" "}
+              {exampleBadge(activeExample)}
+            </span>
           </p>
         )}
 
-      <section className="amount-in rounded-3xl bg-brand-50 p-6 shadow-sm">
-        {/* 받는 돈만 accent 로 띄운다. 아래 '최종 예상 주거비'는 내는 돈이라
-            중립색(ink)으로 둔다 — 둘 다 물들이면 "이 색 = 지원금" 신호가 죽는다.
-            accent-700 on brand-50 = 6.22:1, accent-600 on brand-50 = 4.76:1
-
-            크기도 갈라놓는다. 전에는 둘 다 text-3xl 이어서 색만 달랐는데, 지출액이
-            자릿수가 하나 더 많아 시각적으로 압도했다 — 자릿수가 색을 이긴다.
-            large text 기준(3:1)이라 4.76:1 로 여유가 있다.
-
-            text-5xl 로 올렸다가 되돌렸다 — 390px 폭에서 '304만 4,000원' 이 두 줄로
-            넘치고 '원' 만 다음 줄에 떨어졌다. 만 단위 표기가 원 단위보다 길어질 수
-            있다는 걸 캡처를 보고 알았다. break-keep 은 단위 사이에서 끊기는 것도 막는다. */}
-        <p className="text-sm font-semibold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
-        <p className="break-keep text-4xl font-extrabold text-accent-600 tabular-nums">
-          {formatKoreanMoney(summary.maxSupportAmount)}
-        </p>
-
-        <div className="my-5 h-px bg-brand-200" />
-
-        <p className="text-sm font-semibold text-ink-500">최종 예상 주거비 (명목 지출 − 최대 지원 가능액)</p>
-        <p className="mt-1 break-keep text-2xl font-extrabold text-ink-900 tabular-nums">
-          {formatKoreanMoney(summary.finalEstimatedHousingCost)}
-        </p>
-        <p className="mt-1 text-sm text-ink-500">
-          명목 총 지출 {formatKoreanMoney(summary.nominalTotalCost)} 기준
-        </p>
-
-        {unknownConditions.length > 0 && (
-          <div className="mt-4 rounded-2xl bg-white/70 p-4 text-sm text-warn-800">
-            <p className="flex items-start gap-2 font-bold">
-              <AlertIcon size={18} className="mt-0.5 shrink-0" />
-              <span>이 금액에는 아직 확인되지 않은 조건이 포함되어 있습니다</span>
-            </p>
-            <ul className="mt-2 list-disc pl-5">
-              {unknownConditions.map((u, i) => (
-                <li key={i}>
-                  [{u.policy}] {u.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
+      <ResultSummary
+        supportAmount={summary.maxSupportAmount}
+        finalCost={summary.finalEstimatedHousingCost}
+        nominalTotal={summary.nominalTotalCost}
+        unknownConditions={unknownConditions}
+      />
 
       {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
-      <section className="rounded-3xl bg-white p-5 text-sm shadow-sm">
-        <p className="flex items-center gap-3 font-bold text-ink-700">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-            <StackIcon size={20} />
-          </span>
-          <span>이 금액은 아래 조합으로 계산했습니다</span>
-        </p>
+      <section className="rounded-card bg-surface p-5 text-sm shadow-card">
+        <SectionTitle icon={<ListChecks size={ICON_MD} aria-hidden="true" />}>
+          이 금액은 아래 조합으로 계산했습니다
+        </SectionTitle>
         {included.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
             {included.map((item) => (
@@ -163,13 +144,10 @@ export default function ResultPage() {
         )}
       </section>
 
-      <section className="rounded-3xl bg-white p-5 text-sm shadow-sm">
-        <p className="flex items-center gap-3 font-bold text-ink-700">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-            <WalletIcon size={20} />
-          </span>
-          <span>계약 시 필요한 목돈과 지급 시점은 달라요</span>
-        </p>
+      <section className="rounded-card bg-surface p-5 text-sm shadow-card">
+        <SectionTitle icon={<Wallet size={ICON_MD} aria-hidden="true" />}>
+          계약 시 필요한 목돈과 지급 시점은 달라요
+        </SectionTitle>
         <p className="mt-1 text-ink-500">
           계약 당일 필요한 현금: <strong>{formatKoreanMoney(upfrontCash)}</strong> (보증금
           {listing.contractType === "연세" ? " + 연세 선납액" : ""})
@@ -219,12 +197,9 @@ export default function ResultPage() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="flex items-center gap-3 text-base font-bold text-ink-700">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-              <BankIcon size={20} />
-            </span>
-            <span>이용 가능한 대출·보증 상품 ({loanProducts.length})</span>
-          </h2>
+          <SectionTitle as="h2" icon={<Landmark size={ICON_MD} aria-hidden="true" />}>
+            이용 가능한 대출·보증 상품 ({loanProducts.length})
+          </SectionTitle>
           <p className="mt-3 text-sm leading-relaxed text-ink-500">
             아래는 현금 지원금이 아닌 대출·보증료 상품입니다. 이자 절감액을 계산하지 않으며, 위 "최대
             지원 가능액"에도 포함되지 않습니다 — 대출과 지원금을 같은 금액으로 섞으면 실제보다 많이
@@ -233,17 +208,15 @@ export default function ResultPage() {
           </p>
         </div>
         {loanProducts.map((product) => (
-          <div key={product.id} className="rounded-3xl bg-white p-5 shadow-sm">
+          <div key={product.id} className="rounded-card bg-surface p-5 shadow-card">
             <p className="text-base font-bold text-ink-900">{product.name}</p>
             <p className="text-xs text-ink-500">{product.agency} · {product.regionScope}</p>
             <p className="mt-2 text-sm leading-relaxed text-ink-500">{product.summary}</p>
-            <div className="mt-3 flex flex-wrap gap-3 text-sm">
-              <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink-500 underline">
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
+              <ExternalRefLink href={product.sourceUrl} tone="quiet">
                 공식 출처
-              </a>
-              <a href={product.applyUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline">
-                신청 페이지로 이동
-              </a>
+              </ExternalRefLink>
+              <ExternalRefLink href={product.applyUrl}>신청 페이지로 이동</ExternalRefLink>
             </div>
             <Disclosure label="검수 상태 · 참고사항">
               <p className="text-xs text-ink-500">
@@ -258,22 +231,70 @@ export default function ResultPage() {
         ))}
       </section>
 
-      <p className="rounded-xl bg-ink-100 p-4 text-xs leading-relaxed text-ink-500">
+      <div className="flex gap-2.5 rounded-card bg-ink-100 p-4">
+        <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
+        <p className="text-xs leading-relaxed text-ink-600">
         최대 지원 가능액은 입력값을 바탕으로 조건 충족 시 받을 수 있는 상한을 계산한 값입니다. 실제
         소득인정액, 제출 서류, 예산 상황 등에 따라 지원액이 더 적거나 없을 수 있으며 최종 자격과
         지급액은 해당 기관이 결정합니다.
         <br />
         결과 기준일: {asOf}
-      </p>
+        </p>
+      </div>
 
-      <button
-        onClick={() => router.push("/eligibility")}
-        className="rounded-xl bg-white py-3 text-sm font-bold text-ink-600 shadow-sm transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
-      >
+      <Button variant="quiet" onClick={() => router.push("/eligibility")}>
         답변 수정하기
-      </button>
-    </main>
-    </div>
+      </Button>
+      </main>
+    </AppShell>
+  );
+}
+
+/**
+ * 카드 제목 — 원형 면에 아이콘 하나 + 한 줄.
+ * 아이콘은 장식이므로 접근성 트리에서 뺀다(호출부에서 aria-hidden).
+ */
+function SectionTitle({
+  icon,
+  as: Tag = "p",
+  children,
+}: {
+  icon: React.ReactNode;
+  as?: "p" | "h2";
+  children: React.ReactNode;
+}) {
+  return (
+    <Tag className="flex items-center gap-3 text-base font-bold text-ink-900">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        {icon}
+      </span>
+      <span>{children}</span>
+    </Tag>
+  );
+}
+
+/** 외부로 나가는 링크. 44px 타깃과 새 창 아이콘을 한 곳에서 준다. */
+function ExternalRefLink({
+  href,
+  tone = "brand",
+  children,
+}: {
+  href: string;
+  tone?: "brand" | "quiet";
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm font-bold underline transition-colors ${
+        tone === "quiet" ? "text-ink-600 hover:text-ink-900" : "text-brand-700 hover:text-brand-800"
+      }`}
+    >
+      {children}
+      <ExternalLink size={ICON_SM - 2} aria-hidden="true" />
+    </a>
   );
 }
 
@@ -283,15 +304,13 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
   const showFormula = result.status === "예상적용" || result.status === "조건충족시가능";
   // 1층 카드와 같은 시맨틱 — 카드 하나가 그 자체로 완결된 항목이다.
   return (
-    <article className="rounded-3xl bg-white p-5 shadow-sm">
+    <article className="rounded-card bg-surface p-5 shadow-card">
       <div className="flex items-start justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           <p className="text-base font-bold text-ink-900">{policy.name}</p>
           <p className="text-xs text-ink-500">{policy.agency} · {policy.regionScope}</p>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${STATUS_STYLE[result.status]}`}>
-          {result.status}
-        </span>
+        <StatusBadge tone={STATUS_TONE[result.status]}>{result.status}</StatusBadge>
       </div>
 
       {/* F4-3: 지원 형태 · 지급 시점 · 적용 산식 · 총 예상액 */}
@@ -301,8 +320,8 @@ function PolicyCard({ result, listing }: { result: PolicyResult; listing: Listin
       <p className="mt-1 text-sm leading-relaxed text-ink-500">{policy.benefitSummary}</p>
 
       {showFormula && (
-        <div className="mt-3 rounded-2xl bg-sand-50 p-3.5">
-          <p className="text-sm font-bold text-brand-900">
+        <div className="mt-3 rounded-control bg-accent-50 p-3.5">
+          <p className="text-sm font-bold text-accent-700">
             이 정책 단독 예상액: {formatKoreanMoney(result.estimatedAmount)}
           </p>
           {/* 산식은 원 단위로 남긴다. 이 줄의 목적은 공고 원문과 대조하는 검산이고,

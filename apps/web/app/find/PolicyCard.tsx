@@ -3,7 +3,8 @@ import type { DiscoveryCardStatus, PolicyMeta, TagResult } from "@/lib/types";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate } from "@/lib/date";
-import { ChevronRightIcon } from "@/app/icons";
+import { CARD_STATUS_BADGE, StatusBadge } from "@/app/components";
+import { ChevronRight, ICON_MD } from "@/app/components/icons";
 
 /**
  * 1층 정책 카드 — 목록의 한 줄.
@@ -21,15 +22,7 @@ import { ChevronRightIcon } from "@/app/icons";
  * '공고 상한' 을 반복하면 정작 금액이 작아진다.
  */
 
-const STATUS_STYLE: Record<DiscoveryCardStatus, string> = {
-  "신청 가능": "bg-ok-50 text-ok-700",
-  "확인 필요": "bg-warn-50 text-warn-800",
-  "신청 예정": "bg-brand-50 text-brand-800",
-  "접수 마감": "bg-ink-100 text-ink-600",
-  "대상 아님": "bg-ink-100 text-ink-600",
-};
-
-/** accent 는 '지금 받을 수 있는 돈' 신호다. 신청할 수 없는 카드에 주면 잘못 안심시킨다. */
+/** 금색은 '지금 받을 수 있는 돈' 신호다. 신청할 수 없는 카드에 주면 잘못 안심시킨다. */
 const 받을수있나 = (status: DiscoveryCardStatus) =>
   status === "신청 가능" || status === "확인 필요";
 
@@ -68,6 +61,7 @@ export default function PolicyCard({
   const status = cardStatus(policy, result, asOfISO);
   const ceiling = benefitCeiling(policy);
   const note = statusNote(status, policy, result);
+  const badge = CARD_STATUS_BADGE[status];
 
   return (
     /*
@@ -75,22 +69,18 @@ export default function PolicyCard({
      * 따로 누를 수 있는 것이 아니다 — 같은 카드에 누를 곳이 둘이면 어디를 눌러야
      * 하는지 생각하게 된다.
      *
-     * 구분선을 두지 않는다. 카드 사이는 부모의 여백(space-y)이 가른다.
+     * 구분선을 두지 않는다. 지면(옅은 파랑) 위의 흰 카드는 여백만으로 나뉜다.
      */
     <Link
       href={`/find/policies/${policy.id}`}
-      className="block rounded-3xl bg-white px-5 py-5 shadow-sm transition-transform hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+      className="focus-ring block rounded-card bg-surface px-5 py-5 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
     >
-      <span
-        className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold ${STATUS_STYLE[status]}`}
-      >
+      {/* 색만으로 상태를 말하지 않는다 — 배지마다 아이콘이 하나씩 붙는다. */}
+      <StatusBadge tone={badge.tone} icon={badge.icon}>
         {status}
-      </span>
+      </StatusBadge>
 
-      {/* break-keep — 한글은 기본값이면 어절 중간에서 끊긴다 ('지원사 / 업'). */}
-      <h3 className="mt-2 break-keep text-base font-bold leading-snug text-ink-900">
-        {policy.name}
-      </h3>
+      <h3 className="mt-2.5 text-base font-bold leading-snug text-ink-900">{policy.name}</h3>
       <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
 
       <div className="mt-3 flex items-center justify-between gap-3">
@@ -103,10 +93,10 @@ export default function PolicyCard({
         >
           {ceiling ? ceiling.label : "금액 확인 필요"}
         </p>
-        <ChevronRightIcon size={20} className="shrink-0 text-ink-200" />
+        <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
       </div>
 
-      {note && <p className="mt-2 break-keep text-sm leading-relaxed text-ink-600">{note}</p>}
+      {note && <p className="mt-2 text-sm leading-relaxed text-ink-600">{note}</p>}
     </Link>
   );
 }

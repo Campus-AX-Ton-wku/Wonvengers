@@ -7,11 +7,21 @@ import type { EligibilityProfile, PolicyMeta } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
 import { birthYearOptions } from "@/lib/birth";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
+
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
 import { loadAnswers, loadListing, loadProfile, saveAnswers, saveProfile } from "@/lib/storage";
-import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
+import {
+  AppShell,
+  Button,
+  ChoiceCard,
+  FieldError,
+  MoneyInput,
+  NumberInput,
+  StepHeader,
+  StickyBottomAction,
+  TopBar,
+} from "@/app/components";
 
 const policies = policiesData as PolicyMeta[];
 
@@ -103,19 +113,23 @@ export default function EligibilityPage() {
   }
 
   if (region === null || steps.length === 0) {
-    return <main className="p-10 text-center text-ink-500">불러오는 중...</main>;
+    return (
+      <AppShell>
+        <TopBar backHref="/calculate" backLabel="계약 조건으로 돌아가기" />
+        <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
+      </AppShell>
+    );
   }
 
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5">
-      {/* 계약조건 2스텝이 앞에 있으므로 전체 진행률에 더해서 보여준다. */}
-      <AppBar onBack={handleBack} />
+    <AppShell>
+      <TopBar onBack={handleBack} backLabel="이전 단계로" />
 
       <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
-        <StepHeading title={current.heading} />
+        <StepHeader title={current.heading} />
 
         {current.questions.map((q) => (
           <QuestionField
@@ -126,15 +140,13 @@ export default function EligibilityPage() {
           />
         ))}
 
-        {error && (
-          <p role="alert" className="text-sm font-semibold text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <FieldError>{error}</FieldError>}
       </main>
 
-      <BottomCta onClick={handleNext}>{isLast ? "결과 확인하기" : "다음"}</BottomCta>
-    </div>
+      <StickyBottomAction>
+        <Button onClick={handleNext}>{isLast ? "결과 확인하기" : "다음"}</Button>
+      </StickyBottomAction>
+    </AppShell>
   );
 }
 
@@ -174,16 +186,16 @@ function QuestionField({
 
       {question.type === "boolean" && (
         <div className="flex flex-col gap-2">
-          <OptionButton active={value === true} onClick={() => onChange(true)}>
+          <ChoiceCard active={value === true} onClick={() => onChange(true)}>
             그렇다
-          </OptionButton>
-          <OptionButton active={value === false} onClick={() => onChange(false)}>
+          </ChoiceCard>
+          <ChoiceCard active={value === false} onClick={() => onChange(false)}>
             아니다
-          </OptionButton>
+          </ChoiceCard>
           {question.allowUnknown && (
-            <OptionButton active={isUnknown} onClick={() => onChange("unknown")}>
+            <ChoiceCard active={isUnknown} onClick={() => onChange("unknown")}>
               모름
-            </OptionButton>
+            </ChoiceCard>
           )}
         </div>
       )}
@@ -193,34 +205,25 @@ function QuestionField({
           않으므로 숫자를 입력하면 모름이 자연스럽게 풀린다. */}
       {question.type === "number" && (
         <div className="flex flex-col gap-2">
-          <input
-            id={inputId}
-            type="number"
-            inputMode={question.money ? "decimal" : "numeric"}
-            step={question.money ? "any" : 1}
-            className="input"
-            value={numberFieldValue(question, value)}
-            onChange={(e) =>
-              onChange(
-                e.target.value === ""
-                  ? "unknown"
-                  : question.money
-                    ? manwonToWon(Number(e.target.value))
-                    : Number(e.target.value)
-              )
-            }
-            min={0}
-          />
-          {/* 0 하나 더/덜 친 실수를 그 자리에서 잡는다 (F1-8 과 같은 이유). */}
-          {question.money && typeof value === "number" && value > 0 && (
-            <p aria-hidden="true" className="text-xs font-semibold text-brand-700">
-              {formatKoreanMoney(value)}
-            </p>
+          {/* 빈 칸 = 모름이다. MoneyInput 은 0 하나 더/덜 친 실수를 그 자리에서
+              읽어준다 (F1-8). 금액이 아닌 숫자(가구원 수)는 환산이 없다. */}
+          {question.money ? (
+            <MoneyInput
+              id={inputId}
+              value={typeof value === "number" ? value : null}
+              onChange={(won) => onChange(won === null ? "unknown" : won)}
+            />
+          ) : (
+            <NumberInput
+              id={inputId}
+              value={typeof value === "number" ? value : null}
+              onChange={(v) => onChange(v === null ? "unknown" : v)}
+            />
           )}
           {question.allowUnknown && (
-            <OptionButton active={isUnknown} onClick={() => onChange("unknown")}>
+            <ChoiceCard active={isUnknown} onClick={() => onChange("unknown")}>
               모름
-            </OptionButton>
+            </ChoiceCard>
           )}
         </div>
       )}
@@ -242,10 +245,4 @@ function QuestionField({
       )}
     </div>
   );
-}
-
-/** 금액 질문은 만원, 나머지(가구원 수 등)는 그대로 보여준다. */
-function numberFieldValue(question: QuestionDef, value: unknown): number | "" {
-  if (typeof value !== "number") return "";
-  return question.money ? (wonToManwon(value) ?? "") : value;
 }
