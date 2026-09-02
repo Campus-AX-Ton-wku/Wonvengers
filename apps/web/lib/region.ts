@@ -97,6 +97,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "세종특별자치시", label: "세종특별자치시", chipLabel: "세종" },
   },
   {
+    // 대구 청년 주택 임차보증금 대출이자 지원사업(loan-products, 11라운드)을
+    // 위해 처음 추가했다 — policies.json에는 아직 대구 정책이 없다.
+    name: "대구광역시",
+    districts: [],
+    catchAll: { value: "대구광역시", label: "대구광역시", chipLabel: "대구" },
+  },
+  {
     // 광산청년온가(housing-supply.json, 전국화 Phase 2, 광역 8번째 시도)에 이어
     // 서구 천원 복비(시군구 확장 1라운드)를 위해 districts 를 채웠다.
     // '전남광주통합특별시' 표기 이슈는 region.ts notes·확인목록 참고 — '광주광역시'로 등록했다.
@@ -105,18 +112,20 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "광주광역시", label: "광주광역시 (서구 외)", chipLabel: "광주 (서구 외)" },
   },
   {
-    // 평택시 청년 월세 지원(시군구 확장 2라운드)에 이어 용인청년 중개보수 및
-    // 이사비 지원사업(8라운드)을 위해 districts 를 늘렸다. 경기도는 도 단위
-    // 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과 겹치는
-    // 셈이지만, 향후 경기도 자체 정책이 나오면 그대로 받을 자리로 남겨 둔다.
+    // 평택시 청년 월세 지원(시군구 확장 2라운드)·용인청년 중개보수 및 이사비
+    // 지원사업(8라운드)에 이어 군포시 신혼부부 및 청년 전월세 보증금 대출이자
+    // 지원사업(loan-products, 11라운드)을 위해 districts 를 늘렸다. 경기도는
+    // 도 단위 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과
+    // 겹치는 셈이지만, 향후 경기도 자체 정책이 나오면 그대로 받을 자리로 남겨 둔다.
     name: "경기도",
     districts: [
       { value: "경기도 평택시", label: "경기도 평택시", chipLabel: "평택시" },
       { value: "경기도 용인시", label: "경기도 용인시", chipLabel: "용인시" },
+      { value: "경기도 군포시", label: "경기도 군포시", chipLabel: "군포시" },
     ],
     catchAll: {
       value: "경기도",
-      label: "경기도 (평택시·용인시 외)",
+      label: "경기도 (평택시·용인시·군포시 외)",
       chipLabel: "경기도 (그 외)",
     },
   },
