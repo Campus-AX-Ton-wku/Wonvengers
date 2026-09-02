@@ -46,7 +46,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "발견",
     title: "흩어진 청년 혜택을\n한곳에서 찾아드려요",
     description:
-      "국가·전북·익산에 나뉘어 있는 주거 지원금을 한 목록으로 모아 둡니다.",
+      "국가·지자체에 나뉘어 있는 주거 지원금을 한 목록으로 모아 둡니다.",
   },
   {
     character: "guide",
