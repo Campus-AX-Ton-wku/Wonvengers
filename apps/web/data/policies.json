@@ -260,5 +260,46 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "seoul-youth-moving-cost-support",
+    "name": "청년 부동산 중개보수 및 이사비 지원사업",
+    "agency": "서울특별시",
+    "regionScope": "서울특별시",
+    "applicationStart": "2026-04-01",
+    "applicationEnd": "2026-04-14",
+    "benefitType": "lump_sum",
+    "benefitSummary": "부동산 중개보수와 이사비를 합쳐 실제 지출한 금액 중 최대 40만원까지 생애 1회 지원 (중개보수·이사비 중 한 항목만 신청도 가능, 상·하반기 각 4,000명 총 8,000명)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://soco.seoul.go.kr/youth/bbs/BMSR00013/view.do?boardId=6486&menuNo=400018",
+    "applyUrl": "https://youth.seoul.go.kr",
+    "youthPolicyNo": "20260614005400213232",
+    "gov24ServiceId": null,
+    "verifiedAt": null,
+    "effectiveYear": 2026,
+    "notes": "미검증 초안(팀 교차검수 필요). 서울시 청년안심주택 고객센터 공지 '2026년 청년 부동산 중개보수 및 이사비 지원' 원문으로 확인(게시일 2026-04-01, 조회 2026-09-02). 신청기간은 원문 상반기 값(2026-04-01~04-14)만 반영했다 — 온통청년 API 값과 일치한다(익산·군산과 달리 이번엔 불일치 없음). ⚠️ 원문에 '지원규모 8,000명(상·하반기 각 4,000명)'과 '4/14까지 이주 못한 세대는 하반기 또는 2027년에 신청'이라고 명시돼 있어 하반기 모집이 실제로 있다 — 하지만 정확한 하반기 신청기간은 이 원문에서 확인하지 못했다. 이 앱의 PolicyMeta는 단일 신청기간만 표현할 수 있어(HousingSupplyMeta의 applicationPeriodNote 같은 반복 표현 필드가 없음), 지금(하반기 기간 중이거나 이미 끝났을 수 있음)도 이 정책이 '접수 마감'으로 표시될 수 있다 — 실제로는 신청 가능한데 이 앱이 틀리게 말할 위험이 있다는 뜻이다. ⚠️ 나이(19~39세)는 원문 텍스트엔 '청년 가구'라고만 있고 정확한 숫자가 없다 — 온통청년 API의 두 등록본 중 하나(plcyNo 20260614005400213232)는 19~39세, 다른 하나(20260618005400213241)는 '제한없음'으로 서로 다르게 등록돼 있다. 같은 사업부서(서울시 미래청년기획관 청년사업담당관)의 다른 정책들이 전부 19~39세 기준을 쓰는 정황과 '청년'이라는 사업명에 근거해 19~39세를 채택했으나, 공식 공고문 PDF에서 직접 재확인하지는 못했다. ⚠️ 다음 조건은 이 앱이 판정하지 않는다: (1) '2024-01-01 이후 서울시 전입 또는 서울 내 이사 후 전입신고' — 전입일자를 입력받지 않는다, (2) '거래금액(임차보증금+월세액×100) 2억원 이하' — 판정 함수가 계약 정보(ListingInput)를 받지 않아 계산할 수 없다, (3) 계약 명의자 본인 여부 — 원문에 명시 없음, (4) 우선지원 대상(사회적 약자·주거취약청년 등) — 이건 자격요건이 아니라 선정 우선순위라 판정하지 않는다. 소득기준(가구당 중위소득 150% 이하, 원문 예시 1인 3,847,000원)은 income-thresholds.json의 1인 기준 중위소득(2,564,238원)의 150%(3,846,357원)와 반올림 오차 수준으로 일치해 medianIncomeCeiling(householdSize, 1.5)로 그대로 계산했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "서울특별시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
   }
 ]

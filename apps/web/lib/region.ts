@@ -38,6 +38,14 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [{ value: "전북특별자치도 익산시", label: "전북특별자치도 익산시", chipLabel: "익산시" }],
     catchAll: { value: "전북특별자치도", label: "전북특별자치도 (익산시 외)", chipLabel: "전북 (익산시 외)" },
   },
+  {
+    // 서울 청년 부동산 중개보수 및 이사비 지원사업(전국화 Phase 2, 광역 발굴 1건째)을
+    // 위해 추가했다. 구 단위 정책이 아직 없어 districts 는 비워 두고 catchAll 하나로
+    // 시도 전체를 받는다 — 전북과 달리 시군구 선택지가 아직 필요 없다.
+    name: "서울특별시",
+    districts: [],
+    catchAll: { value: "서울특별시", label: "서울특별시", chipLabel: "서울" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */

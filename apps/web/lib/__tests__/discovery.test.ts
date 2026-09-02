@@ -43,6 +43,7 @@ describe("groupPolicies", () => {
       "iksan-youth-rent-support",
       "jeonbuk-youth-settlement-support",
       "jeonse-return-guarantee-fee-subsidy",
+      "seoul-youth-moving-cost-support",
     ]);
   });
 

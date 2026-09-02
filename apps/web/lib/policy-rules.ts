@@ -213,6 +213,43 @@ const jeonseGuaranteeFee: RuleFn = (p) => [
   },
 ];
 
+/**
+ * 서울 청년 부동산 중개보수 및 이사비 지원사업.
+ *
+ * 계산 가능한 조건(무주택·가구소득)만 판정한다. 원문에 있는 나머지 두 요건은
+ * 이 앱의 입력으로 확인할 수 없어 '확인 필요'로 남긴다 — 지어내지 않는다:
+ *  - "2024-01-01 이후 서울 전입/이사 + 전입신고" — 전입일자를 입력받지 않는다.
+ *  - "거래금액(임차보증금+월세×100) 2억원 이하" — 판정 함수가 EligibilityProfile
+ *    만 받고 ListingInput(계약 정보)을 안 받아 계산할 수 없다.
+ */
+const seoulMovingCost: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택 임차가구", p.hasNoHouse, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "movedInAfter2024",
+      label: "2024-01-01 이후 서울 전입 또는 서울 내 이사 후 전입신고",
+      result: "unknown",
+      howToConfirm: "전입신고일이 2024-01-01 이후인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
+    },
+    {
+      key: "dealAmountUnder200M",
+      label: "거래금액(임차보증금 + 월세액×100) 2억원 이하",
+      result: "unknown",
+      howToConfirm: "계약서의 보증금과 월세액으로 직접 계산하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
+    },
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -220,4 +257,5 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "iksan-newcomer-moving-cost-support": iksanMovingCost,
   "youth-housing-benefit-split-payment": youthHousingBenefitSplit,
   "jeonse-return-guarantee-fee-subsidy": jeonseGuaranteeFee,
+  "seoul-youth-moving-cost-support": seoulMovingCost,
 };
