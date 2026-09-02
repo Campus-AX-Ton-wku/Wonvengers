@@ -9,6 +9,7 @@ import { benefitFormula, benefitTypeLabel, payoutTiming } from "@/lib/benefit";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
+import { loanProductsForRegion } from "@/lib/region";
 import {
   AppShell,
   Button,
@@ -30,7 +31,7 @@ import {
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
 
-const loanProducts = loanProductsData as LoanProductMeta[];
+const allLoanProducts = loanProductsData as LoanProductMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
 
 const STATUS_ORDER: PolicyStatus[] = ["예상적용", "조건충족시가능", "대상아님", "신청불가"];
@@ -57,6 +58,10 @@ export default function ResultPage() {
   }
 
   const { included, unknownConditions } = summaryHighlights(summary);
+
+  // 정책 카드와 같은 규칙으로 지역을 거른다 — 안 거르면 익산·군산 전용 대출상품이
+  // 그 외 지역 사용자에게도 그대로 보인다.
+  const loanProducts = loanProductsForRegion(allLoanProducts, listing.region);
 
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.

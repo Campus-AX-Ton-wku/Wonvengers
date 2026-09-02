@@ -58,15 +58,66 @@ const API = "https://www.youthcenter.go.kr/go/ythip/getPlcy";
  */
 const DISCOVERY_QUERY = { lclsfNm: "주거" };
 
-/** 전북특별자치도 익산시. 이 코드가 zipCd 목록에 있으면 익산 청년이 신청할 수 있다. */
-const TARGET_ZIP = "52140";
+/**
+ * 전국화 Phase 1 파일럿 대상 — 전북특별자치도 익산시 + 인접 5개 시.
+ *
+ * zipCd 는 짐작하지 않고 전부 API 응답에서 직접 확인했다 (전북특별자치도
+ * 신설로 옛 법정동코드 접두어 45 가 52 로 바뀌어 있어, 외부 자료만 보고
+ * 채우면 조용히 틀린 코드를 쓰게 된다):
+ *
+ *  - 익산시 52140 — 기존에 이미 확인된 값
+ *  - 전주시 52111(완산구)·52113(덕진구) — "청춘★별채" 전주시 사업의 zipCd 에서
+ *  - 군산시 52130 — "신혼부부 주택 전세자금 대출이자 지원" 군산시 사업의 zipCd 에서
+ *  - 김제시 52210 — "청년농촌보금자리 조성사업"의 zipCd 에서
+ *  - 정읍시 52180 · 남원시 52190 — 이 6개 시 전용 정책이 API 에 따로 없어,
+ *    전북 도 단위 정책("전북청년 지역정착 지원사업", plcyNo
+ *    20250113005400210206)의 zipCd 15개 목록에서 확인했다(도 단위 정책은
+ *    소속 시군 전체 코드를 나열하므로 정읍·남원 코드가 그 안에 나온다).
+ */
+const PILOT_REGIONS = [
+  { name: "익산시", zips: ["52140"] },
+  { name: "전주시", zips: ["52111", "52113"] },
+  { name: "군산시", zips: ["52130"] },
+  { name: "정읍시", zips: ["52180"] },
+  { name: "남원시", zips: ["52190"] },
+  { name: "김제시", zips: ["52210"] },
+];
+
+/**
+ * 전북특별자치도 시군구 전체 zipCd(15개) — "전북청년 지역정착 지원사업"의
+ * 실제 zipCd 응답 그대로다. 한 정책의 zipCd 가 이 15개를 전부 포함하면
+ * "전북 도 단위" 후보로 분류한다(전국 사업은 229개를 포함하므로 뒤에서
+ * 개수로 한 번 더 걸러낸다 — isProvinceWide 참고).
+ */
+const JEONBUK_ALL_ZIPS = [
+  ...PILOT_REGIONS.flatMap((r) => r.zips), // 전주(2)·군산·익산·정읍·남원·김제 = 7개
+  "52710", "52720", "52730", "52740", "52750", "52770", "52790", "52800", // 완주·진안·무주·장수·임실·순창·고창·부안 = 8개
+];
+
+/**
+ * 전국 사업은 zipCd 에 229개 코드가 전부 들어온다 — 200개를 문턱으로 잡는다
+ * (등록 실수로 몇 개가 빠져도 전국임을 알아볼 여유를 둔다).
+ */
+function isNational(zipCds) {
+  return zipCds.length >= 200;
+}
+
+/**
+ * 전북 도 단위 사업(zipCd 15개)을 가른다. 전북 15개 코드를 전부 포함하면서도
+ * 전국(200개+)은 아닌 것 — 40 을 문턱으로 잡아 여유를 둔다.
+ */
+function isProvinceWide(zipCds) {
+  return !isNational(zipCds) && zipCds.length <= 40 && JEONBUK_ALL_ZIPS.every((z) => zipCds.includes(z));
+}
+
+/** 이 정책이 파일럿 대상 시 중 어디에 적용되는지. 도 단위면 시별 목록에는 넣지 않는다. */
+function matchingPilotCities(zipCds) {
+  return PILOT_REGIONS.filter((r) => r.zips.some((z) => zipCds.includes(z))).map((r) => r.name);
+}
 
 /** 한 번에 받을 수 있는 최대 건수와, 그 페이지를 몇 장까지 넘길지. */
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
-
-/** 전세·대출·보증 관련 후보. 주거형태 확장(월세 → 전세)에서 먼저 볼 줄이다. */
-const JEONSE_PATTERN = /전세|임차보증금|보증금|대출|보증료/;
 
 // ── 인증키 ──────────────────────────────────────────────────────────────
 
@@ -131,8 +182,11 @@ function pickRecord(p) {
     incomeNote: emptyToNull(p.earnEtcCn),
     documents: emptyToNull(p.sbmsnDcmntCn),
     applyMethod: emptyToNull(p.plcyAplyMthdCn),
-    /** 적용 시군구 코드 목록. 전국 사업이면 229개가 들어 있어 저장은 하지 않는다. */
-    appliesToTarget: String(p.zipCd ?? "").split(",").includes(TARGET_ZIP),
+    /**
+     * 적용 시군구 코드 전체 목록. 전국 사업이면 229개가 들어온다 — 지역 분류에만
+     * 쓰고, 커밋되는 문서에는 이 원본 목록을 그대로 옮기지 않는다.
+     */
+    zipCds: String(p.zipCd ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   };
 }
 
@@ -243,11 +297,10 @@ for (const policy of policies) {
   }
 }
 
-// 2) 1층 확장용 후보 목록
+// 2) 1층 확장용 후보 목록 — 전국화 Phase 1 파일럿(전북 6개 시 + 도 단위)
 let candidateMd = "";
 try {
   const rows = (await fetchAllPages(key, DISCOVERY_QUERY)).map(pickRecord);
-  const 익산 = rows.filter((r) => r.appliesToTarget);
   const mapped = new Set(policies.map((p) => p.youthPolicyNo).filter(Boolean));
 
   const line = (r) =>
@@ -284,27 +337,79 @@ try {
       .filter(Boolean)
       .join("\n");
 
-  const fresh = 익산.filter((r) => !mapped.has(r.plcyNo));
-  const already = 익산.filter((r) => mapped.has(r.plcyNo));
-  const 전세후보 = fresh.filter((r) => JEONSE_PATTERN.test(`${r.name} ${r.supportContent ?? ""}`));
+  /** 신청기간이 지난 지 오래됐거나(2년+) 아예 없는 후보는 검토 우선순위가 낮다는 표시만 붙인다 — 걸러내지는 않는다. */
+  const 오래된힌트 = (r) => {
+    const period = parseApplyPeriod(r.applyPeriod);
+    if (!period?.end) return "";
+    const 종료 = new Date(period.end);
+    const 개월차 = (Date.now() - 종료.getTime()) / (1000 * 60 * 60 * 24 * 30);
+    return Number.isFinite(개월차) && 개월차 > 24 ? " ⚠️낡음" : "";
+  };
+
+  const national = rows.filter((r) => isNational(r.zipCds));
+  const provinceWide = rows.filter((r) => isProvinceWide(r.zipCds));
+  const alreadyBucketed = new Set([...national, ...provinceWide].map((r) => r.plcyNo));
+  // 전국·도 단위로 이미 잡힌 정책은 시별 목록에서 또 세지 않는다 — 안 그러면
+  // 전국 사업 하나가 파일럿 6개 시 목록 전부에 똑같이 복제돼 진짜 지역 후보를 가린다.
+  const byCity = new Map(
+    PILOT_REGIONS.map((region) => [
+      region.name,
+      rows.filter((r) => !alreadyBucketed.has(r.plcyNo) && matchingPilotCities(r.zipCds).includes(region.name)),
+    ])
+  );
+
+  const section = (title, note, list, { detailed = false } = {}) => {
+    const fresh = list.filter((r) => !mapped.has(r.plcyNo));
+    const already = list.filter((r) => mapped.has(r.plcyNo));
+    const body = detailed
+      ? fresh.map((r) => 상세(r) + 오래된힌트(r)).join("\n\n") || "_해당 없음_"
+      : `${header}\n${fresh.map((r) => line(r) + 오래된힌트(r)).join("\n") || "_해당 없음_"}`;
+    return {
+      fresh,
+      already,
+      md: `## ${title} — 신규 후보 ${fresh.length}건 (매핑됨 ${already.length}건 제외)\n\n` + (note ? `${note}\n\n` : "") + `${body}\n`,
+    };
+  };
+
+  const nationalSection = section(
+    "전국 (zipCd 200개 이상)",
+    "> 참고용 — 이번 파일럿(전북 6개 시) 범위 밖이다. 검증하면 6개 시뿐 아니라 전국 모든 사용자에게 적용된다.",
+    national
+  );
+  // 도 단위는 건수가 적고(대개 한 자릿수) 검증 우선순위가 가장 높으므로 상세 카드로,
+  // 시별은 건수가 많아 표로 훑을 수 있게 한다.
+  const provinceSection = section(
+    "전북특별자치도 도 단위 (전북 15개 시군 전체 적용)",
+    "> 여기 있는 정책 1건을 검증하면 파일럿 6개 시(익산 포함) 전부를 한 번에 커버한다.",
+    provinceWide,
+    { detailed: true }
+  );
+  const citySections = PILOT_REGIONS.map((region) => section(region.name, null, byCity.get(region.name)));
+
+  // 파일럿 범위(도 단위 + 시별)만 센다 — 전국 후보는 이번 파일럿의 검증 대상이 아니라 참고용이다.
+  const 파일럿신규 = [...provinceSection.fresh, ...citySections.flatMap((s) => s.fresh)];
+  // 시 여러 곳에 걸치는(도 단위는 아니지만 2개 이상 시에 동시 적용되는) 정책이 있으면
+  // 위 시별 합계에 중복으로 잡힐 수 있어, 총 건수는 plcyNo 기준으로 따로 센다.
+  const 중복제거총건수 = new Set(파일럿신규.map((r) => r.plcyNo)).size;
 
   candidateMd =
-    `# 온통청년 주거 정책 후보 (익산 적용분)\n\n` +
+    `# 온통청년 주거 정책 후보 — 전국화 Phase 1 파일럿 (전북 6개 시)\n\n` +
     `> 자동 생성 — \`npm run fetch:youth\` 로 갱신한다. 조회일 **${today}**\n` +
-    `> 조회 조건: 대분류 \`주거\` 전건(${rows.length}건)을 받아, 응답의 \`zipCd\` 목록에\n` +
-    `> 시군구코드 \`${TARGET_ZIP}\`(전북특별자치도 익산시)가 있는 **${익산.length}건**만 남겼다.\n` +
-    `> 전국 사업은 zipCd 에 229개 코드가 모두 들어 있어 이 방식으로 함께 잡힌다.\n\n` +
-    `PRD 3-2 의 1층 목표는 정책 **8~12개**다. 현재 \`policies.json\` 에 ${policies.length}개가 있다.\n\n` +
+    `> 조회 조건: 대분류 \`주거\` 전건(${rows.length}건)을 받아, 응답의 \`zipCd\` 목록으로\n` +
+    `> 전국(200개+) · 전북 도 단위(15개 전부 포함) · 시별 셋으로 가른다. 파일럿 대상:\n` +
+    `> 익산시(기존) · 전주시 · 군산시 · 정읍시 · 남원시 · 김제시 — zipCd 확인 출처는\n` +
+    `> 파일 상단 PILOT_REGIONS 주석에 있다.\n\n` +
+    `**파일럿 범위(도 단위 + 시별) 신규 후보 총 ${중복제거총건수}건** ` +
+    `(도 단위 ${provinceSection.fresh.length}건 + 시별 ${citySections.reduce((n, s) => n + s.fresh.length, 0)}건, plcyNo 중복 제거 기준). ` +
+    `전국 후보는 참고용 ${nationalSection.fresh.length}건 별도.\n\n` +
     `> [!WARNING]\n` +
-    `> 이 목록은 후보일 뿐이다. 사업 계획(예: "주거포털 개선")처럼 개인이 신청할 수 없는\n` +
-    `> 항목도 지역 조건만 맞으면 여기 들어온다. 아래 '지원내용'은 온통청년 **등록 정보**를\n` +
-    `> 그대로 옮긴 것이고 등록이 낡은 사례가 실제로 있었다. 반드시 공고 원문을 열어\n` +
-    `> 확인하고 \`verifiedAt\` 을 채운 뒤 \`policies.json\` 에 넣는다.\n\n` +
-    `## 전세 · 대출 · 보증 관련 후보 (${전세후보.length}건)\n\n` +
-    `주거형태를 월세에서 전세까지 넓힐 때 먼저 볼 줄이다.\n\n` +
-    `${전세후보.map(상세).join("\n\n") || "_해당 없음_"}\n\n` +
-    `## 아직 앱에 없는 후보 전체 (${fresh.length}건)\n\n${header}\n${fresh.map(line).join("\n")}\n\n` +
-    `## 이미 앱에 매핑된 정책 (${already.length}건)\n\n${header}\n${already.map(line).join("\n")}\n`;
+    `> 이 목록은 후보일 뿐이다. 사업 계획처럼 개인이 신청할 수 없는 항목, 이미 끝난\n` +
+    `> 신청기간이 낡은 채로 남은 항목(⚠️낡음 표시, 종료일 2년+ 경과)도 지역 조건만\n` +
+    `> 맞으면 여기 들어온다. '지원내용'은 온통청년 **등록 정보**를 그대로 옮긴 것이니\n` +
+    `> 반드시 공고 원문을 열어 확인하고 \`verifiedAt\`을 채운 뒤 \`policies.json\`에 넣는다.\n\n` +
+    `${provinceSection.md}\n` +
+    `${citySections.map((s) => s.md).join("\n")}\n` +
+    `${nationalSection.md}`;
 
   const outDir = join(REPO_ROOT, "docs", "기획");
   mkdirSync(outDir, { recursive: true });
