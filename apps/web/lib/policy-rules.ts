@@ -597,6 +597,36 @@ const eumseongYouthRent: RuleFn = (p, asOf) => {
 };
 
 /**
+ * 구미형 청년월세 지원사업.
+ *
+ * 재산 1억 2,200만원 이하 요건은 세종과 같은 패턴 — 이 앱은 재산을 입력받지
+ * 않아 항상 unknown 리터럴로 남긴다. 임대차계약 명의자 본인 요건은 원문
+ * 공고문에 명시돼 있지 않아 넣지 않았다(policies.json notes 참고).
+ */
+const gumiYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.2);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 120% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "assetsUnder122M",
+      label: "재산 1억 2,200만원 이하",
+      result: "unknown",
+      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
+    },
+  ];
+};
+
+/**
  * 고령군 청년 월세 주거비 지원사업.
  *
  * 원문(공고문 PDF)을 직접 열람하지 못해 '1인가구' 요건만 householdSize로
@@ -736,6 +766,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "incheon-yeongjonggu-moving-cost-support": incheonYeongjonggu,
   "pyeongtaek-youth-rent-support": pyeongtaekYouthRent,
   "eumseong-youth-rent-support": eumseongYouthRent,
+  "gumi-youth-rent-support": gumiYouthRent,
   "goryeong-youth-rent-support": goryeongYouthRent,
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,

@@ -127,10 +127,18 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     },
   },
   {
-    // 고령군 청년 월세 주거비 지원사업(시군구 확장 2라운드)을 위해 처음 추가했다.
+    // 고령군 청년 월세 주거비 지원사업(시군구 확장 2라운드)에 이어 구미형 청년월세
+    // 지원사업(7라운드)을 위해 districts 를 늘렸다.
     name: "경상북도",
-    districts: [{ value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" }],
-    catchAll: { value: "경상북도", label: "경상북도 (고령군 외)", chipLabel: "경상북도 (고령군 외)" },
+    districts: [
+      { value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" },
+      { value: "경상북도 구미시", label: "경상북도 구미시", chipLabel: "구미시" },
+    ],
+    catchAll: {
+      value: "경상북도",
+      label: "경상북도 (고령군·구미시 외)",
+      chipLabel: "경상북도 (그 외)",
+    },
   },
   {
     // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)을 위해 처음 추가했다.

@@ -58,6 +58,7 @@ describe("groupPolicies", () => {
       "incheon-yeongjonggu-moving-cost-support",
       "pyeongtaek-youth-rent-support",
       "eumseong-youth-rent-support",
+      "gumi-youth-rent-support",
       "goryeong-youth-rent-support",
       "incheon-jemulpogu-welcome-pay",
       "goesan-youth-worker-farmer-housing-cost-support",

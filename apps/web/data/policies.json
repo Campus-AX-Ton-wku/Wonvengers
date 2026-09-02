@@ -868,6 +868,47 @@
     }
   },
   {
+    "id": "gumi-youth-rent-support",
+    "name": "구미형 청년월세 지원사업",
+    "agency": "경상북도 구미시",
+    "regionScope": "경상북도 구미시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-06-30",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내(관리비 제외) 월 최대 10만원, 최대 24개월 (총 최대 240만원)",
+    "monthlyCap": 100000,
+    "maxMonths": 24,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.gumi.go.kr/portal/saeol/gosi/view.do?notAncmtMgtNo=70392&mid=0401040000",
+    "applyUrl": "https://www.gumi.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "구미시 공고 제2026-654호 '2026년 「구미형 청년월세 지원사업」 신규 신청자 모집 공고'(2026-03-03) 원문으로 확인 — 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(youthPolicyNo null, 인천 영종구와 같은 처리)이라 구미시청 홈페이지를 직접 열람해 찾았다. 지원대상: 19~39세 부모와 별도 거주 무주택 미혼 청년(1986.1.1~2007.12.31 출생자), 가구 소득 중위120% 이하 + 재산 1억2,200만원 이하. 재산 기준은 이 앱이 입력받지 않아 항상 unknown으로 남긴다. ⚠️ 국토부 청년월세 지원사업(moland)과 중복 신청이 명시적으로 금지돼 있음을 구미시대 5월호(시정소식지)에서 확인해 exclusiveGroup을 공유시켰다. ⚠️ 등록한 신청기간(2026.3.3~6.30)은 '상반기'이자 이미 마감된 회차다 — 2026-09-02 구미시 공지('2026년 국토부 청년월세 지원사업 결과 관련 안내')에 하반기 신규 신청이 '9월말~10월초 예정'이라고만 언급돼 정확한 날짜는 확인하지 못했다. 별도로 확인한 '청년근로자 지역정착 행복원룸사업'(19~39세 연소득5,000만원 이하 무주택 청년근로자, 월 최대 20만원)은 '협약원룸 입주 시'만 지원되고 신청도 위탁 운영기관(경북경영자총협회) 이메일로 받아 매칭형 스키마 갭(청년안심주택·한지붕세대공감과 같은 유형)으로 보여 이번 라운드에는 등록하지 않았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경상북도 구미시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
     "id": "goryeong-youth-rent-support",
     "name": "고령군 청년 월세 주거비 지원사업",
     "agency": "경상북도 고령군",

@@ -67,8 +67,8 @@ describe("/find/policies", () => {
 
     await screen.findByRole("heading", { level: 1 });
     // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세 1건은
-    // 마감), 해당 없음 25건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
-    // 부산·세종·광주 서구·경기 평택시·충북(음성군·괴산군)·경북 고령군·경남
+    // 마감), 해당 없음 26건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
+    // 부산·세종·광주 서구·경기 평택시·충북(음성군·괴산군)·경북(고령군·구미시)·경남
     // (하동군·산청군·합천군·통영시) 전용 정책 포함)
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "받을 수 있는 주거 혜택 2개"
@@ -76,7 +76,7 @@ describe("/find/policies", () => {
 
     const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 2개" });
     expect(within(신청가능영역).getAllByRole("link")).toHaveLength(2);
-    expect(screen.getByText("신청할 수 없는 지원금 26개")).toBeTruthy();
+    expect(screen.getByText("신청할 수 없는 지원금 27개")).toBeTruthy();
   });
 
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
