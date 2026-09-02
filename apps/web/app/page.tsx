@@ -63,13 +63,13 @@ export default function Home() {
           >
             {MAX_BENEFIT ? (
               <>
-                익산 청년이 받을 수 있는
+                청년이 받을 수 있는
                 <br />
                 최대 {(MAX_BENEFIT.won / 10000).toLocaleString("ko-KR")}만원
               </>
             ) : (
               <>
-                익산 청년이 받을 수 있는
+                청년이 받을 수 있는
                 <br />
                 주거 지원금 <span className="text-brand-600">{POLICY_COUNT}개</span>
               </>
@@ -80,7 +80,7 @@ export default function Home() {
             className="rise-in text-[15px] leading-relaxed text-ink-600"
             style={{ animationDelay: "240ms" }}
           >
-            국가·전북·익산에 흩어진 정책을 한 화면에 모아
+            국가·지자체에 흩어진 정책을 한 화면에 모아
             <br />
             내가 받을 수 있는 것만 골라 보여드립니다.
           </p>
