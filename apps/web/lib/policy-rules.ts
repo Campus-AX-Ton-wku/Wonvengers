@@ -671,6 +671,48 @@ const sancheongYouthRent: RuleFn = (p, asOf) => {
   ];
 };
 
+/** 합천군 청년 월세 지원사업 (경상남도) — 산청군과 같은 프레임, 나이만 18세부터. */
+const hapcheonYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const lowerCeiling = medianIncomeCeiling(householdSize, 0.6);
+  const upperCeiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 18, 49),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    rangeCheck(
+      "ownHouseholdIncomeBand",
+      `가구 소득 중위소득 60% 초과 150% 이하 (월 ${(lowerCeiling + 1).toLocaleString()}~${upperCeiling.toLocaleString()}원)`,
+      p.ownHouseholdMonthlyIncome,
+      lowerCeiling,
+      upperCeiling
+    ),
+  ];
+};
+
+/**
+ * 통영시 관외 청년 거주 정착 지원 사업.
+ *
+ * '타 시군구 6개월 이상 거주 후 2025-09-01 이후 취·창업 전입'은 전입일자·
+ * 취업이력을 안 물어 판정하지 못한다(policies.json notes 참고).
+ */
+const tongyeongYouthSettlement: RuleFn = (p, asOf) => [
+  ageCheck(p.birthDate, asOf, 18, 45),
+  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+  {
+    key: "singleHousehold",
+    label: "1인가구",
+    result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
+  },
+  {
+    key: "movedInFromElsewhereAfter20250901",
+    label: "타 시군구 6개월 이상 거주 후 2025-09-01 이후 취·창업으로 통영시 전입",
+    result: "unknown",
+    howToConfirm: "주민등록등본·재직증명서로 확인하세요. 이 앱은 전입일자·취업 이력을 입력받지 않습니다.",
+  },
+];
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -698,4 +740,6 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
   "hadong-youth-housing-cost-support": hadongYouthHousingCost,
   "sancheong-youth-rent-support": sancheongYouthRent,
+  "hapcheon-youth-rent-support": hapcheonYouthRent,
+  "tongyeong-youth-settlement-support": tongyeongYouthSettlement,
 };

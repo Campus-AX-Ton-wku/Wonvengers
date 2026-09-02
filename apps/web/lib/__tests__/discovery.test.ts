@@ -63,6 +63,8 @@ describe("groupPolicies", () => {
       "goesan-youth-worker-farmer-housing-cost-support",
       "hadong-youth-housing-cost-support",
       "sancheong-youth-rent-support",
+      "hapcheon-youth-rent-support",
+      "tongyeong-youth-settlement-support",
     ]);
   });
 
