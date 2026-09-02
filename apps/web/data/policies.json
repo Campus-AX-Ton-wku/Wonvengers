@@ -260,5 +260,1177 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "seoul-youth-moving-cost-support",
+    "name": "청년 부동산 중개보수 및 이사비 지원사업",
+    "agency": "서울특별시",
+    "regionScope": "서울특별시",
+    "applicationStart": "2026-04-01",
+    "applicationEnd": "2026-04-14",
+    "benefitType": "lump_sum",
+    "benefitSummary": "부동산 중개보수와 이사비를 합쳐 실제 지출한 금액 중 최대 40만원까지 생애 1회 지원 (중개보수·이사비 중 한 항목만 신청도 가능, 상·하반기 각 4,000명 총 8,000명)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://soco.seoul.go.kr/youth/bbs/BMSR00013/view.do?boardId=6486&menuNo=400018",
+    "applyUrl": "https://youth.seoul.go.kr",
+    "youthPolicyNo": "20260614005400213232",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "서울특별시 공고 제2026-1109호 '2026년 청년 부동산 중개보수 및 이사비 지원사업 참여자 모집 공고'(2026-04-01) 원문 PDF를 pdftotext -enc UTF-8로 직접 열람해 확인했다(이전 라운드에서 poppler 부재로 PDF를 못 열어 미검증 초안이었던 걸 해소). 신청기간은 원문 상반기 값(2026-04-01 10:00~04-14 18:00)만 반영했다. ✅ 나이(만 19~39세, 1986.1.1~2007.12.31 출생)를 공식 공고문에서 직접 재확인했다 — 온통청년 API 두 등록본(19~39세 vs 제한없음) 중 19~39세 쪽이 맞았다. ⚠️ 원문에 '지원규모 8,000명(상반기4,000명·하반기4,000명·하반기는 8월 예정)'이라고 명시돼 있어 하반기 모집이 실제로 있다 — 다만 '8월 예정'일 뿐 정확한 날짜(일)까지는 이 원문에서 확인하지 못했다. 이 앱의 PolicyMeta는 단일 신청기간만 표현할 수 있어(HousingSupplyMeta의 applicationPeriodNote 같은 반복 표현 필드가 없음), 하반기 기간 중에도 이 정책이 '접수 마감'으로 표시될 수 있다 — 실제로는 신청 가능한데 이 앱이 틀리게 말할 위험이 있다는 뜻이다. ⚠️ 다음 조건은 이 앱이 판정하지 않는다: (1) '2024-01-01 이후 서울시 전입 또는 서울 내 이사 후 전입신고' — 전입일자를 입력받지 않는다, (2) '거래금액(임차보증금+월세액×100) 2억원 이하' — 판정 함수가 계약 정보(ListingInput)를 받지 않아 계산할 수 없다, (3) 세대주 및 임대차계약서 임차인이 신청자 본인이어야 함, (4) 우선지원 대상(사회적 약자·주거취약청년 등) — 이건 자격요건이 아니라 선정 우선순위라 판정하지 않는다, (5) '22.1.1 이후 시·타기관에서 이미 중개보수·이사비를 지원받은 경우' 중복수혜 제한 — receivingOtherRentSupport에 준하는 필드가 이 앱 계산에 없어 판정 안 함. 소득기준(가구당 중위소득 150% 이하, 원문 예시 1인 3,847,000원)은 income-thresholds.json의 1인 기준 중위소득(2,564,238원)의 150%(3,846,357원)와 반올림 오차 수준으로 일치해 medianIncomeCeiling(householdSize, 1.5)로 그대로 계산했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "서울특별시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "ulsan-youth-household-housing-cost-support",
+    "name": "울산 청년가구 주거비 지원사업",
+    "agency": "울산광역시",
+    "regionScope": "울산광역시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-03-31",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "임차료(월세) 최대 월 10만원 + 임차보증금 이자 최대 월 5만원, 합산 최대 월 15만원을 최대 4년(48개월) 실비 지원 (전세 등 월세 없는 거주는 임차보증금 이자 월 5만원만 해당)",
+    "monthlyCap": 150000,
+    "maxMonths": 48,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome",
+      "receivingOtherRentSupport"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.bukgu.ulsan.kr/hyomun/lay1/bbs/S609T934C935/A/60/view.do?article_seq=311687",
+    "applyUrl": "https://www.ulsan.go.kr/s/house/main.ulsan",
+    "youthPolicyNo": "20260409005400212656",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "울산광역시 공고 제2026-347호(2026-02-13, 효문동 행정복지센터 게시본으로 원문 대조, 2026-09-02) — 신청기간 2026.3.3(화) 09:00~3.31(화) 18:00, 오늘 기준으로는 이미 마감됨. 지원대상: 신청일 기준 울산광역시 주민등록·만 19~39세 무주택 미혼 청년가구 세대주(예외: 39세 이하 형제자매만 세대원인 1인가구 아닌 경우도 신청 가능, 부모·조부모가 세대원이면 제외 — 이 세부 조건은 이 앱이 입력받지 않아 '확인 필요'로 남겼다). 대상주택: 임차보증금 1억원 이하·월세 50만원 이하(임차보증금·월세 자체는 ListingInput에 있지만 판정 함수가 EligibilityProfile만 받아 계산에 반영하지 않는다). 소득기준(가구당 중위소득 150% 이하, 1인 월 3,846,357원)은 income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5) 계산과 반올림 오차 수준으로 일치해 그대로 썼다. ⚠️ 선정방법이 '심사배점표 합산 순위'인 경쟁 선발(예산 범위 내 인원)이라, 이 앱이 '조건충족시가능'으로 판정해도 실제로는 예산 소진 시 탈락할 수 있다 — F3-x 공통 문구로 이미 고지되지만 이 정책은 경쟁이 특히 뚜렷해 notes에 별도 기록한다. ⚠️ 제외대상에 '국비지원 청년월세 지원 사업 대상자'·'울산 청년 주택임차보증금 이자 지원사업 대상자'가 명시돼 있어 이 앱의 이미 등록된 국토부 청년월세 지원(moland-youth-rent-support, 전국)과 동시 수급 불가다 — receivingOtherRentSupport 체크로 대신 판정하고, exclusiveGroup을 moland와 같은 'youth-rent-cash-support'로 맞췄다. ⚠️ '청년 월세 지원'(plcyNo 20260409005400212654, 울산광역시 자체 등록)과 '전세보증금 반환보증 보증료 지원'(울산판)은 원문 대조 결과 국토부·정부24의 전국 정책(이미 등록된 moland-youth-rent-support·jeonse-return-guarantee-fee-subsidy)을 울산시가 그대로 재등록한 것으로 확인해(www.ulsan.go.kr/s/house 안내 문구가 '국토교통부/울산광역시' 공동 표기, 보증료 상한도 국토부 40만원과 동일 구조) 별도 등록하지 않았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "울산광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-youth-monthly-rent-support-35to39",
+    "name": "인천형 청년월세 지원 (35~39세)",
+    "agency": "인천광역시",
+    "regionScope": "인천광역시",
+    "applicationStart": "2026-03-30",
+    "applicationEnd": "2026-05-29",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 24개월 (총 최대 480만원) — 국비 청년월세 지원(19~34세)과 같은 기준을 인천시가 35~39세까지 확대",
+    "monthlyCap": 200000,
+    "maxMonths": 24,
+    "requiredInputs": [
+      "birthDate",
+      "livesApartFromParents",
+      "canRegisterResidence",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "useOriginHousehold",
+      "ownHouseholdMonthlyIncome",
+      "originHouseholdMonthlyIncome",
+      "receivingOtherRentSupport"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://youth.incheon.go.kr/dwelling/monthly.jsp",
+    "applyUrl": "https://youth.incheon.go.kr/dwelling/monthly.jsp",
+    "youthPolicyNo": "20260406005400212464",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '인천시 청년월세 지원사업' 원문으로 확인(2026-09-02). 원문이 스스로 두 갈래로 나눠 안내한다 — '19~34세: 국토부(전국) 청년월세 지원사업 / 35~39세: 인천형 청년월세 지원'. 19~34세는 이미 등록된 moland-youth-rent-support(전국, 같은 기관·같은 신청기간·같은 금액)가 그대로 커버하므로, 이 항목은 인천시가 그 위에 얹은 35~39세 확대분만 discovery.ageMin=35로 등록했다 — 19~34세 인천 사용자에게 두 카드가 겹쳐 뜨는 것을 막는다. 신청기간 2026.3.30 09:00~5.29 16:00(오늘 기준 마감), 지원내용·소득재산기준(청년독립가구 중위60%·원가구 중위100%, 재산 청년 1억2,200만원·원가구 4억7,000만원 이하)까지 moland와 완전히 동일해 requiredInputs·판정 로직도 moland를 그대로 재사용했다. exclusiveGroup을 moland와 같은 'youth-rent-cash-support'로 맞춰 둘 다 걸리는 경우가 생겨도(나이 구간이 갈려 실제로는 안 겹친다) 중복 합산되지 않게 했다. ⚠️ '39세 초과 의무복무 제대군인 연령 연장(최대 3세)'은 이 앱이 병역 이행 여부를 입력받지 않아 반영하지 못한다.",
+    "discovery": {
+      "ageMin": 35,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시"
+      ],
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMin": null,
+      "incomeBracketMax": 3,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-brokerage-fee-1000won",
+    "name": "천원 복비 (주택 중개보수 지원)",
+    "agency": "인천광역시",
+    "regionScope": "인천광역시",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "lump_sum",
+    "benefitSummary": "주택 중개보수 실비 최대 30만원(부가가치세 제외) 지원, 자부담 1천원 공제 후 입금 (임차보증금 1억원 이하, 2026-01-01 이후 체결한 2년 이상 임대차 계약)",
+    "lumpSumCap": 300000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=398",
+    "applyUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=398",
+    "youthPolicyNo": "20260406005400212460",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '천원 복비(주택 중개보수 지원)' 원문으로 확인(2026-09-02). 지원대상: 인천광역시 거주·전입 무주택자, 만 18~39세 청년(신혼부부·기초수급자·차상위·한부모도 별도 대상이지만 이 앱은 청년 경로만 다룬다). 접수는 '매월 말까지 → 익월 20일경 지급'으로 연중 상시라 applicationEnd 를 null(상시)로 뒀다 — 실제 종료일이 없는 게 아니라 예산(3억원, 1,000가구×30만원) 소진 시 조기 마감될 수 있다는 점은 jeonse-return-guarantee-fee-subsidy와 같은 방식으로 처리했다. ⚠️ 원문에 소득 기준이 없다(신청서류에 소득증빙이 아니라 재산세 세목별과세증명서만 요구 — 무주택 확인용으로 보인다) — incomeBracketMax를 null(무관)로 뒀다. ⚠️ 다음 조건은 판정 함수가 EligibilityProfile만 받고 ListingInput(계약 정보)을 안 받아 계산하지 못한다: (1) 임차보증금 1억원 이하, (2) 2년 이상 임대차 계약(2년 미만 단기 제외), (3) 2026-01-01 이후 체결. (4) '다른 기관·부서·단체에서 중개보수 지원을 받은 경우 지급 제외'도 판정하지 않는다 — receivingOtherRentSupport는 '월세·주거비' 중복 수급을 묻는 필드라 '중개보수' 중복과 의미가 달라 재사용하지 않았다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "jeju-youth-hope-charge-monthly-rent-35to39",
+    "name": "제주청년 희망충전 월세지원 (35~39세)",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 최대 12개월(총 최대 240만원) — 국비 청년월세 지원(19~34세)이 포괄하지 못하는 35~39세를 제주도가 별도로 지원",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "livesApartFromParents",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.jeju.go.kr/lifecycle/policy/list.htm?act=view&seq=60",
+    "applyUrl": "https://www.jeju.go.kr/lifecycle/policy/list.htm?act=view&seq=60",
+    "youthPolicyNo": "20260422005400212846",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주in情플랫폼(jeju.go.kr) '제주청년 희망충전 월세지원' 원문으로 확인(2026-09-02). 인천형 청년월세 지원(35~39세)과 같은 유형 — 국비 청년월세(moland, 19~34세, 전국)가 커버 못 하는 35~39세만 제주도가 별도 지원한다. 다만 인천과 달리 '원가구 소득' 요건이 원문에 없다(본인 가구 소득 중위60%·재산 1억2,200만원 이하만 있음) — 35세 이상은 부모 소득을 안 보는 게 자연스러워 useOriginHousehold 관련 입력을 요구하지 않았다. 신청기간이 '상시접수'라 applicationEnd를 null로 뒀다(incheon-brokerage-fee-1000won과 같은 처리). ⚠️ 재산 1억 2,200만원 이하는 이 앱이 판정하지 않는다 — EligibilityProfile의 assetsUnder107M은 익산시 전용 문턱값(1억 700만원)이라 그대로 재사용하면 다른 기준을 잘못 판정하게 된다. exclusiveGroup을 moland·incheon-youth-monthly-rent-support-35to39와 같은 'youth-rent-cash-support'로 맞췄다.",
+    "discovery": {
+      "ageMin": 35,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": [
+        "대학생",
+        "재직",
+        "구직"
+      ],
+      "incomeBracketMin": null,
+      "incomeBracketMax": 3,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "jeju-brokerage-fee-support",
+    "name": "청년 및 주거취약계층 주택 중개수수료 지원사업",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-01-19",
+    "applicationEnd": "2026-12-31",
+    "benefitType": "lump_sum",
+    "benefitSummary": "주택 중개수수료 실비 최대 30만원(부가가치세 포함) 지원, 2년 1회 최대 3회 (3억원 이하 주택 매매·임대차 계약, 예산 소진 시 조기 마감)",
+    "lumpSumCap": 300000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.jejuhwc.co.kr/finance/cost-support/brokerage-fees.htm",
+    "applyUrl": "https://www.gov.kr",
+    "youthPolicyNo": "20260421005400212798",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주특별자치도 주거복지센터(jejuhwc.co.kr) '청년 및 주거취약계층 중개수수료 지원' 원문으로 확인(2026-09-02). 지원대상은 19~39세 무주택 청년(신혼부부·기초수급자·차상위·한부모도 별도 대상이지만 이 앱은 청년 경로만 다룬다). 인천 천원 복비와 달리 자부담 공제(1천원)가 없고 소득 기준도 원문에 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️ '3억원 이하 주택 매매·임대차 계약'은 판정 함수가 EligibilityProfile만 받고 ListingInput(계약 정보)을 안 받아 계산하지 못한다. ⚠️ '2년 1회 최대 3회'·'다른 기관 중복 지원 제외' 조건도 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "jeju-youth-moving-cost-support",
+    "name": "제주 청년 이사비 지원사업",
+    "agency": "제주특별자치도",
+    "regionScope": "제주특별자치도",
+    "applicationStart": "2026-02-03",
+    "applicationEnd": "2026-05-08",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·입주청소비 실비 최대 40만원 지원 (2026-01-01 이후 제주 전입·전입신고, 연 2회 상·하반기 모집 중 상반기 값만 등록)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.jejuhwc.co.kr/finance/cost-support/movingexpenses.htm",
+    "applyUrl": "https://www.gov.kr/portal/rcvfvrSvc/dtlEx/650000001086",
+    "youthPolicyNo": "20260421005400212797",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "제주특별자치도 주거복지센터(jejuhwc.co.kr) '청년이사비 지원' 원문으로 확인(2026-09-02). 서울 청년 부동산 중개보수·이사비 지원사업과 같은 유형 — 연 2회(상·하반기) 모집 중 확정된 상반기(2026.02.03~05.08)만 등록했다(하반기는 '2026.09월(예정)'이라고만 있고 정확한 날짜가 없음). 지원대상: 2026-01-01 이후 제주 전입 또는 도내 이사 후 전입신고 완료한 19~39세 청년, 가구 소득 중위180% 이하, 본인 무주택. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.8)로 계산했다. 신청인은 '임대차계약서상 계약자 청년 본인'이라 명시돼 있어 isContractHolder를 넣었다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "제주특별자치도"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "busan-youth-brokerage-moving-cost-support",
+    "name": "부산청년 중개보수 및 이사비 지원",
+    "agency": "부산광역시",
+    "regionScope": "부산광역시",
+    "applicationStart": "2026-08-18",
+    "applicationEnd": "2026-08-24",
+    "benefitType": "lump_sum",
+    "benefitSummary": "부동산 중개보수와 이사비를 합쳐 실제 지출한 금액 중 최대 40만원까지 생애 1회 지원 (중개보수·이사비 중 한 가지만 신청도 가능, 310명)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://young.busan.go.kr/index.nm?menuCd=271",
+    "applyUrl": "https://young.busan.go.kr/index.nm?menuCd=271",
+    "youthPolicyNo": "20260513005400213198",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-02",
+    "effectiveYear": 2026,
+    "notes": "부산청년플랫폼(young.busan.go.kr) '부산청년 중개보수 및 이사비 지원' 원문·2026년 모집공고(부산광역시 공고 제2026-2373호)로 확인(2026-09-02). 서울·인천·제주 이사비 지원사업과 같은 유형. 신청기간 2026.8.18~8.24로 오늘 기준 이미 마감. 지원대상: 2025.8.1~2026.7.31 전입신고 기준 부산 전입·이사한 18~39세 청년 세대주(부모 별도 거주), 가구 소득 중위120% 이하, 무주택. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.2)로 계산했다. ⚠️ '거래금액(임차보증금+월세×100) 1억5,000만원 이하'는 판정 함수가 EligibilityProfile만 받고 ListingInput(계약 정보)을 안 받아 계산하지 못한다. ⚠️ '부모 소유 주택 임차 제외'·'타 유사사업 수혜 이력자 제외'도 이 앱이 입력받지 않는 조건이라 판정하지 않는다. 같은 부산청년플랫폼에 등록된 '청년 월세 지원'은 신청기간(2026.3.30~5.29)·조건이 국비 청년월세(moland, 전국)와 완전히 같아 부산시가 자기 포털에 재게시한 것으로 판단해 등록하지 않았다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 39,
+      "regions": [
+        "부산광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "sejong-youth-rent-support",
+    "name": "세종 청년 주거임대료 지원사업",
+    "agency": "세종특별자치시",
+    "regionScope": "세종특별자치시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-03-05",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 10개월(총 최대 200만원) — 연 2회(상·하반기) 모집 중 확정된 상반기(2026.03.03~03.05)만 등록",
+    "monthlyCap": 200000,
+    "maxMonths": 10,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.sejong.go.kr/bbs/R0079/view.do?nttId=B000000148851Fa5kD1y",
+    "applyUrl": "https://www.jobaram.com",
+    "youthPolicyNo": "20250903005400211612",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "세종특별자치시 공식 보도자료(청년정책담당관, 등록일 2026-02-22) '무주택 청년 주거임대료 월 최대 20만 원 지원' 원문으로 확인(2026-09-03). 국비 청년월세(moland, 전국, 19~34세·60%/100%·24개월)와 나이·소득 산정 방식·지원기간이 전부 달라(19~39세·150%·10개월) 같은 기관 보도자료가 두 사업을 별개로 안내한다 — 지역 재등록이 아니라 세종시 자체 사업으로 확인했다. 신청기간은 2026년부터 연 1회에서 상·하반기 연 2회로 개편됐다고 명시돼 있어 상반기(2026.3.3~3.5, 3일간)만 등록했다 — 하반기 정확한 날짜는 이 보도자료에 없다. 지원대상: 세종시 거주 19~39세 무주택 청년 1인가구, 임차보증금 1억원 이하·월세 60만원 이하·전용면적 85㎡ 이하, 가구 소득 중위150% 이하(1인 월 384만원), 재산 1억2,200만원 이하. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5)로 계산했다. ⚠️ 재산 1억2,200만원 이하는 이 앱이 판정하지 않는다(EligibilityProfile에 맞는 문턱값이 없음, jeju-youth-hope-charge-monthly-rent-35to39와 같은 처리). ⚠️ 선정방법이 '선착순이 아닌 소득·재산·임대료 반영비율' 심사인 경쟁 선발이라, 조건을 갖춰도 예산 범위 내 인원(25명)에서 탈락할 수 있다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "세종특별자치시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-junggu-moving-cost-support",
+    "name": "(중구) 청년 이사비 지원사업",
+    "agency": "인천광역시 중구",
+    "regionScope": "인천광역시 중구",
+    "applicationStart": "2026-02-01",
+    "applicationEnd": "2026-11-30",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·중개보수 실비 최대 40만원 생애 1회 지원 (청소비 제외, 25명)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.seoul.go.kr/infoData/youthPlcyInfo/view.do?key=2309160001&plcyBizId=20260406005400212463",
+    "applyUrl": "https://youth.incheon.go.kr",
+    "youthPolicyNo": "20260406005400212463",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "청년몽땅정보통(청년센터 정책 상세 미러) '(중구) 2026년 중구 청년 이사비 지원사업' 원문으로 확인(2026-09-03) — 온통청년 API 등록값과 일치. 시군구 확장 1라운드(인천 중구·동구, 광주 서구) 중 하나 — REGION_HIERARCHY의 인천광역시에 중구·동구 district를 처음 추가했다. 지원대상: 19~39세, 무주택자, 임대차계약 명의자 본인. 원문에 소득 기준이 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️ '동일 이사 건에 대해 중앙 또는 타 지자체에서 지원받은 경우' 제외는 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. ⚠️ 인천시 자체에 '전입청년 이사 지원사업'(시 전역, 타 시도에서 전입한 경우만 대상)이라는 별도 사업도 있으나 2025년 하반기(2025.10.20~) 이후 2026년 등록이 확인되지 않아 이번 라운드에는 넣지 않았다 — 중구·동구 사업과 상호 배타적이라는 점만 원문에서 확인했다. ⚠️★중요★ 시군구 확장 3라운드(2026-09-03)에서 2026-07-01 인천형 행정체제 개편(중구·동구 폐지 → 제물포구·영종구 신설)을 발견했다 — 확인목록.md 14번, incheon-jemulpogu-welcome-pay notes 참고. 이 항목의 신청기간(~2026.11.30)이 재편일 이후까지 이어지는 게 실제로 유효한지 이 세션에서는 확정하지 못했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시 중구"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "incheon-donggu-welcome-pay",
+    "name": "(동구) 청년 웰컴페이(이사비) 지원사업",
+    "agency": "인천광역시 동구",
+    "regionScope": "인천광역시 동구",
+    "applicationStart": "2026-01-12",
+    "applicationEnd": "2026-11-30",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·중개보수·입주청소비 실비 최대 40만원 생애 1회 지원 (2025-11-01 이후 동구 전입·전입신고, 50명)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.seoul.go.kr/infoData/youthPlcyInfo/view.do?key=2309160001&plcyBizId=20260406005400212457",
+    "applyUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=403",
+    "youthPolicyNo": "20260406005400212457",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "청년몽땅정보통(청년센터 정책 상세 미러) '(동구) 2026년 청년 웰컴페이(이사비) 지원사업' 원문으로 확인(2026-09-03). 중구와 같은 유형이지만 가구 소득 중위150% 이하 조건이 있어 requiredInputs에 householdSize·ownHouseholdMonthlyIncome을 추가했다. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5)로 계산했다. ⚠️ '2025-11-01 이후 동구 전입 또는 관내 이사 후 전입신고'는 판정 함수가 EligibilityProfile만 받아 전입일자를 계산하지 못한다(서울 이사비 지원사업과 같은 처리) — '확인 필요'로 남긴다. ⚠️ '타 기관(중앙부처·인천시·자치구) 이사비·중개보수 지원 수혜자' 제외도 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. ⚠️★중요★ 2026-07-01 인천형 행정체제 개편으로 동구가 폐지되고 제물포구로 재편됐다(확인목록.md 14번, incheon-jemulpogu-welcome-pay notes 참고) — 이 항목의 신청기간(~2026.11.30)이 재편일 이후까지 이어지는 게 실제로 유효한지, 아니면 인천청년포털이 아직 안 지운 낡은 게시물인지 이 세션에서는 확정하지 못했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시 동구"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "gwangju-seogu-brokerage-fee-1000won",
+    "name": "서구 청년 천원 복비(부동산 중개보수) 지원사업",
+    "agency": "광주광역시 서구",
+    "regionScope": "광주광역시 서구",
+    "applicationStart": "2026-07-01",
+    "applicationEnd": "2026-12-31",
+    "benefitType": "lump_sum",
+    "benefitSummary": "주택 임대차 중개보수 실비 최대 30만원 지원, 본인부담금 1천원 제외 (거래금액 1억원 이하 임대차계약)",
+    "lumpSumCap": 300000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.gwangju.go.kr/www/3",
+    "applyUrl": "https://youth.gwangju.go.kr",
+    "youthPolicyNo": "20260806005400213321",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "광주 청년통합플랫폼(youth.gwangju.go.kr, '전남광주통합특별시'·'광주광역시' 명칭이 섞여 등록된 사이트 — gwangju-gwangsan-cheongnyeon-onga notes 참고) '주거비 지원' 목록 원문으로 확인(2026-09-03). 인천 천원 복비(incheon-brokerage-fee-1000won)와 같은 유형이나 인천은 시 전역, 이 사업은 서구 한정이라 시군구 확장으로 분리 등록했다. 원문에 소득 기준이 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️ '거래금액 1억원 이하'는 판정 함수가 ListingInput을 안 받아 계산하지 못한다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "광주광역시 서구"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "incheon-yeongjonggu-moving-cost-support",
+    "name": "(영종구) 청년 이사비 지원사업",
+    "agency": "인천광역시 영종구",
+    "regionScope": "인천광역시 영종구",
+    "applicationStart": "2026-08-01",
+    "applicationEnd": "2026-11-30",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·중개보수 실비 최대 40만원 생애 1회 지원 (2026-07-01 이후 영종구 전입·전입신고, 25명 내외)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=395",
+    "applyUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=395",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '(영종구)2026년 영종구 청년 이사비 지원사업' 원문으로 확인(2026-09-03). 중구·동구와 같은 유형, 가구 소득 중위120% 이하 조건 추가. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.2)로 계산했다. 신청기간 2026.8.1~11.30로 오늘 기준 접수 중. ⚠️ 이 항목은 온통청년 '주거' 대분류 전수 스캔(282건)에는 없었다 — 인천청년포털을 직접 열람해 찾았다. 같은 포털의 '(영종구) 인천시 청년월세 지원사업'(plcyNo 20260724005400213301, 국비 청년월세의 영종구 재등록)과는 다른 별개 사업이다. youthPolicyNo를 null로 뒀다 — 다른 대분류에 등록돼 있거나 온통청년 미등록일 수 있다. ⚠️ '2026-07-01 이후 영종구 전입'·'동일 이사 건 타 지자체 중복지원 제외'는 이 앱이 입력받지 않는 조건이라 판정하지 않는다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시 영종구"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "pyeongtaek-youth-rent-support",
+    "name": "평택시 청년 월세 지원",
+    "agency": "경기도 평택시",
+    "regionScope": "경기도 평택시",
+    "applicationStart": "2026-04-06",
+    "applicationEnd": "2026-04-17",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 1인가구 청년 대상",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.pyeongtaek.go.kr/ptyc/portal/policyView/view.do?mId=0501000000&idx=93",
+    "applyUrl": "https://www.pyeongtaek.go.kr",
+    "youthPolicyNo": "20260326005400212287",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "평택시 청년지원센터 홈페이지 '평택시 청년 월세 지원(청년정책과)' 원문으로 확인(2026-09-03) — 온통청년 API 등록값과 일치. 경기도에 처음 추가하는 시군구 정책이라 REGION_HIERARCHY에 경기도 항목을 새로 만들었다(도 단위 정책은 아직 없음). 지원대상: 기준중위소득120% 이하 평택시 거주 19~39세 1인가구 청년, 임차보증금9,000만원 이하·월세50만원 이하. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.2)로 계산했다. ⚠️ '1인가구' 요건은 householdSize===1로 판정 가능하나, 원문에 임대차계약 명의자 본인 요건이 명시돼 있지 않아 isContractHolder는 넣지 않았다(다른 지역 정책과 달리 이 조건을 확인하지 못함). ⚠️ 임차보증금·월세 상한은 ListingInput이 필요해 판정하지 않는다. 선정방법이 소득·보증금·차량시가표준액 낮은 순 경쟁선발이라 조건 충족해도 예산 범위 내 인원(100명)에서 탈락할 수 있다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경기도 평택시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "eumseong-youth-rent-support",
+    "name": "음성군 청년월세 지원사업",
+    "agency": "충청북도 음성군",
+    "regionScope": "충청북도 음성군",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 15만원, 최대 12개월 (총 최대 180만원, 예산 소진 시 조기 마감)",
+    "monthlyCap": 150000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.chungbuk.go.kr/young/contents.do?key=5028",
+    "applyUrl": "https://www.chungbuk.go.kr/young",
+    "youthPolicyNo": "20250220005400210505",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "충북 청년포털 '음성군 청년월세 지원사업' 원문으로 확인(2026-09-03). 충청북도에 처음 추가하는 시군구 정책이라 REGION_HIERARCHY에 충청북도 항목을 새로 만들었다. 지원대상: 19~39세, 부모와 별도 거주, 무주택, 가구 소득 중위150% 이하(1인가구 약 384만원). income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5)로 계산했다. 신청시기가 '2026.1~예산 소진 시까지'라 상시로 보고 applicationEnd를 null로 뒀다(jeju-brokerage-fee-support와 같은 처리) — 실제로는 지원규모 125명 소진 시 조기 마감될 수 있다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "충청북도 음성군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "gumi-youth-rent-support",
+    "name": "구미형 청년월세 지원사업",
+    "agency": "경상북도 구미시",
+    "regionScope": "경상북도 구미시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-06-30",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내(관리비 제외) 월 최대 10만원, 최대 24개월 (총 최대 240만원)",
+    "monthlyCap": 100000,
+    "maxMonths": 24,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.gumi.go.kr/portal/saeol/gosi/view.do?notAncmtMgtNo=70392&mid=0401040000",
+    "applyUrl": "https://www.gumi.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "구미시 공고 제2026-654호 '2026년 「구미형 청년월세 지원사업」 신규 신청자 모집 공고'(2026-03-03) 원문으로 확인 — 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(youthPolicyNo null, 인천 영종구와 같은 처리)이라 구미시청 홈페이지를 직접 열람해 찾았다. 지원대상: 19~39세 부모와 별도 거주 무주택 미혼 청년(1986.1.1~2007.12.31 출생자), 가구 소득 중위120% 이하 + 재산 1억2,200만원 이하. 재산 기준은 이 앱이 입력받지 않아 항상 unknown으로 남긴다. ⚠️ 국토부 청년월세 지원사업(moland)과 중복 신청이 명시적으로 금지돼 있음을 구미시대 5월호(시정소식지)에서 확인해 exclusiveGroup을 공유시켰다. ⚠️ 등록한 신청기간(2026.3.3~6.30)은 '상반기'이자 이미 마감된 회차다 — 2026-09-02 구미시 공지('2026년 국토부 청년월세 지원사업 결과 관련 안내')에 하반기 신규 신청이 '9월말~10월초 예정'이라고만 언급돼 정확한 날짜는 확인하지 못했다. 별도로 확인한 '청년근로자 지역정착 행복원룸사업'(19~39세 연소득5,000만원 이하 무주택 청년근로자, 월 최대 20만원)은 '협약원룸 입주 시'만 지원되고 신청도 위탁 운영기관(경북경영자총협회) 이메일로 받아 매칭형 스키마 갭(청년안심주택·한지붕세대공감과 같은 유형)으로 보여 이번 라운드에는 등록하지 않았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경상북도 구미시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "goryeong-youth-rent-support",
+    "name": "고령군 청년 월세 주거비 지원사업",
+    "agency": "경상북도 고령군",
+    "regionScope": "경상북도 고령군",
+    "applicationStart": "2026-03-25",
+    "applicationEnd": "2026-04-08",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 10만원, 최대 10개월 (총 최대 100만원) — 청년 1인가구 또는 청년 신혼부부 대상",
+    "monthlyCap": 100000,
+    "maxMonths": 10,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.goryeong.go.kr/front/downFile.do?IDX_FI=194226&BRD_ID=1023",
+    "applyUrl": "https://www.goryeong.go.kr",
+    "youthPolicyNo": "20260331005400212362",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "고령군 공고 제2026-536호 '2026년 「고령군 청년 월세 주거비 지원사업」 대상자 2차 모집 공고'(2026-03-25) 원문 PDF를 pdftotext -enc UTF-8로 직접 열람해 확인했다(이전 라운드에서 poppler 부재로 PDF를 못 열어 미검증 초안이었던 걸 해소). 지원대상: 18~45세(1980.1.2~2008.1.1 출생) 고령군 거주(예정, 30일 이내 전입) 청년 1인가구 또는 청년 신혼부부(혼인신고 7년 이내), 임차보증금5천만원·월세60만원 이하 무주택자, 가구소득 기준중위소득180% 이하(1인기준 건강보험료 부과액 166,263원/지역가입자 104,256원). 사업량 17명, 사업기간 2026년 2월~12월(지원은 선정 후 2월분부터 소급). ⚠️ 신혼부부(2인 이상 가구)도 대상이지만 이 앱은 혼인 여부를 입력받지 않아 1인가구 요건만으로 판정한다 — 실제 자격이 되는 신혼부부 가구가 '해당없음'으로 잘못 분류될 수 있다. ⚠️ 1차 모집(신청기간 2026.2.9~2.25, 이전에 등록됐던 값)이 있었고 이번에 확인한 건 2차(3.25~4.8)다 — 과년도(1차 포함) 신청자·수혜자도 재신청 가능하되 후순위 선발이라고 원문에 명시돼 있다. 두 회차 모두 오늘(2026-09-03) 기준 이미 마감.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 45,
+      "regions": [
+        "경상북도 고령군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "incheon-jemulpogu-welcome-pay",
+    "name": "(제물포구) 청년 웰컴페이(이사비) 지원사업",
+    "agency": "인천광역시 제물포구",
+    "regionScope": "인천광역시 제물포구",
+    "applicationStart": "2026-07-06",
+    "applicationEnd": "2026-11-30",
+    "benefitType": "lump_sum",
+    "benefitSummary": "이사비·중개보수·입주청소비 실비 최대 40만원 생애 1회 지원 (2025-11-01 이후 전입·전입신고, 하반기 45명 내외)",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=403",
+    "applyUrl": "https://youth.incheon.go.kr/youthpolicy/youthPolicyInfoDetail.do?poly_seq=403",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "인천청년포털 '(제물포구) 2026년 청년 웰컴페이(이사비) 지원사업' 원문으로 확인(2026-09-03). 동구·중구·영종구와 같은 유형(가구 소득 중위150% 이하). income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5)로 계산했다. ⚠️★중요★ 2026-07-01 인천형 행정체제 개편으로 중구·동구가 폐지되고 제물포구·영종구로 재편됐다(확인목록.md 14번 참고) — 이 정책은 재편 이후 신설된 제물포구가 '하반기' 명목으로 새로 시작한 사업이다(신청기간 2026.7.6~11.30). 이미 등록한 incheon-donggu-welcome-pay(동구, 신청기간 2026.1.12~11.30)와 지리적으로 겹칠 가능성이 있다 — 동구가 제물포구에 흡수됐다면 같은 주민이 시기에 따라 '동구' 또는 '제물포구' 프로그램에 속하게 되는 셈인데, 인천청년포털이 재편 이후에도 '동구' 명의 게시물을 내리지 않아 이 세션에서는 실제 관할 관계를 확정하지 못했다. ⚠️ 이 항목도 온통청년 '주거' 대분류 전수 스캔에는 없었다(영종구와 같은 사유) — youthPolicyNo를 null로 뒀다. 전입일자 조건은 이 앱이 판정하지 않는다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "인천광역시 제물포구"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": null
+    }
+  },
+  {
+    "id": "goesan-youth-worker-farmer-housing-cost-support",
+    "name": "청년취업자 및 청년농업인 주거비 지원",
+    "agency": "충청북도 괴산군",
+    "regionScope": "충청북도 괴산군",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "전·월세 비용 월 최대 10만원 지원, 최대 3년(36개월)",
+    "monthlyCap": 100000,
+    "maxMonths": 36,
+    "requiredInputs": [
+      "birthDate",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.chungbuk.go.kr/young/contents.do?key=5024",
+    "applyUrl": "https://www.chungbuk.go.kr/young",
+    "youthPolicyNo": "20250220005400210512",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "충북 청년포털 '청년취업자 및 청년농업인 주거비 지원' 원문으로 확인(2026-09-03). 충청북도에 두 번째로 등록하는 시군구 정책이라 REGION_HIERARCHY의 충청북도에 괴산군 district를 추가했다(음성군에 이어 두 번째). 지원대상: 19~49세, 본인 명의 전·월세 계약, 가구 소득 중위180% 미만. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.8)로 계산했다. 신청시기가 '연중'이라 상시로 보고 applicationEnd를 null로 뒀다. ⚠️ '관내 기업 취업 또는 농업경영체 등록일로부터 5년 이내'는 이 앱이 입력받지 않는 조건이라(취업/창업 이력을 안 묻는다) 판정하지 않는다 — '확인 필요'로 남긴다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "충청북도 괴산군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "hadong-youth-housing-cost-support",
+    "name": "하동형 청년 주거비 지원사업",
+    "agency": "경상남도 하동군",
+    "regionScope": "경상남도 하동군",
+    "applicationStart": "2026-07-01",
+    "applicationEnd": "2026-07-15",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "월세 또는 대출이자의 50% 지원, 월 최대 20만원 — 분기별 모집 중 확정된 2분기(2026.07.01~07.15, 4~6월분)만 등록",
+    "monthlyCap": 200000,
+    "maxMonths": 3,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.hadong.go.kr/media/00012.web?amode=view&not_ancmt_mgt_no=44600",
+    "applyUrl": "https://www.hadong.go.kr",
+    "youthPolicyNo": "20251117005400211898",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "하동군청 공고고시(하동군 공고 제2026-1149호) '2026년 하동형 청년 주거비 지원사업(2분기) 참여자 모집 공고' 원문으로 확인(2026-09-03). 경상남도에 처음 등록하는 시군구 정책이라 REGION_HIERARCHY에 경상남도 항목을 새로 만들었다. 지원대상: 19~45세, 하동군 주민등록, 무주택(세대구성원 전원 하동군 관내 주택 미소유). 원문에 소득 기준이 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️★ 이 사업은 다른 등록 정책과 달리 '생애 1회'가 아니라 분기마다(1·2·4분기 등, 정확한 회차 수 미확인) 반복 모집한다 — 이 앱의 데이터 모델은 '한 정책 = 신청기간 하나'만 표현할 수 있어, 확정된 2분기(2026.07.01~07.15, 2026년 4~6월분 월세 기준) 하나만 등록했다. maxMonths를 3(분기)으로 둔 것도 '이번 회차 한 번 신청 시 받는 개월수'를 보수적으로 나타낸 것이지, 생애 최대 지원 개월수가 아니다 — 실제로는 계속 재신청해 더 오래 받을 수 있는데 이 앱은 그 반복 가능성을 계산에 반영하지 않는다(과소 추정 쪽으로 안전하게 처리).",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 45,
+      "regions": [
+        "경상남도 하동군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "sancheong-youth-rent-support",
+    "name": "산청군 청년월세 지원사업 (경상남도)",
+    "agency": "경상남도 산청군",
+    "regionScope": "경상남도 산청군",
+    "applicationStart": "2026-03-04",
+    "applicationEnd": "2026-03-20",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(국비 청년월세가 못 미치는 소득 구간을 경상남도가 보완, 시·군별로 다른 신청기간으로 집행)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://baro.gyeongnam.go.kr/baro/serviceView.es?mid=a10202000000&service_no=476",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "경남바로서비스(baro.gyeongnam.go.kr) '2026년 경상남도 「청년월세 지원사업」 신청 접수 안내(산청군)' 원문으로 확인(2026-09-03). 경남·부산 라운드(2026-09-02)에서 '도 단위 등록만으로는 시·군마다 신청기간이 달라 등록 불가'로 보류했던 그 사업(경상남도 교육청년국 등록, 중위60%초과~150%이하)의 산청군 시행분이다 — 시군구 확장으로 산청군의 구체적 신청기간이 확인돼 등록했다. 지원대상: 산청군 거주(예정), 부모와 별도 거주, 19~49세(도 단위 등록의 19~39세보다 넓다 — 산청군 자체 조례상 청년 정의가 더 넓은 것으로 보인다), 중위소득 60% 초과~150% 이하(rangeCheck로 하한 초과도 판정), 임차보증금 1억원 이하·월세 60만원 이하(ListingInput 필요해 판정 안 함). 원문에 실제 선정인원은 12명뿐(모집 정원 99명은 온라인 접수 창구 확대일 뿐)이라고 명시 — 경쟁이 매우 치열하다. ⚠️ '국토부 청년월세 참여자·경남 청년월세 기수급자(2022~2025) 중복 신청 불가'는 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목이라(도 단위 등록만 있었음) youthPolicyNo를 null로 뒀다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "경상남도 산청군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "hapcheon-youth-rent-support",
+    "name": "합천군 청년 월세 지원사업 (경상남도)",
+    "agency": "경상남도 합천군",
+    "regionScope": "경상남도 합천군",
+    "applicationStart": "2026-02-02",
+    "applicationEnd": "2026-02-13",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(산청군과 같은 경상남도 프레임)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://baro.gyeongnam.go.kr/baro/serviceView.es?mid=a10202000000&service_no=458",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": "20251217005400212010",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "경남바로서비스 '2026년 경상남도 청년월세 지원 사업 안내(합천군)' 원문으로 확인(2026-09-03) — 산청군과 같은 '경남 청년 월세 지원'(중위60%초과~150%이하) 프레임의 합천군 시행분이다. 신청기간(2026.2.2~2.13)은 온통청년 API 등록값(2025.02.17~02.28, 2025년도)과 달라 원문 값으로 교체했다 — API가 낡았다. 지원대상: 18~49세, 합천군 주민등록, 본인 명의 임대차 계약, 임차보증금1억원 이하·월세60만원 이하, 가구 소득 중위60%초과~150%이하(rangeCheck). ⚠️ '보증금 없는 월세는 신청 가능하나 월세 없는 전세는 신청 불가'는 ListingInput이 필요해 판정하지 않는다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 49,
+      "regions": [
+        "경상남도 합천군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "tongyeong-youth-settlement-support",
+    "name": "통영시 관외 청년 거주 정착 지원 사업",
+    "agency": "경상남도 통영시",
+    "regionScope": "경상남도 통영시",
+    "applicationStart": "2026-05-18",
+    "applicationEnd": "2026-12-31",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 6개월 (총 최대 120만원) — 타 시군구에서 통영시로 전입한 청년 1인가구만 대상",
+    "monthlyCap": 200000,
+    "maxMonths": 6,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "http://www.tyseum.or.kr/policy/policyView.php?no=90",
+    "applyUrl": "http://www.tyseum.or.kr",
+    "youthPolicyNo": "20250117005400210318",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "통영청년세움(tyseum.or.kr) '2026년 통영시 관외 청년 거주 정착 지원 사업' 원문으로 확인(2026-09-03) — 온통청년 API 등록값(2025.07.01~12.31, 2025년도)은 낡았다. 신청기간 2026.5.18~12.31로 상시 접수 중. 지원대상: 타 시군구에 6개월 이상 주민등록을 두고 있다가 취·창업으로 2025-09-01 이후 통영시로 전입한 18~45세 무주택 청년 1인가구. ⚠️ '타 시군구 6개월 이상 거주 후 2025-09-01 이후 취·창업 전입'은 이 앱이 전입일자·취업이력을 입력받지 않아 판정하지 못한다 — '확인 필요'로 남긴다. ⚠️ 원문에 소득 기준이 '세부 사항 공고문 참조'로만 돼 있어 구체적인 값을 확인하지 못했다 — incomeBracketMax를 null로 뒀다. 신청방법이 방문 접수만 가능하다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 45,
+      "regions": [
+        "경상남도 통영시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "changwon-youth-rent-support",
+    "name": "창원시 청년월세 지원사업 (경상남도)",
+    "agency": "경상남도 창원시",
+    "regionScope": "경상남도 창원시",
+    "applicationStart": "2026-03-16",
+    "applicationEnd": "2026-03-27",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(산청군·합천군과 같은 경상남도 프레임)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.changwon.go.kr/cwportal/10430.web?amode=view&idx=874033&gcode=1009",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "창원시 새소식 '2026년 「창원시 청년월세 지원사업」 참여자 모집 공고'(2026-03-10) 원문으로 확인. 산청군·합천군과 같은 '경남 청년 월세 지원'(중위60%초과~150%이하) 프레임의 창원시 시행분이지만, 나이가 19~39세로 두 군(18~49세)보다 좁다. 지원대상: 창원시 거주 19~39세, 세대주가 청년인 가구, 임차보증금1억원 이하·월세60만원 이하, 부모와 별도거주 무주택 세대주, 가구 소득 중위60%초과~150%이하(rangeCheck), 선정인원 258명(생애1회). 원문에 '국토교통부 청년월세 지원사업과 창원시 청년월세 지원사업은 중복 지원이 불가'라고 명시돼 있지만, 두 사업의 소득 구간이 애초에 겹치지 않아(moland는 60%이하, 이 정책은 60%초과) exclusiveGroup 태그 없이도 동시에 '가능'으로 뜨지 않는다(산청군·합천군과 같은 처리). ⚠️ '세대주가 청년인 가구' 요건은 이 앱이 세대 구성을 입력받지 않아 unknown으로 남긴다. 온통청년 '주거' 대분류 전수 스캔에는 도 단위 '청년 월세 지원(60%초과~150%이하)'만 잡혔고 창원시 개별 등록은 없었다(youthPolicyNo null, 구미형과 같은 처리) — 창원시청 홈페이지를 직접 훑어 찾았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경상남도 창원시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "yongin-brokerage-moving-cost-support",
+    "name": "용인청년 중개보수 및 이사비 지원사업",
+    "agency": "경기도 용인시",
+    "regionScope": "경기도 용인시",
+    "applicationStart": "2026-07-09",
+    "applicationEnd": "2026-07-15",
+    "benefitType": "lump_sum",
+    "benefitSummary": "부동산 중개보수와 이사비를 합쳐 실제 지출한 금액 중 최대 40만원까지 생애 1회 지원",
+    "lumpSumCap": 400000,
+    "lumpSumBasis": "oneTimeMoveCost",
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "http://www.yongin.go.kr/user/bbs/BD_selectBbs.do?q_bbsCode=1001&q_bbscttSn=20260630102205137&q_clCode=1",
+    "applyUrl": "https://www.yongin.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "용인시청 시정소식 '용인청년 중개보수 및 이사비 지원사업 신청자 모집'(2026-06-30 등록, 담당 청년정책과) 원문으로 확인. 서울·부산·제주 이사비 지원사업과 같은 유형. 신청기간 2026.7.9~7.15로 이미 마감. 지원대상: 2026.1.1~6.30 용인시로 전입하거나 용인시 내 이사 후 전입신고를 완료한 19~39세 무주택 청년, 전·월세 보증금 2억원 이하, 가구 소득 중위180% 이하. 원문에 '부모와 별도 거주'는 명시돼 있지 않아 넣지 않았다(서울·부산 이사비 지원사업과 다른 점). ⚠️ 전입일자 요건(2026.1.1~6.30)과 거래금액(보증금 2억원 이하)은 이 앱이 입력받지 않아 판정하지 않는다. 온라인 신청은 '잡아바어플라이'라는 별도 플랫폼을 쓰는데 정확한 URL을 원문에서 찾지 못해 applyUrl은 용인시청 홈페이지로 뒀다. 같은 청년정책과가 운영하는 '청년 부동산 중개보수 감면사업'(지정 중개업소 이용 시 즉시 20% 할인)은 부산 남구·부산진구 사례와 같은 즉시할인형이라 이 앱의 lump_sum(사후 실비 환급) 모델과 안 맞아 등록하지 않았다. 용인청년 전월세 보증금 대출이자 지원(loan-products 후보)은 원문 미대조로 다음 라운드에 남긴다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(youthPolicyNo null, 구미형·창원시와 같은 처리)이라 용인시청 홈페이지를 직접 훑어 찾았다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "경기도 용인시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "namhae-youth-rent-support",
+    "name": "남해군 청년 월세 지원사업 (경상남도)",
+    "agency": "경상남도 남해군",
+    "regionScope": "경상남도 남해군",
+    "applicationStart": "2026-01-19",
+    "applicationEnd": "2026-02-06",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 12개월 (총 최대 240만원) — 중위소득 60% 초과 150% 이하 구간(산청군·합천군·창원시와 같은 경상남도 프레임)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "livesApartFromParents",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://baro.gyeongnam.go.kr/baro/serviceView.es?mid=a10202000000&service_no=440",
+    "applyUrl": "https://www.gyeongnam.go.kr/baro",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "경남바로서비스 '2026년 경상남도 - 남해군 청년월세 지원 사업 안내' 원문으로 확인. 산청군·합천군·창원시와 같은 경남 프레임(중위60%초과~150%이하)의 남해군 시행분. 지원대상: 남해군 거주 19~45세, 부모와 별도거주 무주택 세대주, 본인 명의 임대차계약, 임차보증금1억원·월세60만원 이하. 모집인원 100명이지만 실제 선정은 소득인정액 낮은 순 12명뿐(산청군과 같은 패턴 — 경쟁 치열). ⚠️ '2022년 이후 경상남도 청년월세지원사업 수급 이력자 제외'는 이 앱이 입력받지 않는 이력 정보라 판정하지 않는다. 온통청년 '주거' 대분류 전수 스캔에는 없던 항목(도 단위 등록만 있었음)이라 youthPolicyNo를 null로 뒀다. 같은 남해군에 별도로 있는 '[남해군]청년주택 임차보증금 이자 지원사업'(임차보증금 대출이자 지원, 신청기간 2026.7.14~8.12)은 loan-products.json에 별도 등록했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 45,
+      "regions": [
+        "경상남도 남해군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "daejeon-youth-rent-support",
+    "name": "대전 청년 월세 지원사업",
+    "agency": "대전광역시",
+    "regionScope": "대전광역시",
+    "applicationStart": "2026-08-31",
+    "applicationEnd": "2026-09-10",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 최대 12개월 (총 최대 240만원)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "https://www.daejeon.go.kr/drh/board/boardNormalView.do?boardId=normal_0189&menuSeq=1632&ntatcSeq=1520828741",
+    "applyUrl": "https://www.daejeon.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "대전시가 이전까지 이 앱에서 한 번도 검토되지 않았던 걸 사용자가 지적해 발견했다(17개 시도 중 유일하게 누락돼 있었음) — 대전시 청년정책과 보도자료 '2026년 대전 청년 월세 지원사업 참여자 모집'(2026-08-24, daejeon.go.kr) 원문을 확인했다. 다만 첨부 공고문이 .hwp라 pdftotext가 못 열어, 본문에 없던 구체 수치(연령·소득·금액)는 같은 보도자료를 인용한 언론 4곳(헤럴드경제·충청투데이·서울신문·서울경제, 모두 2026-08-24)의 일치하는 내용으로 교차 확인했다. 지원대상: 대전시 주민등록 19~39세(1986.1.1~2007.12.31 출생) 무주택 청년, 가구소득 중위120% 이하, 임차보증금1억원·월세60만원 이하(또는 보증금 월세환산액+월세 합계 80만원 이하 — ListingInput 필요해 이 조건은 판정 안 함). 신청기간 2026.8.31 09:00~9.10 18:00 — **오늘(2026-09-03) 기준 접수 중**. 국토부 청년월세 지원·대전 청년 주택임차보증금 이자 지원사업과 중복 신청 불가가 명시돼 있고 소득 구간이 moland(60%이하)와 겹쳐 exclusiveGroup을 공유시켰다. 2022년부터 누적 1만 280명 지원, 올해는 1,000명 선발 예정. 결과발표 10.30, 첫 지원금 지급 11.25. 대전시에 처음 추가하는 정책이라 REGION_HIERARCHY에 대전광역시 항목을 새로 만들었다. 온통청년 '주거' 대분류 전수 스캔에 대전 자체가 빠져 있었을 가능성이 커 youthPolicyNo는 null로 뒀다 — 다음에 대전 전체를 온통청년 API로도 재확인할 필요가 있다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "대전광역시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
+  },
+  {
+    "id": "ulleung-youth-rent-support",
+    "name": "울릉섬 청년 주거비 지원사업",
+    "agency": "경상북도 울릉군",
+    "regionScope": "경상북도 울릉군",
+    "applicationStart": "2026-08-07",
+    "applicationEnd": "2026-08-21",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 1년 지원 (총 최대 240만원) — 청년 1인가구 또는 청년 신혼부부(월 최대30만원) 대상",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.ulleung.go.kr/ko/page.do?board_code=&srchSDate=&srchKwd=%EC%B2%AD%EB%85%84&srchColumn=title&srchDept=&srchEDate=&mnu_uid=571&not_ancmt_mgt_no=23529&pageNo=1&cmd=2",
+    "applyUrl": "https://www.ulleung.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "울릉군청 고시공고 게시판(미래전략과) '울릉섬 청년 주거비 지원사업 2차 모집 공고'(등록일 2026-08-05) 원문으로 확인 — 8·10·13라운드에서 세 번 시도 끝에 찾았다. 사이트 통합검색(Search/front/Search.jsp)이 이 고시공고 게시판을 인덱싱하지 않아 계속 못 찾았는데, 게시판 자체의 '제목' 검색으로는 바로 나왔다 — 다음에 비슷한 상황을 만나면 통합검색보다 해당 게시판 자체 검색을 먼저 시도한다. 지원대상: 19~49세(1977.1.1~2007.12.31 출생), 울릉군에 2026.1.1 이전 전입신고한 무주택 1인 청년가구 또는 신혼부부, 가구소득인정액 기준중위소득150% 이하, 월세(월임대료80만원 이하) 주택 거주. 사업규모 52명(1인가구청년43명·신혼부부9명). 지원내용: 1년 지원, 월 최대20만원(신혼부부30만원). ⚠️ 이번에 확인한 건 2차(2026.8.7~8.21)다 — 앞서 1차 공고와 변경 공고도 있었으나(둘 다 이번 라운드에 원문 열람, 조건은 2차와 동일) 정확한 1차 신청기간은 이번 라운드에서 추가로 열람하지 않았다. 오늘(2026-09-03) 기준 2차도 이미 마감. ⚠️ 신혼부부(2인 이상 가구)도 대상이지만 이 앱은 혼인 여부를 입력받지 않아 1인가구 요건만으로 판정한다. ⚠️ '2026.1.1 이전 전입신고'는 전입일자를 입력받지 않아 판정하지 않는다. 경상북도에 세 번째로 추가하는 시군구(고령군·구미시에 이어)라 REGION_HIERARCHY에 울릉군을 추가했다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "경상북도 울릉군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세"
+      ]
+    }
+  },
+  {
+    "id": "gangjin-youth-worker-rent-support",
+    "name": "강진군 청년 취업자 주거비 지원사업",
+    "agency": "전라남도 강진군",
+    "regionScope": "전라남도 강진군",
+    "applicationStart": "2026-07-27",
+    "applicationEnd": "2026-08-21",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "전·월세 거주 무주택 청년의 주거비를 최대 12개월간 월 20만원씩 현금으로 지원 (총 최대 240만원)",
+    "monthlyCap": 200000,
+    "maxMonths": 12,
+    "requiredInputs": [
+      "birthDate",
+      "isStudentOrEmployed",
+      "hasNoHouse",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": ["youth-rent-cash-support"],
+    "sourceUrl": "http://www.gangjin.go.kr/www/government/notice/gosi?mode=view&idx=28886",
+    "applyUrl": "https://www.gangjin.go.kr",
+    "youthPolicyNo": null,
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "강진군청 고시공고 게시판 '2026년 청년 취업자 주거비 지원사업 추가 모집 공고'(강진군 공고 제2026-870호, 등록일 2026-07-27) 원문으로 확인. 본문에 첨부된 .hwpx 공고문은 이 환경에서 직접 못 열어(hwpx 미지원), 게시글의 '바로보기' 뷰어(Viewer_gosi/28886_1, SynapSoft 문서뷰어)로 렌더링된 이미지를 화면 캡처해 읽었다 — .hwpx 를 못 열 때 pdftotext 다음으로 쓸 수 있는 새 우회 경로. 지원대상(①~⑤ 모두 충족): ①강진군 주민등록 주소지 ②18~45세(1981.1.1~2008.12.31) ③노동자(최근 6개월 이내 3개월 이상 노동 중) 또는 사업자(전남 소재, 신청일 기준 6개월 이전 개업+3개월 이상 운영) ④전세(대출금 5천만원 이상) 또는 월세(60만원 이하) 거주 무주택자, 강진군 소재 주택을 취업·주거용으로 임차 ⑤가구소득인정액 기준중위소득 150% 이하. 신청제외 대상에 '청년월세 한시 특별지원사업'(국비 moland) 등 유사 사업 수혜자가 명시돼 있어 exclusiveGroup을 걸었다(150% 상한이 moland의 60% 상한을 포함하므로 실제 중복 가능성 있음) — 같은 문구에 광양시 청년주택자금 대출이자·순천시 신혼부부 전세자금 대출이자·해남군 해남형 청년 주거비 지원사업이 언급돼 향후 라운드 후보로 기록해 둔다. 이 앱은 재직 기간·사업자 여부·임차료 금액·전입일자를 정확히 입력받지 않아 해당 조건은 근사 판정(재직만 pass) 또는 unknown 처리했다. ⚠️ 사전 문서(온통청년-주거후보.md)에는 '강진품애(愛) 청년 주거비 지원사업 1인가구 월20만·2인이상 월25만'이라는 미검증 메모가 있었으나, 이번에 원문 대조한 이 공고에는 가구원수 구분 없이 월 20만원 정액으로 명시돼 있고 '강진품애'는 통합검색 결과 귀농귀촌 빈집 리모델링·지역화폐 캠페인 등 다른 사업들에 붙는 군 브랜드명이었다 — 옛 메모가 API 설명 문구를 잘못 옮긴 것으로 보인다. 전라남도에 처음 추가하는 시군구라 REGION_HIERARCHY에 강진군을 추가했다. 이번 07-27 공고는 '추가모집'(2명, 예산 범위 내 추후 추가모집 가능)이며, 이보다 앞서 최초 공고(03-13)·추가모집(05-20)이 있었으나 이번 라운드에서는 07-27 공고만 원문을 열람했다 — 최초 공고의 정확한 신청기간·모집인원은 확인하지 않았다.",
+    "discovery": {
+      "ageMin": 18,
+      "ageMax": 45,
+      "regions": [
+        "전라남도 강진군"
+      ],
+      "statuses": [
+        "재직"
+      ],
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
   }
 ]

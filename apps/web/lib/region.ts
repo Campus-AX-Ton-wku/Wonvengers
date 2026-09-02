@@ -1,4 +1,4 @@
-import type { LoanProductMeta, PolicyMeta } from "./types";
+import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "./types";
 
 /**
  * 지역 선택지 하나. data/policies.json 의 regionScope 값과 같은 어휘를 쓴다.
@@ -37,6 +37,160 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     name: "전북특별자치도",
     districts: [{ value: "전북특별자치도 익산시", label: "전북특별자치도 익산시", chipLabel: "익산시" }],
     catchAll: { value: "전북특별자치도", label: "전북특별자치도 (익산시 외)", chipLabel: "전북 (익산시 외)" },
+  },
+  {
+    // 서울 청년 부동산 중개보수 및 이사비 지원사업(전국화 Phase 2, 광역 발굴 1건째)을
+    // 위해 추가했다. 구 단위 정책이 아직 없어 districts 는 비워 두고 catchAll 하나로
+    // 시도 전체를 받는다 — 전북과 달리 시군구 선택지가 아직 필요 없다.
+    name: "서울특별시",
+    districts: [],
+    catchAll: { value: "서울특별시", label: "서울특별시", chipLabel: "서울" },
+  },
+  {
+    // 대전 청년 월세 지원사업(14라운드)을 위해 처음 추가했다 — 이전까지 17개
+    // 시도 중 대전만 유일하게 한 번도 검토되지 않았던 걸 사용자가 짚어서 발견했다.
+    name: "대전광역시",
+    districts: [],
+    catchAll: { value: "대전광역시", label: "대전광역시", chipLabel: "대전" },
+  },
+  {
+    // 울산 청년가구 주거비 지원사업(전국화 Phase 2, 광역 2번째 시도)을 위해 추가했다.
+    name: "울산광역시",
+    districts: [],
+    catchAll: { value: "울산광역시", label: "울산광역시", chipLabel: "울산" },
+  },
+  {
+    // 인천형 청년월세 지원·천원 복비(전국화 Phase 2, 광역 3번째 시도)에 이어
+    // 중구·동구 이사비 지원사업(시군구 확장 1·2라운드)을 위해 districts 를 채웠다.
+    // 기존 시도 단위 정책(천원 복비 등)은 catchAll.value 를 그대로 유지해 안 깨진다.
+    //
+    // ⚠️ 2026-07-01 인천형 행정체제 개편으로 중구·동구가 폐지되고 제물포구·
+    // 영종구로 재편됐다(서구도 서구·검단구로 분구) — 확인목록.md 14번 참고.
+    // 중구·동구는 재편 이전에 등록된 정책의 지역값으로 그대로 남겨 뒀다 —
+    // 인천청년포털 자체가 아직 두 지역명을 다 쓰고 있어(포털이 안 지웠거나
+    // 경과조치일 수 있다) 임의로 지우지 않았다. 제물포구를 새로 추가한다.
+    name: "인천광역시",
+    districts: [
+      { value: "인천광역시 중구", label: "인천광역시 중구", chipLabel: "인천 중구" },
+      { value: "인천광역시 동구", label: "인천광역시 동구", chipLabel: "인천 동구" },
+      { value: "인천광역시 영종구", label: "인천광역시 영종구", chipLabel: "인천 영종구" },
+      { value: "인천광역시 제물포구", label: "인천광역시 제물포구", chipLabel: "인천 제물포구" },
+    ],
+    catchAll: {
+      value: "인천광역시",
+      label: "인천광역시 (중구·동구·영종구·제물포구 외)",
+      chipLabel: "인천 (그 외)",
+    },
+  },
+  {
+    // 제주청년 희망충전 월세지원·중개수수료·이사비 지원(전국화 Phase 2, 광역
+    // 5번째 시도)을 위해 추가했다.
+    name: "제주특별자치도",
+    districts: [],
+    catchAll: { value: "제주특별자치도", label: "제주특별자치도", chipLabel: "제주" },
+  },
+  {
+    // 부산청년 중개보수 및 이사비 지원(전국화 Phase 2, 광역 6번째 시도)을 위해
+    // 추가했다.
+    name: "부산광역시",
+    districts: [],
+    catchAll: { value: "부산광역시", label: "부산광역시", chipLabel: "부산" },
+  },
+  {
+    // 세종 청년 주거임대료 지원사업(전국화 Phase 2, 광역 7번째 시도)을 위해
+    // 추가했다.
+    name: "세종특별자치시",
+    districts: [],
+    catchAll: { value: "세종특별자치시", label: "세종특별자치시", chipLabel: "세종" },
+  },
+  {
+    // 대구 청년 주택 임차보증금 대출이자 지원사업(loan-products, 11라운드)을
+    // 위해 처음 추가했다 — policies.json에는 아직 대구 정책이 없다.
+    name: "대구광역시",
+    districts: [],
+    catchAll: { value: "대구광역시", label: "대구광역시", chipLabel: "대구" },
+  },
+  {
+    // 광산청년온가(housing-supply.json, 전국화 Phase 2, 광역 8번째 시도)에 이어
+    // 서구 천원 복비(시군구 확장 1라운드)를 위해 districts 를 채웠다.
+    // '전남광주통합특별시' 표기 이슈는 region.ts notes·확인목록 참고 — '광주광역시'로 등록했다.
+    name: "광주광역시",
+    districts: [{ value: "광주광역시 서구", label: "광주광역시 서구", chipLabel: "광주 서구" }],
+    catchAll: { value: "광주광역시", label: "광주광역시 (서구 외)", chipLabel: "광주 (서구 외)" },
+  },
+  {
+    // 평택시 청년 월세 지원(시군구 확장 2라운드)·용인청년 중개보수 및 이사비
+    // 지원사업(8라운드)에 이어 군포시 신혼부부 및 청년 전월세 보증금 대출이자
+    // 지원사업(loan-products, 11라운드)을 위해 districts 를 늘렸다. 경기도는
+    // 도 단위 정책이 아직 없어 catchAll이 익산 패턴과 달리 '그 외 지역'과
+    // 겹치는 셈이지만, 향후 경기도 자체 정책이 나오면 그대로 받을 자리로 남겨 둔다.
+    name: "경기도",
+    districts: [
+      { value: "경기도 평택시", label: "경기도 평택시", chipLabel: "평택시" },
+      { value: "경기도 용인시", label: "경기도 용인시", chipLabel: "용인시" },
+      { value: "경기도 군포시", label: "경기도 군포시", chipLabel: "군포시" },
+    ],
+    catchAll: {
+      value: "경기도",
+      label: "경기도 (평택시·용인시·군포시 외)",
+      chipLabel: "경기도 (그 외)",
+    },
+  },
+  {
+    // 음성군 청년월세 지원사업(시군구 확장 2라운드)에 이어 괴산군 청년취업자·
+    // 청년농업인 주거비 지원(시군구 확장 4라운드)을 위해 districts 를 늘렸다.
+    name: "충청북도",
+    districts: [
+      { value: "충청북도 음성군", label: "충청북도 음성군", chipLabel: "음성군" },
+      { value: "충청북도 괴산군", label: "충청북도 괴산군", chipLabel: "괴산군" },
+    ],
+    catchAll: {
+      value: "충청북도",
+      label: "충청북도 (음성군·괴산군 외)",
+      chipLabel: "충청북도 (그 외)",
+    },
+  },
+  {
+    // 고령군 청년 월세 주거비 지원사업(시군구 확장 2라운드)에 이어 구미형 청년월세
+    // 지원사업(7라운드)을 위해 districts 를 늘렸다.
+    name: "경상북도",
+    districts: [
+      { value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" },
+      { value: "경상북도 구미시", label: "경상북도 구미시", chipLabel: "구미시" },
+      { value: "경상북도 울릉군", label: "경상북도 울릉군", chipLabel: "울릉군" },
+    ],
+    catchAll: {
+      value: "경상북도",
+      label: "경상북도 (고령군·구미시·울릉군 외)",
+      chipLabel: "경상북도 (그 외)",
+    },
+  },
+  {
+    // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)을 위해 처음 추가했다.
+    // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)·산청군 청년월세
+    // 지원사업(5라운드)에 이어 합천군·통영시(6라운드)·창원시(8라운드)·
+    // 남해군(13라운드)을 위해 districts 를 늘렸다.
+    name: "경상남도",
+    districts: [
+      { value: "경상남도 하동군", label: "경상남도 하동군", chipLabel: "하동군" },
+      { value: "경상남도 산청군", label: "경상남도 산청군", chipLabel: "산청군" },
+      { value: "경상남도 합천군", label: "경상남도 합천군", chipLabel: "합천군" },
+      { value: "경상남도 통영시", label: "경상남도 통영시", chipLabel: "통영시" },
+      { value: "경상남도 창원시", label: "경상남도 창원시", chipLabel: "창원시" },
+      { value: "경상남도 남해군", label: "경상남도 남해군", chipLabel: "남해군" },
+    ],
+    catchAll: {
+      value: "경상남도",
+      label: "경상남도 (하동군·산청군·합천군·통영시·창원시·남해군 외)",
+      chipLabel: "경상남도 (그 외)",
+    },
+  },
+  {
+    // 강진군 청년 취업자 주거비 지원사업(시군구 확장 17라운드)을 위해 처음 추가했다
+    // — 17개 시도 중 전남만 이번 라운드까지 한 번도 등록된 정책이 없었다.
+    name: "전라남도",
+    districts: [{ value: "전라남도 강진군", label: "전라남도 강진군", chipLabel: "강진군" }],
+    catchAll: { value: "전라남도", label: "전라남도 (강진군 외)", chipLabel: "전남 (강진군 외)" },
   },
 ];
 
@@ -89,4 +243,13 @@ export function policiesForRegion(policies: PolicyMeta[], region: string): Polic
  */
 export function loanProductsForRegion(products: LoanProductMeta[], region: string): LoanProductMeta[] {
   return products.filter((p) => policyAppliesToRegion(p.regionScope, region));
+}
+
+/**
+ * 사용자 지역에 해당하는 저가 주택 공급 정책만 남긴다. loanProductsForRegion 과
+ * 똑같은 이유로 같은 매칭 규칙(policyAppliesToRegion)을 그대로 쓴다 — 지역
+ * 필터가 필요한 안내 전용 목록이 늘 때마다 규칙을 새로 만들지 않는다.
+ */
+export function housingSupplyForRegion(items: HousingSupplyMeta[], region: string): HousingSupplyMeta[] {
+  return items.filter((p) => policyAppliesToRegion(p.regionScope, region));
 }

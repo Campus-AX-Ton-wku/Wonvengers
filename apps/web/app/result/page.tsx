@@ -2,13 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
+import housingSupplyData from "@/data/housing-supply.json";
 import exampleListingsData from "@/data/example-listings.json";
-import type { ExampleListing, LoanProductMeta } from "@/lib/types";
+import type { ExampleListing, HousingSupplyMeta, LoanProductMeta } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { exampleBadge, isVerifiedExample } from "@/lib/examples";
-import { loanProductsForRegion } from "@/lib/region";
+import { housingSupplyForRegion, loanProductsForRegion } from "@/lib/region";
+import { isWithinWindow } from "@/lib/date";
 import {
   AppShell,
   Button,
@@ -23,6 +25,7 @@ import {
   Info,
   Landmark,
   ListChecks,
+  MapPin,
   Wallet,
 } from "@/app/components/icons";
 import { useResultData } from "./useResultData";
@@ -32,6 +35,7 @@ import { ResultLoading, ResultState } from "./ResultState";
 import { benefitResultCards } from "@/lib/benefit-result";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
+const allHousingSupply = housingSupplyData as HousingSupplyMeta[];
 const exampleListings = exampleListingsData as ExampleListing[];
 
 export default function ResultPage() {
@@ -73,6 +77,7 @@ export default function ResultPage() {
   // 정책 카드와 같은 규칙으로 지역을 거른다 — 안 거르면 익산·군산 전용 대출상품이
   // 그 외 지역 사용자에게도 그대로 보인다.
   const loanProducts = loanProductsForRegion(allLoanProducts, listing.region);
+  const housingSupply = housingSupplyForRegion(allHousingSupply, listing.region);
 
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
@@ -220,6 +225,48 @@ export default function ResultPage() {
         ))}
       </section>
 
+      <section className="flex flex-col gap-3">
+        <div>
+          <SectionTitle as="h2" icon={<MapPin size={ICON_MD} aria-hidden="true" />}>
+            저가 주택 공급 안내 ({housingSupply.length})
+          </SectionTitle>
+          <p className="mt-3 text-sm leading-relaxed text-ink-500">
+            아래는 매입임대주택·기숙사처럼 이미 저렴하게 고정된 임대료로 특정 주택을 배정받는
+            정책입니다. 지원금을 계산하지 않으며, 위 "최대 지원 가능액"에도 포함되지 않습니다 —
+            당첨되면 그 배정된 주택이 곧 계약 조건이 되어, 실제 계약에 지원금을 더하는 이 화면의
+            계산 방식이 적용되지 않기 때문입니다. 신청·선정 절차와 정확한 조건은 출처에서
+            확인하세요.
+          </p>
+        </div>
+        {housingSupply.map((item) => (
+          <div key={item.id} className="rounded-card bg-surface p-5 shadow-card">
+            <p className="text-base font-bold text-ink-900">{item.name}</p>
+            <p className="text-xs text-ink-500">{item.agency} · {item.regionScope}</p>
+            <p className="mt-1 text-xs text-ink-500">{item.location}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-500">{item.summary}</p>
+            <p className="mt-2 text-sm font-semibold text-ink-600">
+              {formatRentRange(item)} · 보증금 {formatKoreanMoney(item.deposit)} · {item.capacityLabel}
+            </p>
+            <p className="mt-1 text-xs text-ink-500">{applicationStatusText(item, asOf)}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
+              <ExternalRefLink href={item.sourceUrl} tone="quiet">
+                공식 출처
+              </ExternalRefLink>
+              <ExternalRefLink href={item.applyUrl}>신청 페이지로 이동</ExternalRefLink>
+            </div>
+            <Disclosure label="검수 상태 · 참고사항">
+              <p className="text-xs text-ink-500">
+                {item.effectiveYear}년 기준 ·{" "}
+                {item.verifiedAt ? `${item.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
+              </p>
+              {item.notes && (
+                <p className="mt-1 text-xs leading-relaxed text-ink-500">{item.notes}</p>
+              )}
+            </Disclosure>
+          </div>
+        ))}
+      </section>
+
       <div className="flex gap-2.5 rounded-card bg-ink-100 p-4">
         <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
         <p className="text-xs leading-relaxed text-ink-600">
@@ -237,6 +284,30 @@ export default function ResultPage() {
       </main>
     </AppShell>
   );
+}
+
+/** 월 임대료가 범위면 "1만~2만원", 단일 금액이면 그 금액 하나만 보여준다. */
+function formatRentRange(item: HousingSupplyMeta): string {
+  const min = formatKoreanMoney(item.monthlyRentMin);
+  if (item.monthlyRentMin === item.monthlyRentMax) return `월 ${min}`;
+  return `월 ${min}~${formatKoreanMoney(item.monthlyRentMax)}`;
+}
+
+/**
+ * 신청기간 안내. 청춘★별채처럼 단일 회차(applicationStart/End)가 있으면
+ * isWithinWindow 로 지금 접수 중인지 계산하고, 대학생 연합생활관처럼 정기모집이
+ * 반복돼 단일 기간으로 못 담는 경우는 applicationPeriodNote 를 그대로 보여준다.
+ * 정책 카드의 cardStatus 와 달리 판정 파이프라인을 타지 않는 순수 안내 문구다.
+ */
+function applicationStatusText(item: HousingSupplyMeta, asOfISO: string): string {
+  if (item.applicationStart) {
+    const window = isWithinWindow(asOfISO, item.applicationStart, item.applicationEnd);
+    const period = `${item.applicationStart}${item.applicationEnd ? ` ~ ${item.applicationEnd}` : ""}`;
+    if (window === "within") return `지금 접수 중 (${period})`;
+    if (window === "before") return `접수 예정 (${period})`;
+    return `이 회차는 접수가 끝났습니다 (${period}). 다음 회차는 출처에서 확인하세요.`;
+  }
+  return item.applicationPeriodNote ?? "신청기간은 출처에서 확인하세요.";
 }
 
 /**
