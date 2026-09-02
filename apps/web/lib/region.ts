@@ -65,6 +65,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [],
     catchAll: { value: "제주특별자치도", label: "제주특별자치도", chipLabel: "제주" },
   },
+  {
+    // 부산청년 중개보수 및 이사비 지원(전국화 Phase 2, 광역 6번째 시도)을 위해
+    // 추가했다.
+    name: "부산광역시",
+    districts: [],
+    catchAll: { value: "부산광역시", label: "부산광역시", chipLabel: "부산" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */

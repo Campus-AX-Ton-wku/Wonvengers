@@ -429,6 +429,35 @@ const jejuMovingCost: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 부산청년 중개보수 및 이사비 지원.
+ *
+ * 거래금액(1.5억원 이하)·부모 소유 주택 임차 제외는 ListingInput 이 필요하거나
+ * 이 앱이 입력받지 않는 조건이라 판정하지 못한다(policies.json notes 참고).
+ */
+const busanBrokerageMovingCost: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.2);
+
+  return [
+    ageCheck(p.birthDate, asOf, 18, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("livesApartFromParents", "부모와 별도 거주", p.livesApartFromParents, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 120% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "dealAmountUnder150M",
+      label: "거래금액(임차보증금 + 월세액×100) 1억 5,000만원 이하",
+      result: "unknown",
+      howToConfirm: "계약서의 보증금과 월세액으로 직접 계산하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
+    },
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -443,4 +472,5 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "jeju-youth-hope-charge-monthly-rent-35to39": jejuYouthRent35to39,
   "jeju-brokerage-fee-support": jejuBrokerageFee,
   "jeju-youth-moving-cost-support": jejuMovingCost,
+  "busan-youth-brokerage-moving-cost-support": busanBrokerageMovingCost,
 };

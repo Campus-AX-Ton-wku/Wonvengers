@@ -50,6 +50,7 @@ describe("groupPolicies", () => {
       "jeju-youth-hope-charge-monthly-rent-35to39",
       "jeju-brokerage-fee-support",
       "jeju-youth-moving-cost-support",
+      "busan-youth-brokerage-moving-cost-support",
     ]);
   });
 

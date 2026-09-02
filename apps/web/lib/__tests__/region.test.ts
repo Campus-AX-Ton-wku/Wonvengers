@@ -74,7 +74,7 @@ describe("isRegionValue", () => {
 
   it("선택지에 없는 자유 입력은 걸러낸다", () => {
     expect(isRegionValue("익산")).toBe(false);
-    expect(isRegionValue("부산광역시")).toBe(false);
+    expect(isRegionValue("경기도")).toBe(false);
     expect(isRegionValue("")).toBe(false);
   });
 });
