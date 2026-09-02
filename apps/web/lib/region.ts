@@ -1,4 +1,4 @@
-import type { LoanProductMeta, PolicyMeta } from "./types";
+import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "./types";
 
 /**
  * 지역 선택지 하나. data/policies.json 의 regionScope 값과 같은 어휘를 쓴다.
@@ -89,4 +89,13 @@ export function policiesForRegion(policies: PolicyMeta[], region: string): Polic
  */
 export function loanProductsForRegion(products: LoanProductMeta[], region: string): LoanProductMeta[] {
   return products.filter((p) => policyAppliesToRegion(p.regionScope, region));
+}
+
+/**
+ * 사용자 지역에 해당하는 저가 주택 공급 정책만 남긴다. loanProductsForRegion 과
+ * 똑같은 이유로 같은 매칭 규칙(policyAppliesToRegion)을 그대로 쓴다 — 지역
+ * 필터가 필요한 안내 전용 목록이 늘 때마다 규칙을 새로 만들지 않는다.
+ */
+export function housingSupplyForRegion(items: HousingSupplyMeta[], region: string): HousingSupplyMeta[] {
+  return items.filter((p) => policyAppliesToRegion(p.regionScope, region));
 }
