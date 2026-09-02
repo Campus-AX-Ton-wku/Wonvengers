@@ -113,16 +113,30 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "경기도", label: "경기도 (평택시 외)", chipLabel: "경기도 (평택시 외)" },
   },
   {
-    // 음성군 청년월세 지원사업(시군구 확장 2라운드)을 위해 처음 추가했다.
+    // 음성군 청년월세 지원사업(시군구 확장 2라운드)에 이어 괴산군 청년취업자·
+    // 청년농업인 주거비 지원(시군구 확장 4라운드)을 위해 districts 를 늘렸다.
     name: "충청북도",
-    districts: [{ value: "충청북도 음성군", label: "충청북도 음성군", chipLabel: "음성군" }],
-    catchAll: { value: "충청북도", label: "충청북도 (음성군 외)", chipLabel: "충청북도 (음성군 외)" },
+    districts: [
+      { value: "충청북도 음성군", label: "충청북도 음성군", chipLabel: "음성군" },
+      { value: "충청북도 괴산군", label: "충청북도 괴산군", chipLabel: "괴산군" },
+    ],
+    catchAll: {
+      value: "충청북도",
+      label: "충청북도 (음성군·괴산군 외)",
+      chipLabel: "충청북도 (그 외)",
+    },
   },
   {
     // 고령군 청년 월세 주거비 지원사업(시군구 확장 2라운드)을 위해 처음 추가했다.
     name: "경상북도",
     districts: [{ value: "경상북도 고령군", label: "경상북도 고령군", chipLabel: "고령군" }],
     catchAll: { value: "경상북도", label: "경상북도 (고령군 외)", chipLabel: "경상북도 (고령군 외)" },
+  },
+  {
+    // 하동형 청년 주거비 지원사업(시군구 확장 4라운드)을 위해 처음 추가했다.
+    name: "경상남도",
+    districts: [{ value: "경상남도 하동군", label: "경상남도 하동군", chipLabel: "하동군" }],
+    catchAll: { value: "경상남도", label: "경상남도 (하동군 외)", chipLabel: "경상남도 (하동군 외)" },
   },
 ];
 

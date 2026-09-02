@@ -943,5 +943,85 @@
       "incomeBracketMax": 5,
       "housingTypes": null
     }
+  },
+  {
+    "id": "goesan-youth-worker-farmer-housing-cost-support",
+    "name": "청년취업자 및 청년농업인 주거비 지원",
+    "agency": "충청북도 괴산군",
+    "regionScope": "충청북도 괴산군",
+    "applicationStart": "2026-01-01",
+    "applicationEnd": null,
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "전·월세 비용 월 최대 10만원 지원, 최대 3년(36개월)",
+    "monthlyCap": 100000,
+    "maxMonths": 36,
+    "requiredInputs": [
+      "birthDate",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.chungbuk.go.kr/young/contents.do?key=5024",
+    "applyUrl": "https://www.chungbuk.go.kr/young",
+    "youthPolicyNo": "20250220005400210512",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "충북 청년포털 '청년취업자 및 청년농업인 주거비 지원' 원문으로 확인(2026-09-03). 충청북도에 두 번째로 등록하는 시군구 정책이라 REGION_HIERARCHY의 충청북도에 괴산군 district를 추가했다(음성군에 이어 두 번째). 지원대상: 19~49세, 본인 명의 전·월세 계약, 가구 소득 중위180% 미만. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.8)로 계산했다. 신청시기가 '연중'이라 상시로 보고 applicationEnd를 null로 뒀다. ⚠️ '관내 기업 취업 또는 농업경영체 등록일로부터 5년 이내'는 이 앱이 입력받지 않는 조건이라(취업/창업 이력을 안 묻는다) 판정하지 않는다 — '확인 필요'로 남긴다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 49,
+      "regions": [
+        "충청북도 괴산군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
+  },
+  {
+    "id": "hadong-youth-housing-cost-support",
+    "name": "하동형 청년 주거비 지원사업",
+    "agency": "경상남도 하동군",
+    "regionScope": "경상남도 하동군",
+    "applicationStart": "2026-07-01",
+    "applicationEnd": "2026-07-15",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "월세 또는 대출이자의 50% 지원, 월 최대 20만원 — 분기별 모집 중 확정된 2분기(2026.07.01~07.15, 4~6월분)만 등록",
+    "monthlyCap": 200000,
+    "maxMonths": 3,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.hadong.go.kr/media/00012.web?amode=view&not_ancmt_mgt_no=44600",
+    "applyUrl": "https://www.hadong.go.kr",
+    "youthPolicyNo": "20251117005400211898",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "하동군청 공고고시(하동군 공고 제2026-1149호) '2026년 하동형 청년 주거비 지원사업(2분기) 참여자 모집 공고' 원문으로 확인(2026-09-03). 경상남도에 처음 등록하는 시군구 정책이라 REGION_HIERARCHY에 경상남도 항목을 새로 만들었다. 지원대상: 19~45세, 하동군 주민등록, 무주택(세대구성원 전원 하동군 관내 주택 미소유). 원문에 소득 기준이 없다 — incomeBracketMax를 null(무관)로 뒀다. ⚠️★ 이 사업은 다른 등록 정책과 달리 '생애 1회'가 아니라 분기마다(1·2·4분기 등, 정확한 회차 수 미확인) 반복 모집한다 — 이 앱의 데이터 모델은 '한 정책 = 신청기간 하나'만 표현할 수 있어, 확정된 2분기(2026.07.01~07.15, 2026년 4~6월분 월세 기준) 하나만 등록했다. maxMonths를 3(분기)으로 둔 것도 '이번 회차 한 번 신청 시 받는 개월수'를 보수적으로 나타낸 것이지, 생애 최대 지원 개월수가 아니다 — 실제로는 계속 재신청해 더 오래 받을 수 있는데 이 앱은 그 반복 가능성을 계산에 반영하지 않는다(과소 추정 쪽으로 안전하게 처리).",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 45,
+      "regions": [
+        "경상남도 하동군"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": null,
+      "housingTypes": [
+        "월세",
+        "연세",
+        "전세"
+      ]
+    }
   }
 ]

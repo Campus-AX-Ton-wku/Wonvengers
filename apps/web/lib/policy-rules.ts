@@ -612,6 +612,40 @@ const goryeongYouthRent: RuleFn = (p, asOf) => [
   },
 ];
 
+/**
+ * 괴산군 청년취업자 및 청년농업인 주거비 지원.
+ *
+ * '관내 기업 취업 또는 농업경영체 등록 5년 이내'는 이 앱이 취업·창업 이력을
+ * 안 물어 판정하지 못한다(policies.json notes 참고).
+ */
+const goesanYouthWorkerFarmerHousingCost: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.8);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 49),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 180% 미만 (월 ${ceiling.toLocaleString()}원 미만)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "employedOrFarmingInGoesanUnder5Years",
+      label: "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내",
+      result: "unknown",
+      howToConfirm: "재직증명서·농업경영체등록확인서로 확인하세요. 이 앱은 취업·창업 이력을 입력받지 않습니다.",
+    },
+  ];
+};
+
+/** 하동형 청년 주거비 지원사업. */
+const hadongYouthHousingCost: RuleFn = (p, asOf) => [
+  ageCheck(p.birthDate, asOf, 19, 45),
+  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+];
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -636,4 +670,6 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "pyeongtaek-youth-rent-support": pyeongtaekYouthRent,
   "eumseong-youth-rent-support": eumseongYouthRent,
   "goryeong-youth-rent-support": goryeongYouthRent,
+  "goesan-youth-worker-farmer-housing-cost-support": goesanYouthWorkerFarmerHousingCost,
+  "hadong-youth-housing-cost-support": hadongYouthHousingCost,
 };
