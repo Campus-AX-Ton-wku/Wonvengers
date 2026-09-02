@@ -72,9 +72,9 @@ export default function FindResultPage() {
           <main className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
             <PerkyCharacter
               state={찾음 ? "found" : "empty"}
-              size={440}
+              size={520}
               priority
-              className="amount-reveal h-auto w-[min(42vw,156px)]"
+              className="amount-reveal h-auto w-[min(58vw,240px)]"
             />
 
             {찾음 ? (
