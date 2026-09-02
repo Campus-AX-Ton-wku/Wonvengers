@@ -29,10 +29,9 @@ export function TopBar({
   const arrow = <ArrowLeft size={ICON_LG} aria-hidden="true" />;
 
   return (
-    /* px-2.5 는 광학 정렬이다. 44px 버튼 안의 24px 아이콘은 좌우 10px 여백을 갖고,
-       지면 여백이 20px 이므로 10+10 = 20 에서 아이콘 왼쪽 끝이 본문 왼쪽 끝과 맞는다.
-       타깃은 44px 그대로 두고 여백만 되물린다. */
-    <header className="sticky top-0 z-20 -mx-5 bg-canvas px-2.5 pt-[env(safe-area-inset-top)]">
+    /* 44px 버튼 안 24px 아이콘의 좌우 여백은 10px이다. 헤더 패딩을 320px에서
+       6px, 390px 이상에서 10px로 주면 아이콘 끝이 각 본문 gutter(16/20px)에 맞는다. */
+    <header className="sticky top-0 z-20 -mx-4 bg-canvas px-1.5 pt-[env(safe-area-inset-top)] min-[390px]:-mx-5 min-[390px]:px-2.5">
       <div className="flex h-14 items-center justify-between">
         {onBack ? (
           <IconButton label={backLabel} onClick={onBack}>

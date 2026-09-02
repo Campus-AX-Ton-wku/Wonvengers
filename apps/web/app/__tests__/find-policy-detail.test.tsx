@@ -75,17 +75,17 @@ describe("/find/policies/[id]", () => {
     expect(screen.getByText(/1층 질문\(본인 월 소득\)으로는 판정하지 않습니다/)).toBeTruthy();
   });
 
-  it("출처와 공식 신청 페이지로 가는 길이 있다", async () => {
+  it("출처와 내부 신청 준비 화면으로 가는 길이 있다", async () => {
     saveAnswers(익산_대학생);
-    const policy = policies.find((p) => p.id === "iksan-youth-rent-support")!;
+    const policy = policies.find((p) => p.id === "iksan-newcomer-moving-cost-support")!;
     await render상세(policy.id);
 
     expect(screen.getByRole("link", { name: "공고 원문 →" }).getAttribute("href")).toBe(
       policy.sourceUrl
     );
-    expect(
-      screen.getByRole("link", { name: "공식 신청 페이지로 이동" }).getAttribute("href")
-    ).toBe(policy.applyUrl);
+    expect(screen.getByRole("link", { name: "신청 준비하기" }).getAttribute("href")).toBe(
+      `/find/policies/${policy.id}/prepare`
+    );
   });
 
   it("모든 정책에 상세 화면이 있다 — 카드가 가리키는 곳이 비어 있으면 안 된다", async () => {

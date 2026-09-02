@@ -145,11 +145,11 @@ describe("강조 위계", () => {
    * app/page.tsx 의 MAX_BENEFIT 주석이 정한 태도와 같다 — 확정되지 않은 금액을
    * 가장 큰 약속으로 쓰지 않는다. 제목에 금액이 들어가면 그 약속이 된다.
    */
-  it("제목에 금액을 넣지 않는다", async () => {
+  it("제목에는 결과 건수만 넣고 금액 약속은 넣지 않는다", async () => {
     renderWithInput();
     await screen.findByText(지원금_라벨);
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).not.toMatch(/\d/);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).not.toMatch(/[만원억,]/);
   });
 });
 
