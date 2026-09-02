@@ -13,9 +13,11 @@
 
 **브랜치.** 작업은 피처 브랜치에서. **명시적으로 요청받기 전에는 push·PR 금지.** 로컬 커밋만.
 
-**손대지 말 것.** `apps/web/app/components/BenefitResultCard.tsx`, `apps/web/lib/benefit-result.ts`,
-그리고 `app/components/index.ts` · `lib/types.ts`의 관련 diff — 다른 사람 작업이다.
-스테이징·커밋에 절대 포함하지 않는다. `git status`에 계속 뜨는 게 정상.
+**손대지 말 것.** Benefit Result Card 리디자인(`apps/web/app/result/BenefitResultCard.tsx`,
+`apps/web/lib/benefit-result.ts`, `apps/web/app/result/ResultState.tsx` 등)은 다른 사람 작업이다.
+2026-09-03에 develop으로 머지됐다(PR #90·#92·#94) — 이제 `git status`에 계속 뜨지는 않지만,
+여전히 이유 없이 건드리지 않는다. (예전엔 `app/components/BenefitResultCard.tsx` 경로의
+미완성 초안이 로컬에 커밋 안 된 채로 계속 남아 있었는데, develop 머지 시 최종본으로 교체됐다.)
 
 ## 데이터 3분류
 
