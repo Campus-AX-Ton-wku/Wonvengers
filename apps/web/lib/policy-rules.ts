@@ -487,6 +487,47 @@ const sejongYouthRent: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 인천 중구 청년 이사비 지원사업 / 광주 서구 천원 복비.
+ *
+ * 소득 기준이 원문에 없고, 거래금액 조건은 ListingInput 이 필요해 판정하지
+ * 못한다(policies.json notes 참고) — 인천 천원 복비와 같은 형태의 최소 체크.
+ */
+const districtMovingCostOrBrokerageFee: RuleFn = (p, asOf) => [
+  ageCheck(p.birthDate, asOf, 19, 39),
+  boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+  boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+];
+
+/**
+ * 인천 동구 청년 웰컴페이(이사비) 지원사업.
+ *
+ * 전입일자(2025-11-01 이후)는 ListingInput/EligibilityProfile 어디에도 없어
+ * 판정하지 못한다 — '확인 필요'로 남긴다(policies.json notes 참고).
+ */
+const incheonDonggu: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "movedInAfter20251101",
+      label: "2025-11-01 이후 동구 전입 또는 관내 이사 후 전입신고",
+      result: "unknown",
+      howToConfirm: "전입신고일이 2025-11-01 이후인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
+    },
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -503,4 +544,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "jeju-youth-moving-cost-support": jejuMovingCost,
   "busan-youth-brokerage-moving-cost-support": busanBrokerageMovingCost,
   "sejong-youth-rent-support": sejongYouthRent,
+  "incheon-junggu-moving-cost-support": districtMovingCostOrBrokerageFee,
+  "incheon-donggu-welcome-pay": incheonDonggu,
+  "gwangju-seogu-brokerage-fee-1000won": districtMovingCostOrBrokerageFee,
 };

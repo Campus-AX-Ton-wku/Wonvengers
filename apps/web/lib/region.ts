@@ -53,10 +53,15 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "울산광역시", label: "울산광역시", chipLabel: "울산" },
   },
   {
-    // 인천형 청년월세 지원·천원 복비(전국화 Phase 2, 광역 3번째 시도)를 위해 추가했다.
+    // 인천형 청년월세 지원·천원 복비(전국화 Phase 2, 광역 3번째 시도)에 이어
+    // 중구·동구 이사비 지원사업(시군구 확장 1라운드)을 위해 districts 를 채웠다.
+    // 기존 시도 단위 정책(천원 복비 등)은 catchAll.value 를 그대로 유지해 안 깨진다.
     name: "인천광역시",
-    districts: [],
-    catchAll: { value: "인천광역시", label: "인천광역시", chipLabel: "인천" },
+    districts: [
+      { value: "인천광역시 중구", label: "인천광역시 중구", chipLabel: "인천 중구" },
+      { value: "인천광역시 동구", label: "인천광역시 동구", chipLabel: "인천 동구" },
+    ],
+    catchAll: { value: "인천광역시", label: "인천광역시 (중구·동구 외)", chipLabel: "인천 (중구·동구 외)" },
   },
   {
     // 제주청년 희망충전 월세지원·중개수수료·이사비 지원(전국화 Phase 2, 광역
@@ -80,12 +85,12 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "세종특별자치시", label: "세종특별자치시", chipLabel: "세종" },
   },
   {
-    // 광산청년온가(housing-supply.json, 전국화 Phase 2, 광역 8번째 시도)를
-    // 위해 추가했다. '전남광주통합특별시' 표기 이슈는 region.ts notes·확인목록
-    // 참고 — '광주광역시'로 등록했다.
+    // 광산청년온가(housing-supply.json, 전국화 Phase 2, 광역 8번째 시도)에 이어
+    // 서구 천원 복비(시군구 확장 1라운드)를 위해 districts 를 채웠다.
+    // '전남광주통합특별시' 표기 이슈는 region.ts notes·확인목록 참고 — '광주광역시'로 등록했다.
     name: "광주광역시",
-    districts: [],
-    catchAll: { value: "광주광역시", label: "광주광역시", chipLabel: "광주" },
+    districts: [{ value: "광주광역시 서구", label: "광주광역시 서구", chipLabel: "광주 서구" }],
+    catchAll: { value: "광주광역시", label: "광주광역시 (서구 외)", chipLabel: "광주 (서구 외)" },
   },
 ];
 
