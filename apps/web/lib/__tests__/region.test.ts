@@ -3,10 +3,11 @@ import {
   REGION_HIERARCHY,
   REGION_OPTIONS,
   isRegionValue,
+  loanProductsForRegion,
   policiesForRegion,
   policyAppliesToRegion,
 } from "@/lib/region";
-import type { PolicyMeta } from "@/lib/types";
+import type { LoanProductMeta, PolicyMeta } from "@/lib/types";
 
 /**
  * REGION_OPTIONS 가 REGION_HIERARCHY 계층 구조로 바뀌었다 (전국화 Phase 0).
@@ -122,5 +123,50 @@ describe("policiesForRegion — 회귀 확인", () => {
   it("등록된 시도가 하나도 없는 '그 외 지역' 사용자도 전국 정책은 받는다", () => {
     const ids = policiesForRegion([전국정책], "그 외 지역").map((p) => p.id);
     expect(ids).toContain("test-national");
+  });
+});
+
+/**
+ * loanProductsForRegion — 결과 화면이 loan-products.json 을 지역 구분 없이 통째로
+ * 보여주던 버그의 회귀 테스트다. policyAppliesToRegion 을 policiesForRegion 과
+ * 그대로 공유하므로, 매칭 규칙 자체는 위 "policyAppliesToRegion — 회귀 확인"이
+ * 이미 검증한다 — 여기서는 LoanProductMeta 에도 같은 필터가 적용되는지만 본다.
+ */
+describe("loanProductsForRegion — 회귀 확인", () => {
+  const 대출상품 = (overrides: Partial<LoanProductMeta>): LoanProductMeta => ({
+    id: "test-loan",
+    name: "테스트 대출상품",
+    agency: "테스트기관",
+    regionScope: "전국",
+    productType: "loan_interest_subsidy",
+    summary: "테스트",
+    sourceUrl: "https://example.com",
+    applyUrl: "https://example.com",
+    verifiedAt: null,
+    effectiveYear: 2026,
+    notes: "테스트",
+    ...overrides,
+  });
+
+  const 전국상품 = 대출상품({ id: "national-loan", regionScope: "전국" });
+  const 익산상품 = 대출상품({ id: "iksan-loan", regionScope: "전북특별자치도 익산시" });
+  const 군산상품 = 대출상품({ id: "gunsan-loan", regionScope: "전북특별자치도 군산시" });
+  const 전상품 = [전국상품, 익산상품, 군산상품];
+
+  it("익산 사용자에게는 전국 상품과 익산 상품만 보이고, 군산 상품은 안 보인다", () => {
+    const ids = loanProductsForRegion(전상품, "전북특별자치도 익산시").map((p) => p.id);
+    expect(ids).toContain("national-loan");
+    expect(ids).toContain("iksan-loan");
+    expect(ids).not.toContain("gunsan-loan");
+  });
+
+  it("익산·군산 어디에도 속하지 않는 '그 외 지역' 사용자에게는 전국 상품만 보인다", () => {
+    const ids = loanProductsForRegion(전상품, "그 외 지역").map((p) => p.id);
+    expect(ids).toEqual(["national-loan"]);
+  });
+
+  it("전북(익산시 외) 사용자에게는 시군구 전용 상품이 안 보인다 — policiesForRegion 과 같은 규칙", () => {
+    const ids = loanProductsForRegion(전상품, "전북특별자치도").map((p) => p.id);
+    expect(ids).toEqual(["national-loan"]);
   });
 });
