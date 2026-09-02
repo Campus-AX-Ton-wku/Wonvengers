@@ -596,5 +596,46 @@
         "전세"
       ]
     }
+  },
+  {
+    "id": "sejong-youth-rent-support",
+    "name": "세종 청년 주거임대료 지원사업",
+    "agency": "세종특별자치시",
+    "regionScope": "세종특별자치시",
+    "applicationStart": "2026-03-03",
+    "applicationEnd": "2026-03-05",
+    "benefitType": "rent_capped_monthly",
+    "benefitSummary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 10개월(총 최대 200만원) — 연 2회(상·하반기) 모집 중 확정된 상반기(2026.03.03~03.05)만 등록",
+    "monthlyCap": 200000,
+    "maxMonths": 10,
+    "requiredInputs": [
+      "birthDate",
+      "hasNoHouse",
+      "isContractHolder",
+      "householdSize",
+      "ownHouseholdMonthlyIncome"
+    ],
+    "exclusiveGroup": [],
+    "sourceUrl": "https://www.sejong.go.kr/bbs/R0079/view.do?nttId=B000000148851Fa5kD1y",
+    "applyUrl": "https://www.jobaram.com",
+    "youthPolicyNo": "20250903005400211612",
+    "gov24ServiceId": null,
+    "verifiedAt": "2026-09-03",
+    "effectiveYear": 2026,
+    "notes": "세종특별자치시 공식 보도자료(청년정책담당관, 등록일 2026-02-22) '무주택 청년 주거임대료 월 최대 20만 원 지원' 원문으로 확인(2026-09-03). 국비 청년월세(moland, 전국, 19~34세·60%/100%·24개월)와 나이·소득 산정 방식·지원기간이 전부 달라(19~39세·150%·10개월) 같은 기관 보도자료가 두 사업을 별개로 안내한다 — 지역 재등록이 아니라 세종시 자체 사업으로 확인했다. 신청기간은 2026년부터 연 1회에서 상·하반기 연 2회로 개편됐다고 명시돼 있어 상반기(2026.3.3~3.5, 3일간)만 등록했다 — 하반기 정확한 날짜는 이 보도자료에 없다. 지원대상: 세종시 거주 19~39세 무주택 청년 1인가구, 임차보증금 1억원 이하·월세 60만원 이하·전용면적 85㎡ 이하, 가구 소득 중위150% 이하(1인 월 384만원), 재산 1억2,200만원 이하. income-thresholds.json 기준 medianIncomeCeiling(householdSize, 1.5)로 계산했다. ⚠️ 재산 1억2,200만원 이하는 이 앱이 판정하지 않는다(EligibilityProfile에 맞는 문턱값이 없음, jeju-youth-hope-charge-monthly-rent-35to39와 같은 처리). ⚠️ 선정방법이 '선착순이 아닌 소득·재산·임대료 반영비율' 심사인 경쟁 선발이라, 조건을 갖춰도 예산 범위 내 인원(25명)에서 탈락할 수 있다.",
+    "discovery": {
+      "ageMin": 19,
+      "ageMax": 39,
+      "regions": [
+        "세종특별자치시"
+      ],
+      "statuses": null,
+      "incomeBracketMin": null,
+      "incomeBracketMax": 5,
+      "housingTypes": [
+        "월세",
+        "연세"
+      ]
+    }
   }
 ]

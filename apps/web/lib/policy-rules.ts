@@ -458,6 +458,35 @@ const busanBrokerageMovingCost: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 세종 청년 주거임대료 지원사업.
+ *
+ * 재산 1억2,200만원 이하는 EligibilityProfile에 맞는 문턱값이 없어 판정하지
+ * 않는다(policies.json notes 참고).
+ */
+const sejongYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.5);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+    {
+      key: "assetsUnder122M",
+      label: "재산 1억 2,200만원 이하",
+      result: "unknown",
+      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
+    },
+  ];
+};
+
 export const POLICY_RULES: Record<string, RuleFn> = {
   "moland-youth-rent-support": moland,
   "iksan-youth-rent-support": iksan,
@@ -473,4 +502,5 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "jeju-brokerage-fee-support": jejuBrokerageFee,
   "jeju-youth-moving-cost-support": jejuMovingCost,
   "busan-youth-brokerage-moving-cost-support": busanBrokerageMovingCost,
+  "sejong-youth-rent-support": sejongYouthRent,
 };

@@ -72,6 +72,21 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     districts: [],
     catchAll: { value: "부산광역시", label: "부산광역시", chipLabel: "부산" },
   },
+  {
+    // 세종 청년 주거임대료 지원사업(전국화 Phase 2, 광역 7번째 시도)을 위해
+    // 추가했다.
+    name: "세종특별자치시",
+    districts: [],
+    catchAll: { value: "세종특별자치시", label: "세종특별자치시", chipLabel: "세종" },
+  },
+  {
+    // 광산청년온가(housing-supply.json, 전국화 Phase 2, 광역 8번째 시도)를
+    // 위해 추가했다. '전남광주통합특별시' 표기 이슈는 region.ts notes·확인목록
+    // 참고 — '광주광역시'로 등록했다.
+    name: "광주광역시",
+    districts: [],
+    catchAll: { value: "광주광역시", label: "광주광역시", chipLabel: "광주" },
+  },
 ];
 
 /** 등록된 시도 어디에도 속하지 않을 때 고르는 선택지. */

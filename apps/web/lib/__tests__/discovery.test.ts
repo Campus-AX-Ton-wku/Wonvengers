@@ -51,6 +51,7 @@ describe("groupPolicies", () => {
       "jeju-brokerage-fee-support",
       "jeju-youth-moving-cost-support",
       "busan-youth-brokerage-moving-cost-support",
+      "sejong-youth-rent-support",
     ]);
   });
 
