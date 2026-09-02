@@ -613,6 +613,30 @@ const pyeongtaekYouthRent: RuleFn = (p, asOf) => {
   ];
 };
 
+/**
+ * 대전 청년 월세 지원사업.
+ *
+ * 원문에 '부모와 별도 거주' 요건이 명시돼 있지 않아 넣지 않았다(policies.json
+ * notes 참고). 국비 청년월세(moland)와 중복 신청이 명시적으로 금지돼 있고
+ * 소득 구간(120%)이 moland(60%이하)와 겹쳐 exclusiveGroup을 공유시켰다(구미형과
+ * 같은 이유).
+ */
+const daejeonYouthRent: RuleFn = (p, asOf) => {
+  const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
+  const ceiling = medianIncomeCeiling(householdSize, 1.2);
+
+  return [
+    ageCheck(p.birthDate, asOf, 19, 39),
+    boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
+    maxCeilingCheck(
+      "ownHouseholdIncome",
+      `가구 소득 중위소득 120% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
+      p.ownHouseholdMonthlyIncome,
+      ceiling
+    ),
+  ];
+};
+
 /** 음성군 청년월세 지원사업. */
 const eumseongYouthRent: RuleFn = (p, asOf) => {
   const householdSize = p.householdSize === "unknown" ? 1 : p.householdSize;
@@ -878,6 +902,7 @@ export const POLICY_RULES: Record<string, RuleFn> = {
   "gwangju-seogu-brokerage-fee-1000won": districtMovingCostOrBrokerageFee,
   "incheon-yeongjonggu-moving-cost-support": incheonYeongjonggu,
   "pyeongtaek-youth-rent-support": pyeongtaekYouthRent,
+  "daejeon-youth-rent-support": daejeonYouthRent,
   "eumseong-youth-rent-support": eumseongYouthRent,
   "gumi-youth-rent-support": gumiYouthRent,
   "goryeong-youth-rent-support": goryeongYouthRent,

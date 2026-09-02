@@ -47,6 +47,13 @@ export const REGION_HIERARCHY: readonly RegionProvince[] = [
     catchAll: { value: "서울특별시", label: "서울특별시", chipLabel: "서울" },
   },
   {
+    // 대전 청년 월세 지원사업(14라운드)을 위해 처음 추가했다 — 이전까지 17개
+    // 시도 중 대전만 유일하게 한 번도 검토되지 않았던 걸 사용자가 짚어서 발견했다.
+    name: "대전광역시",
+    districts: [],
+    catchAll: { value: "대전광역시", label: "대전광역시", chipLabel: "대전" },
+  },
+  {
     // 울산 청년가구 주거비 지원사업(전국화 Phase 2, 광역 2번째 시도)을 위해 추가했다.
     name: "울산광역시",
     districts: [],
