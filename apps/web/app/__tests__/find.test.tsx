@@ -58,7 +58,8 @@ const 생년 = (나이: number) => new Date().getFullYear() - 나이;
 async function 다섯질문답하기(user: ReturnType<typeof userEvent.setup>, 나이 = 23) {
   await 생년월일고르기(user, 생년(나이), 1, 1);
   await user.click(cta());
-  await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
+  await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+  await user.click(screen.getByRole("button", { name: "익산시" }));
   await user.click(cta());
   await user.click(screen.getByRole("button", { name: "대학생" }));
   await user.click(cta());
@@ -72,7 +73,7 @@ describe("/find 단계형 흐름", () => {
     render(<FindPage />);
 
     expect(제목()).toBe("생년월일이 어떻게 되시나요?");
-    expect(screen.queryByRole("button", { name: "전북특별자치도 익산시" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "전북특별자치도" })).toBeNull();
     expect(screen.queryByRole("button", { name: "대학생" })).toBeNull();
   });
 
@@ -92,7 +93,7 @@ describe("/find 단계형 흐름", () => {
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
 
-    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
+    expect(제목()).toBe("먼저 시·도를 선택해주세요");
     expect(screen.getByRole("button", { name: "생년월일 고치기" })).toBeTruthy();
     expect(screen.getByText(new RegExp(`1998년 3월 14일 · 만 ${생년(0) - 1998}세`))).toBeTruthy();
   });
@@ -119,32 +120,55 @@ describe("/find 단계형 흐름", () => {
     expect(제목()).toBe("생년월일이 어떻게 되시나요?");
   });
 
-  /*
-   * null 은 '모름'과 '아직 안 물어봄'을 겸한다. 답하기 전에 '모름'이 켜져 있으면
-   * 고르지도 않은 답을 했다고 화면이 주장하는 셈이다 (lib/storage.ts 의
-   * loadAnsweredKeys 주석).
-   */
-  it("답하기 전에는 '모름'이 선택돼 있지 않다", async () => {
+  it("지역은 시도를 먼저 고른 뒤 해당 시군구만 보여준다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
 
-    expect(screen.getByRole("button", { name: "모름" }).getAttribute("aria-pressed")).toBe("false");
+    expect(제목()).toBe("먼저 시·도를 선택해주세요");
+    expect(screen.getByRole("button", { name: "서울특별시" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "익산시" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    expect(제목()).toBe("전북특별자치도의 시·군·구를 선택해주세요");
+    expect(screen.getByRole("button", { name: "익산시" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "서울특별시" })).toBeNull();
   });
 
-  it("'모름'을 고르면 그때 선택되고 요약에도 모름으로 쌓인다", async () => {
+  it("Find 질문에는 '모름' 선택지가 없다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
-    await user.click(screen.getByRole("button", { name: "모름" }));
-    expect(screen.getByRole("button", { name: "모름" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("button", { name: "모름" })).toBeNull();
 
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    await user.click(screen.getByRole("button", { name: "익산시" }));
     await user.click(cta());
-    expect(within(screen.getByRole("button", { name: "사는 곳 고치기" })).getByText("모름")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "모름" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "대학생" }));
+    await user.click(cta());
+    expect(screen.queryByRole("button", { name: "모름" })).toBeNull();
+  });
+
+  it("예전에 '모름'으로 저장한 답은 완료로 보지 않고 다시 묻는다", () => {
+    saveAnswers({
+      birthDate: "1998-03-14",
+      region: null,
+      status: null,
+      incomeBracket: null,
+      housingType: "월세",
+    });
+    saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket", "housingType"]);
+
+    render(<FindPage />);
+
+    expect(제목()).toBe("먼저 시·도를 선택해주세요");
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("다시 들어오면 답이 다 쌓인 마지막 단계에서 시작한다 — 답변 고치기 진입점", () => {
@@ -231,39 +255,36 @@ describe("/find CTA", () => {
 
     expect((cta() as HTMLButtonElement).disabled).toBe(true);
     await user.click(cta());
-    expect(제목()).toBe("어디에 살거나 살 예정인가요?");
+    expect(제목()).toBe("먼저 시·도를 선택해주세요");
 
-    // 명시적으로 고른 '모름'은 유효한 답이다.
-    await user.click(screen.getByRole("button", { name: "모름" }));
+    // 시도만 골라서는 지역 답이 완성되지 않는다.
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    expect((cta() as HTMLButtonElement).disabled).toBe(true);
+    await user.click(screen.getByRole("button", { name: "익산시" }));
     expect((cta() as HTMLButtonElement).disabled).toBe(false);
   });
 
-  /* 답할수록 숫자가 좁혀지는 게 보여야 계속 답할 이유가 된다. 한 화면에 네 질문을
-     두던 시절의 즉시 피드백을 단계형에서도 지킨다. */
-  it("답할 때마다 CTA 건수가 좁혀진다", async () => {
+  it("결과 요약 전까지 CTA 문구는 건수와 무관하게 '다음'이다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    // 전부 모름 = 정책 34건 중 접수 중인 16건
-    expect(cta().textContent).toBe("지원금 16건 · 다음");
+    expect(cta().textContent).toBe("다음");
 
-    // 나이·지역만으로는 안 줄어든다 — 남은 정책이 전부 전국 아니면 익산이다
     await 생년월일고르기(user, 생년(23), 1, 1);
     await user.click(cta());
-    await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
-    expect(cta().textContent).toBe("지원금 4건 · 다음");
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    await user.click(screen.getByRole("button", { name: "익산시" }));
+    expect(cta().textContent).toBe("다음");
 
-    // 소득 구간에서 한 번, 주거 형태에서 한 번 더 갈린다
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "대학생" }));
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "월 100만원 이하" }));
-    expect(cta().textContent).toBe("지원금 3건 · 다음");
+    expect(cta().textContent).toBe("다음");
 
-    // 월세를 고르면 전세 전용인 보증료 지원이 빠진다
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "월세" }));
-    expect(cta().textContent).toBe("지원금 2건 보기");
+    expect(cta().textContent).toBe("다음");
   });
 
   // 목록이 아니라 결과 요약으로 보낸다. 네 질문에 답한 보상을 먼저 주고, 목록은
@@ -273,7 +294,7 @@ describe("/find CTA", () => {
     render(<FindPage />);
 
     await 다섯질문답하기(user);
-    expect(cta().textContent).toBe("지원금 2건 보기");
+    expect(cta().textContent).toBe("다음");
 
     await user.click(cta());
     expect(pushMock).toHaveBeenCalledWith("/find/result");
@@ -284,7 +305,7 @@ describe("/find CTA", () => {
     render(<FindPage />);
 
     await 다섯질문답하기(user, 45);
-    expect(cta().textContent).toBe("왜 해당되지 않는지 보기");
+    expect(cta().textContent).toBe("다음");
   });
 
   /* 후보는 있는데 전부 마감인 경우. '왜 해당되지 않는지' 로 보내면 대상이 아니라는
@@ -295,7 +316,8 @@ describe("/find CTA", () => {
 
     await 생년월일고르기(user, 생년(30), 1, 1);
     await user.click(cta());
-    await user.click(screen.getByRole("button", { name: "전북특별자치도 (익산시 외)" }));
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    await user.click(screen.getByRole("button", { name: "전주시" }));
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "재직" }));
     await user.click(cta());
@@ -303,7 +325,7 @@ describe("/find CTA", () => {
     await user.click(cta());
     await user.click(screen.getByRole("button", { name: "월세" }));
 
-    expect(cta().textContent).toBe("왜 지금은 신청할 수 없는지 보기");
+    expect(cta().textContent).toBe("다음");
   });
 });
 
@@ -314,7 +336,8 @@ describe("/find 답변 보관", () => {
 
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
-    await user.click(screen.getByRole("button", { name: "전북특별자치도 익산시" }));
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    await user.click(screen.getByRole("button", { name: "익산시" }));
 
     expect(loadAnswers().birthDate).toBe("1998-03-14");
     expect(loadAnswers().region).toBe("전북특별자치도 익산시");
