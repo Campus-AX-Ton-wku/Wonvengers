@@ -8,7 +8,7 @@ import { monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
+import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
 import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
@@ -78,18 +78,26 @@ export default function InputPage() {
 
   useEffect(() => {
     const saved = loadListing();
+    const answers = loadAnswers();
+    const regionFromAnswers =
+      answers.region && isRegionValue(answers.region) ? answers.region : null;
+
     if (saved) {
-      // 지역이 자유 입력이던 시절 저장분은 선택지로 매칭되지 않으므로 다시 고르게 한다.
-      setForm({ ...saved, region: isRegionValue(saved.region) ? saved.region : "" });
+      // Find에서 고른 지역은 이전 Calculate 저장값보다 최신의 명시적 답변이다.
+      // 금액·계약 정보는 유지하되 정책 범위를 정하는 지역만 Find 답변을 우선한다.
+      setForm({
+        ...saved,
+        region: regionFromAnswers ?? (isRegionValue(saved.region) ? saved.region : ""),
+      });
+      setRegionFromFloor1(regionFromAnswers !== null);
       setContractTypeChosen(true); // 저장된 입력에는 이미 고른 계약 형태가 있다
       return;
     }
 
     // 2층에 처음 들어온 경우 1층에서 이미 고른 것을 다시 묻지 않는다.
     // 같은 질문을 두 번 하면 1층과 2층이 별개의 앱처럼 느껴진다.
-    const answers = loadAnswers();
-    if (answers.region && isRegionValue(answers.region)) {
-      setForm((prev) => ({ ...prev, region: answers.region as string }));
+    if (regionFromAnswers) {
+      setForm((prev) => ({ ...prev, region: regionFromAnswers }));
       setRegionFromFloor1(true);
     }
     // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
@@ -115,7 +123,16 @@ export default function InputPage() {
   }, [form.region]);
 
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
-    if (key === "region") setRegionFromFloor1(false);
+    if (key === "region") {
+      setRegionFromFloor1(false);
+
+      // Find를 거쳐 온 사용자가 여기서 지역을 다시 바꾸면 두 화면의 지역을 함께
+      // 갱신한다. 그래야 새로고침해도 예전 Find 답변으로 되돌아가지 않는다.
+      const answers = loadAnswers();
+      if (answers.region) {
+        saveAnswers({ ...answers, region: value ? String(value) : null });
+      }
+    }
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       // 묻지 않는 칸의 값이 총 주거비에 남으면 안 된다.
