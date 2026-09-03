@@ -224,7 +224,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
   it("후보가 전부 마감이면 제목이 그렇게 말하고, 묶음은 펼쳐 둔다", async () => {
     saveAnswers({
       birthDate: birthDateForAge(30),
-      region: "전북특별자치도", // REGION_OPTIONS 의 value (라벨은 "전북특별자치도 (익산시 외)")
+      region: "전북특별자치도 전주시",
       status: "재직",
       incomeBracket: 2,
       housingType: "월세" as const,

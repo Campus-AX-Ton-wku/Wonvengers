@@ -90,7 +90,7 @@ describe("/calculate 1층 답변 이어받기", () => {
     });
     render(<CalculatePage />);
 
-    await user.selectOptions(screen.getByRole("combobox"), "그 외 지역");
+    await user.selectOptions(screen.getByRole("combobox"), "서울특별시 종로구");
     expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
   });
 
@@ -263,7 +263,7 @@ describe("/calculate 이사비 질문", () => {
 
     await user.type(screen.getByLabelText(/이사비·중개보수로 얼마를/), "60");
     await user.click(screen.getByRole("button", { name: "이전 단계로" }));
-    await user.selectOptions(screen.getByRole("combobox"), "그 외 지역");
+    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 전주시");
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.queryByLabelText(/이사비·중개보수로 얼마를/)).toBeNull();

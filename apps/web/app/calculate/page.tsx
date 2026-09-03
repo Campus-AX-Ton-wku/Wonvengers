@@ -6,10 +6,10 @@ import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
-import WheelDatePicker from "@/app/WheelDatePicker";
 import { formatKoreanMoney } from "@/lib/money";
+import WheelDatePicker from "@/app/WheelDatePicker";
 import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
-import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
+import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import {
@@ -102,11 +102,11 @@ export default function InputPage() {
     }
   }, []);
 
-  const monthlyEquivalent =
-    form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
-
   // 이사비 지원 정책이 있는 지역에서만 일시 지출을 묻는다 (F1-4).
   const moveCostPolicy = findMoveCostPolicy(form.region);
+
+  const monthlyEquivalent =
+    form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
 
   // 뒤에 이어질 판정질문 스텝 수까지 합쳐 전체 진행률을 보여준다.
   const totalSteps = useMemo(() => {
@@ -182,10 +182,14 @@ export default function InputPage() {
                 onChange={(e) => update("region", e.target.value)}
               >
                 <option value="">선택해주세요</option>
-                {REGION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
+                {REGION_HIERARCHY.map((province) => (
+                  <optgroup key={province.name} label={province.name}>
+                    {province.districts.map((district) => (
+                      <option key={district.value} value={district.value}>
+                        {district.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </Field>
