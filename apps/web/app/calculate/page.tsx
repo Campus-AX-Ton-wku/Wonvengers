@@ -32,10 +32,11 @@ const policies = policiesData as PolicyMeta[];
 /**
  * 이 지역에서 일시 지출(이사비·중개보수)을 지원하는 정책. 없으면 null.
  *
- * F1-4 는 "선정 정책이 지원하면" 물으라고 했는데 전에는 항상 물었다. 지원 정책이
- * 있는 줄 모르는 사람은 기본값 0 을 그대로 두고 넘어가고, 그러면 최대 50만원짜리
- * 지원이 "실제 지출 0원과 상한 50만원 중 작은 값 = 0원" 으로 계산된다.
- * 지원 정책이 있는 지역에서만, 지원한다는 사실을 먼저 말하고 묻는다.
+ * F1-4 는 "선정 정책이 지원하면" 물으라고 했는데 전에는 항상 물었다. 이 칸을 먹는
+ * 정책은 lumpSumBasis 가 "oneTimeMoveCost" 인 것뿐인데, 그런 지원이 있는 줄 모르는
+ * 사람은 기본값 0 을 그대로 두고 넘어간다. 그러면 상한이 얼마든 "실제 지출 0원과
+ * 상한 중 작은 값 = 0원" 이 되어 지원이 통째로 사라진다 — 정책을 모르는 사용자일수록
+ * 못 받는 셈이다. 지원 정책이 있는 지역에서만, 지원한다는 사실을 먼저 말하고 묻는다.
  */
 function findMoveCostPolicy(region: string): PolicyMeta | null {
   return policiesForRegion(policies, region).find((p) => p.lumpSumBasis === "oneTimeMoveCost") ?? null;
@@ -255,10 +256,10 @@ export default function InputPage() {
 
             {moveCostPolicy && (
               <Field label="이사비·중개보수로 얼마를 쓸 예정인가요? (만원)">
-                <p className="text-xs font-normal text-ink-500">
+                <span className="text-xs font-medium text-ink-500">
                   {moveCostPolicy.agency}가 이 비용을 최대{" "}
                   {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요. 쓴 만큼 계산합니다.
-                </p>
+                </span>
                 <MoneyInput
                   placeholder="0"
                   value={form.oneTimeMoveCost}

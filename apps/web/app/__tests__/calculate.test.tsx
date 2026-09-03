@@ -239,7 +239,7 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
  * F1-4. 이사비·중개보수 일시 지출은 그걸 지원하는 정책이 있는 지역에서만 묻는다.
  *
  * 전에는 모든 지역에 항상 물었다. 지원 정책이 있는 줄 모르는 사람은 기본값 0 을
- * 그대로 두고 넘어가고, 그러면 최대 50만원짜리 지원이 0원으로 계산돼 사라진다.
+ * 그대로 두고 넘어가고, 그러면 상한이 얼마든 0원으로 계산돼 지원이 사라진다.
  */
 describe("/calculate 이사비 질문", () => {
   async function 스텝2로(user: ReturnType<typeof userEvent.setup>, region: string) {
