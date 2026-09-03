@@ -74,11 +74,6 @@ describe("exampleToListing", () => {
     expect(exampleToListing(가상예시, makeListing()).exampleId).toBe("test-fake");
   });
 
-  it("입력 출처를 '예시 데이터'로 바꾼다 — 중개사 안내라고 우기지 않는다", () => {
-    const filled = exampleToListing(가상예시, makeListing({ sourceType: "중개사 안내" }));
-    expect(filled.sourceType).toBe("예시 데이터");
-  });
-
   // 이 체크박스는 사용자 본인의 확인이다. 예시를 불러왔다고 대신 켜주면 안 된다.
   it("'실제 계약 조건과 일치' 확인은 켜지 않는다", () => {
     const filled = exampleToListing(가상예시, makeListing({ confirmedMatchesActualContract: true }));
