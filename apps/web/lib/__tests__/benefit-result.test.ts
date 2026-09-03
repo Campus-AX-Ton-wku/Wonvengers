@@ -43,6 +43,25 @@ describe("Benefit Result Card adapter", () => {
     expect(benefitResultState(result, "2026-09-02")).toBe("check");
   });
 
+  it("결과 카드는 확인 방법을 길게 붙이지 않고 조건명만 요약한다", () => {
+    const result = makePolicyResult({
+      status: "조건충족시가능",
+      checks: [
+        { key: "first", label: "첫 번째 조건", result: "unknown", howToConfirm: "첫 번째 서류를 확인하세요." },
+        { key: "second", label: "두 번째 조건", result: "unknown", howToConfirm: "두 번째 서류를 확인하세요." },
+        { key: "third", label: "세 번째 조건", result: "unknown", howToConfirm: "세 번째 서류를 확인하세요." },
+      ],
+      unknownLabels: [
+        "첫 번째 조건 (확인 방법: 첫 번째 서류를 확인하세요.)",
+        "두 번째 조건 (확인 방법: 두 번째 서류를 확인하세요.)",
+        "세 번째 조건 (확인 방법: 세 번째 서류를 확인하세요.)",
+      ],
+    });
+
+    const card = toBenefitResultCardData(result, "2026-09-02");
+    expect(card?.evidence.message).toBe("첫 번째 조건 · 두 번째 조건 외 1개");
+  });
+
   it("확인 완료된 신청 가능 정책이 KST 달력 기준 0~7일 남으면 urgent다", () => {
     const result = makePolicyResult({ status: "예상적용", unknownLabels: [] });
     result.policy.applicationEnd = "2026-09-09";
