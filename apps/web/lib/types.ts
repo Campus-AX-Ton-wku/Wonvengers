@@ -34,9 +34,21 @@ export interface EligibilityProfile {
   receivingOtherRentSupport: Answer<boolean>; // 다른 월세·주거비 지원 중복 수급 여부
   jeonbukResidentOverOneYear: Answer<boolean>;
   employedInTargetSectorOver3Months: Answer<boolean>; // 농업·임업·어업·중소기업정규직·문화예술·연구소기업정규직
+  /**
+   * 결과 화면에서 사용자가 직접 답한 '확인 필요' 조건. check.key 로 찾는다.
+   *
+   * 판정 질문(/eligibility)이 받지 않는 항목이라 별도 저장소(perky.declared)에
+   * 두고 loadProfile 이 합쳐 준다. 여기 없는 키는 여전히 '확인 필요'다.
+   */
+  selfDeclared?: Record<string, DeclaredValue>;
 }
 
-export type RequiredInputKey = keyof EligibilityProfile;
+/**
+ * 판정 질문(/eligibility)이 물어보는 항목. selfDeclared 는 질문이 아니라 결과
+ * 화면에서 조건별로 답한 값의 보관함이라 뺀다 — 넣으면 질문 레지스트리가 이
+ * 키에도 QuestionDef 를 요구한다.
+ */
+export type RequiredInputKey = Exclude<keyof EligibilityProfile, "selfDeclared">;
 
 export type PolicyStatus = "예상적용" | "조건충족시가능" | "대상아님" | "신청불가";
 
@@ -47,6 +59,28 @@ export interface CheckOutcome {
   label: string;
   result: CheckResult;
   howToConfirm?: string;
+  /**
+   * 이 조건을 사용자가 직접 답할 수 있으면 그 입력 방법. 없으면 프로필에서
+   * 계산되는 조건이라 결과 화면에서 따로 물을 것이 없다는 뜻이다.
+   */
+  ask?: DeclarableInput;
+}
+
+/** 사용자가 결과 화면에서 직접 신고한 값. */
+export type DeclaredValue = number | boolean | string;
+
+/**
+ * '확인 필요' 조건을 결과 화면에서 물어보는 방법.
+ *
+ * 판정 기준(3억원 이하 등)은 규칙 쪽에 남는다. 여기에는 화면이 무엇을 어떻게
+ * 그릴지만 담는다 — 기준값을 UI 에 복제하면 둘이 어긋난다.
+ */
+export interface DeclarableInput {
+  kind: "money" | "yesno" | "date";
+  /** 입력 칸에 붙는 질문. 조건 label 을 그대로 쓰지 않는다 ("3억원 이하" 는 질문이 아니다). */
+  prompt: string;
+  /** date 일 때 고를 수 있는 연도. 없으면 최근 연도를 쓴다. */
+  years?: number[];
 }
 
 // rent_capped_monthly: min(월 상한, 실제 인정 월세) × 개월수 (예: 월세지원형)
