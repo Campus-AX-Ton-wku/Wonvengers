@@ -2,6 +2,7 @@ import type {
   DiscoveryStatus,
   HousingType,
   PolicyMeta,
+  PolicyResult,
   ResolvedAnswers,
   TagResult,
 } from "./types";
@@ -98,6 +99,28 @@ function checkIncome(policy: PolicyMeta, incomeBracket: number | null): CheckRes
     }
   }
   return PASS;
+}
+
+/**
+ * 2층(정밀 계산) 판정 결과를 1층 태그 모양으로 옮긴다.
+ *
+ * 2층까지 답한 사람에게 1층 태그를 그대로 보여주면 앱이 이미 아는 것을 잊는다 —
+ * 결과 화면이 "예상 적용"이라고 한 정책의 상세를 열었더니 "조건 확인이 필요"라고
+ * 말하는 모순이 실제로 났다. 특히 discovery.incomeBracketMax 가 null 인 정책
+ * (청년 주거급여 분리지급 등)은 1층 소득 판정 자체가 불가능해서 무엇을 답하든
+ * 영원히 '확인 필요'다. 그런 정책일수록 2층 결과를 써야 한다.
+ */
+export function tagFromEvaluation(result: PolicyResult): TagResult {
+  switch (result.status) {
+    case "대상아님":
+      return { tag: "해당 없음", failReasons: result.failedLabels, unknownFields: [] };
+    case "조건충족시가능":
+      return { tag: "확인 필요", failReasons: [], unknownFields: result.unknownLabels };
+    // "신청불가" 는 신청 기간 밖이라는 뜻뿐이다(lib/eligibility.ts). 기간은
+    // cardStatus 가 직접 보고 '접수 마감'·'신청 예정'으로 바꾸므로 여기서 옮기지 않는다.
+    default:
+      return { tag: "가능성 있음", failReasons: [], unknownFields: [] };
+  }
 }
 
 export function tagPolicy(policy: PolicyMeta, answers: ResolvedAnswers): TagResult {
