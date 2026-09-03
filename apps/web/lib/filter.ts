@@ -123,6 +123,29 @@ export function tagFromEvaluation(result: PolicyResult): TagResult {
   }
 }
 
+/**
+ * 1층 태그와 2층 판정을 합친다. 2층을 안 거쳤으면(evaluated === null) 1층 그대로다.
+ *
+ * 어느 한 층으로 "통일"하면 다른 층이 아는 탈락을 잃는다. 두 층은 서로 다른 것을 본다:
+ *
+ *  - 1층(discovery)만 아는 것: 주거 형태 · 현재 상태 · 소득 구간 · 지역
+ *  - 2층(policy-rules)만 아는 것: 무주택 · 원가구 소득 · 별도 거주 · 계약자 명의…
+ *
+ * 실제로 갈렸던 예:
+ *  - 전세보증금반환보증 보증료 지원은 `housingTypes: ["전세"]` 다. 월세 사용자를
+ *    1층은 '대상 아님'으로 정확히 거르지만, 2층 규칙은 주거 형태를 보지 않아
+ *    '확인 필요'로 올린다. 2층만 쓰면 월세 사용자에게 전세 전용 사업이 다시 뜬다.
+ *  - 청년 주거급여 분리지급은 `incomeBracketMax: null` 이라 1층 소득 판정이
+ *    원천적으로 불가능해 무엇을 답하든 '확인 필요'다. 1층만 쓰면 2층이 실제 소득으로
+ *    통과시킨 결과를 잃는다.
+ *
+ * 그래서 탈락은 어느 층이든 인정하고, 남은 판단만 2층에 맡긴다.
+ */
+export function combineTags(discovery: TagResult, evaluated: TagResult | null): TagResult {
+  if (discovery.tag === "해당 없음") return discovery;
+  return evaluated ?? discovery;
+}
+
 export function tagPolicy(policy: PolicyMeta, answers: ResolvedAnswers): TagResult {
   const checks = [
     { field: "나이", ...checkAge(policy, answers.age) },

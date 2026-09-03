@@ -139,6 +139,23 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
     expect(screen.getByRole("link", { name: "신청 준비하기" })).toBeTruthy();
   });
 
+  /**
+   * 2층으로 "통일"하면 안 되는 이유. 전세보증금반환보증 보증료 지원은
+   * `housingTypes: ["전세"]` 라 월세 사용자를 1층이 정확히 거른다. 그런데 2층
+   * 규칙은 주거 형태를 보지 않아 '확인 필요'로 올린다 — 2층 판정만 쓰면 월세
+   * 사용자에게 전세 전용 사업이 후보로 되살아난다.
+   */
+  it("1층이 거른 탈락은 2층 판정이 있어도 되살리지 않는다", async () => {
+    saveAnswers(익산_대학생); // housingType: 월세
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveProfile(makeProfile({ birthDate: birthDateForAge(23) }));
+
+    await render상세("jeonse-return-guarantee-fee-subsidy");
+
+    expect(screen.getByText("대상이 아닌 이유")).toBeTruthy();
+    expect(screen.getByText(/전세 거주자만 신청할 수 있습니다/)).toBeTruthy();
+  });
+
   it("2층에서 모름으로 남긴 항목은 2층으로 고치러 보낸다", async () => {
     saveAnswers(익산_대학생);
     saveListing(makeListing({ region: "전북특별자치도 익산시" }));

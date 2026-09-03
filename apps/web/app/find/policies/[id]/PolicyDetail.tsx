@@ -18,7 +18,7 @@ import { resolveAnswers } from "@/lib/age";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate, todayISO } from "@/lib/date";
-import { tagFromEvaluation, tagPolicy } from "@/lib/filter";
+import { combineTags, tagFromEvaluation, tagPolicy } from "@/lib/filter";
 import { getRequiredQuestions } from "@/lib/questions";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
@@ -125,8 +125,8 @@ export default function PolicyDetail({ id }: { id: string }) {
   }
 
   const resolved = resolveAnswers(answers, asOf ?? null);
-  // 2층까지 답했으면 그 판정이 최신이자 가장 정확하다. 1층 태그는 그 전 단계다.
-  const result = detailed ?? tagPolicy(policy, resolved);
+  // 두 층이 서로 다른 것을 알기 때문에 합쳐서 쓴다 (lib/filter.ts 의 combineTags).
+  const result = combineTags(tagPolicy(policy, resolved), detailed);
   // 남은 조건을 고치러 갈 곳도 판정한 층과 맞춘다. 2층 미확인 항목을 1층에서 고칠 수는 없다.
   const 조건수정링크 = detailed ? "/eligibility" : "/find";
   const status = asOf ? cardStatus(policy, result, asOf) : null;
