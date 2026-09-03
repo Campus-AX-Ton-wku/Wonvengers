@@ -55,13 +55,18 @@ describe("공식 Benefit Result Card", () => {
     expect(screen.getByRole("link", { name: "마감 전 신청 준비하기" }).getAttribute("href")).toBe("/find/policies/real-policy-id");
   });
 
-  it("check CTA는 실제 답변 수정 라우트로 이동하고 외부 링크는 새 창에서 연다", () => {
+  it("check CTA는 해당 정책의 확인 필요 조건만 보는 화면으로 이동하고 외부 링크는 새 창에서 연다", () => {
     const policyResult = result("조건충족시가능");
     const card = toBenefitResultCardData(policyResult, "2026-09-02");
     if (!card) throw new Error("카드 생성 실패");
     render(<BenefitResultCard card={card} result={policyResult} />);
 
-    expect(screen.getByRole("link", { name: "조건 1개 확인하기" }).getAttribute("href")).toBe("/eligibility");
+    expect(screen.getByRole("link", { name: "조건 1개 확인하기" }).getAttribute("href")).toBe(
+      "/result/review/real-policy-id",
+    );
+    expect(screen.getByRole("link", { name: /확인 필요 1개/ }).getAttribute("href")).toBe(
+      "/result/review/real-policy-id",
+    );
     const source = screen.getByRole("link", { name: /실제 응답 기관 공식 출처/ });
     expect(source.getAttribute("target")).toBe("_blank");
     expect(source.className).toContain("min-h-11");
