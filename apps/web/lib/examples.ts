@@ -12,7 +12,6 @@ export function exampleToListing(example: ExampleListing, current: ListingInput)
   return {
     ...current,
     ...example.listing,
-    sourceType: "예시 데이터",
     confirmedMatchesActualContract: false,
     exampleId: example.id,
   };

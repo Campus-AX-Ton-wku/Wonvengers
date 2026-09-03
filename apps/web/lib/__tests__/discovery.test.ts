@@ -86,8 +86,8 @@ describe("answerSummary", () => {
   });
 
   it("지역은 선택지와 같은 어휘의 짧은 이름을 쓴다", () => {
-    const 도전체 = answerSummary({ ...익산_대학생, region: "전북특별자치도" }, brackets);
-    expect(도전체[1]).toBe("전북 (익산시 외)");
+    const 전주 = answerSummary({ ...익산_대학생, region: "전북특별자치도 전주시" }, brackets);
+    expect(전주[1]).toBe("전주시");
   });
 
   it("소득 구간 번호가 표에 없으면 '소득 모름'으로 둔다", () => {

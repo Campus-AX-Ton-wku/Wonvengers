@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => {
  * QA체크리스트 "2층 — 정밀 계산" 절의 예시 매물·금액 입력 항목을 자동화한 것.
  *
  * 여기 있는 규칙들은 정직성에 직접 걸린다 — 예시를 불러왔다고 "내가 확인했다"는
- * 체크박스를 켜주거나, 가상 조건의 출처를 "중개사 안내"로 적으면 앱이 거짓을 말한다.
+ * 체크박스를 앱이 대신 켜주면 앱이 거짓을 말한다.
  * lib/examples.ts 테스트가 함수 수준을 지키고, 이 파일이 화면이 그 함수를 쓰는지 지킨다.
  */
 
@@ -91,7 +91,7 @@ describe("/calculate 1층 답변 이어받기", () => {
     });
     render(<CalculatePage />);
 
-    await user.selectOptions(screen.getByRole("combobox"), "그 외 지역");
+    await user.selectOptions(screen.getByRole("combobox"), "서울특별시 종로구");
     expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
   });
 
@@ -232,5 +232,42 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(loadListing()?.contractStartDate).toBe("2026-02-28");
+  });
+});
+
+/**
+ * F1-4. 이사비·중개보수 일시 지출은 그걸 지원하는 정책이 있는 지역에서만 묻는다.
+ *
+ * 전에는 모든 지역에 항상 물었다. 지원 정책이 있는 줄 모르는 사람은 기본값 0 을
+ * 그대로 두고 넘어가고, 그러면 최대 50만원짜리 지원이 0원으로 계산돼 사라진다.
+ */
+describe("/calculate 이사비 질문", () => {
+  async function 스텝2로(user: ReturnType<typeof userEvent.setup>, region: string) {
+    render(<CalculatePage />);
+    await user.selectOptions(screen.getByRole("combobox"), region);
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+  }
+
+  it("익산에서는 지원한다는 사실을 먼저 말하고 묻는다", async () => {
+    const user = userEvent.setup();
+    await 스텝2로(user, "전북특별자치도 익산시");
+
+    expect(screen.getByLabelText(/이사비·중개보수로 얼마를/)).toBeTruthy();
+    expect(screen.getByText(/최대 50만원까지 지원해요/)).toBeTruthy();
+  });
+
+  it("지원 정책이 없는 지역에는 아예 묻지 않고, 남아 있던 값도 지운다", async () => {
+    const user = userEvent.setup();
+    await 스텝2로(user, "전북특별자치도 익산시");
+
+    await user.type(screen.getByLabelText(/이사비·중개보수로 얼마를/), "60");
+    await user.click(screen.getByRole("button", { name: "이전 단계로" }));
+    await user.selectOptions(screen.getByRole("combobox"), "서울특별시 종로구");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.queryByLabelText(/이사비·중개보수로 얼마를/)).toBeNull();
+    expect(loadListing()?.oneTimeMoveCost).toBe(0);
   });
 });

@@ -7,7 +7,7 @@ import policiesJson from "@/data/policies.json";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
-import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
+import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO, fromISODate } from "@/lib/date";
 import {
   EMPTY_ANSWERS,
@@ -24,13 +24,18 @@ import type {
   IncomeBracket,
   PolicyMeta,
 } from "@/lib/types";
-import { REGION_OPTIONS } from "@/lib/region";
+import {
+  REGION_HIERARCHY,
+  REGION_OPTIONS,
+  isRegionValue,
+  provinceForRegion,
+} from "@/lib/region";
 import { AnsweredStack, AppBar, BottomCta, OptionButton, StepHeading } from "@/app/Stepper";
 
 /**
- * 1층 · 발견 — 질문 네 개를 한 번에 하나씩 묻는다.
+ * 1층 · 발견 — 질문 다섯 개를 한 번에 하나씩 묻는다.
  *
- * 예전에는 네 질문을 테두리 친 카드 넷으로 한 화면에 쌓았다. 답한 것과 안 한 것이
+ * 예전에는 여러 질문을 테두리 친 카드로 한 화면에 쌓았다. 답한 것과 안 한 것이
  * 같은 무게로 보였고, 화면이 상자로 가득 차 어디부터 봐야 할지 말해주지 않았다.
  *
  * 지금은 질문이 곧 화면 제목이고, 답한 질문은 아래로 밀려 라벨/값 두 줄로 쌓인다.
@@ -87,21 +92,35 @@ export default function FindPage() {
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
   const [step, setStep] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  /** 지역 질문 안에서 먼저 고른 시·도. 시군구를 고르기 전에는 답으로 저장하지 않는다. */
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   /**
-   * 실제로 답한 질문. 값의 null 만으로는 '모름'과 '아직 안 물어봄'을 가를 수 없다
-   * (lib/storage.ts 의 loadAnsweredKeys 주석 참고).
+   * 실제로 답한 질문. 예전 저장값을 안전하게 정리하면서도 완료한 순서를 유지한다.
+   * (lib/storage.ts의 loadAnsweredKeys 주석 참고).
    */
   const [answered, setAnswered] = useState<AnsweredKey[]>([]);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
-    const saved = loadAnswers();
-    const savedKeys = loadAnsweredKeys();
+    const loadedAnswers = loadAnswers();
+    // 예전의 '그 외 지역'·'전북(익산 외)'·모름 저장값은 현재 시군구 답이 아니다.
+    // 그대로 통과시키면 사용자가 새 선택지를 보지도 않고 예전의 넓은 지역으로 판정된다.
+    const saved = {
+      ...loadedAnswers,
+      region:
+        loadedAnswers.region && isRegionValue(loadedAnswers.region)
+          ? loadedAnswers.region
+          : null,
+    };
+    const savedKeys = loadAnsweredKeys().filter((key) => saved[key] !== null);
     setAnswers(saved);
     setAnswered(savedKeys);
+    setSelectedProvince(provinceForRegion(saved.region)?.name ?? null);
+    if (saved.region !== loadedAnswers.region) saveAnswers(saved);
+    saveAnsweredKeys(savedKeys);
     setAsOf(todayISO());
 
-    // 답을 다 한 사람은 마지막 단계로 보낸다. 거기 네 줄이 전부 쌓여 있어서 그
+    // 답을 다 한 사람은 마지막 단계로 보낸다. 거기 앞선 네 줄이 전부 쌓여 있어서 그
     // 자체가 답변 요약이자 수정 진입점이 된다. 아직 남았으면 그 첫 질문으로.
     const 미답 = QUESTION_KEYS.findIndex((k) => !savedKeys.includes(k));
     setStep(미답 === -1 ? QUESTION_KEYS.length - 1 : 미답);
@@ -124,10 +143,7 @@ export default function FindPage() {
   const resolved = resolveAnswers(answers, asOf ?? null);
   const groups = groupPolicies(policies, resolved);
   const count = candidateCount(groups);
-  // 접수가 끝난 정책도 후보에 들어간다. 목록 화면과 같은 기준으로 갈라 센다.
-  const 신청가능수 = asOf ? splitByApplicationWindow(groups, asOf).신청가능.length : 0;
-
-  // 답한 질문의 값이 null 이면 사용자가 '모름'을 고른 것이다. 요약에도 그렇게 적는다.
+  // Find에서는 모든 질문을 실제 값으로 답해야 하므로 요약에 '모름'을 만들지 않는다.
   const 답변줄 = [
     birthDateLabel(answers.birthDate, resolved.age),
     regionLabel(answers.region),
@@ -140,17 +156,30 @@ export default function FindPage() {
   const 쌓인답 = QUESTIONS.slice(0, step)
     .map((q, i) => ({
       label: q.label,
-      value: answered.includes(q.key) ? (답변줄[i] ?? "모름") : null,
-      onEdit: () => setStep(i),
+      value: answered.includes(q.key) ? 답변줄[i] : null,
+      onEdit: () => {
+        if (q.key === "region") {
+          setSelectedProvince(provinceForRegion(answers.region)?.name ?? null);
+        }
+        setStep(i);
+      },
     }))
     .reverse();
 
   const isLast = step === QUESTIONS.length - 1;
-  // null 이 실제 답인 질문(지역·상태·소득)이 있으므로 값이 아니라 응답 기록으로
-  // 판단한다. 사용자가 명시적으로 '모름'을 고른 경우에는 다음으로 갈 수 있다.
-  const hasCurrentAnswer = answered.includes(QUESTIONS[step].key);
+  const currentKey = QUESTIONS[step].key;
+  const hasCurrentAnswer =
+    answered.includes(currentKey) &&
+    answers[currentKey] !== null &&
+    (currentKey !== "region" ||
+      provinceForRegion(answers.region)?.name === selectedProvince);
 
   function handleBack() {
+    // 시군구 목록에서는 이전 질문이 아니라 같은 지역 질문의 시도 목록으로 돌아간다.
+    if (step === 1 && selectedProvince !== null) {
+      setSelectedProvince(null);
+      return;
+    }
     if (step === 0) return router.push("/");
     setStep(step - 1);
   }
@@ -162,18 +191,6 @@ export default function FindPage() {
     setStep(step + 1);
   }
 
-  // 답할수록 숫자가 좁혀지는 게 보여야 계속 답할 이유가 된다. 마지막 단계에서는
-  // 목록으로 넘어가는 문구가 되고, 후보가 없으면 왜 없는지 보러 가게 한다.
-  const ctaLabel = isLast
-    ? 신청가능수 > 0
-      ? `지원금 ${신청가능수}건 보기`
-      : count > 0
-        ? "왜 지금은 신청할 수 없는지 보기"
-        : "왜 해당되지 않는지 보기"
-    : 신청가능수 > 0
-      ? `지원금 ${신청가능수}건 · 다음`
-      : "다음";
-
   if (!loaded) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5">
@@ -184,6 +201,13 @@ export default function FindPage() {
   }
 
   const current = QUESTIONS[step];
+  const province = REGION_HIERARCHY.find((item) => item.name === selectedProvince) ?? null;
+  const heading =
+    step === 1
+      ? province
+        ? `${province.name}의 시·군·구를 선택해주세요`
+        : "먼저 시·도를 선택해주세요"
+      : current.title;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5">
@@ -191,7 +215,7 @@ export default function FindPage() {
 
       {/* pb-24 는 하단 고정 CTA 높이만큼. 없으면 마지막으로 쌓인 답이 CTA 뒤에 깔린다. */}
       <main key={step} className="step-in flex flex-1 flex-col gap-7 pb-28 pt-7">
-        <StepHeading title={current.title} />
+        <StepHeading title={heading} />
 
         {step === 0 && (
           <div className="flex flex-col gap-3">
@@ -220,21 +244,27 @@ export default function FindPage() {
 
         {step === 1 && (
           <div className="flex flex-col gap-2">
-            {REGION_OPTIONS.map((r) => (
-              <OptionButton
-                key={r.value}
-                active={answers.region === r.value}
-                onClick={() => update("region", { region: r.value })}
-              >
-                {r.label}
-              </OptionButton>
-            ))}
-            <OptionButton
-              active={answered.includes("region") && answers.region === null}
-              onClick={() => update("region", { region: null })}
-            >
-              모름
-            </OptionButton>
+            {province === null
+              ? REGION_HIERARCHY.map((item) => (
+                  <OptionButton
+                    key={item.name}
+                    active={false}
+                    onClick={() => setSelectedProvince(item.name)}
+                  >
+                    {item.name}
+                  </OptionButton>
+                ))
+              : province.districts.map((district) => (
+                  <OptionButton
+                    key={district.value}
+                    active={answers.region === district.value}
+                    onClick={() => update("region", { region: district.value })}
+                  >
+                    {district.label === province.name
+                      ? district.label
+                      : district.label.slice(province.name.length + 1)}
+                  </OptionButton>
+                ))}
           </div>
         )}
 
@@ -249,12 +279,6 @@ export default function FindPage() {
                 {s}
               </OptionButton>
             ))}
-            <OptionButton
-              active={answered.includes("status") && answers.status === null}
-              onClick={() => update("status", { status: null })}
-            >
-              모름
-            </OptionButton>
           </div>
         )}
 
@@ -269,12 +293,6 @@ export default function FindPage() {
                 {b.label}
               </OptionButton>
             ))}
-            <OptionButton
-              active={answered.includes("incomeBracket") && answers.incomeBracket === null}
-              onClick={() => update("incomeBracket", { incomeBracket: null })}
-            >
-              모름
-            </OptionButton>
           </div>
         )}
 
@@ -296,7 +314,7 @@ export default function FindPage() {
       </main>
 
       <BottomCta onClick={handleNext} disabled={!hasCurrentAnswer}>
-        {ctaLabel}
+        다음
       </BottomCta>
     </div>
   );

@@ -3,18 +3,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
-import type { ContractType, ExampleListing, ListingInput, PolicyMeta } from "@/lib/types";
+import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { formatKoreanMoney, manwonToWon, wonToManwon } from "@/lib/money";
 import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
-import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
+import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import { AppBar, BottomCta, OptionButton, StepHeading } from "../Stepper";
 
 const policies = policiesData as PolicyMeta[];
+
+/**
+ * 이 지역에서 일시 지출(이사비·중개보수)을 지원하는 정책. 없으면 null.
+ *
+ * F1-4 는 "선정 정책이 지원하면" 물으라고 했는데 전에는 항상 물었다. 지원 정책이
+ * 있는 줄 모르는 사람은 기본값 0 을 그대로 두고 넘어가고, 그러면 최대 50만원짜리
+ * 지원이 "실제 지출 0원과 상한 50만원 중 작은 값 = 0원" 으로 계산된다.
+ * 지원 정책이 있는 지역에서만, 지원한다는 사실을 먼저 말하고 묻는다.
+ */
+function findMoveCostPolicy(region: string): PolicyMeta | null {
+  return policiesForRegion(policies, region).find((p) => p.lumpSumBasis === "oneTimeMoveCost") ?? null;
+}
 
 const EMPTY: ListingInput = {
   region: "",
@@ -25,7 +37,6 @@ const EMPTY: ListingInput = {
   oneTimeMoveCost: 0,
   contractStartDate: "",
   months: 12,
-  sourceType: "중개사 안내",
   confirmedMatchesActualContract: false,
   exampleId: null,
 };
@@ -78,6 +89,9 @@ export default function InputPage() {
     }
   }, []);
 
+  // 이사비 지원 정책이 있는 지역에서만 일시 지출을 묻는다 (F1-4).
+  const moveCostPolicy = findMoveCostPolicy(form.region);
+
   const monthlyEquivalent =
     form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
 
@@ -89,7 +103,12 @@ export default function InputPage() {
 
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
     if (key === "region") setRegionFromFloor1(false);
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // 묻지 않는 칸의 값이 총 주거비에 남으면 안 된다.
+      if (key === "region" && !findMoveCostPolicy(next.region)) next.oneTimeMoveCost = 0;
+      return next;
+    });
   }
 
   /** 해당 스텝의 입력만 검증한다. 규칙 자체는 기존 handleSubmit 과 동일하다. */
@@ -147,10 +166,14 @@ export default function InputPage() {
                 onChange={(e) => update("region", e.target.value)}
               >
                 <option value="">선택해주세요</option>
-                {REGION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
+                {REGION_HIERARCHY.map((province) => (
+                  <optgroup key={province.name} label={province.name}>
+                    {province.districts.map((district) => (
+                      <option key={district.value} value={district.value}>
+                        {district.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               {regionFromFloor1 && (
@@ -217,13 +240,19 @@ export default function InputPage() {
               <NumberInput value={form.months} onChange={(v) => update("months", v)} />
             </Field>
 
-            <Field label="이사비 등 정책이 요구하는 일시 지출 (만원, 없으면 0)">
-              <NumberInput
-                money
-                value={form.oneTimeMoveCost}
-                onChange={(v) => update("oneTimeMoveCost", v)}
-              />
-            </Field>
+            {moveCostPolicy && (
+              <Field label="이사비·중개보수로 얼마를 쓸 예정인가요? (만원)">
+                <p className="text-xs font-normal text-ink-500">
+                  {moveCostPolicy.agency}가 이 비용을 최대{" "}
+                  {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요. 쓴 만큼 계산합니다.
+                </p>
+                <NumberInput
+                  money
+                  value={form.oneTimeMoveCost}
+                  onChange={(v) => update("oneTimeMoveCost", v)}
+                />
+              </Field>
+            )}
 
             {form.contractType === "연세" && monthlyEquivalent > 0 && (
               <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-900">
@@ -231,22 +260,6 @@ export default function InputPage() {
                 <strong>{monthlyEquivalent.toLocaleString()}원</strong>
               </p>
             )}
-
-            <Field label="이 조건을 어디서 확인했나요?">
-              <select
-                className="input"
-                value={form.sourceType}
-                onChange={(e) => update("sourceType", e.target.value as ListingInput["sourceType"])}
-              >
-                <option value="부동산 광고">부동산 광고</option>
-                <option value="중개사 안내">중개사 안내</option>
-                <option value="계약서">계약서</option>
-                {/* 예시를 불러왔을 때만 노출한다. 직접 고를 수 있는 출처가 아니다. */}
-                {form.sourceType === "예시 데이터" && (
-                  <option value="예시 데이터">예시 데이터 (실제로 확인한 조건이 아님)</option>
-                )}
-              </select>
-            </Field>
 
             <label className="flex items-start gap-3 rounded-xl bg-sand-50 px-4 py-4 text-sm leading-relaxed text-ink-600">
               <input

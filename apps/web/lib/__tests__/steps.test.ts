@@ -37,17 +37,17 @@ describe("지역 필터", () => {
     }
   });
 
-  it("익산 사용자는 전북 광역 정책도 받고, 전북(익산 외)은 익산 정책을 못 받는다", () => {
+  it("익산 사용자는 전북 광역 정책도 받고, 전주 사용자는 익산 정책을 못 받는다", () => {
     const iksan = policiesForRegion(policies, "전북특별자치도 익산시").map((p) => p.id);
-    const jeonbuk = policiesForRegion(policies, "전북특별자치도").map((p) => p.id);
+    const jeonju = policiesForRegion(policies, "전북특별자치도 전주시").map((p) => p.id);
     expect(iksan).toContain("jeonbuk-youth-settlement-support");
     expect(iksan).toContain("iksan-youth-rent-support");
-    expect(jeonbuk).toContain("jeonbuk-youth-settlement-support");
-    expect(jeonbuk).not.toContain("iksan-youth-rent-support");
+    expect(jeonju).toContain("jeonbuk-youth-settlement-support");
+    expect(jeonju).not.toContain("iksan-youth-rent-support");
   });
 
-  it("그 외 지역은 전국 정책만 남는다", () => {
-    const rest = policiesForRegion(policies, "그 외 지역");
+  it("전북 밖 지역은 전국 정책만 남는다", () => {
+    const rest = policiesForRegion(policies, "서울특별시 종로구");
     expect(rest.every((p) => p.regionScope === "전국")).toBe(true);
   });
 });

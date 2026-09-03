@@ -13,9 +13,6 @@ export interface ListingInput {
   oneTimeMoveCost: number; // 이사비 등 정책이 요구하는 일시 지출(F1-4), 없으면 0
   contractStartDate: string; // YYYY-MM-DD
   months: number; // 거주 예정 개월 수
-  // F1-9. "예시 데이터"는 발표용 예시 매물을 불러왔다는 뜻이다 — 실제로 확인한
-  // 출처가 아니므로 광고·중개사 안내·계약서와 섞지 않는다 (F1-11).
-  sourceType: "부동산 광고" | "중개사 안내" | "계약서" | "예시 데이터";
   confirmedMatchesActualContract: boolean; // F1-10
   /** 예시 매물에서 불러온 입력이면 그 예시의 id. 직접 입력한 값이면 null. (F1-11) */
   exampleId?: string | null;
@@ -253,12 +250,11 @@ export type DiscoveryStatus = "대학생" | "재직" | "구직";
  * 판정 결과가 모두 같았다(주거 형태를 따지지 않는 정책만 남는다). 결과를 바꾸지
  * 않는 구분은 고를 것만 늘린다. 사글세·전대차처럼 이름만 다른 월세는 '월세'다.
  *
- * '모름'을 두지 않는다. 나이·소득과 달리 자기가 어떤 계약에 사는지는 답할 수
- * 있는 사실이므로, 하나를 골라야 다음으로 갈 수 있다.
+ * '모름'을 두지 않는다. 사용자가 확인할 수 있는 사실이므로 하나를 골라야 다음으로 간다.
  */
 export type HousingType = "월세" | "연세" | "전세" | "그 외";
 
-/** 1층 질문 5개에 대한 답. null 은 사용자가 '모름'을 선택했거나 아직 답하지 않았다는 뜻이다. */
+/** 1층 질문 5개에 대한 답. null은 아직 답하지 않았거나 옛 저장값을 다시 물어봐야 한다는 뜻이다. */
 export interface DiscoveryAnswers {
   housingType: HousingType | null;
   /**

@@ -73,7 +73,7 @@ describe("/find/result", () => {
   it("후보가 전부 마감이면 대상이 아닌 것과 구분해 말한다", async () => {
     await render요약({
       birthDate: birthDateForAge(30),
-      region: "전북특별자치도",
+      region: "전북특별자치도 전주시",
       status: "재직",
       incomeBracket: 2,
       housingType: "월세" as const,
