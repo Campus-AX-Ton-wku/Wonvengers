@@ -52,7 +52,6 @@ const EMPTY: ListingInput = {
   contractStartDate: "",
   months: 12,
   confirmedMatchesActualContract: false,
-  exampleId: null,
 };
 
 export default function InputPage() {

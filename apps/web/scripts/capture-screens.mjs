@@ -20,9 +20,9 @@
  * 그래서 페이지가 뜨기 전에 addInitScript 로 값을 넣는다 (앱의 useEffect 보다 먼저).
  * 키는 lib/storage.ts 의 것을 그대로 쓴다 — 저쪽이 바뀌면 여기도 깨져야 한다.
  *
- * 아래 FIXTURE 는 발표용 가상 조건이다. data/example-listings.json 의
- * '익산 원룸 · 연세' 를 기준으로, 이사비 정책이 상한에 걸리는 것을 보여주도록
- * oneTimeMoveCost 를 얹었다. 값을 바꾸면 덱의 숫자가 바뀐다.
+ * 아래 FIXTURE 는 발표용 가상 조건이다 — 익산 원룸 · 연세에 이사비 정책이
+ * 상한에 걸리는 oneTimeMoveCost 를 얹었다. 값을 바꾸면 덱의 숫자가 바뀐다.
+ * ⚠️ 실제 매물이 아니므로, 이 스크립트로 찍은 화면을 실제 사례처럼 쓰지 말 것.
  */
 
 /*
@@ -90,9 +90,7 @@ const FIXTURE = {
     oneTimeMoveCost: 600000,
     contractStartDate: "2026-09-01",
     months: 12,
-    sourceType: "예시 데이터",
     confirmedMatchesActualContract: true,
-    exampleId: "iksan-oneroom-yearly",
   },
 
   /* 판정 문항 16개. 모두 채워야 결과가 '확인 필요' 로 덮이지 않는다.

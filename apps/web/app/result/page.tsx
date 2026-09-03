@@ -3,12 +3,10 @@
 import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
 import housingSupplyData from "@/data/housing-supply.json";
-import exampleListingsData from "@/data/example-listings.json";
-import type { ExampleListing, HousingSupplyMeta, LoanProductMeta } from "@/lib/types";
+import type { HousingSupplyMeta, LoanProductMeta } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
-import { exampleBadge, isVerifiedExample } from "@/lib/examples";
 import { housingSupplyForRegion, loanProductsForRegion } from "@/lib/region";
 import { isWithinWindow } from "@/lib/date";
 import {
@@ -36,7 +34,6 @@ import { benefitResultCards } from "@/lib/benefit-result";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
 const allHousingSupply = housingSupplyData as HousingSupplyMeta[];
-const exampleListings = exampleListingsData as ExampleListing[];
 
 export default function ResultPage() {
   const router = useRouter();
@@ -82,9 +79,6 @@ export default function ResultPage() {
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
   const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
-  // 예시 매물로 계산했다면 결과에도 그대로 표시한다 (F1-11). 이 화면은 캡처해서
-  // 공유되기 때문에, 가상 조건으로 나온 금액이 실제 사례로 오해되면 안 된다.
-  const activeExample = exampleListings.find((e) => e.id === listing.exampleId) ?? null;
 
   return (
     <AppShell className="step-in">
@@ -100,22 +94,6 @@ export default function ResultPage() {
             {resultSupport}
           </p>
         </header>
-
-        {activeExample && (
-          <p
-            className={`flex items-start gap-2 rounded-card p-4 text-sm font-bold leading-relaxed ${
-              isVerifiedExample(activeExample)
-                ? "bg-ok-50 text-ok-700"
-                : "bg-warn-50 text-warn-800"
-            }`}
-          >
-            <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
-            <span>
-              예시 매물({activeExample.label}) 조건으로 계산한 결과입니다 —{" "}
-              {exampleBadge(activeExample)}
-            </span>
-          </p>
-        )}
 
       <ResultSummary
         supportAmount={summary.maxSupportAmount}
