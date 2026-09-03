@@ -47,10 +47,11 @@ describe("summaryHighlights", () => {
     }
   });
 
-  it("이 앱이 물어볼 수 있는 조건은 다 확인돼도, 아예 안 묻는 조건이 있는 정책은 미확인으로 남는다", () => {
-    // 괴산군 청년취업자·청년농업인 주거비 지원은 '관내 취업·농업경영체 등록
-    // 5년 이내'를 이 앱이 입력받지 않아, EligibilityProfile을 다 채워도 이
-    // 조건만은 항상 미확인이다(policy-rules.ts의 goesanYouthWorkerFarmerHousingCost 참고).
+  it("판정 질문을 다 채워도, 결과 화면에서 직접 답해야 하는 조건은 답하기 전까지 미확인이다", () => {
+    // 괴산군 청년취업자·청년농업인 주거비 지원의 '관내 취업·농업경영체 등록
+    // 5년 이내'는 판정 질문이 아니라 결과 화면에서 답하는 조건(selfDeclared)이다.
+    // EligibilityProfile을 다 채워도 그 답이 없으면 미확인으로 남는다
+    // (policy-rules.ts의 goesanYouthWorkerFarmerHousingCost 참고).
     const summary = buildCalculationSummary(policies, makeProfile(), listing, OPEN_PERIOD_DAY);
     const { unknownConditions } = summaryHighlights(summary);
     expect(unknownConditions).toEqual([
@@ -58,7 +59,7 @@ describe("summaryHighlights", () => {
         policyId: "goesan-youth-worker-farmer-housing-cost-support",
         policy: "청년취업자 및 청년농업인 주거비 지원",
         label:
-          "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내 (확인 방법: 재직증명서·농업경영체등록확인서로 확인하세요. 이 앱은 취업·창업 이력을 입력받지 않습니다.)",
+          "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내 (확인 방법: 재직증명서·농업경영체등록확인서로 확인하세요.)",
       },
     ]);
   });

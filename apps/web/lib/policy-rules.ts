@@ -1,4 +1,11 @@
-import type { Answer, CheckOutcome, CheckResult, EligibilityProfile } from "./types";
+import type {
+  Answer,
+  CheckOutcome,
+  CheckResult,
+  DeclarableInput,
+  DeclaredValue,
+  EligibilityProfile,
+} from "./types";
 import { calcAge } from "./date";
 import { medianIncomeCeiling } from "./income";
 
@@ -45,6 +52,73 @@ function ageCheck(birthDate: string, asOfISO: string, min: number, max: number):
     result: age >= min && age <= max ? "pass" : "fail",
   };
 }
+
+/**
+ * 앱의 판정 질문으로는 알 수 없어서 사용자가 결과 화면에서 직접 답하는 조건.
+ *
+ * 답이 없으면 'unknown' 으로 남는다 — 예전처럼 result 를 unknown 으로 박아 두는
+ * 것과 같은 상태다. 답이 있으면 judge 로 pass/fail 을 낸다. 어느 쪽이든 ask 를
+ * 함께 실어 보내 결과 화면이 입력 칸을 그리고 이미 답한 값도 고칠 수 있게 한다.
+ */
+function declaredCheck(
+  p: EligibilityProfile,
+  key: string,
+  label: string,
+  ask: DeclarableInput,
+  judge: (value: DeclaredValue) => boolean,
+  howToConfirm?: string
+): CheckOutcome {
+  const value = p.selfDeclared?.[key];
+  const result: CheckResult = value === undefined || value === "" ? "unknown" : judge(value) ? "pass" : "fail";
+  return { key, label, result, howToConfirm, ask };
+}
+
+/** 금액 조건. 값은 원 단위로 저장된다. */
+function declaredMoney(
+  p: EligibilityProfile,
+  key: string,
+  label: string,
+  prompt: string,
+  judge: (won: number) => boolean,
+  howToConfirm?: string
+): CheckOutcome {
+  return declaredCheck(p, key, label, { kind: "money", prompt }, (v) => typeof v === "number" && judge(v), howToConfirm);
+}
+
+/** 예/아니오 조건. 기본은 '예' 여야 통과다. */
+function declaredYesNo(
+  p: EligibilityProfile,
+  key: string,
+  label: string,
+  prompt: string,
+  howToConfirm?: string,
+  requireTrue = true
+): CheckOutcome {
+  return declaredCheck(p, key, label, { kind: "yesno", prompt }, (v) => v === requireTrue, howToConfirm);
+}
+
+/** 날짜 조건(주로 전입일). 값은 YYYY-MM-DD 다. */
+function declaredDate(
+  p: EligibilityProfile,
+  key: string,
+  label: string,
+  prompt: string,
+  judge: (iso: string) => boolean,
+  years: number[],
+  howToConfirm?: string
+): CheckOutcome {
+  return declaredCheck(
+    p,
+    key,
+    label,
+    { kind: "date", prompt, years },
+    (v) => typeof v === "string" && v !== "" && judge(v),
+    howToConfirm
+  );
+}
+
+/** 전입일 질문이 고를 수 있는 연도. 최근 것이 위로 오게 내림차순이다. */
+const MOVE_IN_YEARS = [2026, 2025, 2024, 2023, 2022];
 
 type RuleFn = (profile: EligibilityProfile, asOfISO: string) => CheckOutcome[];
 
@@ -192,25 +266,29 @@ const youthHousingBenefitSplit: RuleFn = (p, asOf) => {
 const jeonseGuaranteeFee: RuleFn = (p) => [
   boolCheck("hasNoHouse", "무주택 임차인", p.hasNoHouse, true),
   boolCheck("isContractHolder", "임대차계약 명의자 본인", p.isContractHolder, true),
-  {
-    key: "guaranteeEnrolled",
-    label: "전세보증금반환보증 가입 및 보증료 납부",
-    result: "unknown",
-    howToConfirm:
-      "HUG·HF·SGI 중 한 곳에 가입한 보증서와 보증료 납부 증빙이 있어야 합니다. 이 앱은 가입 여부를 입력받지 않습니다.",
-  },
-  {
-    key: "depositUnder300M",
-    label: "임차보증금 3억원 이하",
-    result: "unknown",
-    howToConfirm: "전세 계약서의 보증금을 확인하세요. 이 앱은 전세 계약을 입력받지 않습니다.",
-  },
-  {
-    key: "annualIncomeCeiling",
-    label: "연소득 기준 (청년 5천만원 · 청년외 6천만원 · 신혼부부 7.5천만원 이하)",
-    result: "unknown",
-    howToConfirm: "국세청 소득금액증명 또는 건강보험 자격득실확인서로 확인하세요.",
-  },
+  declaredYesNo(
+    p,
+    "guaranteeEnrolled",
+    "전세보증금반환보증 가입 및 보증료 납부",
+    "전세보증금반환보증(HUG·HF·SGI)에 가입하고 보증료를 냈나요?",
+    "보증서와 보증료 납부 증빙(영수증·납부확인서)으로 확인하세요.",
+  ),
+  declaredMoney(
+    p,
+    "depositUnder300M",
+    "임차보증금 3억원 이하",
+    "임차보증금이 얼마인가요?",
+    (won) => won <= 300_000_000,
+    "전세 계약서의 보증금을 확인하세요.",
+  ),
+  declaredMoney(
+    p,
+    "annualIncomeCeiling",
+    "연소득 기준 (청년 5천만원 · 청년외 6천만원 · 신혼부부 7.5천만원 이하)",
+    "본인 연소득이 얼마인가요?",
+    (won) => won <= 50_000_000,
+    "국세청 소득금액증명 또는 건강보험 자격득실확인서로 확인하세요. 여기서는 청년 기준 5천만원으로 봅니다 — 신혼부부(7.5천만원)·청년외(6천만원)는 공고에서 확인하세요.",
+  ),
 ];
 
 /**
@@ -235,18 +313,23 @@ const seoulMovingCost: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "movedInAfter2024",
-      label: "2024-01-01 이후 서울 전입 또는 서울 내 이사 후 전입신고",
-      result: "unknown",
-      howToConfirm: "전입신고일이 2024-01-01 이후인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
-    },
-    {
-      key: "dealAmountUnder200M",
-      label: "거래금액(임차보증금 + 월세액×100) 2억원 이하",
-      result: "unknown",
-      howToConfirm: "계약서의 보증금과 월세액으로 직접 계산하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
-    },
+    declaredDate(
+      p,
+      "movedInAfter2024",
+      "2024-01-01 이후 서울 전입 또는 서울 내 이사 후 전입신고",
+      "전입신고일이 언제인가요?",
+      (iso) => iso >= "2024-01-01",
+      MOVE_IN_YEARS,
+      "주민등록등본의 전입신고일을 확인하세요.",
+    ),
+    declaredMoney(
+      p,
+      "dealAmountUnder200M",
+      "거래금액(임차보증금 + 월세액×100) 2억원 이하",
+      "거래금액(임차보증금 + 월세액×100)이 얼마인가요?",
+      (won) => won <= 200_000_000,
+      "계약서의 보증금과 월세액으로 계산하세요.",
+    ),
   ];
 };
 
@@ -277,12 +360,13 @@ const ulsanYouthHouseholdHousingCost: RuleFn = (p, asOf) => {
       p.receivingOtherRentSupport,
       false
     ),
-    {
-      key: "unmarriedSingleHouseholdHead",
-      label: "미혼 청년 1인가구 세대주 (예외: 39세 이하 형제자매만 세대원인 경우 포함)",
-      result: "unknown",
-      howToConfirm: "가족관계증명서·주민등록등본으로 확인하세요. 이 앱은 세대 구성을 입력받지 않습니다.",
-    },
+    declaredYesNo(
+      p,
+      "unmarriedSingleHouseholdHead",
+      "미혼 청년 1인가구 세대주 (예외: 39세 이하 형제자매만 세대원인 경우 포함)",
+      "미혼 1인가구 세대주인가요? (39세 이하 형제자매만 세대원인 경우도 예)",
+      "가족관계증명서·주민등록등본으로 확인하세요.",
+    ),
   ];
 };
 
@@ -349,12 +433,14 @@ const incheonBrokerageFee: RuleFn = (p, asOf) => [
   ageCheck(p.birthDate, asOf, 18, 39),
   boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
   boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
-  {
-    key: "depositUnder100M",
-    label: "임차보증금 1억원 이하, 2년 이상 임대차 계약(2026-01-01 이후 체결)",
-    result: "unknown",
-    howToConfirm: "계약서의 보증금과 계약기간을 확인하세요. 이 앱은 계약 정보로 판정하지 않습니다.",
-  },
+  declaredMoney(
+    p,
+    "depositUnder100M",
+    "임차보증금 1억원 이하, 2년 이상 임대차 계약(2026-01-01 이후 체결)",
+    "임차보증금이 얼마인가요?",
+    (won) => won <= 100_000_000,
+    "보증금과 함께 계약기간(2년 이상)·계약일(2026-01-01 이후)도 계약서에서 확인하세요 — 금액만으로는 판정하지 않습니다.",
+  ),
 ];
 
 /**
@@ -379,12 +465,14 @@ const jejuYouthRent35to39: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ownCeiling
     ),
-    {
-      key: "assetsUnder122M",
-      label: "재산 1억 2,200만원 이하",
-      result: "unknown",
-      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
-    },
+    declaredMoney(
+      p,
+      "assetsUnder122M",
+      "재산 1억 2,200만원 이하",
+      "재산이 얼마인가요?",
+      (won) => won <= 122_000_000,
+      "건물·토지·자동차·금융재산 합계입니다. 최종 확인은 사회보장정보시스템 재산 조사로 이뤄집니다.",
+    ),
   ];
 };
 
@@ -398,12 +486,14 @@ const jejuBrokerageFee: RuleFn = (p, asOf) => [
   ageCheck(p.birthDate, asOf, 19, 39),
   boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
   boolCheck("isContractHolder", "임대차계약 명의가 본인", p.isContractHolder, true),
-  {
-    key: "dealAmountUnder300M",
-    label: "3억원 이하 주택 매매·임대차 계약 (2년 1회, 최대 3회)",
-    result: "unknown",
-    howToConfirm: "계약서의 거래금액을 확인하세요. 이 앱은 계약 정보로 판정하지 않습니다.",
-  },
+  declaredMoney(
+    p,
+    "dealAmountUnder300M",
+    "3억원 이하 주택 매매·임대차 계약 (2년 1회, 최대 3회)",
+    "계약 거래금액이 얼마인가요?",
+    (won) => won <= 300_000_000,
+    "계약서의 거래금액을 확인하세요. 지원 횟수(2년 1회·최대 3회)는 따로 확인이 필요합니다.",
+  ),
 ];
 
 /**
@@ -449,12 +539,14 @@ const busanBrokerageMovingCost: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "dealAmountUnder150M",
-      label: "거래금액(임차보증금 + 월세액×100) 1억 5,000만원 이하",
-      result: "unknown",
-      howToConfirm: "계약서의 보증금과 월세액으로 직접 계산하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
-    },
+    declaredMoney(
+      p,
+      "dealAmountUnder150M",
+      "거래금액(임차보증금 + 월세액×100) 1억 5,000만원 이하",
+      "거래금액(임차보증금 + 월세액×100)이 얼마인가요?",
+      (won) => won <= 150_000_000,
+      "계약서의 보증금과 월세액으로 계산하세요.",
+    ),
   ];
 };
 
@@ -478,18 +570,23 @@ const yonginBrokerageMovingCost: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "movedInFirstHalf2026",
-      label: "2026.1.1~6.30 용인시로 전입 또는 용인시 내 이사 후 전입신고 완료",
-      result: "unknown",
-      howToConfirm: "전입신고일이 이 기간 안인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
-    },
-    {
-      key: "dealAmountUnder200M",
-      label: "전·월세 보증금 2억원 이하",
-      result: "unknown",
-      howToConfirm: "계약서의 보증금으로 직접 확인하세요. 이 앱은 이 기준으로 판정하지 않습니다.",
-    },
+    declaredDate(
+      p,
+      "movedInFirstHalf2026",
+      "2026.1.1~6.30 용인시로 전입 또는 용인시 내 이사 후 전입신고 완료",
+      "전입신고일이 언제인가요?",
+      (iso) => iso >= "2026-01-01" && iso <= "2026-06-30",
+      MOVE_IN_YEARS,
+      "주민등록등본의 전입신고일을 확인하세요.",
+    ),
+    declaredMoney(
+      p,
+      "dealAmountUnder200M",
+      "전·월세 보증금 2억원 이하",
+      "전·월세 보증금이 얼마인가요?",
+      (won) => won <= 200_000_000,
+      "계약서의 보증금을 확인하세요.",
+    ),
   ];
 };
 
@@ -513,12 +610,14 @@ const sejongYouthRent: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "assetsUnder122M",
-      label: "재산 1억 2,200만원 이하",
-      result: "unknown",
-      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
-    },
+    declaredMoney(
+      p,
+      "assetsUnder122M",
+      "재산 1억 2,200만원 이하",
+      "재산이 얼마인가요?",
+      (won) => won <= 122_000_000,
+      "건물·토지·자동차·금융재산 합계입니다. 최종 확인은 사회보장정보시스템 재산 조사로 이뤄집니다.",
+    ),
   ];
 };
 
@@ -556,12 +655,15 @@ const incheonDongguOrJemulpogu: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "movedInAfter20251101",
-      label: "2025-11-01 이후 동구 전입 또는 관내 이사 후 전입신고",
-      result: "unknown",
-      howToConfirm: "전입신고일이 2025-11-01 이후인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
-    },
+    declaredDate(
+      p,
+      "movedInAfter20251101",
+      "2025-11-01 이후 동구 전입 또는 관내 이사 후 전입신고",
+      "전입신고일이 언제인가요?",
+      (iso) => iso >= "2025-11-01",
+      MOVE_IN_YEARS,
+      "주민등록등본의 전입신고일을 확인하세요.",
+    ),
   ];
 };
 
@@ -676,12 +778,14 @@ const gumiYouthRent: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "assetsUnder122M",
-      label: "재산 1억 2,200만원 이하",
-      result: "unknown",
-      howToConfirm: "사회보장정보시스템 재산 조사는 방문 신청 시 확인됩니다. 이 앱은 재산을 입력받지 않습니다.",
-    },
+    declaredMoney(
+      p,
+      "assetsUnder122M",
+      "재산 1억 2,200만원 이하",
+      "재산이 얼마인가요?",
+      (won) => won <= 122_000_000,
+      "건물·토지·자동차·금융재산 합계입니다. 최종 확인은 사회보장정보시스템 재산 조사로 이뤄집니다.",
+    ),
   ];
 };
 
@@ -740,12 +844,15 @@ const ulleungYouthRent: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "movedInBeforeJan2026",
-      label: "2026-01-01 이전 울릉군 전입신고",
-      result: "unknown",
-      howToConfirm: "전입신고일이 2026-01-01 이전인지 주민등록등본으로 확인하세요. 이 앱은 전입일자를 입력받지 않습니다.",
-    },
+    declaredDate(
+      p,
+      "movedInBeforeJan2026",
+      "2026-01-01 이전 울릉군 전입신고",
+      "전입신고일이 언제인가요?",
+      (iso) => iso < "2026-01-01",
+      MOVE_IN_YEARS,
+      "주민등록등본의 전입신고일을 확인하세요.",
+    ),
   ];
 };
 
@@ -771,12 +878,13 @@ const gangjinYouthWorkerRent: RuleFn = (p, asOf) => {
       howToConfirm: "재직증명서 또는 사업자등록증명원으로 재직·운영 기간을 확인하세요. 이 앱은 재직 기간이나 사업자 등록 여부는 정확히 묻지 않습니다.",
     },
     boolCheck("hasNoHouse", "무주택자", p.hasNoHouse, true),
-    {
-      key: "rentOrJeonseThreshold",
-      label: "전세(대출금 5천만원 이상) 또는 월세(60만원 이하) 거주, 강진군 소재 주택 임차",
-      result: "unknown",
-      howToConfirm: "임대차계약서로 전세 대출금(5천만원 이상) 또는 월세(60만원 이하) 여부를 확인하세요. 이 앱은 임차료·대출금 금액을 신청 자격 판정에 쓰지 않습니다.",
-    },
+    declaredYesNo(
+      p,
+      "rentOrJeonseThreshold",
+      "전세(대출금 5천만원 이상) 또는 월세(60만원 이하) 거주, 강진군 소재 주택 임차",
+      "강진군 주택에 전세(대출금 5천만원 이상) 또는 월세(60만원 이하)로 살고 있나요?",
+      "임대차계약서로 전세 대출금 또는 월세 금액을 확인하세요.",
+    ),
     maxCeilingCheck(
       "ownHouseholdIncome",
       `가구 소득 중위소득 150% 이하 (월 ${ceiling.toLocaleString()}원 이하)`,
@@ -805,12 +913,13 @@ const goesanYouthWorkerFarmerHousingCost: RuleFn = (p, asOf) => {
       p.ownHouseholdMonthlyIncome,
       ceiling
     ),
-    {
-      key: "employedOrFarmingInGoesanUnder5Years",
-      label: "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내",
-      result: "unknown",
-      howToConfirm: "재직증명서·농업경영체등록확인서로 확인하세요. 이 앱은 취업·창업 이력을 입력받지 않습니다.",
-    },
+    declaredYesNo(
+      p,
+      "employedOrFarmingInGoesanUnder5Years",
+      "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내",
+      "괴산군 관내 기업 취업 또는 농업경영체 등록을 한 지 5년 이내인가요?",
+      "재직증명서·농업경영체등록확인서로 확인하세요.",
+    ),
   ];
 };
 
@@ -868,12 +977,13 @@ const changwonYouthRent: RuleFn = (p, asOf) => {
       lowerCeiling,
       upperCeiling
     ),
-    {
-      key: "householdHead",
-      label: "세대주가 청년 본인",
-      result: "unknown",
-      howToConfirm: "주민등록등본으로 세대주 여부를 확인하세요. 이 앱은 세대 구성을 입력받지 않습니다.",
-    },
+    declaredYesNo(
+      p,
+      "householdHead",
+      "세대주가 청년 본인",
+      "세대주가 본인인가요?",
+      "주민등록등본으로 세대주 여부를 확인하세요.",
+    ),
   ];
 };
 
@@ -901,12 +1011,13 @@ const namhaeYouthRent: RuleFn = (p, asOf) => {
       lowerCeiling,
       upperCeiling
     ),
-    {
-      key: "householdHead",
-      label: "무주택 세대주가 청년 본인",
-      result: "unknown",
-      howToConfirm: "주민등록등본으로 세대주 여부를 확인하세요. 이 앱은 세대 구성을 입력받지 않습니다.",
-    },
+    declaredYesNo(
+      p,
+      "householdHead",
+      "무주택 세대주가 청년 본인",
+      "무주택 세대주가 본인인가요?",
+      "주민등록등본으로 세대주 여부를 확인하세요.",
+    ),
   ];
 };
 
@@ -944,12 +1055,13 @@ const tongyeongYouthSettlement: RuleFn = (p, asOf) => [
     label: "1인가구",
     result: p.householdSize === "unknown" ? "unknown" : p.householdSize === 1 ? "pass" : "fail",
   },
-  {
-    key: "movedInFromElsewhereAfter20250901",
-    label: "타 시군구 6개월 이상 거주 후 2025-09-01 이후 취·창업으로 통영시 전입",
-    result: "unknown",
-    howToConfirm: "주민등록등본·재직증명서로 확인하세요. 이 앱은 전입일자·취업 이력을 입력받지 않습니다.",
-  },
+  declaredYesNo(
+    p,
+    "movedInFromElsewhereAfter20250901",
+    "타 시군구 6개월 이상 거주 후 2025-09-01 이후 취·창업으로 통영시 전입",
+    "타 시군구에 6개월 이상 살다가 2025-09-01 이후 취·창업으로 통영시에 전입했나요?",
+    "주민등록등본·재직증명서로 확인하세요.",
+  ),
 ];
 
 export const POLICY_RULES: Record<string, RuleFn> = {
