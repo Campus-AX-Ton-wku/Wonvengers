@@ -19,6 +19,10 @@ const items = [
 ];
 
 describe("익산 신뢰 기준", () => {
+  it("익산 항목이 하나 이상 잡힌다 (지역 문자열 오타 방지)", () => {
+    expect(items.length).toBeGreaterThan(0);
+  });
+
   it.each(items.map((x) => [x.id, x] as const))("%s — 원문 대조일이 있다", (_, item) => {
     expect(item.verifiedAt).not.toBeNull();
   });

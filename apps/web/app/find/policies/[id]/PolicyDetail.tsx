@@ -336,7 +336,7 @@ export function SourceNotice({
       {verifiedAt ? (
         <p className="flex items-start gap-1.5 text-xs text-ink-500">
           <ShieldCheck size={ICON_SM - 2} aria-hidden="true" className="mt-0.5 shrink-0" />
-          <span>팀이 {verifiedAt}에 공고 원문과 대조했습니다.</span>
+          <span>팀이 {formatDotDate(verifiedAt)}에 공고 원문과 대조했습니다.</span>
         </p>
       ) : (
         <p className="flex items-start gap-1.5 text-xs font-bold text-warn-800">
