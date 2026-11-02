@@ -329,6 +329,20 @@ describe("/find CTA", () => {
   });
 });
 
+describe("/find 지역 요약", () => {
+  it("시군구를 고르면 '다음' 위에 그 지역의 지원 정책 수가 보인다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    await user.click(screen.getByRole("button", { name: "익산시" }));
+
+    expect(await screen.findByText(/^익산시 · 지원 정책 \d+건/)).toBeTruthy();
+  });
+});
+
 describe("/find 답변 보관", () => {
   it("고른 답은 바로 저장된다 — 새로고침해도 남는다", async () => {
     const user = userEvent.setup();

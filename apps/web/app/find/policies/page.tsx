@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
+import ConsultCenters, { centersFor } from "@/app/find/ConsultCenters";
 import PolicyCard from "@/app/find/PolicyCard";
 import { AppShell, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
@@ -102,6 +103,13 @@ export default function FindPoliciesPage() {
               <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
             </Link>
           </div>
+
+          {resolved.region && (
+            <ConsultCenters
+              centers={centersFor(resolved.region)}
+              regionLabel={resolved.region.split(" ").at(-1) ?? resolved.region}
+            />
+          )}
 
           {/* 카드 사이는 여백으로 가른다. 구분선을 함께 쓰면 목록이 표처럼 읽힌다. */}
           <section
