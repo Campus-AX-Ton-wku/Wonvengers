@@ -158,6 +158,22 @@ describe("/find/policies", () => {
     expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
   });
 
+  it("시범 지역 밖이면 정보를 모으는 중이라고 밝힌다", async () => {
+    saveAnswers({ ...익산_대학생, region: "강원특별자치도 춘천시" as const });
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByText(/아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요/)).toBeTruthy();
+  });
+
+  it("익산이면 그 안내가 없다", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByText(/아직 정보를 모으는 중/)).toBeNull();
+  });
+
   it("고지 문구는 접히지 않고 항상 보인다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);

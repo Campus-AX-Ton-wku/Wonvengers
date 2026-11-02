@@ -10,6 +10,7 @@ import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
+import { isTrustedRegion } from "@/lib/trust";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 
@@ -109,6 +110,13 @@ export default function FindPoliciesPage() {
               centers={centersFor(resolved.region)}
               regionLabel={resolved.region.split(" ").at(-1) ?? resolved.region}
             />
+          )}
+
+          {!isTrustedRegion(resolved.region) && (
+            <p className="mt-4 flex items-start gap-2 rounded-control bg-ink-100 p-3.5 text-xs leading-relaxed text-ink-600">
+              <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
+              <span>이 지역은 아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요. 신청 전에 공고 원문을 꼭 확인하세요.</span>
+            </p>
           )}
 
           {/* 카드 사이는 여백으로 가른다. 구분선을 함께 쓰면 목록이 표처럼 읽힌다. */}
