@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import FindPoliciesPage from "@/app/find/policies/page";
 import { EMPTY_ANSWERS, saveAnswers } from "@/lib/storage";
@@ -29,6 +29,15 @@ function 신청불가묶음(): HTMLDetailsElement {
 }
 
 describe("/find/policies", () => {
+  // 마감 여부는 오늘 날짜로 판정한다. 아래 건수는 2026-09-03 기준이라 날짜를
+  // 고정하지 않으면 정책 마감일이 지날 때마다 깨진다. Date 만 고정해야
+  // findBy* 의 대기 타이머가 그대로 돈다.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-03T12:00:00+09:00"));
+  });
+  afterAll(() => vi.useRealTimers());
+
   it("답변을 모두 모름으로 둬도 목록이 뜬다", async () => {
     saveAnswers(EMPTY_ANSWERS);
     render(<FindPoliciesPage />);
