@@ -17,7 +17,8 @@ describe("신청 준비 흐름", () => {
     const user = userEvent.setup();
     render(<ApplicationPreparation policy={policy} />);
 
-    expect(screen.getByText("2025.10.13 ~ 상시")).toBeTruthy();
+    // 2026년 회차: 2026-01-02 공고 ~ 2026-05-14 예산 소진 마감 (2026-11-03 원문 재대조)
+    expect(screen.getByText("2026.01.02 ~ 2026.05.14")).toBeTruthy();
     const eligibility = screen.getByRole("checkbox", { name: /자격 조건 확인/ });
     expect(eligibility.getAttribute("aria-checked")).toBeNull();
 

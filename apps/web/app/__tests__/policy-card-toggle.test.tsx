@@ -64,10 +64,11 @@ describe("2층 정책 카드", () => {
 
   it("확인 날짜는 '검수 상태' 토글 안에 있다", async () => {
     await renderResult();
-    const title = screen.getByRole("heading", { name: /익산시 전입 청년 이사비/ });
+    // 익산 이사비는 2026-05-14 예산 소진 마감(2026-11-03 원문 재대조)이라 맨 위 카드가 아니다 — 상시인 분리지급으로 본다.
+    const title = screen.getByRole("heading", { name: /청년 주거급여 분리지급/ });
     const card = title.closest("article")!;
     const resultItem = card.closest(".stagger-in") as HTMLElement;
-    expect(card, "익산시 이사비 카드를 찾지 못했다").toBeTruthy();
+    expect(card, "청년 주거급여 분리지급 카드를 찾지 못했다").toBeTruthy();
 
     const details = 상세_토글(resultItem, /2026년 기준/);
     expect(details.open).toBe(false);
@@ -86,7 +87,7 @@ describe("2층 정책 카드", () => {
   });
 
   it("대출·주택 공급 카드의 확인 날짜는 정책 카드와 같은 점 표기다", async () => {
-    // 익산은 확인 날짜가 있는 대출·주택 항목이 없어 검사가 헛돈다 — 부산 머물자리론(2026-09-03 대조)으로 본다.
+    // 부산 머물자리론(2026-09-03 대조)으로 본다 — 이 테스트를 쓸 때는 익산 대출·주택에 확인 날짜가 없었다(2026-11-03 재대조로 채움).
     saveListing(makeListing({ region: "부산광역시", contractType: "월세", rentOrYearlyAmount: 350000 }));
     saveProfile(makeProfile());
     render(<ResultPage />);

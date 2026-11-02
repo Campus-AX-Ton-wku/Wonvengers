@@ -230,9 +230,10 @@ describe("저가 주택 공급 안내 — 지역 필터", () => {
 
   it("이 섹션은 지원금을 계산하지 않는다 — 최대 지원 가능액이 기존 계산과 같다", async () => {
     // 기본 지역(익산시)에서는 전국 공급(대학생 연합생활관)이 함께 보이면서도
-    // "이 금액은 아래 조합으로 계산했습니다" 항목엔 여전히 정책 두 개(익산시
-    // 전입 청년 이사비 50만원 · 청년 주거급여 분리지급)만 잡혀야 한다 —
-    // 저가 주택 공급이 조용히 합산되면 이 조합에 세 번째 항목이 늘어난다.
+    // "이 금액은 아래 조합으로 계산했습니다" 항목엔 여전히 정책(청년 주거급여
+    // 분리지급 월 21만 2천원 × 12개월)만 잡혀야 한다 — 저가 주택 공급이 조용히
+    // 합산되면 이 조합에 항목이 늘어난다. (익산 이사비 50만원은 2026-05-14 예산
+    // 소진 마감이라 2026-11-03 원문 재대조 이후 조합에서 빠졌다 — 예전 기대값 304만.)
     saveListing(makeListing({ oneTimeMoveCost: 600000 }));
     saveProfile(makeProfile());
     render(<ResultPage />);
@@ -242,6 +243,6 @@ describe("저가 주택 공급 안내 — 지역 필터", () => {
     const 조합카드 = screen.getByText("이 금액은 아래 조합으로 계산했습니다").closest("section");
     if (!조합카드) throw new Error("조합 카드를 찾지 못했다");
     expect(within(조합카드 as HTMLElement).queryByText("대학생 연합생활관(은행권,고양)")).toBeNull();
-    expect(amountAfter(지원금_라벨).textContent).toMatch(/304만/);
+    expect(amountAfter(지원금_라벨).textContent).toMatch(/254만 4,000원/);
   });
 });
