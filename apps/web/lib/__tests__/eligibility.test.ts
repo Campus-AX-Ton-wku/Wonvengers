@@ -10,6 +10,7 @@ const iksan = policies.find((p) => p.id === "iksan-youth-rent-support")!;
 const jeonbuk = policies.find((p) => p.id === "jeonbuk-youth-settlement-support")!;
 const iksanMoving = policies.find((p) => p.id === "iksan-newcomer-moving-cost-support")!;
 const housingBenefitSplit = policies.find((p) => p.id === "youth-housing-benefit-split-payment")!;
+const seoulMoving = policies.find((p) => p.id === "seoul-youth-moving-cost-support")!;
 
 describe("국토부 청년월세 지원", () => {
   it("모든 조건을 충족하면 예상 적용이고, 월 상한×연세 환산월세 중 작은 값 × 개월수로 계산한다", () => {
@@ -204,5 +205,77 @@ describe("청년 주거급여 분리지급", () => {
       TODAY
     );
     expect(result.status).toBe("대상아님");
+  });
+});
+
+describe("서울 청년 부동산 중개보수 및 이사비 지원사업 (전국화 Phase 2, 광역 1건째)", () => {
+  it("19~39세·무주택·소득기준 충족이면 조건충족시가능이다 — 전입일자·거래금액은 판정하지 않아 확인 필요로 남는다", () => {
+    const result = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "2000-01-01" }),
+      makeListing({ oneTimeMoveCost: 300000 }),
+      OPEN_PERIOD_DAY
+    );
+    expect(result.status).toBe("조건충족시가능"); // movedInAfter2024·dealAmountUnder200M 가 unknown 이라
+    expect(result.failedLabels).toHaveLength(0);
+    expect(result.unknownLabels.length).toBeGreaterThanOrEqual(2);
+    expect(result.estimatedAmount).toBe(300000); // 실비(30만) < 상한(40만)
+  });
+
+  it("이사비·중개보수 실비 합이 상한(40만원)을 넘으면 상한으로 캡핑한다", () => {
+    const result = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "2000-01-01" }),
+      makeListing({ oneTimeMoveCost: 600000 }),
+      OPEN_PERIOD_DAY
+    );
+    expect(result.estimatedAmount).toBe(400000);
+  });
+
+  it("나이 경계값 만 39세는 통과, 만 40세는 대상아님이다", () => {
+    const pass = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "1986-04-02" }), // OPEN_PERIOD_DAY(2026-04-01) 기준 생일 하루 전 → 아직 39세
+      makeListing({ oneTimeMoveCost: 100000 }),
+      OPEN_PERIOD_DAY
+    );
+    const fail = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "1986-04-01" }), // 생일 당일이라 이미 만 40세
+      makeListing({ oneTimeMoveCost: 100000 }),
+      OPEN_PERIOD_DAY
+    );
+    expect(pass.status).not.toBe("대상아님");
+    expect(fail.status).toBe("대상아님");
+  });
+
+  it("가구 소득이 중위 150%(1인 기준 약 384만 7천원)를 초과하면 대상아님이다", () => {
+    const result = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "2000-01-01", ownHouseholdMonthlyIncome: 5000000 }),
+      makeListing({ oneTimeMoveCost: 100000 }),
+      OPEN_PERIOD_DAY
+    );
+    expect(result.status).toBe("대상아님");
+  });
+
+  it("무주택이 아니면 대상아님이다", () => {
+    const result = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "2000-01-01", hasNoHouse: false }),
+      makeListing({ oneTimeMoveCost: 100000 }),
+      OPEN_PERIOD_DAY
+    );
+    expect(result.status).toBe("대상아님");
+  });
+
+  it("등록된 상반기 신청기간(2026-04-01~04-14) 밖이면 조건을 다 갖춰도 신청불가다 — 하반기 모집이 실제로 있어도 이 앱은 아직 반영하지 못한다", () => {
+    const result = evaluatePolicy(
+      seoulMoving,
+      makeProfile({ birthDate: "2000-01-01" }),
+      makeListing({ oneTimeMoveCost: 100000 }),
+      TODAY // 2026-08-12, 상반기 종료 후
+    );
+    expect(result.status).toBe("신청불가");
   });
 });

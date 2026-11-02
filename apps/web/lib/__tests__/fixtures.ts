@@ -19,7 +19,6 @@ export function makeListing(overrides: Partial<ListingInput> = {}): ListingInput
     oneTimeMoveCost: 0,
     contractStartDate: "2026-09-01",
     months: 12,
-    sourceType: "중개사 안내",
     confirmedMatchesActualContract: true,
     ...overrides,
   };

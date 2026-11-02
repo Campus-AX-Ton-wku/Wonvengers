@@ -47,15 +47,29 @@ describe("summaryHighlights", () => {
     }
   });
 
-  it("모든 조건이 확인되면 미확인 조건이 없다", () => {
+  it("판정 질문을 다 채워도, 결과 화면에서 직접 답해야 하는 조건은 답하기 전까지 미확인이다", () => {
+    // 괴산군 청년취업자·청년농업인 주거비 지원의 '관내 취업·농업경영체 등록
+    // 5년 이내'는 판정 질문이 아니라 결과 화면에서 답하는 조건(selfDeclared)이다.
+    // EligibilityProfile을 다 채워도 그 답이 없으면 미확인으로 남는다
+    // (policy-rules.ts의 goesanYouthWorkerFarmerHousingCost 참고).
     const summary = buildCalculationSummary(policies, makeProfile(), listing, OPEN_PERIOD_DAY);
-    expect(summaryHighlights(summary).unknownConditions).toEqual([]);
+    const { unknownConditions } = summaryHighlights(summary);
+    expect(unknownConditions).toEqual([
+      {
+        policyId: "goesan-youth-worker-farmer-housing-cost-support",
+        policy: "청년취업자 및 청년농업인 주거비 지원",
+        label:
+          "괴산군 관내 기업 취업 또는 농업경영체 등록 5년 이내 (확인 방법: 재직증명서·농업경영체등록확인서로 확인하세요.)",
+      },
+    ]);
   });
 
   it("받을 수 있는 정책이 없으면 빈 목록이고 0원이다", () => {
     const summary = buildCalculationSummary(
       policies,
-      makeProfile({ hasNoHouse: false, birthDate: "1980-01-01" }),
+      // 나이를 모든 정책의 상한(가장 넓은 건 괴산군의 49세) 위로 두고 무주택도
+      // 아니게 해서, 조건이 넓은 정책까지 포함해 전부 탈락시킨다.
+      makeProfile({ hasNoHouse: false, birthDate: "1960-01-01" }),
       listing,
       OPEN_PERIOD_DAY
     );

@@ -13,36 +13,7 @@ export interface ListingInput {
   oneTimeMoveCost: number; // 이사비 등 정책이 요구하는 일시 지출(F1-4), 없으면 0
   contractStartDate: string; // YYYY-MM-DD
   months: number; // 거주 예정 개월 수
-  // F1-9. "예시 데이터"는 발표용 예시 매물을 불러왔다는 뜻이다 — 실제로 확인한
-  // 출처가 아니므로 광고·중개사 안내·계약서와 섞지 않는다 (F1-11).
-  sourceType: "부동산 광고" | "중개사 안내" | "계약서" | "예시 데이터";
   confirmedMatchesActualContract: boolean; // F1-10
-  /** 예시 매물에서 불러온 입력이면 그 예시의 id. 직접 입력한 값이면 null. (F1-11) */
-  exampleId?: string | null;
-}
-
-/**
- * F1-11. 발표용 예시 매물.
- *
- * sourceKind 와 verifiedAt 으로 "이게 실제 매물인지"를 화면에 그대로 드러낸다.
- * verifiedAt 이 null 이면 팀이 확인하기 전이므로 실제 매물이라고 표시할 수 없다.
- */
-export interface ExampleListing {
-  id: string;
-  label: string;
-  sourceKind: "가상 예시" | "실제 매물" | "실거래 사례";
-  verifiedAt: string | null; // YYYY-MM-DD, null = 팀 확인 전
-  note: string;
-  listing: Pick<
-    ListingInput,
-    | "region"
-    | "contractType"
-    | "deposit"
-    | "rentOrYearlyAmount"
-    | "managementFee"
-    | "oneTimeMoveCost"
-    | "months"
-  >;
 }
 
 // F2. 정책 판정용 공통 입력
@@ -63,9 +34,21 @@ export interface EligibilityProfile {
   receivingOtherRentSupport: Answer<boolean>; // 다른 월세·주거비 지원 중복 수급 여부
   jeonbukResidentOverOneYear: Answer<boolean>;
   employedInTargetSectorOver3Months: Answer<boolean>; // 농업·임업·어업·중소기업정규직·문화예술·연구소기업정규직
+  /**
+   * 결과 화면에서 사용자가 직접 답한 '확인 필요' 조건. check.key 로 찾는다.
+   *
+   * 판정 질문(/eligibility)이 받지 않는 항목이라 별도 저장소(perky.declared)에
+   * 두고 loadProfile 이 합쳐 준다. 여기 없는 키는 여전히 '확인 필요'다.
+   */
+  selfDeclared?: Record<string, DeclaredValue>;
 }
 
-export type RequiredInputKey = keyof EligibilityProfile;
+/**
+ * 판정 질문(/eligibility)이 물어보는 항목. selfDeclared 는 질문이 아니라 결과
+ * 화면에서 조건별로 답한 값의 보관함이라 뺀다 — 넣으면 질문 레지스트리가 이
+ * 키에도 QuestionDef 를 요구한다.
+ */
+export type RequiredInputKey = Exclude<keyof EligibilityProfile, "selfDeclared">;
 
 export type PolicyStatus = "예상적용" | "조건충족시가능" | "대상아님" | "신청불가";
 
@@ -76,6 +59,28 @@ export interface CheckOutcome {
   label: string;
   result: CheckResult;
   howToConfirm?: string;
+  /**
+   * 이 조건을 사용자가 직접 답할 수 있으면 그 입력 방법. 없으면 프로필에서
+   * 계산되는 조건이라 결과 화면에서 따로 물을 것이 없다는 뜻이다.
+   */
+  ask?: DeclarableInput;
+}
+
+/** 사용자가 결과 화면에서 직접 신고한 값. */
+export type DeclaredValue = number | boolean | string;
+
+/**
+ * '확인 필요' 조건을 결과 화면에서 물어보는 방법.
+ *
+ * 판정 기준(3억원 이하 등)은 규칙 쪽에 남는다. 여기에는 화면이 무엇을 어떻게
+ * 그릴지만 담는다 — 기준값을 UI 에 복제하면 둘이 어긋난다.
+ */
+export interface DeclarableInput {
+  kind: "money" | "yesno" | "date";
+  /** 입력 칸에 붙는 질문. 조건 label 을 그대로 쓰지 않는다 ("3억원 이하" 는 질문이 아니다). */
+  prompt: string;
+  /** date 일 때 고를 수 있는 연도. 없으면 최근 연도를 쓴다. */
+  years?: number[];
 }
 
 // rent_capped_monthly: min(월 상한, 실제 인정 월세) × 개월수 (예: 월세지원형)
@@ -215,7 +220,46 @@ export interface LoanProductMeta {
   name: string;
   agency: string;
   regionScope: string;
-  productType: "loan_interest_subsidy" | "guarantee_fee_subsidy";
+  // savings_account: 청약저축 등 — 대출도 보증료 지원도 아니지만 "현금 지원금"이
+  // 아니라는 점(계산 안 함)은 같아서 이 타입을 그대로 쓴다.
+  productType: "loan_interest_subsidy" | "guarantee_fee_subsidy" | "savings_account";
+  summary: string;
+  sourceUrl: string;
+  applyUrl: string;
+  verifiedAt: string | null;
+  effectiveYear: number;
+  notes: string;
+}
+
+/**
+ * 저가 주택 실물 공급형 정책 — 매입임대주택·기숙사 등, 이미 고정된 싼 임대료로
+ * 특정 주택 자체를 배정받는 정책이다. "지원금을 준다"가 아니므로 policies.json
+ * 의 benefitType(월 상한·정액·일시금, 전부 "지급액 계산" 모델)에 안 맞고,
+ * LoanProductMeta(대출·보증료·저축 상품)에도 안 맞는다 — 이 정책에 당첨되면
+ * 그 배정된 주택이 곧 사용자의 계약 조건이 되므로, "실제 계약 조건에 지원금을
+ * 더한다"는 이 앱의 계산 모델 자체가 애초에 적용되지 않는다.
+ *
+ * loan-products.json 과 같은 이유로 계산하지 않고 1층·2층 판정 파이프라인도
+ * 타지 않는다 — /result 에 안내 전용으로만 노출한다.
+ */
+export interface HousingSupplyMeta {
+  id: string;
+  name: string;
+  agency: string;
+  regionScope: string;
+  /** 공급 위치(주소). 특정 건물 하나인 경우가 많다. */
+  location: string;
+  /** 월 임대료(원). 방수 등에 따라 범위가 있으면 min~max, 단일 금액이면 둘이 같다. */
+  monthlyRentMin: number;
+  monthlyRentMax: number;
+  deposit: number;
+  /** 모집호수·정원 등 원문 표현을 그대로 적는다(단위가 "호"·"명"으로 갈려 숫자 하나로 통일하지 않는다). */
+  capacityLabel: string;
+  /** 한 회차의 신청기간. 여러 회차가 반복되는 모집이면 null 로 두고 applicationPeriodNote 를 쓴다. */
+  applicationStart: string | null;
+  applicationEnd: string | null;
+  /** 반복 모집 주기 등, 단일 기간(YYYY-MM-DD ~ YYYY-MM-DD)으로 표현할 수 없는 경우의 설명. */
+  applicationPeriodNote: string | null;
   summary: string;
   sourceUrl: string;
   applyUrl: string;
@@ -253,12 +297,11 @@ export type DiscoveryStatus = "대학생" | "재직" | "구직";
  * 판정 결과가 모두 같았다(주거 형태를 따지지 않는 정책만 남는다). 결과를 바꾸지
  * 않는 구분은 고를 것만 늘린다. 사글세·전대차처럼 이름만 다른 월세는 '월세'다.
  *
- * '모름'을 두지 않는다. 나이·소득과 달리 자기가 어떤 계약에 사는지는 답할 수
- * 있는 사실이므로, 하나를 골라야 다음으로 갈 수 있다.
+ * '모름'을 두지 않는다. 사용자가 확인할 수 있는 사실이므로 하나를 골라야 다음으로 간다.
  */
 export type HousingType = "월세" | "연세" | "전세" | "그 외";
 
-/** 1층 질문 5개에 대한 답. null 은 사용자가 '모름'을 선택했거나 아직 답하지 않았다는 뜻이다. */
+/** 1층 질문 5개에 대한 답. null은 아직 답하지 않았거나 옛 저장값을 다시 물어봐야 한다는 뜻이다. */
 export interface DiscoveryAnswers {
   housingType: HousingType | null;
   /**

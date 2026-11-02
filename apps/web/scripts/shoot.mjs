@@ -82,9 +82,7 @@ const SEED = {
     oneTimeMoveCost: 600000,
     contractStartDate: "2026-10-01",
     months: 12,
-    sourceType: "중개사 안내",
     confirmedMatchesActualContract: true,
-    exampleId: null,
   }),
   "housing-benefit:profile": JSON.stringify({
     birthDate: "2003-08-12",
