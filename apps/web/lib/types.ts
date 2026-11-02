@@ -195,6 +195,10 @@ export interface PolicyMeta {
   verifiedAt: string | null; // null = 팀 교차검수 전
   effectiveYear: number;
   notes: string;
+  /** 담당 연락처. null = 아직 원문·전화로 확인하지 못함 (F0-5 — 지어내지 않는다). */
+  contact: ContactInfo | null;
+  /** 마감된 회차의 다음 일정. 공고나 팀 전화로 확인한 경우에만 채운다. */
+  nextRound: NextRound | null;
 }
 
 export interface PolicyResult {
@@ -229,6 +233,10 @@ export interface LoanProductMeta {
   verifiedAt: string | null;
   effectiveYear: number;
   notes: string;
+  /** 담당 연락처. null = 아직 원문·전화로 확인하지 못함 (F0-5 — 지어내지 않는다). */
+  contact: ContactInfo | null;
+  /** 마감된 회차의 다음 일정. 공고나 팀 전화로 확인한 경우에만 채운다. */
+  nextRound: NextRound | null;
 }
 
 /**
@@ -266,6 +274,10 @@ export interface HousingSupplyMeta {
   verifiedAt: string | null;
   effectiveYear: number;
   notes: string;
+  /** 담당 연락처. null = 아직 원문·전화로 확인하지 못함 (F0-5 — 지어내지 않는다). */
+  contact: ContactInfo | null;
+  /** 마감된 회차의 다음 일정. 공고나 팀 전화로 확인한 경우에만 채운다. */
+  nextRound: NextRound | null;
 }
 
 export interface CalculationSummary {
@@ -349,4 +361,34 @@ export interface TagResult {
 export interface IncomeBracket {
   bracket: number;
   label: string;
+}
+
+/**
+ * 항목별 담당 연락처. 2026-10-23 멘토링 "상담 가능한 연락처" 후속.
+ * 전에는 전화번호가 notes(내부 메모) 안에만 있었다.
+ */
+export interface ContactInfo {
+  department: string; // "익산시 청년정책과"
+  phone: string | null; // "063-859-5745" 또는 대표번호 "1600-1004"
+  url: string | null; // 문의 게시판·담당 안내 페이지
+  phoneCheckedAt: string | null; // 팀이 이 번호로 전화해 확인한 날 YYYY-MM-DD
+}
+
+export interface NextRound {
+  text: string; // "2027년 4월 공고 예정"
+  confirmedAt: string; // YYYY-MM-DD
+  via: "공고" | "전화";
+}
+
+/** 지역 상담 창구. 정책과 같은 regionScope 접두사 규칙으로 매칭한다 (lib/region.ts). */
+export interface ConsultCenterMeta {
+  id: string;
+  name: string;
+  regionScope: string;
+  phone: string | null;
+  url: string | null;
+  hours: string | null; // "평일 09:00~18:00"
+  topics: string[];
+  verifiedAt: string | null;
+  notes: string; // 내부 메모. 화면에 그리지 않는다
 }

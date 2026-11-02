@@ -74,6 +74,8 @@ describe("안내 상품 지역 매칭", () => {
     verifiedAt: null,
     effectiveYear: 2026,
     notes: "테스트",
+    contact: null,
+    nextRound: null,
   });
 
   it("대출·보증 상품도 같은 지역 규칙으로 거른다", () => {
@@ -108,6 +110,8 @@ describe("안내 상품 지역 매칭", () => {
       verifiedAt: null,
       effectiveYear: 2026,
       notes: "테스트",
+      contact: null,
+      nextRound: null,
     });
     const items = [housing("national", "전국"), housing("jeonju", "전북특별자치도 전주시")];
     expect(housingSupplyForRegion(items, "전북특별자치도 전주시").map((item) => item.id)).toEqual([

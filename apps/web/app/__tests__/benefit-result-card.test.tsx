@@ -29,6 +29,8 @@ function result(status: PolicyResult["status"] = "예상적용"): PolicyResult {
       verifiedAt: "2026-08-30",
       effectiveYear: 2026,
       notes: "실제 검수 메모",
+      contact: null,
+      nextRound: null,
     },
     status,
     checks: [],
