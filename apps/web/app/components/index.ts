@@ -13,6 +13,7 @@ export type { ButtonSize, ButtonVariant } from "./Button";
 export { Card } from "./Card";
 export type { CardTone } from "./Card";
 export { ChoiceCard } from "./ChoiceCard";
+export { ContactInfo, telHref } from "./ContactInfo";
 export { Disclosure } from "./Disclosure";
 export { EmptyState } from "./EmptyState";
 export { Field, FieldError, FieldGroup, MoneyInput, NumberInput } from "./Input";
