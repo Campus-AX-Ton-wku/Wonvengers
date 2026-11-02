@@ -8,7 +8,7 @@ import { summaryHighlights } from "@/lib/summary";
 import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { housingSupplyForRegion, loanProductsForRegion } from "@/lib/region";
-import { isWithinWindow } from "@/lib/date";
+import { formatDotDate, isWithinWindow } from "@/lib/date";
 import {
   AppShell,
   Button,
@@ -190,14 +190,11 @@ export default function ResultPage() {
               </ExternalRefLink>
               <ExternalRefLink href={product.applyUrl}>신청 페이지로 이동</ExternalRefLink>
             </div>
-            <Disclosure label="검수 상태 · 참고사항">
+            <Disclosure label="검수 상태">
               <p className="text-xs text-ink-500">
                 {product.effectiveYear}년 기준 ·{" "}
-                {product.verifiedAt ? `${product.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
+                {product.verifiedAt ? `${formatDotDate(product.verifiedAt)} 확인` : "팀 교차검수 전 (미검증 초안)"}
               </p>
-              {product.notes && (
-                <p className="mt-1 text-xs leading-relaxed text-ink-500">{product.notes}</p>
-              )}
             </Disclosure>
           </div>
         ))}
@@ -232,14 +229,11 @@ export default function ResultPage() {
               </ExternalRefLink>
               <ExternalRefLink href={item.applyUrl}>신청 페이지로 이동</ExternalRefLink>
             </div>
-            <Disclosure label="검수 상태 · 참고사항">
+            <Disclosure label="검수 상태">
               <p className="text-xs text-ink-500">
                 {item.effectiveYear}년 기준 ·{" "}
-                {item.verifiedAt ? `${item.verifiedAt} 확인` : "팀 교차검수 전 (미검증 초안)"}
+                {item.verifiedAt ? `${formatDotDate(item.verifiedAt)} 확인` : "팀 교차검수 전 (미검증 초안)"}
               </p>
-              {item.notes && (
-                <p className="mt-1 text-xs leading-relaxed text-ink-500">{item.notes}</p>
-              )}
             </Disclosure>
           </div>
         ))}

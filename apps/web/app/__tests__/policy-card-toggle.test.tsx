@@ -4,6 +4,9 @@ import { render, screen, within } from "@testing-library/react";
 import ResultPage from "@/app/result/page";
 import { saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
+import policies from "@/data/policies.json";
+import loanProducts from "@/data/loan-products.json";
+import housingSupply from "@/data/housing-supply.json";
 
 vi.mock("next/navigation", () => {
   const router = { push: vi.fn(), replace: vi.fn() };
@@ -59,17 +62,38 @@ describe("2층 정책 카드", () => {
     expect(within(resultItem).getByText(/요건 자세히 보기 · 충족 \d+/)).toBeTruthy();
   });
 
-  it("검수 메모(notes)와 확인 날짜는 '검수 상태' 토글 안에 있다", async () => {
+  it("확인 날짜는 '검수 상태' 토글 안에 있다", async () => {
     await renderResult();
     const title = screen.getByRole("heading", { name: /익산시 전입 청년 이사비/ });
     const card = title.closest("article")!;
     const resultItem = card.closest(".stagger-in") as HTMLElement;
     expect(card, "익산시 이사비 카드를 찾지 못했다").toBeTruthy();
 
-    const details = 상세_토글(resultItem, /익산청년시청/);
+    const details = 상세_토글(resultItem, /2026년 기준/);
     expect(details.open).toBe(false);
-    expect(within(details).getByText(/2026년 기준/)).toBeTruthy();
-    expect(within(resultItem).getByText("검수 상태 · 참고사항")).toBeTruthy();
+    expect(within(details).getByText("검수 상태")).toBeTruthy();
+  });
+
+  it("내부 검수 메모(notes)는 정책·대출·주택 공급 어디에도 그리지 않는다", async () => {
+    await renderResult();
+    const text = document.body.textContent ?? "";
+    const items = [...policies, ...loanProducts, ...housingSupply] as { id: string; notes: string }[];
+    for (const item of items) {
+      if (!item.notes) continue;
+      expect(text.includes(item.notes), `${item.id} 의 notes 가 화면에 노출됐다`).toBe(false);
+    }
+    expect(screen.queryByText("검수 상태 · 참고사항")).toBeNull();
+  });
+
+  it("대출·주택 공급 카드의 확인 날짜는 정책 카드와 같은 점 표기다", async () => {
+    // 익산은 확인 날짜가 있는 대출·주택 항목이 없어 검사가 헛돈다 — 부산 머물자리론(2026-09-03 대조)으로 본다.
+    saveListing(makeListing({ region: "부산광역시", contractType: "월세", rentOrYearlyAmount: 350000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const loan = screen.getByText("청년 임차보증금 대출 및 대출이자 지원(머물자리론)", { selector: "p" }).parentElement!;
+    expect(within(loan).getByText(/2026\.09\.03 확인/)).toBeTruthy();
+    expect(screen.queryByText(/\d{4}-\d{2}-\d{2} 확인/)).toBeNull();
   });
 
   it("상태·금액·준비 CTA·공식 신청 링크는 토글 밖에 남는다", async () => {
