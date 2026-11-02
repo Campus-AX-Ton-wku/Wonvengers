@@ -2,6 +2,7 @@ import type {
   DiscoveryStatus,
   HousingType,
   PolicyMeta,
+  PolicyResult,
   ResolvedAnswers,
   TagResult,
 } from "./types";
@@ -98,6 +99,51 @@ function checkIncome(policy: PolicyMeta, incomeBracket: number | null): CheckRes
     }
   }
   return PASS;
+}
+
+/**
+ * 2층(정밀 계산) 판정 결과를 1층 태그 모양으로 옮긴다.
+ *
+ * 2층까지 답한 사람에게 1층 태그를 그대로 보여주면 앱이 이미 아는 것을 잊는다 —
+ * 결과 화면이 "예상 적용"이라고 한 정책의 상세를 열었더니 "조건 확인이 필요"라고
+ * 말하는 모순이 실제로 났다. 특히 discovery.incomeBracketMax 가 null 인 정책
+ * (청년 주거급여 분리지급 등)은 1층 소득 판정 자체가 불가능해서 무엇을 답하든
+ * 영원히 '확인 필요'다. 그런 정책일수록 2층 결과를 써야 한다.
+ */
+export function tagFromEvaluation(result: PolicyResult): TagResult {
+  switch (result.status) {
+    case "대상아님":
+      return { tag: "해당 없음", failReasons: result.failedLabels, unknownFields: [] };
+    case "조건충족시가능":
+      return { tag: "확인 필요", failReasons: [], unknownFields: result.unknownLabels };
+    // "신청불가" 는 신청 기간 밖이라는 뜻뿐이다(lib/eligibility.ts). 기간은
+    // cardStatus 가 직접 보고 '접수 마감'·'신청 예정'으로 바꾸므로 여기서 옮기지 않는다.
+    default:
+      return { tag: "가능성 있음", failReasons: [], unknownFields: [] };
+  }
+}
+
+/**
+ * 1층 태그와 2층 판정을 합친다. 2층을 안 거쳤으면(evaluated === null) 1층 그대로다.
+ *
+ * 어느 한 층으로 "통일"하면 다른 층이 아는 탈락을 잃는다. 두 층은 서로 다른 것을 본다:
+ *
+ *  - 1층(discovery)만 아는 것: 주거 형태 · 현재 상태 · 소득 구간 · 지역
+ *  - 2층(policy-rules)만 아는 것: 무주택 · 원가구 소득 · 별도 거주 · 계약자 명의…
+ *
+ * 실제로 갈렸던 예:
+ *  - 전세보증금반환보증 보증료 지원은 `housingTypes: ["전세"]` 다. 월세 사용자를
+ *    1층은 '대상 아님'으로 정확히 거르지만, 2층 규칙은 주거 형태를 보지 않아
+ *    '확인 필요'로 올린다. 2층만 쓰면 월세 사용자에게 전세 전용 사업이 다시 뜬다.
+ *  - 청년 주거급여 분리지급은 `incomeBracketMax: null` 이라 1층 소득 판정이
+ *    원천적으로 불가능해 무엇을 답하든 '확인 필요'다. 1층만 쓰면 2층이 실제 소득으로
+ *    통과시킨 결과를 잃는다.
+ *
+ * 그래서 탈락은 어느 층이든 인정하고, 남은 판단만 2층에 맡긴다.
+ */
+export function combineTags(discovery: TagResult, evaluated: TagResult | null): TagResult {
+  if (discovery.tag === "해당 없음") return discovery;
+  return evaluated ?? discovery;
 }
 
 export function tagPolicy(policy: PolicyMeta, answers: ResolvedAnswers): TagResult {

@@ -105,8 +105,8 @@ npm run build    # 정적 빌드 (output: "export")
 <br/>
 
 정책 데이터는 `apps/web/data/policies.json` **한 곳**에만 둡니다.
-발표용 예시 매물은 `apps/web/data/example-listings.json` 입니다 — `verifiedAt` 이 `null` 이면
-화면에 `가상 예시 · 실제 매물이 아닙니다` 로 표시되고, 팀이 확인한 뒤 날짜를 넣어야 실제 매물로 표시됩니다.
+발표용 스크린샷은 `apps/web/scripts/capture-screens.mjs` 가 가상 조건을 직접 주입해 찍습니다 —
+실제 매물이 아니므로 캡처를 실제 사례처럼 쓰지 마세요.
 
 `apps/web/data/` 전체는 다음과 같습니다.
 
@@ -116,7 +116,6 @@ npm run build    # 정적 빌드 (output: "export")
 | `income-brackets.json` | 1층 소득 구간 선택지 5개 (`월 100만원 이하` … `월 250만원 초과`) |
 | `income-thresholds.json` | 2층 중위소득 기준액 — 실제 금액으로 판정할 때 |
 | `loan-products.json` | 결과 화면의 대출 상품 안내 |
-| `example-listings.json` | 발표용 예시 매물 (F1-11) |
 
 | 용도 | 사용하는 필드 |
 |---|---|

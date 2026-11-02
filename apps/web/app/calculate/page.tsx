@@ -6,9 +6,10 @@ import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
+import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { loadAnswers, loadListing, saveListing } from "@/lib/storage";
-import { REGION_OPTIONS, isRegionValue, policiesForRegion } from "@/lib/region";
+import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
+import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import {
@@ -28,6 +29,19 @@ import { Check, ICON_SM } from "@/app/components/icons";
 
 const policies = policiesData as PolicyMeta[];
 
+/**
+ * 이 지역에서 일시 지출(이사비·중개보수)을 지원하는 정책. 없으면 null.
+ *
+ * F1-4 는 "선정 정책이 지원하면" 물으라고 했는데 전에는 항상 물었다. 이 칸을 먹는
+ * 정책은 lumpSumBasis 가 "oneTimeMoveCost" 인 것뿐인데, 그런 지원이 있는 줄 모르는
+ * 사람은 기본값 0 을 그대로 두고 넘어간다. 그러면 상한이 얼마든 "실제 지출 0원과
+ * 상한 중 작은 값 = 0원" 이 되어 지원이 통째로 사라진다 — 정책을 모르는 사용자일수록
+ * 못 받는 셈이다. 지원 정책이 있는 지역에서만, 지원한다는 사실을 먼저 말하고 묻는다.
+ */
+function findMoveCostPolicy(region: string): PolicyMeta | null {
+  return policiesForRegion(policies, region).find((p) => p.lumpSumBasis === "oneTimeMoveCost") ?? null;
+}
+
 const EMPTY: ListingInput = {
   region: "",
   contractType: "연세",
@@ -37,9 +51,7 @@ const EMPTY: ListingInput = {
   oneTimeMoveCost: 0,
   contractStartDate: "",
   months: 12,
-  sourceType: "중개사 안내",
   confirmedMatchesActualContract: false,
-  exampleId: null,
 };
 
 export default function InputPage() {
@@ -66,18 +78,26 @@ export default function InputPage() {
 
   useEffect(() => {
     const saved = loadListing();
+    const answers = loadAnswers();
+    const regionFromAnswers =
+      answers.region && isRegionValue(answers.region) ? answers.region : null;
+
     if (saved) {
-      // 지역이 자유 입력이던 시절 저장분은 선택지로 매칭되지 않으므로 다시 고르게 한다.
-      setForm({ ...saved, region: isRegionValue(saved.region) ? saved.region : "" });
+      // Find에서 고른 지역은 이전 Calculate 저장값보다 최신의 명시적 답변이다.
+      // 금액·계약 정보는 유지하되 정책 범위를 정하는 지역만 Find 답변을 우선한다.
+      setForm({
+        ...saved,
+        region: regionFromAnswers ?? (isRegionValue(saved.region) ? saved.region : ""),
+      });
+      setRegionFromFloor1(regionFromAnswers !== null);
       setContractTypeChosen(true); // 저장된 입력에는 이미 고른 계약 형태가 있다
       return;
     }
 
     // 2층에 처음 들어온 경우 1층에서 이미 고른 것을 다시 묻지 않는다.
     // 같은 질문을 두 번 하면 1층과 2층이 별개의 앱처럼 느껴진다.
-    const answers = loadAnswers();
-    if (answers.region && isRegionValue(answers.region)) {
-      setForm((prev) => ({ ...prev, region: answers.region as string }));
+    if (regionFromAnswers) {
+      setForm((prev) => ({ ...prev, region: regionFromAnswers }));
       setRegionFromFloor1(true);
     }
     // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
@@ -90,6 +110,9 @@ export default function InputPage() {
     }
   }, []);
 
+  // 이사비 지원 정책이 있는 지역에서만 일시 지출을 묻는다 (F1-4).
+  const moveCostPolicy = findMoveCostPolicy(form.region);
+
   const monthlyEquivalent =
     form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
 
@@ -100,8 +123,22 @@ export default function InputPage() {
   }, [form.region]);
 
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
-    if (key === "region") setRegionFromFloor1(false);
-    setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "region") {
+      setRegionFromFloor1(false);
+
+      // Find를 거쳐 온 사용자가 여기서 지역을 다시 바꾸면 두 화면의 지역을 함께
+      // 갱신한다. 그래야 새로고침해도 예전 Find 답변으로 되돌아가지 않는다.
+      const answers = loadAnswers();
+      if (answers.region) {
+        saveAnswers({ ...answers, region: value ? String(value) : null });
+      }
+    }
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // 묻지 않는 칸의 값이 총 주거비에 남으면 안 된다.
+      if (key === "region" && !findMoveCostPolicy(next.region)) next.oneTimeMoveCost = 0;
+      return next;
+    });
   }
 
   /** 해당 스텝의 입력만 검증한다. 규칙 자체는 기존 handleSubmit 과 동일하다. */
@@ -162,10 +199,14 @@ export default function InputPage() {
                 onChange={(e) => update("region", e.target.value)}
               >
                 <option value="">선택해주세요</option>
-                {REGION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
+                {REGION_HIERARCHY.map((province) => (
+                  <optgroup key={province.name} label={province.name}>
+                    {province.districts.map((district) => (
+                      <option key={district.value} value={district.value}>
+                        {district.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </Field>
@@ -229,13 +270,19 @@ export default function InputPage() {
               />
             </Field>
 
-            <Field label="이사비 등 정책이 요구하는 일시 지출 (만원, 없으면 0)">
-              <MoneyInput
-                placeholder="0"
-                value={form.oneTimeMoveCost}
-                onChange={(v) => update("oneTimeMoveCost", v ?? 0)}
-              />
-            </Field>
+            {moveCostPolicy && (
+              <Field label="이사비·중개보수로 얼마를 쓸 예정인가요? (만원)">
+                <span className="text-xs font-medium text-ink-500">
+                  {moveCostPolicy.agency}가 이 비용을 최대{" "}
+                  {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요. 쓴 만큼 계산합니다.
+                </span>
+                <MoneyInput
+                  placeholder="0"
+                  value={form.oneTimeMoveCost}
+                  onChange={(v) => update("oneTimeMoveCost", v ?? 0)}
+                />
+              </Field>
+            )}
 
             {form.contractType === "연세" && monthlyEquivalent > 0 && (
               <p className="rounded-control bg-brand-50 px-4 py-3 text-sm text-brand-900">
@@ -243,22 +290,6 @@ export default function InputPage() {
                 <strong>{monthlyEquivalent.toLocaleString()}원</strong>
               </p>
             )}
-
-            <Field label="이 조건을 어디서 확인했나요?">
-              <select
-                className="input"
-                value={form.sourceType}
-                onChange={(e) => update("sourceType", e.target.value as ListingInput["sourceType"])}
-              >
-                <option value="부동산 광고">부동산 광고</option>
-                <option value="중개사 안내">중개사 안내</option>
-                <option value="계약서">계약서</option>
-                {/* 예시를 불러왔을 때만 노출한다. 직접 고를 수 있는 출처가 아니다. */}
-                {form.sourceType === "예시 데이터" && (
-                  <option value="예시 데이터">예시 데이터 (실제로 확인한 조건이 아님)</option>
-                )}
-              </select>
-            </Field>
 
             {/* 계산 결과의 신뢰가 이 한 줄에 걸려 있다(PRD F1-10). 다른 입력칸과
                 같은 무게로 두면 습관적으로 지나친다 — 면을 주고 조금 띄워 둔다. */}

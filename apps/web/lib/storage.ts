@@ -1,4 +1,4 @@
-import type { DiscoveryAnswers, EligibilityProfile, ListingInput } from "./types";
+import type { DeclaredValue, DiscoveryAnswers, EligibilityProfile, ListingInput } from "./types";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -32,7 +32,34 @@ export function saveProfile(profile: EligibilityProfile): void {
 }
 
 export function loadProfile(): EligibilityProfile | null {
-  return readJSON<EligibilityProfile>(PROFILE_KEY);
+  const profile = readJSON<EligibilityProfile>(PROFILE_KEY);
+  if (!profile) return null;
+  // 직접 신고한 값은 별도 키가 단독 출처다. 프로필 안에 남아 있던 옛 값이 있어도
+  // 덮어쓴다 — /eligibility 가 프로필을 통째로 저장하므로 두 벌을 두면 어긋난다.
+  return { ...profile, selfDeclared: loadDeclared() };
+}
+
+// ── 결과 화면에서 직접 답한 '확인 필요' 조건 ──
+
+/**
+ * 판정 질문(/eligibility)이 받지 않는 조건의 답. check.key 로 찾는다.
+ *
+ * 프로필과 키를 나눈 이유: /eligibility 는 스텝마다 프로필을 통째로 다시 저장한다.
+ * 같은 객체에 넣으면 판정 질문을 한 번 더 훑는 것만으로 결과 화면에서 답한 값이
+ * 날아간다.
+ */
+const DECLARED_KEY = "perky.declared";
+
+export function loadDeclared(): Record<string, DeclaredValue> {
+  return readJSON<Record<string, DeclaredValue>>(DECLARED_KEY) ?? {};
+}
+
+/** 한 조건의 답을 저장한다. undefined 를 주면 '아직 모름'으로 되돌린다. */
+export function saveDeclared(key: string, value: DeclaredValue | undefined): void {
+  const next = loadDeclared();
+  if (value === undefined || value === "") delete next[key];
+  else next[key] = value;
+  writeJSON(DECLARED_KEY, next);
 }
 
 // ── 1층(발견) 답변 ──
@@ -90,10 +117,9 @@ export type AnsweredKey = keyof DiscoveryAnswers;
 /**
  * 어떤 질문에 실제로 답했는지만 따로 기록한다.
  *
- * 답변 값의 null 은 '모름'과 '아직 안 물어봄'을 겸한다. 판정에는 둘 다 똑같이
- * '모름'이라 문제가 없지만, 화면에는 문제가 된다 — 아직 고르지도 않은 '모름'
- * 버튼이 선택된 것처럼 체크되고, 모름으로 답한 질문은 답변 요약에 나타나지
- * 않으며, 다시 들어오면 이미 답한 질문으로 되돌아간다.
+ * 현재 Find는 모름을 허용하지 않아 null이 곧 미응답이다. 별도 기록은 과거 저장값을
+ * 마이그레이션하고, 완료한 질문만 답변 요약에 쌓기 위해 유지한다. Find 진입 시 null인
+ * 답의 키는 이 목록에서도 제거한다.
  *
  * DiscoveryAnswers 에 넣지 않고 키를 나눈 이유: 이건 판정에 쓰이지 않는 화면
  * 상태다. 판정 코드(filter·discovery)가 이 값을 볼 일이 없어야 한다.

@@ -48,7 +48,16 @@ export function benefitResultState(result: PolicyResult, asOfISO: string): Benef
 }
 
 function evidenceMessage(result: PolicyResult): string {
-  if (result.unknownLabels.length > 0) return result.unknownLabels.slice(0, 2).join(" · ");
+  if (result.unknownLabels.length > 0) {
+    // unknownLabels에는 상세 확인 방법까지 붙어 있어 카드에 그대로 넣으면 긴 문단이
+    // 된다. 카드는 조건명만 요약하고, 방법은 정책별 확인 화면에서 한 항목씩 보여준다.
+    const labels = result.checks
+      .filter((check) => check.result === "unknown")
+      .map((check) => check.label);
+    const summary = labels.length > 0 ? labels : result.unknownLabels;
+    const more = summary.length > 2 ? ` 외 ${summary.length - 2}개` : "";
+    return `${summary.slice(0, 2).join(" · ")}${more}`;
+  }
   return `확인한 조건 ${result.passedLabels.length}개가 모두 일치해요.`;
 }
 
@@ -65,6 +74,7 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
   const isMaximum = ceiling !== null && amountValue === ceiling.amount;
   const detailHref = `/find/policies/${policy.id}`;
   const prepareHref = `${detailHref}/prepare`;
+  const reviewHref = `/result/review/${policy.id}`;
 
   return {
     state,
@@ -85,7 +95,7 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
         label: "자격 요건",
         value: missingCount > 0 ? `확인 필요 ${missingCount}개` : `확인 완료 ${matchedCount}개`,
         tone: missingCount > 0 ? "warn" : "ok",
-        href: missingCount > 0 ? "/eligibility" : undefined,
+        href: missingCount > 0 ? reviewHref : undefined,
       },
       {
         label: "지원 형태",
@@ -102,7 +112,7 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
     ],
     source: { name: policy.agency, updatedAt: policy.verifiedAt, url: policy.sourceUrl },
     primaryAction: state === "check"
-      ? { label: `조건 ${missingCount}개 확인하기`, kind: "review", href: "/eligibility" }
+      ? { label: `조건 ${missingCount}개 확인하기`, kind: "review", href: reviewHref }
       : {
           label: state === "urgent" ? "마감 전 신청 준비하기" : "신청 준비 시작하기",
           kind: "prepare",

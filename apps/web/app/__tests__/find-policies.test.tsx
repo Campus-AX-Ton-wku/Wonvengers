@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import FindPoliciesPage from "@/app/find/policies/page";
 import { EMPTY_ANSWERS, saveAnswers } from "@/lib/storage";
@@ -29,16 +29,27 @@ function 신청불가묶음(): HTMLDetailsElement {
 }
 
 describe("/find/policies", () => {
+  // 마감 여부는 오늘 날짜로 판정한다. 아래 건수는 2026-09-03 기준이라 날짜를
+  // 고정하지 않으면 정책 마감일이 지날 때마다 깨진다. Date 만 고정해야
+  // findBy* 의 대기 타이머가 그대로 돈다.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-03T12:00:00+09:00"));
+  });
+  afterAll(() => vi.useRealTimers());
+
   it("답변을 모두 모름으로 둬도 목록이 뜬다", async () => {
     saveAnswers(EMPTY_ANSWERS);
     render(<FindPoliciesPage />);
 
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
-    // 6건 중 2건은 접수가 끝났다. 제목은 지금 신청할 수 있는 것만 센다.
+    // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 시도 한정 정책도 다 후보에
+    // 남는다 — 34건 중 마감이 아닌 16건(대전 청년 월세 지원사업이 2026.9.10까지
+    // 접수 중이라 새로 포함된다). 제목은 지금 신청할 수 있는 것만 센다.
     // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 4개"
+      "받을 수 있는 주거 혜택 16개"
     );
   });
 
@@ -66,14 +77,17 @@ describe("/find/policies", () => {
 
     await screen.findByRole("heading", { level: 1 });
     // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세 1건은
-    // 마감), 해당 없음 3건(전세 전용인 보증료 지원 포함)
+    // 마감), 해당 없음 32건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
+    // 부산·세종·광주 서구·경기(평택시·용인시)·충북(음성군·괴산군)·경북(고령군·구미시·
+    // 울릉군)·경남(하동군·산청군·합천군·통영시·창원시·남해군)·대전·전남 강진군 전용
+    // 정책 포함)
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "받을 수 있는 주거 혜택 2개"
     );
 
     const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 2개" });
     expect(within(신청가능영역).getAllByRole("link")).toHaveLength(2);
-    expect(screen.getByText("신청할 수 없는 지원금 4개")).toBeTruthy();
+    expect(screen.getByText("신청할 수 없는 지원금 33개")).toBeTruthy();
   });
 
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
@@ -219,7 +233,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
   it("후보가 전부 마감이면 제목이 그렇게 말하고, 묶음은 펼쳐 둔다", async () => {
     saveAnswers({
       birthDate: birthDateForAge(30),
-      region: "전북특별자치도", // REGION_OPTIONS 의 value (라벨은 "전북특별자치도 (익산시 외)")
+      region: "전북특별자치도 전주시",
       status: "재직",
       incomeBracket: 2,
       housingType: "월세" as const,

@@ -43,6 +43,35 @@ describe("groupPolicies", () => {
       "iksan-youth-rent-support",
       "jeonbuk-youth-settlement-support",
       "jeonse-return-guarantee-fee-subsidy",
+      "seoul-youth-moving-cost-support",
+      "ulsan-youth-household-housing-cost-support",
+      "incheon-youth-monthly-rent-support-35to39",
+      "incheon-brokerage-fee-1000won",
+      "jeju-youth-hope-charge-monthly-rent-35to39",
+      "jeju-brokerage-fee-support",
+      "jeju-youth-moving-cost-support",
+      "busan-youth-brokerage-moving-cost-support",
+      "sejong-youth-rent-support",
+      "incheon-junggu-moving-cost-support",
+      "incheon-donggu-welcome-pay",
+      "gwangju-seogu-brokerage-fee-1000won",
+      "incheon-yeongjonggu-moving-cost-support",
+      "pyeongtaek-youth-rent-support",
+      "eumseong-youth-rent-support",
+      "gumi-youth-rent-support",
+      "goryeong-youth-rent-support",
+      "incheon-jemulpogu-welcome-pay",
+      "goesan-youth-worker-farmer-housing-cost-support",
+      "hadong-youth-housing-cost-support",
+      "sancheong-youth-rent-support",
+      "hapcheon-youth-rent-support",
+      "tongyeong-youth-settlement-support",
+      "changwon-youth-rent-support",
+      "yongin-brokerage-moving-cost-support",
+      "namhae-youth-rent-support",
+      "daejeon-youth-rent-support",
+      "ulleung-youth-rent-support",
+      "gangjin-youth-worker-rent-support",
     ]);
   });
 
@@ -86,8 +115,8 @@ describe("answerSummary", () => {
   });
 
   it("지역은 선택지와 같은 어휘의 짧은 이름을 쓴다", () => {
-    const 도전체 = answerSummary({ ...익산_대학생, region: "전북특별자치도" }, brackets);
-    expect(도전체[1]).toBe("전북 (익산시 외)");
+    const 전주 = answerSummary({ ...익산_대학생, region: "전북특별자치도 전주시" }, brackets);
+    expect(전주[1]).toBe("전주시");
   });
 
   it("소득 구간 번호가 표에 없으면 '소득 모름'으로 둔다", () => {

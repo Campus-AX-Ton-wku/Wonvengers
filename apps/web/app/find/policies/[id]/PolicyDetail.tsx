@@ -18,10 +18,12 @@ import { resolveAnswers } from "@/lib/age";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate, todayISO } from "@/lib/date";
-import { tagPolicy } from "@/lib/filter";
+import { combineTags, tagFromEvaluation, tagPolicy } from "@/lib/filter";
 import { getRequiredQuestions } from "@/lib/questions";
-import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
-import type { DiscoveryAnswers, IncomeBracket, PolicyMeta } from "@/lib/types";
+import { policiesForRegion } from "@/lib/region";
+import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
+import { buildCalculationSummary } from "@/lib/summary";
+import type { DiscoveryAnswers, IncomeBracket, PolicyMeta, TagResult } from "@/lib/types";
 
 /**
  * 정책 하나의 전부.
@@ -74,14 +76,42 @@ function targetRows(policy: PolicyMeta): { label: string; value: string }[] {
   ];
 }
 
+/**
+ * 2층까지 답한 사람의 판정. 저장된 계약 조건·판정 답변이 없으면 null 이고,
+ * 그때만 1층 네 질문으로 판정한다.
+ *
+ * 결과 화면과 같은 입력·같은 함수를 쓴다(app/result/useResultData.ts). 화면마다
+ * 따로 판정하면 결과의 "예상 적용" 과 상세의 "확인 필요" 가 갈린다.
+ */
+function evaluatedTag(policyId: string, asOfISO: string): TagResult | null {
+  const listing = loadListing();
+  const profile = loadProfile();
+  if (!listing || !profile) return null;
+  try {
+    // 판정질문 화면과 같은 후보 집합을 쓴다 — 지역 밖 정책을 같이 빼지 않으면
+    // 묻지 않은 질문이 unknown 으로 남는다.
+    const scoped = policiesForRegion(policies, listing.region);
+    const summary = buildCalculationSummary(scoped, profile, listing, asOfISO);
+    const result = summary.results.find((r) => r.policy.id === policyId);
+    return result ? tagFromEvaluation(result) : null;
+  } catch {
+    // 저장값이 구 버전이거나 손상됐으면 1층 판정으로 물러난다.
+    return null;
+  }
+}
+
 export default function PolicyDetail({ id }: { id: string }) {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
+  /** 2층 판정 결과. null 이면 아직 2층을 안 거친 사람이다. */
+  const [detailed, setDetailed] = useState<TagResult | null>(null);
 
   useEffect(() => {
+    const today = todayISO();
     setAnswers(loadAnswers());
-    setAsOf(todayISO());
-  }, []);
+    setAsOf(today);
+    setDetailed(evaluatedTag(id, today));
+  }, [id]);
 
   const policy = policies.find((p) => p.id === id);
 
@@ -95,7 +125,10 @@ export default function PolicyDetail({ id }: { id: string }) {
   }
 
   const resolved = resolveAnswers(answers, asOf ?? null);
-  const result = tagPolicy(policy, resolved);
+  // 두 층이 서로 다른 것을 알기 때문에 합쳐서 쓴다 (lib/filter.ts 의 combineTags).
+  const result = combineTags(tagPolicy(policy, resolved), detailed);
+  // 남은 조건을 고치러 갈 곳도 판정한 층과 맞춘다. 2층 미확인 항목을 1층에서 고칠 수는 없다.
+  const 조건수정링크 = detailed ? "/eligibility" : "/find";
   const status = asOf ? cardStatus(policy, result, asOf) : null;
   const ceiling = benefitCeiling(policy);
   const applicationPeriod = `${formatDotDate(policy.applicationStart)} ~ ${
@@ -211,7 +244,7 @@ export default function PolicyDetail({ id }: { id: string }) {
               <span>{result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.</span>
             </p>
             <Link
-              href="/find"
+              href={조건수정링크}
               className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
             >
               조건 수정하기
@@ -247,7 +280,7 @@ export default function PolicyDetail({ id }: { id: string }) {
         {status === "신청 가능" ? (
           <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
         ) : status === "확인 필요" ? (
-          <LinkButton href="/find" size="screen">조건 확인하기</LinkButton>
+          <LinkButton href={조건수정링크} size="screen">조건 확인하기</LinkButton>
         ) : (
           <LinkButton href="/find/policies" size="screen" variant="secondary">다른 혜택 보기</LinkButton>
         )}

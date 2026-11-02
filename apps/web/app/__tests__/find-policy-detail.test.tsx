@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PolicyDetail from "@/app/find/policies/[id]/PolicyDetail";
 import policiesJson from "@/data/policies.json";
-import { saveAnswers } from "@/lib/storage";
+import { saveAnswers, saveListing, saveProfile } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
-import { birthDateForAge } from "@/lib/__tests__/fixtures";
+import { birthDateForAge, makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 
 /**
  * 정책 상세.
@@ -104,6 +104,67 @@ describe("/find/policies/[id]", () => {
     expect(screen.getByText("찾을 수 없는 지원금입니다.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "목록으로 돌아가기" }).getAttribute("href")).toBe(
       "/find/policies"
+    );
+  });
+});
+
+/**
+ * 결과 화면에서 넘어온 사람의 상세.
+ *
+ * 결과 화면은 2층 판정(계약 조건 + 판정질문 16개)으로 "예상 적용"이라고 하는데,
+ * 상세는 1층 네 질문으로 다시 판정해 "조건 확인 필요"라고 말하는 모순이 있었다.
+ * 특히 `discovery.incomeBracketMax` 가 null 인 청년 주거급여 분리지급은 1층에서
+ * 소득 판정 자체가 불가능해, 무엇을 답하든 영원히 '확인 필요'였다.
+ */
+describe("/find/policies/[id] 2층 판정 이어받기", () => {
+  const 주거급여 = "youth-housing-benefit-split-payment";
+
+  it("2층을 안 거친 사람은 1층 판정 그대로다", async () => {
+    saveAnswers(익산_대학생);
+    await render상세(주거급여);
+
+    expect(screen.getByText(/답하지 않아 판단을 보류했습니다/)).toBeTruthy();
+  });
+
+  it("2층까지 답했으면 결과 화면과 같은 판정을 보여준다", async () => {
+    saveAnswers(익산_대학생);
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveProfile(makeProfile({ birthDate: birthDateForAge(23) }));
+
+    await render상세(주거급여);
+
+    // 1층만으로는 소득 구간을 판정할 수 없어 늘 '확인 필요'였던 정책이다.
+    expect(screen.queryByText(/답하지 않아 판단을 보류했습니다/)).toBeNull();
+    expect(screen.getByText("입력한 기본 조건이 공고의 지원 대상과 일치해요.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "신청 준비하기" })).toBeTruthy();
+  });
+
+  /**
+   * 2층으로 "통일"하면 안 되는 이유. 전세보증금반환보증 보증료 지원은
+   * `housingTypes: ["전세"]` 라 월세 사용자를 1층이 정확히 거른다. 그런데 2층
+   * 규칙은 주거 형태를 보지 않아 '확인 필요'로 올린다 — 2층 판정만 쓰면 월세
+   * 사용자에게 전세 전용 사업이 후보로 되살아난다.
+   */
+  it("1층이 거른 탈락은 2층 판정이 있어도 되살리지 않는다", async () => {
+    saveAnswers(익산_대학생); // housingType: 월세
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveProfile(makeProfile({ birthDate: birthDateForAge(23) }));
+
+    await render상세("jeonse-return-guarantee-fee-subsidy");
+
+    expect(screen.getByText("대상이 아닌 이유")).toBeTruthy();
+    expect(screen.getByText(/전세 거주자만 신청할 수 있습니다/)).toBeTruthy();
+  });
+
+  it("2층에서 모름으로 남긴 항목은 2층으로 고치러 보낸다", async () => {
+    saveAnswers(익산_대학생);
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveProfile(makeProfile({ birthDate: birthDateForAge(23), livesApartFromParents: "unknown" }));
+
+    await render상세(주거급여);
+
+    expect(screen.getByRole("link", { name: "조건 수정하기" }).getAttribute("href")).toBe(
+      "/eligibility"
     );
   });
 });

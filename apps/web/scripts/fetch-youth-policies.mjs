@@ -38,6 +38,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { classifyAgency } from "./discovery-region.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(HERE, "..");
@@ -61,59 +62,14 @@ const DISCOVERY_QUERY = { lclsfNm: "주거" };
 /**
  * 전국화 Phase 1 파일럿 대상 — 전북특별자치도 익산시 + 인접 5개 시.
  *
- * zipCd 는 짐작하지 않고 전부 API 응답에서 직접 확인했다 (전북특별자치도
- * 신설로 옛 법정동코드 접두어 45 가 52 로 바뀌어 있어, 외부 자료만 보고
- * 채우면 조용히 틀린 코드를 쓰게 된다):
- *
- *  - 익산시 52140 — 기존에 이미 확인된 값
- *  - 전주시 52111(완산구)·52113(덕진구) — "청춘★별채" 전주시 사업의 zipCd 에서
- *  - 군산시 52130 — "신혼부부 주택 전세자금 대출이자 지원" 군산시 사업의 zipCd 에서
- *  - 김제시 52210 — "청년농촌보금자리 조성사업"의 zipCd 에서
- *  - 정읍시 52180 · 남원시 52190 — 이 6개 시 전용 정책이 API 에 따로 없어,
- *    전북 도 단위 정책("전북청년 지역정착 지원사업", plcyNo
- *    20250113005400210206)의 zipCd 15개 목록에서 확인했다(도 단위 정책은
- *    소속 시군 전체 코드를 나열하므로 정읍·남원 코드가 그 안에 나온다).
+ * 예전엔 이 시들을 zipCd 로 가려냈는데, "강원형 공공주택 공급"(강원 전용)이
+ * zipCd 251개(전국급)로 등록돼 있는 걸 발견하면서 zipCd 자체를 신뢰할 수
+ * 없다는 게 드러났다. 지금은 등록기관명으로 가른다 — discovery-region.mjs
+ * 의 classifyAgency 참고. 이 배열은 이제 "어느 시 이름을 파일럿으로 볼지"만
+ * 정하는 순수 이름 목록이다.
  */
-const PILOT_REGIONS = [
-  { name: "익산시", zips: ["52140"] },
-  { name: "전주시", zips: ["52111", "52113"] },
-  { name: "군산시", zips: ["52130"] },
-  { name: "정읍시", zips: ["52180"] },
-  { name: "남원시", zips: ["52190"] },
-  { name: "김제시", zips: ["52210"] },
-];
-
-/**
- * 전북특별자치도 시군구 전체 zipCd(15개) — "전북청년 지역정착 지원사업"의
- * 실제 zipCd 응답 그대로다. 한 정책의 zipCd 가 이 15개를 전부 포함하면
- * "전북 도 단위" 후보로 분류한다(전국 사업은 229개를 포함하므로 뒤에서
- * 개수로 한 번 더 걸러낸다 — isProvinceWide 참고).
- */
-const JEONBUK_ALL_ZIPS = [
-  ...PILOT_REGIONS.flatMap((r) => r.zips), // 전주(2)·군산·익산·정읍·남원·김제 = 7개
-  "52710", "52720", "52730", "52740", "52750", "52770", "52790", "52800", // 완주·진안·무주·장수·임실·순창·고창·부안 = 8개
-];
-
-/**
- * 전국 사업은 zipCd 에 229개 코드가 전부 들어온다 — 200개를 문턱으로 잡는다
- * (등록 실수로 몇 개가 빠져도 전국임을 알아볼 여유를 둔다).
- */
-function isNational(zipCds) {
-  return zipCds.length >= 200;
-}
-
-/**
- * 전북 도 단위 사업(zipCd 15개)을 가른다. 전북 15개 코드를 전부 포함하면서도
- * 전국(200개+)은 아닌 것 — 40 을 문턱으로 잡아 여유를 둔다.
- */
-function isProvinceWide(zipCds) {
-  return !isNational(zipCds) && zipCds.length <= 40 && JEONBUK_ALL_ZIPS.every((z) => zipCds.includes(z));
-}
-
-/** 이 정책이 파일럿 대상 시 중 어디에 적용되는지. 도 단위면 시별 목록에는 넣지 않는다. */
-function matchingPilotCities(zipCds) {
-  return PILOT_REGIONS.filter((r) => r.zips.some((z) => zipCds.includes(z))).map((r) => r.name);
-}
+const PILOT_CITIES = ["익산시", "전주시", "군산시", "정읍시", "남원시", "김제시"];
+const PILOT_PROVINCE = "전북특별자치도";
 
 /** 한 번에 받을 수 있는 최대 건수와, 그 페이지를 몇 장까지 넘길지. */
 const PAGE_SIZE = 100;
@@ -182,11 +138,8 @@ function pickRecord(p) {
     incomeNote: emptyToNull(p.earnEtcCn),
     documents: emptyToNull(p.sbmsnDcmntCn),
     applyMethod: emptyToNull(p.plcyAplyMthdCn),
-    /**
-     * 적용 시군구 코드 전체 목록. 전국 사업이면 229개가 들어온다 — 지역 분류에만
-     * 쓰고, 커밋되는 문서에는 이 원본 목록을 그대로 옮기지 않는다.
-     */
-    zipCds: String(p.zipCd ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    /** 전국·광역·시군구 분류의 근거. classifyAgency 참고 — zipCd 는 안 쓴다. */
+    agencyScope: classifyAgency(p.rgtrInstCdNm),
   };
 }
 
@@ -346,15 +299,22 @@ try {
     return Number.isFinite(개월차) && 개월차 > 24 ? " ⚠️낡음" : "";
   };
 
-  const national = rows.filter((r) => isNational(r.zipCds));
-  const provinceWide = rows.filter((r) => isProvinceWide(r.zipCds));
-  const alreadyBucketed = new Set([...national, ...provinceWide].map((r) => r.plcyNo));
-  // 전국·도 단위로 이미 잡힌 정책은 시별 목록에서 또 세지 않는다 — 안 그러면
-  // 전국 사업 하나가 파일럿 6개 시 목록 전부에 똑같이 복제돼 진짜 지역 후보를 가린다.
+  // classifyAgency 는 한 정책을 전국·광역·시군구 중 정확히 하나로만 분류하므로
+  // (등록기관명 하나에 시도명이 여러 번 걸릴 수 없다), 예전처럼 "이미 잡힌 정책은
+  // 빼고 세기" 위한 별도 집합이 필요 없다 — 겹칠 수 없는 구조라서다.
+  const national = rows.filter((r) => r.agencyScope.scope === "national");
+  const provinceWide = rows.filter(
+    (r) => r.agencyScope.scope === "province" && r.agencyScope.province === PILOT_PROVINCE
+  );
   const byCity = new Map(
-    PILOT_REGIONS.map((region) => [
-      region.name,
-      rows.filter((r) => !alreadyBucketed.has(r.plcyNo) && matchingPilotCities(r.zipCds).includes(region.name)),
+    PILOT_CITIES.map((city) => [
+      city,
+      rows.filter(
+        (r) =>
+          r.agencyScope.scope === "city" &&
+          r.agencyScope.province === PILOT_PROVINCE &&
+          r.agencyScope.city === city
+      ),
     ])
   );
 
@@ -372,33 +332,34 @@ try {
   };
 
   const nationalSection = section(
-    "전국 (zipCd 200개 이상)",
+    "전국 (등록기관이 중앙부처·산하기관)",
     "> 참고용 — 이번 파일럿(전북 6개 시) 범위 밖이다. 검증하면 6개 시뿐 아니라 전국 모든 사용자에게 적용된다.",
     national
   );
   // 도 단위는 건수가 적고(대개 한 자릿수) 검증 우선순위가 가장 높으므로 상세 카드로,
   // 시별은 건수가 많아 표로 훑을 수 있게 한다.
   const provinceSection = section(
-    "전북특별자치도 도 단위 (전북 15개 시군 전체 적용)",
+    `${PILOT_PROVINCE} 도 단위 (등록기관이 ${PILOT_PROVINCE} 자체)`,
     "> 여기 있는 정책 1건을 검증하면 파일럿 6개 시(익산 포함) 전부를 한 번에 커버한다.",
     provinceWide,
     { detailed: true }
   );
-  const citySections = PILOT_REGIONS.map((region) => section(region.name, null, byCity.get(region.name)));
+  const citySections = PILOT_CITIES.map((city) => section(city, null, byCity.get(city)));
 
   // 파일럿 범위(도 단위 + 시별)만 센다 — 전국 후보는 이번 파일럿의 검증 대상이 아니라 참고용이다.
   const 파일럿신규 = [...provinceSection.fresh, ...citySections.flatMap((s) => s.fresh)];
-  // 시 여러 곳에 걸치는(도 단위는 아니지만 2개 이상 시에 동시 적용되는) 정책이 있으면
-  // 위 시별 합계에 중복으로 잡힐 수 있어, 총 건수는 plcyNo 기준으로 따로 센다.
+  // classifyAgency 는 한 정책을 정확히 한 버킷에만 넣으므로(전국·광역·시군구가
+  // 겹치지 않는다) 이제 이 중복 제거는 사실 필요 없지만, 시 목록이 plcyNo 를
+  // 기준으로 세어야 한다는 것 자체는 여전히 맞는 표현이라 그대로 둔다.
   const 중복제거총건수 = new Set(파일럿신규.map((r) => r.plcyNo)).size;
 
   candidateMd =
     `# 온통청년 주거 정책 후보 — 전국화 Phase 1 파일럿 (전북 6개 시)\n\n` +
     `> 자동 생성 — \`npm run fetch:youth\` 로 갱신한다. 조회일 **${today}**\n` +
-    `> 조회 조건: 대분류 \`주거\` 전건(${rows.length}건)을 받아, 응답의 \`zipCd\` 목록으로\n` +
-    `> 전국(200개+) · 전북 도 단위(15개 전부 포함) · 시별 셋으로 가른다. 파일럿 대상:\n` +
-    `> 익산시(기존) · 전주시 · 군산시 · 정읍시 · 남원시 · 김제시 — zipCd 확인 출처는\n` +
-    `> 파일 상단 PILOT_REGIONS 주석에 있다.\n\n` +
+    `> 조회 조건: 대분류 \`주거\` 전건(${rows.length}건)을 받아, 응답의 등록기관명\n` +
+    `> (\`rgtrInstCdNm\`)으로 전국 · 전북 도 단위 · 시별 셋으로 가른다(zipCd 는 안 쓴다\n` +
+    `> — scripts/discovery-region.mjs 머리말 참고). 파일럿 대상: 익산시(기존) ·\n` +
+    `> 전주시 · 군산시 · 정읍시 · 남원시 · 김제시.\n\n` +
     `**파일럿 범위(도 단위 + 시별) 신규 후보 총 ${중복제거총건수}건** ` +
     `(도 단위 ${provinceSection.fresh.length}건 + 시별 ${citySections.reduce((n, s) => n + s.fresh.length, 0)}건, plcyNo 중복 제거 기준). ` +
     `전국 후보는 참고용 ${nationalSection.fresh.length}건 별도.\n\n` +
@@ -414,6 +375,33 @@ try {
   const outDir = join(REPO_ROOT, "docs", "기획");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "온통청년-주거후보.md"), candidateMd, "utf8");
+
+  // Phase 2 작업량 산정용 — 전북 파일럿과 무관하게, 대분류 `주거` 전체(rows)를
+  // 등록기관 스코프로 다시 센 값이다. 새 API 조회 없이 이미 받은 데이터를
+  // 재분류만 한 것 — scripts/discovery-region.mjs 의 classifyAgency 가 기준이다.
+  const 전국건수 = national.length;
+  const 광역별건수 = new Map();
+  const 시군구건수 = { total: 0, uniqueCities: new Set() };
+  for (const r of rows) {
+    const { scope, province, city } = r.agencyScope;
+    if (scope === "province") 광역별건수.set(province, (광역별건수.get(province) ?? 0) + 1);
+    if (scope === "city") {
+      시군구건수.total++;
+      시군구건수.uniqueCities.add(`${province} ${city}`);
+    }
+  }
+  // "전국" 은 광역명 어디에도 안 걸린 것 전부다 — 진짜 중앙부처(국토교통부 등)와
+  // 등록기관명이 "청년정책관"처럼 소속 없이 텅 빈 경우가 섞여 있다. 후자는
+  // 전국이 확인된 게 아니라 그냥 어디 소속인지 모르는 것이다. 이 둘을 자동으로
+  // 가르는 신뢰할 만한 규칙이 없어(부서명 자체는 어느 지자체에나 있을 수 있다),
+  // "전국" 건수를 볼 때는 그 안에 미상 건이 섞여 있을 수 있음을 감안해야 한다.
+  console.log("\n전국화 Phase 2 범위 산정 (등록기관명 기준 재분류, 신규 API 조회 없음)\n");
+  console.log(`  전국(중앙부처·산하기관, 소속 불명 포함) ${전국건수}건`);
+  console.log(`  광역(시도 자체)          ${[...광역별건수.values()].reduce((a, b) => a + b, 0)}건 · ${광역별건수.size}개 시도`);
+  for (const [province, count] of [...광역별건수.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`    - ${province.padEnd(12, "　")} ${count}건`);
+  }
+  console.log(`  시군구(시도 소속 시·군·구) ${시군구건수.total}건 · ${시군구건수.uniqueCities.size}개 시군구`);
 } catch (err) {
   console.error(`후보 목록 조회 실패 (대조 보고는 정상): ${err.message}`);
 }

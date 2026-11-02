@@ -191,3 +191,57 @@ describe("대출·보증 상품 — 지역 필터", () => {
     }
   });
 });
+
+/**
+ * "저가 주택 공급 안내" 섹션 — loan-products.json 과 같은 지역 필터 회귀 테스트.
+ * data/housing-supply.json 의 실제 두 항목(전주 청춘★별채 = 전북특별자치도
+ * 전주시 전용, 대학생 연합생활관 = 전국)으로 확인한다.
+ */
+describe("저가 주택 공급 안내 — 지역 필터", () => {
+  it("전주 사용자에게는 청춘★별채가 보인다", async () => {
+    saveListing(makeListing({ region: "전북특별자치도 전주시", oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.getByText("2026년 전주 청년만원주택 청춘★별채 예비입주자 모집")).toBeTruthy();
+  });
+
+  it("전주와 무관한 지역 사용자에게는 청춘★별채가 안 보인다", async () => {
+    saveListing(makeListing({ region: "그 외 지역", oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.queryByText("2026년 전주 청년만원주택 청춘★별채 예비입주자 모집")).toBeNull();
+  });
+
+  it("전국 공급(대학생 연합생활관)은 지역과 무관하게 항상 보인다", async () => {
+    for (const region of ["전북특별자치도 익산시", "전북특별자치도 전주시", "그 외 지역"] as const) {
+      saveListing(makeListing({ region, oneTimeMoveCost: 600000 }));
+      saveProfile(makeProfile());
+      const { unmount } = render(<ResultPage />);
+      await screen.findByText(지원금_라벨);
+
+      expect(screen.getByText("대학생 연합생활관(은행권,고양)")).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("이 섹션은 지원금을 계산하지 않는다 — 최대 지원 가능액이 기존 계산과 같다", async () => {
+    // 기본 지역(익산시)에서는 전국 공급(대학생 연합생활관)이 함께 보이면서도
+    // "이 금액은 아래 조합으로 계산했습니다" 항목엔 여전히 정책 두 개(익산시
+    // 전입 청년 이사비 50만원 · 청년 주거급여 분리지급)만 잡혀야 한다 —
+    // 저가 주택 공급이 조용히 합산되면 이 조합에 세 번째 항목이 늘어난다.
+    saveListing(makeListing({ oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.getByText("대학생 연합생활관(은행권,고양)")).toBeTruthy();
+    const 조합카드 = screen.getByText("이 금액은 아래 조합으로 계산했습니다").closest("section");
+    if (!조합카드) throw new Error("조합 카드를 찾지 못했다");
+    expect(within(조합카드 as HTMLElement).queryByText("대학생 연합생활관(은행권,고양)")).toBeNull();
+    expect(amountAfter(지원금_라벨).textContent).toMatch(/304만/);
+  });
+});
