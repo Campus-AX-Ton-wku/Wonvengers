@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   AppShell,
   Button,
+  ContactInfo,
   StickyBottomAction,
   TopBar,
   buttonClass,
@@ -255,6 +256,7 @@ function ExternalApplicationHandoff({
           <HandoffRow label="출처" value={policy.agency} />
           <HandoffRow label="최종 확인" value={policy.verifiedAt ? formatDotDate(policy.verifiedAt) : "제공 정보 없음"} />
         </dl>
+        <ContactInfo contact={policy.contact} variant="inline" />
 
         <p className="rounded-control bg-brand-50 px-3 py-2.5 text-[11px] leading-4 text-brand-700">
           사이트 주소와 운영기관을 확인한 뒤 개인정보를 입력해 주세요.
