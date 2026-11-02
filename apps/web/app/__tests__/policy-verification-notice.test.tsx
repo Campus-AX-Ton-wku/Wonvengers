@@ -44,4 +44,16 @@ describe("정책 상세의 검수 여부 표시", () => {
       "https://example.com/notice"
     );
   });
+
+  it("담당 부서에 전화로 확인했으면 그 날짜를 밝힌다", () => {
+    render(<SourceNotice sourceUrl="https://example.com/notice" verifiedAt="2026-11-04" phoneCheckedAt="2026-11-05" />);
+
+    expect(screen.getByText("담당 부서에 2026.11.05 전화로 확인했습니다.")).toBeTruthy();
+  });
+
+  it("전화 확인 전이면 전화 문구가 없다", () => {
+    출처를_그린다("2026-11-04");
+
+    expect(screen.queryByText(/전화로 확인했습니다/)).toBeNull();
+  });
 });

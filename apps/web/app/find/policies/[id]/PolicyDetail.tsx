@@ -7,6 +7,7 @@ import policiesJson from "@/data/policies.json";
 import {
   AppShell,
   CARD_STATUS_BADGE,
+  ContactInfo,
   Disclosure,
   LinkButton,
   StatusBadge,
@@ -23,7 +24,7 @@ import { getRequiredQuestions } from "@/lib/questions";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
-import type { DiscoveryAnswers, IncomeBracket, PolicyMeta, TagResult } from "@/lib/types";
+import type { DiscoveryAnswers, IncomeBracket, NextRound, PolicyMeta, TagResult } from "@/lib/types";
 
 /**
  * 정책 하나의 전부.
@@ -220,14 +221,16 @@ export default function PolicyDetail({ id }: { id: string }) {
             <DetailRow label="자격 조건" value={result.tag === "확인 필요" ? "추가 확인 필요" : "내 정보와 대조"} />
             <DetailRow label="모집 기간" value={applicationPeriod} />
             <DetailRow label="준비 서류" value="공식 공고 기준" />
-            <DetailRow label="신청 방법" value="공식 사이트" />
+            {!policy.contact && <DetailRow label="신청 방법" value="공식 사이트" />}
           </dl>
         </section>
+        <ContactInfo contact={policy.contact} variant="block" />
 
         {status === "접수 마감" && policy.applicationEnd && (
           <p className="rounded-control bg-ink-100 p-4 text-sm leading-[22px] text-ink-600">
             <strong className="text-ink-900">{formatDotDate(policy.applicationEnd)}에 접수가 끝났습니다.</strong>{" "}
             다음 모집 공고를 기다려야 합니다.
+            <NextRoundNote nextRound={policy.nextRound} />
           </p>
         )}
 
@@ -273,7 +276,11 @@ export default function PolicyDetail({ id }: { id: string }) {
           </Disclosure>
         )}
 
-        <SourceNotice sourceUrl={policy.sourceUrl} verifiedAt={policy.verifiedAt} />
+        <SourceNotice
+          sourceUrl={policy.sourceUrl}
+          verifiedAt={policy.verifiedAt}
+          phoneCheckedAt={policy.contact?.phoneCheckedAt ?? null}
+        />
       </main>
 
       <StickyBottomAction>
@@ -309,9 +316,11 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function SourceNotice({
   sourceUrl,
   verifiedAt,
+  phoneCheckedAt = null,
 }: {
   sourceUrl: string;
   verifiedAt: string | null;
+  phoneCheckedAt?: string | null;
 }) {
   return (
     <section aria-label="이 정보의 출처" className="mt-8 border-t border-ink-200 pt-5">
@@ -335,6 +344,22 @@ export function SourceNotice({
           <span>아직 공고 원문과 대조하지 않았습니다. 신청 전에 원문을 직접 확인하세요.</span>
         </p>
       )}
+      {phoneCheckedAt && (
+        <p className="mt-1 flex items-start gap-1.5 text-xs text-ink-500">
+          <ShieldCheck size={ICON_SM - 2} aria-hidden="true" className="mt-0.5 shrink-0" />
+          <span>담당 부서에 {formatDotDate(phoneCheckedAt)} 전화로 확인했습니다.</span>
+        </p>
+      )}
     </section>
+  );
+}
+
+/** 마감된 정책의 다음 회차. 공고나 팀 전화로 확인한 것만 — 없으면 그리지 않는다. */
+export function NextRoundNote({ nextRound }: { nextRound: NextRound | null }) {
+  if (!nextRound) return null;
+  return (
+    <span className="mt-1 block text-sm font-bold text-brand-700">
+      {nextRound.text} · {formatDotDate(nextRound.confirmedAt)} {nextRound.via} 확인
+    </span>
   );
 }
