@@ -12,6 +12,7 @@ import { formatDotDate, isWithinWindow } from "@/lib/date";
 import {
   AppShell,
   Button,
+  ContactInfo,
   Disclosure,
   ResultSummary,
   TopBar,
@@ -190,6 +191,7 @@ export default function ResultPage() {
               </ExternalRefLink>
               <ExternalRefLink href={product.applyUrl}>신청 페이지로 이동</ExternalRefLink>
             </div>
+            <ContactInfo contact={product.contact} variant="inline" />
             <Disclosure label="검수 상태">
               <p className="text-xs text-ink-500">
                 {product.effectiveYear}년 기준 ·{" "}
@@ -229,6 +231,7 @@ export default function ResultPage() {
               </ExternalRefLink>
               <ExternalRefLink href={item.applyUrl}>신청 페이지로 이동</ExternalRefLink>
             </div>
+            <ContactInfo contact={item.contact} variant="inline" />
             <Disclosure label="검수 상태">
               <p className="text-xs text-ink-500">
                 {item.effectiveYear}년 기준 ·{" "}

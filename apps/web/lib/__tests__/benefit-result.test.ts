@@ -25,6 +25,8 @@ function makePolicyResult(overrides: Partial<PolicyResult> = {}): PolicyResult {
       verifiedAt: "2026-08-30",
       effectiveYear: 2026,
       notes: "",
+      contact: null,
+      nextRound: null,
     },
     status: "예상적용",
     checks: [],

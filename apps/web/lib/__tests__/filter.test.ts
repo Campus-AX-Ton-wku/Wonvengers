@@ -33,6 +33,8 @@ const 익산정책: PolicyMeta = {
   verifiedAt: "2026-08-13",
   effectiveYear: 2026,
   notes: "테스트",
+  contact: null,
+  nextRound: null,
 };
 
 // 전라북도 전체 대상

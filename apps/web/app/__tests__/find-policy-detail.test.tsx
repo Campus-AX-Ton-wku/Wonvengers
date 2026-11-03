@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PolicyDetail from "@/app/find/policies/[id]/PolicyDetail";
 import policiesJson from "@/data/policies.json";
@@ -47,8 +47,15 @@ describe("/find/policies/[id]", () => {
     await render상세("iksan-newcomer-moving-cost-support");
 
     expect(screen.getByText("만 18~39세")).toBeTruthy();
-    // 상시 접수 사업 — 마감일이 null 이면 '상시' 라고 적는다
-    expect(screen.getByText("2025.10.13 ~ 상시")).toBeTruthy();
+    // 2026년 회차는 2026-05-14 예산 소진으로 마감됐다 (2026-11-03 원문 재대조)
+    expect(screen.getByText("2026.01.02 ~ 2026.05.14")).toBeTruthy();
+  });
+
+  it("마감일이 없는 상시 사업은 '상시' 라고 적는다", async () => {
+    saveAnswers(익산_대학생);
+    await render상세("youth-housing-benefit-split-payment");
+
+    expect(screen.getByText("2026.01.01 ~ 상시")).toBeTruthy();
   });
 
   it("접수가 끝난 정책은 언제 끝났는지와 다음에 할 일을 말한다", async () => {
@@ -77,15 +84,24 @@ describe("/find/policies/[id]", () => {
 
   it("출처와 내부 신청 준비 화면으로 가는 길이 있다", async () => {
     saveAnswers(익산_대학생);
+    // 접수 중인 정책이어야 '신청 준비하기' 가 있다. 익산 이사비는 2026-05-14 예산 소진
+    // 마감이라(2026-11-03 원문 재대조) 접수 중이던 날로 날짜를 고정한다. Date 만 고정해야
+    // findBy* 의 대기 타이머가 그대로 돈다.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-04-01T12:00:00+09:00"));
     const policy = policies.find((p) => p.id === "iksan-newcomer-moving-cost-support")!;
-    await render상세(policy.id);
+    try {
+      await render상세(policy.id);
 
-    expect(screen.getByRole("link", { name: "공고 원문 →" }).getAttribute("href")).toBe(
-      policy.sourceUrl
-    );
-    expect(screen.getByRole("link", { name: "신청 준비하기" }).getAttribute("href")).toBe(
-      `/find/policies/${policy.id}/prepare`
-    );
+      expect(screen.getByRole("link", { name: "공고 원문 →" }).getAttribute("href")).toBe(
+        policy.sourceUrl
+      );
+      expect(screen.getByRole("link", { name: "신청 준비하기" }).getAttribute("href")).toBe(
+        `/find/policies/${policy.id}/prepare`
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("모든 정책에 상세 화면이 있다 — 카드가 가리키는 곳이 비어 있으면 안 된다", async () => {

@@ -148,7 +148,7 @@ describe("익산시 전입 청년 이사비·중개보수 지원사업", () => {
       iksanMoving,
       makeProfile({ birthDate: "2000-01-01" }),
       makeListing({ oneTimeMoveCost: 300000 }),
-      TODAY
+      OPEN_PERIOD_DAY // 2026년 회차는 2026-05-14 예산 소진 마감 — 접수 중이던 날로 판정
     );
     expect(result.status).toBe("예상적용");
     expect(result.estimatedAmount).toBe(300000);
@@ -159,7 +159,7 @@ describe("익산시 전입 청년 이사비·중개보수 지원사업", () => {
       iksanMoving,
       makeProfile({ birthDate: "2000-01-01" }),
       makeListing({ oneTimeMoveCost: 800000 }),
-      TODAY
+      OPEN_PERIOD_DAY // 2026년 회차는 2026-05-14 예산 소진 마감 — 접수 중이던 날로 판정
     );
     expect(result.estimatedAmount).toBe(500000);
   });
@@ -169,7 +169,7 @@ describe("익산시 전입 청년 이사비·중개보수 지원사업", () => {
       iksanMoving,
       makeProfile({ birthDate: "1985-01-01" }),
       makeListing({ oneTimeMoveCost: 300000 }),
-      TODAY
+      OPEN_PERIOD_DAY // 2026년 회차는 2026-05-14 예산 소진 마감 — 접수 중이던 날로 판정
     );
     expect(result.status).toBe("대상아님");
   });

@@ -31,6 +31,8 @@ function makeResult(overrides: Partial<PolicyMeta> & { status: PolicyResult["sta
     verifiedAt: null,
     effectiveYear: 2026,
     notes: "",
+    contact: null,
+    nextRound: null,
     ...policyOverrides,
   };
   return {

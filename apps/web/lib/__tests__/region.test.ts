@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   REGION_HIERARCHY,
   REGION_OPTIONS,
+  consultCentersForRegion,
   housingSupplyForRegion,
   isRegionValue,
   loanProductsForRegion,
@@ -74,6 +75,8 @@ describe("안내 상품 지역 매칭", () => {
     verifiedAt: null,
     effectiveYear: 2026,
     notes: "테스트",
+    contact: null,
+    nextRound: null,
   });
 
   it("대출·보증 상품도 같은 지역 규칙으로 거른다", () => {
@@ -108,11 +111,28 @@ describe("안내 상품 지역 매칭", () => {
       verifiedAt: null,
       effectiveYear: 2026,
       notes: "테스트",
+      contact: null,
+      nextRound: null,
     });
     const items = [housing("national", "전국"), housing("jeonju", "전북특별자치도 전주시")];
     expect(housingSupplyForRegion(items, "전북특별자치도 전주시").map((item) => item.id)).toEqual([
       "national",
       "jeonju",
     ]);
+  });
+});
+
+describe("consultCentersForRegion", () => {
+  const center = (id: string, regionScope: string) => ({
+    id, name: id, regionScope, phone: null, url: null, hours: null, topics: [], verifiedAt: null, notes: "",
+  });
+  const centers = [center("nation", "전국"), center("jb", "전북특별자치도"), center("iksan", "전북특별자치도 익산시"), center("gunsan", "전북특별자치도 군산시")];
+
+  it("시군구 사용자는 전국·소속 시도·자기 시군구 창구를 받는다", () => {
+    expect(consultCentersForRegion(centers, "전북특별자치도 익산시").map((c) => c.id)).toEqual(["iksan", "jb", "nation"]);
+  });
+
+  it("다른 시군구 창구는 받지 않는다", () => {
+    expect(consultCentersForRegion(centers, "전북특별자치도 익산시").map((c) => c.id)).not.toContain("gunsan");
   });
 });

@@ -22,7 +22,7 @@ describe("정책 상세의 검수 여부 표시", () => {
   it("검수한 정책은 대조한 날짜를 밝힌다", () => {
     출처를_그린다("2026-08-30");
 
-    expect(screen.getByText("팀이 2026-08-30에 공고 원문과 대조했습니다.")).toBeTruthy();
+    expect(screen.getByText("팀이 2026.08.30에 공고 원문과 대조했습니다.")).toBeTruthy();
   });
 
   it("검수 전 정책은 원문을 직접 확인하라고 경고한다", () => {
@@ -43,5 +43,17 @@ describe("정책 상세의 검수 여부 표시", () => {
     expect(screen.getByRole("link", { name: "공고 원문 →" }).getAttribute("href")).toBe(
       "https://example.com/notice"
     );
+  });
+
+  it("담당 부서에 전화로 확인했으면 그 날짜를 밝힌다", () => {
+    render(<SourceNotice sourceUrl="https://example.com/notice" verifiedAt="2026-11-04" phoneCheckedAt="2026-11-05" />);
+
+    expect(screen.getByText("담당 부서에 2026.11.05 전화로 확인했습니다.")).toBeTruthy();
+  });
+
+  it("전화 확인 전이면 전화 문구가 없다", () => {
+    출처를_그린다("2026-11-04");
+
+    expect(screen.queryByText(/전화로 확인했습니다/)).toBeNull();
   });
 });
