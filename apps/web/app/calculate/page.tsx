@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
@@ -9,10 +9,12 @@ import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
-import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
+import { REGION_HIERARCHY, isRegionValue, policiesForRegion, regionDisplayName } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
+import { useStepParam } from "@/lib/navigation";
 import {
+  AnswerSummaryBar,
   AppShell,
   Button,
   ChoiceCard,
@@ -54,10 +56,33 @@ const EMPTY: ListingInput = {
   confirmedMatchesActualContract: false,
 };
 
+/** 단계 주소 값(?s=). 사람이 읽는 1·2 다. */
+const CALC_STEPS = ["1", "2"] as const;
+type CalcStep = (typeof CALC_STEPS)[number];
+
+/** useSearchParams 를 쓰므로 정적 export 에서 본문을 Suspense 안에 둔다. */
 export default function InputPage() {
+  return (
+    <Suspense fallback={<CalculateLoading />}>
+      <CalculateSteps />
+    </Suspense>
+  );
+}
+
+function CalculateLoading() {
+  return (
+    <AppShell>
+      <TopBar backHref="/find/policies" />
+      <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
+    </AppShell>
+  );
+}
+
+function CalculateSteps() {
   const router = useRouter();
   const [form, setForm] = useState<ListingInput>(EMPTY);
-  const [step, setStep] = useState(0);
+  /** 저장된 입력을 다 불러왔는가. 그 전에 ?s=2 를 판정하면 빈 폼이라 늘 1단계로 튕긴다. */
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** 1층에서 고른 지역을 그대로 이어받았는지. 사용자에게 알려주기 위한 표시다. */
   const [regionFromFloor1, setRegionFromFloor1] = useState(false);
@@ -91,6 +116,7 @@ export default function InputPage() {
       });
       setRegionFromFloor1(regionFromAnswers !== null);
       setContractTypeChosen(true); // 저장된 입력에는 이미 고른 계약 형태가 있다
+      setLoaded(true);
       return;
     }
 
@@ -108,6 +134,7 @@ export default function InputPage() {
       setContractTypeChosen(true);
       setContractTypeFromFloor1(true);
     }
+    setLoaded(true);
   }, []);
 
   // 이사비 지원 정책이 있는 지역에서만 일시 지출을 묻는다 (F1-4).
@@ -121,6 +148,19 @@ export default function InputPage() {
     const scoped = form.region ? policiesForRegion(policies, form.region) : policies;
     return 2 + buildQuestionSteps(getRequiredQuestions(scoped)).length;
   }, [form.region]);
+
+  const { step: stepKey, go } = useStepParam<CalcStep>("s", CALC_STEPS, {
+    ready: loaded,
+    // 단계별 답 기록이 없으므로 주소가 없으면 지금처럼 첫 단계다.
+    firstUnanswered: "1",
+    // 1단계가 비었는데 ?s=2 로 바로 들어오면 1단계로 돌린다.
+    isReachable: (k) => k === "1" || validate(0) === null,
+  });
+  /** 화면 분기용 0/1. */
+  const step = stepKey === "1" ? 0 : 1;
+
+  // 뒤로가기로 단계가 바뀌면 떠난 단계의 오류 문구를 남기지 않는다.
+  useEffect(() => setError(null), [stepKey]);
 
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
     if (key === "region") {
@@ -168,21 +208,29 @@ export default function InputPage() {
     if (message) return setError(message);
     setError(null);
     saveListing(form); // 스텝마다 저장 — 새로고침해도 입력이 남는다.
-    if (step === 0) return setStep(1);
+    if (step === 0) return go("2");
     router.push("/eligibility");
-  }
-
-  function handleBack() {
-    setError(null);
-    // 첫 스텝에서는 앱바 화살표가 아무 일도 하지 않았다 — 화살표가 보이는데
-    // 반응이 없으면 고장으로 읽힌다. 1층 목록이 직전 화면이다.
-    if (step === 0) return router.push("/find/policies");
-    setStep(step - 1);
   }
 
   return (
     <AppShell>
-      <TopBar onBack={handleBack} backLabel="이전 단계로" />
+      <TopBar backHref="/find/policies" />
+      {/* 2단계에서 1단계 답이 안 보이면 무엇을 입력했는지 기억에 기대야 한다. 누르면 1단계로.
+          계약 형태는 따로 두지 않는다 — 마지막 항목("월세 35만원"·"연세 480만원")이 이미 말한다. */}
+      {step === 1 && (
+        <AnswerSummaryBar
+          items={[
+            { key: "region", label: "거주 예정 지역", value: regionDisplayName(form.region), href: "/calculate?s=1" },
+            { key: "deposit", label: "보증금", value: `보증금 ${formatKoreanMoney(form.deposit)}`, href: "/calculate?s=1" },
+            {
+              key: "rent",
+              label: form.contractType,
+              value: `${form.contractType} ${formatKoreanMoney(form.rentOrYearlyAmount)}`,
+              href: "/calculate?s=1",
+            },
+          ]}
+        />
+      )}
 
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (

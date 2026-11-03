@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DUPLICATE_DISTRICT_NAMES,
   REGION_HIERARCHY,
   REGION_OPTIONS,
   consultCentersForRegion,
@@ -9,6 +10,7 @@ import {
   policiesForRegion,
   policyAppliesToRegion,
   provinceForRegion,
+  regionDisplayName,
 } from "@/lib/region";
 import policiesData from "@/data/policies.json";
 import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "@/lib/types";
@@ -134,5 +136,30 @@ describe("consultCentersForRegion", () => {
 
   it("다른 시군구 창구는 받지 않는다", () => {
     expect(consultCentersForRegion(centers, "전북특별자치도 익산시").map((c) => c.id)).not.toContain("gunsan");
+  });
+});
+
+describe("regionDisplayName", () => {
+  it("여러 시·도에 같은 이름이 있는 시·군·구를 REGION_HIERARCHY 에서 센다", () => {
+    expect([...DUPLICATE_DISTRICT_NAMES].sort()).toEqual(
+      ["강서구", "고성군", "남구", "동구", "북구", "서구", "중구"].sort()
+    );
+  });
+
+  it("겹치는 이름에는 시·도 약칭을 붙인다", () => {
+    expect(regionDisplayName("부산광역시 중구")).toBe("부산 중구");
+    expect(regionDisplayName("서울특별시 강서구")).toBe("서울 강서구");
+    expect(regionDisplayName("강원특별자치도 고성군")).toBe("강원 고성군");
+    expect(regionDisplayName("경상남도 고성군")).toBe("경남 고성군");
+  });
+
+  it("겹치지 않으면 시·군·구 이름만", () => {
+    expect(regionDisplayName("전북특별자치도 익산시")).toBe("익산시");
+    expect(regionDisplayName("경기도 광주시")).toBe("광주시");
+    expect(regionDisplayName("세종특별자치시")).toBe("세종");
+  });
+
+  it("모르는 값은 그대로 돌려준다 — 지어내지 않는다", () => {
+    expect(regionDisplayName("그 외 지역")).toBe("그 외 지역");
   });
 });

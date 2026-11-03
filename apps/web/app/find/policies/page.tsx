@@ -72,7 +72,7 @@ export default function FindPoliciesPage() {
 
   return (
     <AppShell className="step-in">
-      <TopBar backHref="/find/result" backLabel="결과 요약으로 돌아가기" />
+      <TopBar backHref="/find/result" />
       <main className="pb-10">
 
       {!loaded || !asOf ? (

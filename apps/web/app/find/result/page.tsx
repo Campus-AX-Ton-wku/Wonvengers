@@ -62,7 +62,7 @@ export default function FindResultPage() {
 
   return (
     <AppShell>
-      <TopBar backHref="/find" backLabel="질문으로 돌아가기" />
+      <TopBar backHref="/find" />
 
       {!loaded ? (
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
