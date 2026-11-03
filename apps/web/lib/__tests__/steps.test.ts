@@ -25,6 +25,14 @@ describe("질문 그룹", () => {
       );
     }
   });
+
+  it("모든 질문에 접힌 줄에 쓸 짧은 라벨이 있다", () => {
+    for (const q of Object.values(QUESTION_REGISTRY)) {
+      expect(q.shortLabel.trim(), q.key).not.toBe("");
+      // 접힌 줄은 "라벨 · 답 ✎" 한 줄이다. 질문 문장을 그대로 쓰면 줄이 넘친다.
+      expect(q.shortLabel.length, q.key).toBeLessThanOrEqual(14);
+    }
+  });
 });
 
 describe("지역 필터", () => {

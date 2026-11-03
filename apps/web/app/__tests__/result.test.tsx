@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import ResultPage from "@/app/result/page";
 import { saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+import { routerMock } from "./navigation-mock";
 
 /**
  * 결과 화면의 금액 표기와 강조 위계.
@@ -244,5 +242,14 @@ describe("저가 주택 공급 안내 — 지역 필터", () => {
     if (!조합카드) throw new Error("조합 카드를 찾지 못했다");
     expect(within(조합카드 as HTMLElement).queryByText("대학생 연합생활관(은행권,고양)")).toBeNull();
     expect(amountAfter(지원금_라벨).textContent).toMatch(/254만 4,000원/);
+  });
+});
+
+describe("결과 화면 하단", () => {
+  it("'답변 수정하기' 는 판정 질문 첫 묶음 주소로 간다 — 화살표(뒤로)와 목적지가 다르다", async () => {
+    renderWithInput();
+    await userEvent.setup().click(await screen.findByRole("button", { name: "답변 수정하기" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/eligibility?g=1");
   });
 });

@@ -1,17 +1,19 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EligibilityPage from "@/app/eligibility/page";
 import CalculatePage from "@/app/calculate/page";
-import { loadAnswers, loadProfile, saveAnswers, saveListing, saveProfile } from "@/lib/storage";
+import {
+  EMPTY_ANSWERS,
+  loadAnswers,
+  loadProfile,
+  saveAnswers,
+  saveListing,
+  saveProfile,
+} from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
-
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
-vi.mock("next/navigation", () => {
-  const router = { push: pushMock, replace: vi.fn() };
-  return { useRouter: () => router };
-});
+import { resetNavigation, routerMock } from "./navigation-mock";
 
 /**
  * 사용자 흐름에서 깨져 있던 세 가지를 고정한다.
@@ -23,28 +25,31 @@ vi.mock("next/navigation", () => {
  */
 
 beforeEach(() => {
-  pushMock.mockClear();
+  resetNavigation("/eligibility");
   // 1층 답변이 테스트 사이로 새면 2층 생년월일 프리필이 앞 테스트에 물든다.
   window.localStorage.clear();
   saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 describe("뒤로가기", () => {
+  // 링크로 바로 들어온 사람(이 탭의 첫 화면). 앞 화면이 앱 안이면 history.back() 이다.
   it("계약 조건 첫 스텝에서 뒤로가면 1층 목록으로 돌아간다", async () => {
+    resetNavigation("/calculate");
     const user = userEvent.setup();
     render(<CalculatePage />);
 
     await user.click(screen.getByLabelText("이전 단계로"));
-    expect(pushMock).toHaveBeenCalledWith("/find/policies");
+    expect(routerMock.replace).toHaveBeenCalledWith("/find/policies");
   });
 
   it("판정 질문 첫 스텝에서 뒤로가면 계약 조건으로 돌아간다", async () => {
     const user = userEvent.setup();
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await user.click(screen.getByLabelText("이전 단계로"));
-    expect(pushMock).toHaveBeenCalledWith("/calculate");
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
   });
 });
 
@@ -93,7 +98,7 @@ async function pickBirthDate(
 describe("생년월일 선택 (휠 피커)", () => {
   async function openFirstStep() {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
   }
 
   it("연도 목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
@@ -142,12 +147,13 @@ describe("생년월일 선택 (휠 피커)", () => {
     expect(loadProfile()?.birthDate).toBe("2003-02-28");
   });
 
-  it("고른 날짜를 트리거 버튼에 그대로 보여준다", async () => {
+  it("고른 날짜는 접힌 줄에 보이고, 누르면 트리거 버튼에 그대로 보인다", async () => {
     const user = userEvent.setup();
     await openFirstStep();
 
     expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
     await pickBirthDate(user, 2003, 8, 12);
+    await user.click(screen.getByRole("button", { name: "생년월일 고치기: 2003.08.12" }));
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
 });
@@ -171,7 +177,7 @@ describe("1층에서 받은 생년월일", () => {
   it("1층에서 답한 생년월일이 채워진 채로 열린다", async () => {
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -180,7 +186,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await user.click(screen.getByRole("button", { name: "다음" }));
 
@@ -191,14 +197,14 @@ describe("1층에서 받은 생년월일", () => {
   it("왜 또 묻는지 변명하는 문구가 없다", async () => {
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.queryByText(/앞에서 만 .*세라고 답하셨어요/)).toBeNull();
   });
 
   it("1층을 건너뛴 사람에게는 빈 채로 묻는다", async () => {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
   });
@@ -209,7 +215,7 @@ describe("1층에서 받은 생년월일", () => {
     saveProfile(makeProfile({ birthDate: "" }));
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -225,7 +231,7 @@ describe("1층에서 받은 생년월일", () => {
     saveProfile(makeProfile({ birthDate: "1999-05-05" })); // 2층에 남아 있던 옛 값
     saveAnswers(일층답변); // 1층에서 2003-08-12 로 고쳐 왔다
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -236,7 +242,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await pickBirthDate(user, 1995, 7, 20);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -250,7 +256,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await pickBirthDate(user, 1995, 7, 20);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -267,7 +273,7 @@ describe("숫자 질문의 '모름'", () => {
 
   async function goToIncomeStep(user: ReturnType<typeof userEvent.setup>) {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
     // 1번 스텝(기본 자격)에는 생년월일이 있어 넘어가려면 채워야 한다
     await pickBirthDate(user, 2003, 8, 12);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -338,5 +344,333 @@ describe("숫자 질문의 '모름'", () => {
 
     expect(numberInputs()[0].getAttribute("placeholder")).toBeNull();
     expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("/eligibility 묶음 주소", () => {
+  it("주소에 묶음이 없으면 ?g=1 로 replace 한다", async () => {
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(routerMock.replace).toHaveBeenCalledWith("/eligibility?g=1");
+  });
+
+  it("'다음' 은 다음 묶음 주소를 push 한다", async () => {
+    const user = userEvent.setup();
+    saveAnswers({ ...EMPTY_ANSWERS, birthDate: "2003-08-12" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/eligibility?g=2");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("가구와 소득을 알려주세요");
+  });
+
+  it("생년월일 없이 ?g=3 으로 들어오면 첫 묶음으로 replace 한다", async () => {
+    resetNavigation("/eligibility?g=3");
+    render(<EligibilityPage />);
+
+    expect(await screen.findByRole("heading", { name: "기본 자격을 확인할게요" })).toBeTruthy();
+    expect(routerMock.replace).toHaveBeenCalledWith("/eligibility?g=1");
+  });
+
+  it("휴대폰 뒤로가기로 앞 묶음에 돌아온다", async () => {
+    const user = userEvent.setup();
+    saveAnswers({ ...EMPTY_ANSWERS, birthDate: "2003-08-12" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    window.history.back();
+
+    expect(await screen.findByRole("heading", { name: "기본 자격을 확인할게요" })).toBeTruthy();
+  });
+});
+
+describe("/eligibility 진행 표시·답 접기", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("요약 줄 앞에 '1/3 기본 자격' 처럼 어디쯤인지 말한다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByText("1/3 기본 자격")).toBeTruthy();
+  });
+
+  it("다음 묶음에서는 앞 묶음이 항목으로 남고, 누르면 그 묶음 주소로 간다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.getByText("2/3 가구 · 소득")).toBeTruthy();
+    const link = screen.getByRole("link", { name: "1단계 고치기: 기본 자격" });
+    expect(link.getAttribute("href")).toBe("/eligibility?g=1");
+  });
+
+  it("예/아니오에 답하면 그 질문이 한 줄로 접히고, 누르면 다시 펼친다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const 처음 = screen.getAllByRole("button", { name: "그렇다" }).length;
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    const 접힌줄 = screen.getByRole("button", { name: "부모와 따로 거주 고치기: 그렇다" });
+    expect(screen.getAllByRole("button", { name: "그렇다" })).toHaveLength(처음 - 1);
+    // 누른 선택지가 사라졌으므로 포커스는 접힌 줄로 옮긴다 — body 로 떨어지면 안 된다.
+    expect(document.activeElement).toBe(접힌줄);
+
+    await user.click(접힌줄);
+    expect(screen.getAllByRole("button", { name: "그렇다" })).toHaveLength(처음);
+  });
+
+  it("접힌 줄을 눌러 펼치면 포커스가 그 질문 제목으로 간다 — body 로 떨어지면 안 된다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+    await user.click(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 그렇다" }));
+
+    expect(document.activeElement).toBe(
+      screen.getByText("부모와 별도로 거주하나요?", { selector: "label" })
+    );
+  });
+
+  it("답하면 '다음' 없이도 저장된다 — 첫 묶음에서 화살표로 /calculate 에 가도 답이 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+    expect(loadProfile()?.livesApartFromParents).toBe(true);
+
+    await user.click(screen.getByLabelText("이전 단계로"));
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
+    expect(loadProfile()?.livesApartFromParents).toBe(true);
+  });
+
+  it("불러오기 전의 빈 프로필로 저장된 답을 덮지 않는다", async () => {
+    saveAnswers(일층);
+    saveProfile(makeProfile({ livesApartFromParents: false }));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(loadProfile()?.livesApartFromParents).toBe(false);
+  });
+
+  it("질문 제목의 포커스 표시는 공용 focus-ring 이다 — 옅은 brand-100 링은 지면과 3:1 이 안 된다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    const title = screen.getByText("부모와 별도로 거주하나요?", { selector: "label" });
+    expect(title.className).toContain("focus-ring");
+    expect(title.className).not.toContain("ring-brand-100");
+  });
+
+  it("'모름' 도 답이다 — 고르면 접힌다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "모름" })[0]);
+    expect(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 모름" })).toBeTruthy();
+  });
+
+  it("숫자 칸은 치는 중에 접지 않는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    await user.type(screen.getAllByRole("spinbutton")[0], "2");
+    expect(screen.queryByRole("button", { name: /^가구원 수 고치기/ })).toBeNull();
+  });
+
+  it("답하면 다음 질문을 화면 가운데로 데려온다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    expect(scroll).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+    expect((scroll.mock.contexts.at(-1) as HTMLElement).textContent).toContain(
+      "해당 주소로 전입신고가 가능한가요?"
+    );
+  });
+
+  it("움직임 줄이기 설정이면 즉시 스크롤한다", async () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "auto" });
+  });
+
+  it("생년월일 없이 '다음' 을 누르면 그 질문으로 스크롤하고 제목에 포커스한다 — 아래 한 줄 오류도 남긴다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(document.activeElement).toBe(screen.getByText("생년월일", { selector: "label" }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
+  });
+});
+
+/**
+ * 열기만 하고 떠난 사람의 저장소는 그대로여야 한다. 모두 '모름' 인 프로필이 저장되면
+ * 정책 상세·결과 화면이 그 사람을 2층을 마친 사람으로 보고 모름투성이 판정을 보여준다.
+ */
+describe("/eligibility 열기만 하면 저장하지 않는다", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+
+  it("답하지 않고 화살표로 떠나면 프로필이 저장되지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByLabelText("이전 단계로"));
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
+    expect(window.localStorage.getItem("housing-benefit:profile")).toBeNull();
+  });
+
+  it("1층 생년월일이 채워져 열려도, 답하지 않으면 프로필이 저장되지 않는다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(window.localStorage.getItem("housing-benefit:profile")).toBeNull();
+    expect(loadAnswers()).toEqual(일층);
+  });
+
+  it("하나라도 답하면 그때부터 저장한다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "아니다" })[0]);
+    expect(loadProfile()?.livesApartFromParents).toBe(false);
+  });
+
+  it("저장된 프로필이 있던 사람은 지금처럼 계속 저장한다 — 1층에서 고친 생년월일이 바로 들어간다", async () => {
+    saveProfile(makeProfile({ birthDate: "1999-05-05" }));
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(loadProfile()?.birthDate).toBe("2003-08-12");
+  });
+});
+
+/**
+ * 손대지 않은 질문의 값은 판정상 '모름' 이지만, 화면에서는 아무것도 고르지 않은 상태다.
+ * 예전에는 기본값이 'unknown' 이라 '모름' 카드가 고른 것처럼 칠해져 있었다.
+ */
+describe("/eligibility 고르기 전에는 아무 카드도 선택돼 보이지 않는다", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+  const 질문칸 = (label: string) =>
+    screen.getByText(label, { selector: "label" }).parentElement as HTMLElement;
+  const 눌린카드 = (root: HTMLElement = document.body) =>
+    Array.from(root.querySelectorAll('button[aria-pressed="true"]')).map((b) => b.textContent);
+
+  it("처음 열면 예/아니오/모름 어느 카드도 눌려 있지 않다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+    expect(눌린카드()).toEqual([]);
+  });
+
+  it("숫자 질문의 '모름' 도 고르기 전에는 눌려 있지 않다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+    expect(눌린카드()).toEqual([]);
+  });
+
+  it("'모름' 을 직접 고르면 그 질문의 '모름' 만 눌린다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "모름" }));
+    await user.click(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 모름" }));
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["모름"]);
+    expect(눌린카드()).toEqual(["모름"]);
+    expect(loadProfile()?.livesApartFromParents).toBe("unknown");
+  });
+
+  it("다시 들어오면 직접 고른 답만 눌려 있다 — '모름' 으로 고른 것도 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "아니다" }));
+    await user.click(within(질문칸("해당 주소로 전입신고가 가능한가요?")).getByRole("button", { name: "모름" }));
+    first.unmount();
+
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["아니다"]);
+    expect(눌린카드(질문칸("해당 주소로 전입신고가 가능한가요?"))).toEqual(["모름"]);
+    expect(눌린카드()).toEqual(["아니다", "모름"]);
+  });
+
+  it("답한 질문 기록이 없는 옛 프로필은 모름이 아닌 값만 고른 것으로 본다", async () => {
+    saveAnswers(일층);
+    saveProfile({
+      ...makeProfile(),
+      livesApartFromParents: false,
+      canRegisterResidence: "unknown",
+      hasNoHouse: "unknown",
+      isContractHolder: "unknown",
+    });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["아니다"]);
+    expect(눌린카드(질문칸("해당 주소로 전입신고가 가능한가요?"))).toEqual([]);
+  });
+
+  it("손대지 않은 질문은 판정에 여전히 '모름' 으로 저장된다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "그렇다" }));
+    expect(loadProfile()?.canRegisterResidence).toBe("unknown");
   });
 });

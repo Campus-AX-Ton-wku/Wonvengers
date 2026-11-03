@@ -119,7 +119,7 @@ export default function PolicyDetail({ id }: { id: string }) {
   if (!policy) {
     return (
       <AppShell>
-        <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+        <TopBar backHref="/find/policies" />
         <p className="mt-10 text-center text-sm text-ink-500">찾을 수 없는 지원금입니다.</p>
       </AppShell>
     );
@@ -142,7 +142,7 @@ export default function PolicyDetail({ id }: { id: string }) {
 
   return (
     <AppShell className="step-in">
-      <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+      <TopBar backHref="/find/policies" />
       <main className="flex flex-col gap-3 pb-6 pt-1">
         <header>
           <p className="text-[11px] font-bold leading-4 text-ink-500">혜택 상세</p>
@@ -283,15 +283,17 @@ export default function PolicyDetail({ id }: { id: string }) {
         />
       </main>
 
-      <StickyBottomAction>
-        {status === "신청 가능" ? (
-          <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
-        ) : status === "확인 필요" ? (
-          <LinkButton href={조건수정링크} size="screen">조건 확인하기</LinkButton>
-        ) : (
-          <LinkButton href="/find/policies" size="screen" variant="secondary">다른 혜택 보기</LinkButton>
-        )}
-      </StickyBottomAction>
+      {/* 하단은 앞으로 가는 행동만 둔다. 마감·대상 아님은 지금 할 일이 없고, '다른 혜택
+          보기' 는 왼쪽 위 화살표와 같은 곳이라 두지 않는다 (2026-11-03 단계 이동 설계). */}
+      {(status === "신청 가능" || status === "확인 필요") && (
+        <StickyBottomAction>
+          {status === "신청 가능" ? (
+            <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
+          ) : (
+            <LinkButton href={조건수정링크} size="screen">조건 확인하기</LinkButton>
+          )}
+        </StickyBottomAction>
+      )}
     </AppShell>
   );
 }

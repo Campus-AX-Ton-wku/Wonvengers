@@ -130,7 +130,9 @@ const SHOTS = [
     full: true,
   },
   { name: "mobile-calculate", path: "/calculate", full: true },
+  { name: "mobile-calculate-2", path: "/calculate?s=2", full: true },
   { name: "mobile-eligibility", path: "/eligibility", full: true },
+  { name: "mobile-eligibility-2", path: "/eligibility?g=2", full: true },
   { name: "mobile-result", path: "/result", full: true },
 ];
 
