@@ -6,7 +6,6 @@ import {
   ChoiceCard,
   LinkButton,
   MoneyInput,
-  StickyBottomAction,
   TopBar,
 } from "@/app/components";
 import { Check, ExternalLink, ICON_SM, Info, TriangleAlert, X } from "@/app/components/icons";
@@ -97,7 +96,7 @@ export default function RequirementReview({ policy }: { policy: PolicyMeta }) {
     <AppShell className="step-in">
       <TopBar backHref="/result" />
 
-      <main className="flex flex-1 flex-col gap-5 pb-28 pt-5">
+      <main className="flex flex-1 flex-col gap-5 pb-10 pt-5">
         <header>
           <p className="text-xs font-bold text-warn-800">{policy.name}</p>
           <h1 className="mt-1 text-[24px] font-extrabold leading-snug text-ink-900">
@@ -165,11 +164,6 @@ export default function RequirementReview({ policy }: { policy: PolicyMeta }) {
         </a>
       </main>
 
-      <StickyBottomAction>
-        <LinkButton href="/result" size="screen">
-          결과로 돌아가기
-        </LinkButton>
-      </StickyBottomAction>
     </AppShell>
   );
 }

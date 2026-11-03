@@ -124,6 +124,15 @@ describe("/find/policies/[id]", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "이전 단계로" }));
     expect(routerMock.replace).toHaveBeenCalledWith("/find/policies");
   });
+
+  it("지금 할 일이 없는 혜택(마감·대상 아님)에는 하단 버튼을 두지 않는다 — 화살표가 목록으로 간다", async () => {
+    saveAnswers(익산_대학생);
+    // 2026-05-14 예산 소진으로 마감 (위 '지원 대상과 신청 기간' 테스트와 같은 원문)
+    await render상세("iksan-newcomer-moving-cost-support");
+
+    expect(screen.queryByRole("link", { name: "다른 혜택 보기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "신청 준비하기" })).toBeNull();
+  });
 });
 
 /**

@@ -283,15 +283,17 @@ export default function PolicyDetail({ id }: { id: string }) {
         />
       </main>
 
-      <StickyBottomAction>
-        {status === "신청 가능" ? (
-          <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
-        ) : status === "확인 필요" ? (
-          <LinkButton href={조건수정링크} size="screen">조건 확인하기</LinkButton>
-        ) : (
-          <LinkButton href="/find/policies" size="screen" variant="secondary">다른 혜택 보기</LinkButton>
-        )}
-      </StickyBottomAction>
+      {/* 하단은 앞으로 가는 행동만 둔다. 마감·대상 아님은 지금 할 일이 없고, '다른 혜택
+          보기' 는 왼쪽 위 화살표와 같은 곳이라 두지 않는다 (2026-11-03 단계 이동 설계). */}
+      {(status === "신청 가능" || status === "확인 필요") && (
+        <StickyBottomAction>
+          {status === "신청 가능" ? (
+            <LinkButton href={`/find/policies/${policy.id}/prepare`} size="screen">신청 준비하기</LinkButton>
+          ) : (
+            <LinkButton href={조건수정링크} size="screen">조건 확인하기</LinkButton>
+          )}
+        </StickyBottomAction>
+      )}
     </AppShell>
   );
 }

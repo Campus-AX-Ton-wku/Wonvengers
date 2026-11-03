@@ -54,7 +54,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "안내",
     title: "몇 가지 질문으로\n나에게 맞는 혜택을 안내해요",
     description:
-      "생년월일·사는 곳·현재 상태·소득 구간\n네 가지만 답하면 됩니다.",
+      "생년월일·사는 곳·현재 상태·소득·주거 형태\n다섯 가지만 답하면 됩니다.",
   },
   {
     character: "success",

@@ -253,7 +253,7 @@ export default function ResultPage() {
         </p>
       </div>
 
-      <Button variant="quiet" onClick={() => router.push("/eligibility")}>
+      <Button variant="quiet" onClick={() => router.push("/eligibility?g=1")}>
         답변 수정하기
       </Button>
       </main>
