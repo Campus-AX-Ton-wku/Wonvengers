@@ -433,6 +433,20 @@ describe("/eligibility 진행 표시·답 접기", () => {
     expect(screen.getAllByRole("button", { name: "그렇다" })).toHaveLength(처음);
   });
 
+  it("접힌 줄을 눌러 펼치면 포커스가 그 질문 제목으로 간다 — body 로 떨어지면 안 된다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+    await user.click(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 그렇다" }));
+
+    expect(document.activeElement).toBe(
+      screen.getByText("부모와 별도로 거주하나요?", { selector: "label" })
+    );
+  });
+
   it("'모름' 도 답이다 — 고르면 접힌다", async () => {
     const user = userEvent.setup();
     saveAnswers(일층);

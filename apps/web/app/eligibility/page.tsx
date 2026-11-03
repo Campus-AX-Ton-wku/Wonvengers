@@ -188,6 +188,14 @@ function EligibilitySteps() {
     setAfterFold(null);
   }, [afterFold]);
 
+  /** 방금 펼친 질문. 누른 접힌 줄이 사라지므로 렌더 뒤 그 질문 제목으로 포커스를 옮긴다. */
+  const [unfolded, setUnfolded] = useState<RequiredInputKey | null>(null);
+  useEffect(() => {
+    if (unfolded === null) return;
+    titleRefs.current.get(unfolded)?.focus({ preventScroll: true });
+    setUnfolded(null);
+  }, [unfolded]);
+
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
@@ -205,6 +213,7 @@ function EligibilitySteps() {
     const next = new Set(folded);
     next.delete(key);
     setFolded(next);
+    setUnfolded(key);
   }
 
   function handleNext() {
