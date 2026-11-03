@@ -122,9 +122,8 @@ export function BenefitResultDetails({ result, listing }: { result: PolicyResult
         <p className="px-1 text-xs leading-relaxed text-ink-600">{benefitFormula(result.policy, listing)}</p>
       </Disclosure>
 
-      <Disclosure label="검수 상태 · 참고사항">
+      <Disclosure label="검수 상태">
         <p className="text-xs text-ink-600">{result.policy.effectiveYear}년 기준 · {result.policy.verifiedAt ? `${formatDotDate(result.policy.verifiedAt)} 확인` : "팀 교차검수 전 (미검증 초안)"}</p>
-        {result.policy.notes && <p className="mt-1 text-xs leading-relaxed text-ink-600">{result.policy.notes}</p>}
       </Disclosure>
     </div>
   );
