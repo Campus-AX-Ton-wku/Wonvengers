@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
@@ -10,6 +10,7 @@ import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
 import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO, fromISODate } from "@/lib/date";
+import { useStepParam } from "@/lib/navigation";
 import {
   EMPTY_ANSWERS,
   loadAnswers,
@@ -48,11 +49,11 @@ import { ICON_SM, TriangleAlert } from "@/app/components/icons";
  * 예전에는 여러 질문을 테두리 친 카드로 한 화면에 쌓았다. 답한 것과 안 한 것이
  * 같은 무게로 보였고, 화면이 상자로 가득 차 어디부터 봐야 할지 말해주지 않았다.
  *
- * 지금은 질문이 곧 화면 제목이고, 답한 질문은 아래로 밀려 라벨/값 두 줄로 쌓인다.
- * 쌓인 줄이 진행률 표시를 대신하고(그래서 상단에 진행바가 없다), 각 줄을 누르면
- * 그 질문으로 돌아간다 — 목록 화면의 '답변 고치기' 가 여기로 온다.
+ * 지금은 질문이 곧 화면 제목이고, 단계는 주소(?q=)에 있다. "다음" 이 기록을 하나씩
+ * 쌓아서 휴대폰 뒤로가기와 왼쪽 위 화살표가 이전 질문으로 간다. 지역 질문의 시·도 →
+ * 시·군·구도 주소(&p=)로 나눠서 뒤로가기가 시·도 목록으로 돌아온다.
  *
- * (docs/기획/2026-08-30-화면-구조-개편-설계.md)
+ * (docs/기획/2026-08-30-화면-구조-개편-설계.md, docs/기획/2026-11-03-단계-이동-설계.md)
  */
 
 const brackets = bracketsJson as IncomeBracket[];
@@ -69,16 +70,20 @@ const HOUSING_TYPES: { value: HousingType; label: string }[] = [
   { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
 ];
 
-/** 질문 순서. 줄바꿈은 화면 폭에 맞춰 StepHeader가 균형 있게 처리한다. */
+/**
+ * 질문 순서. step 이 주소 값(?q=)이다 — 사람이 읽을 수 있는 짧은 영어로 둔다.
+ * 줄바꿈은 화면 폭에 맞춰 StepHeader가 균형 있게 처리한다.
+ */
 const QUESTIONS = [
-  { key: "birthDate", label: "생년월일", title: "생년월일이 어떻게 되시나요?" },
-  { key: "region", label: "사는 곳", title: "어디에 살거나 살 예정인가요?" },
-  { key: "status", label: "현재 상태", title: "현재 상태가 어떻게 되시나요?" },
-  { key: "incomeBracket", label: "월 소득", title: "본인의 월 소득은 어느 정도인가요?" },
-  { key: "housingType", label: "주거 형태", title: "현재 어떤 형태로 거주하고 있나요?" },
-] as const satisfies readonly { key: AnsweredKey; label: string; title: string }[];
+  { key: "birthDate", step: "birth", label: "생년월일", title: "생년월일이 어떻게 되시나요?" },
+  { key: "region", step: "region", label: "사는 곳", title: "어디에 살거나 살 예정인가요?" },
+  { key: "status", step: "status", label: "현재 상태", title: "현재 상태가 어떻게 되시나요?" },
+  { key: "incomeBracket", step: "income", label: "월 소득", title: "본인의 월 소득은 어느 정도인가요?" },
+  { key: "housingType", step: "housing", label: "주거 형태", title: "현재 어떤 형태로 거주하고 있나요?" },
+] as const satisfies readonly { key: AnsweredKey; step: string; label: string; title: string }[];
 
-const QUESTION_KEYS = QUESTIONS.map((q) => q.key);
+type FindStep = (typeof QUESTIONS)[number]["step"];
+const STEP_KEYS: readonly FindStep[] = QUESTIONS.map((q) => q.step);
 
 /** 쌓인 줄과 요약 칩이 같은 어휘를 쓰도록 지역 라벨은 REGION_OPTIONS 에서만 온다. */
 const regionLabel = (value: string | null) =>
@@ -95,15 +100,30 @@ function birthDateLabel(birthDate: string | null, age: number | null): string | 
   return age === null ? 날짜 : `${날짜} · 만 ${age}세`;
 }
 
+/** useSearchParams 를 쓰므로 정적 export 에서 본문을 Suspense 안에 둔다. 경계 밖 HTML 은 불러오는 중 화면이다. */
 export default function FindPage() {
+  return (
+    <Suspense fallback={<FindLoading />}>
+      <FindSteps />
+    </Suspense>
+  );
+}
+
+function FindLoading() {
+  return (
+    <AppShell>
+      <TopBar backHref="/" />
+      <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
+    </AppShell>
+  );
+}
+
+function FindSteps() {
   const router = useRouter();
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
-  const [step, setStep] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  /** 지역 질문 안에서 먼저 고른 시·도. 시군구를 고르기 전에는 답으로 저장하지 않는다. */
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   /**
    * 실제로 답한 질문. 예전 저장값을 안전하게 정리하면서도 완료한 순서를 유지한다.
    * (lib/storage.ts의 loadAnsweredKeys 주석 참고).
@@ -125,17 +145,28 @@ export default function FindPage() {
     const savedKeys = loadAnsweredKeys().filter((key) => saved[key] !== null);
     setAnswers(saved);
     setAnswered(savedKeys);
-    setSelectedProvince(provinceForRegion(saved.region)?.name ?? null);
     if (saved.region !== loadedAnswers.region) saveAnswers(saved);
     saveAnsweredKeys(savedKeys);
     setAsOf(todayISO());
-
-    // 답을 다 한 사람은 마지막 단계로 보낸다. 거기 앞선 네 줄이 전부 쌓여 있어서 그
-    // 자체가 답변 요약이자 수정 진입점이 된다. 아직 남았으면 그 첫 질문으로.
-    const 미답 = QUESTION_KEYS.findIndex((k) => !savedKeys.includes(k));
-    setStep(미답 === -1 ? QUESTION_KEYS.length - 1 : 미답);
     setLoaded(true);
   }, []);
+
+  // 주소에 단계가 없으면 첫 미답 질문으로, 다 답했으면 마지막 질문으로 replace 한다.
+  // 마지막 단계에는 앞선 네 답이 다 보여서 그 자체가 답변 요약이자 수정 진입점이 된다.
+  const 미답 = QUESTIONS.findIndex((q) => !answered.includes(q.key));
+  const { step: stepKey, query, go } = useStepParam("q", STEP_KEYS, {
+    ready: loaded,
+    firstUnanswered: QUESTIONS[미답 === -1 ? QUESTIONS.length - 1 : 미답].step,
+    // 앞 질문을 건너뛴 주소(예: 생년월일 없이 ?q=income)로는 들어올 수 없다.
+    isReachable: (k) =>
+      QUESTIONS.slice(0, STEP_KEYS.indexOf(k)).every((q) => answered.includes(q.key)),
+  });
+  const step = STEP_KEYS.indexOf(stepKey);
+  /** 지역 질문 안에서 먼저 고른 시·도. 주소(p)에 있어서 뒤로가기가 시·도 목록으로 돌아온다. */
+  const province =
+    step === 1 ? (REGION_HIERARCHY.find((item) => item.name === query("p")) ?? null) : null;
+  /** 이미 답한 시·군·구의 시·도. 시·도 목록에서 그 카드를 선택된 것으로 보여준다. */
+  const answeredProvince = provinceForRegion(answers.region);
 
   function update(key: AnsweredKey, patch: Partial<DiscoveryAnswers>) {
     const next = { ...answers, ...patch };
@@ -167,51 +198,30 @@ export default function FindPage() {
     .map((q, i) => ({
       label: q.label,
       value: answered.includes(q.key) ? 답변줄[i] : null,
-      onEdit: () => {
-        if (q.key === "region") {
-          setSelectedProvince(provinceForRegion(answers.region)?.name ?? null);
-        }
-        setStep(i);
-      },
+      onEdit: () =>
+        go(q.step, q.key === "region" && answeredProvince ? { p: answeredProvince.name } : undefined),
     }))
     .reverse();
 
   const isLast = step === QUESTIONS.length - 1;
   const currentKey = QUESTIONS[step].key;
+  // 시·도 목록에서는 이미 답한 지역이 있으면 그대로 넘어갈 수 있다. 다른 시·도의 시·군·구
+  // 목록을 연 상태에서는 그 안에서 새로 골라야 한다.
   const hasCurrentAnswer =
     answered.includes(currentKey) &&
     answers[currentKey] !== null &&
-    (currentKey !== "region" ||
-      provinceForRegion(answers.region)?.name === selectedProvince);
-
-  function handleBack() {
-    // 시군구 목록에서는 이전 질문이 아니라 같은 지역 질문의 시도 목록으로 돌아간다.
-    if (step === 1 && selectedProvince !== null) {
-      setSelectedProvince(null);
-      return;
-    }
-    if (step === 0) return router.push("/");
-    setStep(step - 1);
-  }
+    (currentKey !== "region" || province === null || answeredProvince?.name === province.name);
 
   function handleNext() {
     if (!hasCurrentAnswer) return;
     // 마지막 답을 하면 결과 요약으로. 목록은 그 다음이다.
     if (isLast) return router.push("/find/result");
-    setStep(step + 1);
+    go(QUESTIONS[step + 1].step);
   }
 
-  if (!loaded) {
-    return (
-      <AppShell>
-        <TopBar onBack={() => router.push("/")} backLabel="이전 단계로" />
-        <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
-      </AppShell>
-    );
-  }
+  if (!loaded) return <FindLoading />;
 
   const current = QUESTIONS[step];
-  const province = REGION_HIERARCHY.find((item) => item.name === selectedProvince) ?? null;
   const heading =
     step === 1
       ? province
@@ -221,9 +231,9 @@ export default function FindPage() {
 
   return (
     <AppShell>
-      <TopBar onBack={handleBack} backLabel="이전 단계로" />
+      <TopBar backHref="/" />
 
-      <main key={step} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
+      <main key={`${stepKey}-${province?.name ?? ""}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
         <StepHeader title={heading} />
 
         {step === 0 && (
@@ -260,8 +270,8 @@ export default function FindPage() {
               ? REGION_HIERARCHY.map((item) => (
                   <ChoiceCard
                     key={item.name}
-                    active={false}
-                    onClick={() => setSelectedProvince(item.name)}
+                    active={answeredProvince?.name === item.name}
+                    onClick={() => go("region", { p: item.name })}
                   >
                     {item.name}
                   </ChoiceCard>

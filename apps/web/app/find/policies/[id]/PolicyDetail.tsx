@@ -119,7 +119,7 @@ export default function PolicyDetail({ id }: { id: string }) {
   if (!policy) {
     return (
       <AppShell>
-        <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+        <TopBar backHref="/find/policies" />
         <p className="mt-10 text-center text-sm text-ink-500">찾을 수 없는 지원금입니다.</p>
       </AppShell>
     );
@@ -142,7 +142,7 @@ export default function PolicyDetail({ id }: { id: string }) {
 
   return (
     <AppShell className="step-in">
-      <TopBar backHref="/find/policies" backLabel="목록으로 돌아가기" />
+      <TopBar backHref="/find/policies" />
       <main className="flex flex-col gap-3 pb-6 pt-1">
         <header>
           <p className="text-[11px] font-bold leading-4 text-ink-500">혜택 상세</p>

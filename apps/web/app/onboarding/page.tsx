@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell, Button, PerkyCharacter, StickyBottomAction } from "@/app/components";
 import type { PerkyState } from "@/app/components";
 import { markOnboardingSeen } from "@/lib/storage";
+import { replaceKeepingEntry } from "@/lib/navigation";
 
 /**
  * 앱 시작 시 보여주는 3장짜리 소개.
@@ -89,7 +90,9 @@ export default function OnboardingPage() {
   function leave(to: string) {
     markOnboardingSeen();
     // replace — 뒤로가기로 온보딩에 되돌아오면 방금 끝낸 화면을 다시 보게 된다.
-    router.replace(to);
+    // 온보딩이 이 탭의 첫 화면이었으므로 첫 화면 기록도 /find 로 옮긴다. 안 옮기면 첫
+    // 질문의 화살표가 history.back() 으로 앱 밖에 나간다.
+    replaceKeepingEntry(router, to);
   }
 
   const slide = SLIDES[step];

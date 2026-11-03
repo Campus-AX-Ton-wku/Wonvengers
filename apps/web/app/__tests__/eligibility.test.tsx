@@ -1,17 +1,19 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EligibilityPage from "@/app/eligibility/page";
 import CalculatePage from "@/app/calculate/page";
-import { loadAnswers, loadProfile, saveAnswers, saveListing, saveProfile } from "@/lib/storage";
+import {
+  EMPTY_ANSWERS,
+  loadAnswers,
+  loadProfile,
+  saveAnswers,
+  saveListing,
+  saveProfile,
+} from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
-
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
-vi.mock("next/navigation", () => {
-  const router = { push: pushMock, replace: vi.fn() };
-  return { useRouter: () => router };
-});
+import { resetNavigation, routerMock } from "./navigation-mock";
 
 /**
  * 사용자 흐름에서 깨져 있던 세 가지를 고정한다.
@@ -23,28 +25,30 @@ vi.mock("next/navigation", () => {
  */
 
 beforeEach(() => {
-  pushMock.mockClear();
+  resetNavigation("/eligibility");
   // 1층 답변이 테스트 사이로 새면 2층 생년월일 프리필이 앞 테스트에 물든다.
   window.localStorage.clear();
   saveListing(makeListing({ region: "전북특별자치도 익산시" }));
 });
 
 describe("뒤로가기", () => {
+  // 링크로 바로 들어온 사람(이 탭의 첫 화면). 앞 화면이 앱 안이면 history.back() 이다.
   it("계약 조건 첫 스텝에서 뒤로가면 1층 목록으로 돌아간다", async () => {
+    resetNavigation("/calculate");
     const user = userEvent.setup();
     render(<CalculatePage />);
 
     await user.click(screen.getByLabelText("이전 단계로"));
-    expect(pushMock).toHaveBeenCalledWith("/find/policies");
+    expect(routerMock.replace).toHaveBeenCalledWith("/find/policies");
   });
 
   it("판정 질문 첫 스텝에서 뒤로가면 계약 조건으로 돌아간다", async () => {
     const user = userEvent.setup();
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await user.click(screen.getByLabelText("이전 단계로"));
-    expect(pushMock).toHaveBeenCalledWith("/calculate");
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
   });
 });
 
@@ -93,7 +97,7 @@ async function pickBirthDate(
 describe("생년월일 선택 (휠 피커)", () => {
   async function openFirstStep() {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
   }
 
   it("연도 목록 맨 위가 올해가 아니라 청년 생년대다", async () => {
@@ -171,7 +175,7 @@ describe("1층에서 받은 생년월일", () => {
   it("1층에서 답한 생년월일이 채워진 채로 열린다", async () => {
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -180,7 +184,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await user.click(screen.getByRole("button", { name: "다음" }));
 
@@ -191,14 +195,14 @@ describe("1층에서 받은 생년월일", () => {
   it("왜 또 묻는지 변명하는 문구가 없다", async () => {
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.queryByText(/앞에서 만 .*세라고 답하셨어요/)).toBeNull();
   });
 
   it("1층을 건너뛴 사람에게는 빈 채로 묻는다", async () => {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
   });
@@ -209,7 +213,7 @@ describe("1층에서 받은 생년월일", () => {
     saveProfile(makeProfile({ birthDate: "" }));
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -225,7 +229,7 @@ describe("1층에서 받은 생년월일", () => {
     saveProfile(makeProfile({ birthDate: "1999-05-05" })); // 2층에 남아 있던 옛 값
     saveAnswers(일층답변); // 1층에서 2003-08-12 로 고쳐 왔다
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
@@ -236,7 +240,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await pickBirthDate(user, 1995, 7, 20);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -250,7 +254,7 @@ describe("1층에서 받은 생년월일", () => {
     const user = userEvent.setup();
     saveAnswers(일층답변);
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
 
     await pickBirthDate(user, 1995, 7, 20);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -267,7 +271,7 @@ describe("숫자 질문의 '모름'", () => {
 
   async function goToIncomeStep(user: ReturnType<typeof userEvent.setup>) {
     render(<EligibilityPage />);
-    await screen.findByLabelText("이전 단계로");
+    await screen.findByRole("heading", { level: 1 });
     // 1번 스텝(기본 자격)에는 생년월일이 있어 넘어가려면 채워야 한다
     await pickBirthDate(user, 2003, 8, 12);
     await user.click(screen.getByRole("button", { name: "다음" }));
@@ -338,5 +342,46 @@ describe("숫자 질문의 '모름'", () => {
 
     expect(numberInputs()[0].getAttribute("placeholder")).toBeNull();
     expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("/eligibility 묶음 주소", () => {
+  it("주소에 묶음이 없으면 ?g=1 로 replace 한다", async () => {
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(routerMock.replace).toHaveBeenCalledWith("/eligibility?g=1");
+  });
+
+  it("'다음' 은 다음 묶음 주소를 push 한다", async () => {
+    const user = userEvent.setup();
+    saveAnswers({ ...EMPTY_ANSWERS, birthDate: "2003-08-12" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/eligibility?g=2");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("가구와 소득을 알려주세요");
+  });
+
+  it("생년월일 없이 ?g=3 으로 들어오면 첫 묶음으로 replace 한다", async () => {
+    resetNavigation("/eligibility?g=3");
+    render(<EligibilityPage />);
+
+    expect(await screen.findByRole("heading", { name: "기본 자격을 확인할게요" })).toBeTruthy();
+    expect(routerMock.replace).toHaveBeenCalledWith("/eligibility?g=1");
+  });
+
+  it("휴대폰 뒤로가기로 앞 묶음에 돌아온다", async () => {
+    const user = userEvent.setup();
+    saveAnswers({ ...EMPTY_ANSWERS, birthDate: "2003-08-12" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    window.history.back();
+
+    expect(await screen.findByRole("heading", { name: "기본 자격을 확인할게요" })).toBeTruthy();
   });
 });

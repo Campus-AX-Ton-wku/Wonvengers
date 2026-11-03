@@ -57,7 +57,7 @@ export default function RequirementReview({ policy }: { policy: PolicyMeta }) {
   if (state.kind === "loading") {
     return (
       <AppShell>
-        <TopBar backHref="/result" backLabel="결과로 돌아가기" />
+        <TopBar backHref="/result" />
         <p className="mt-10 text-center text-sm text-ink-500" role="status">
           확인할 조건을 불러오는 중…
         </p>
@@ -68,7 +68,7 @@ export default function RequirementReview({ policy }: { policy: PolicyMeta }) {
   if (state.kind === "missing") {
     return (
       <AppShell>
-        <TopBar backHref="/result" backLabel="결과로 돌아가기" />
+        <TopBar backHref="/result" />
         <main className="flex flex-1 flex-col justify-center py-10 text-center">
           <h1 className="text-xl font-extrabold text-ink-900">저장된 입력을 찾지 못했어요</h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
@@ -95,7 +95,7 @@ export default function RequirementReview({ policy }: { policy: PolicyMeta }) {
 
   return (
     <AppShell className="step-in">
-      <TopBar backHref="/result" backLabel="결과로 돌아가기" />
+      <TopBar backHref="/result" />
 
       <main className="flex flex-1 flex-col gap-5 pb-28 pt-5">
         <header>

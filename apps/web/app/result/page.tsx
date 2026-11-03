@@ -83,7 +83,7 @@ export default function ResultPage() {
 
   return (
     <AppShell className="step-in">
-      <TopBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
+      <TopBar backHref="/eligibility" />
 
       <main className="flex flex-col gap-5 pb-10 pt-3">
         <header>

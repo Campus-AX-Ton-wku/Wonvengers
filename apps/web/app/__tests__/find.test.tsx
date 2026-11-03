@@ -1,23 +1,23 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import FindPage from "@/app/find/page";
 import { loadAnswers, saveAnswers, saveAnsweredKeys } from "@/lib/storage";
+import { resetNavigation, routerMock } from "./navigation-mock";
 
 /**
  * QA체크리스트 "1층 — 질문" 절을 자동화한 것. lib 테스트는 판정 규칙을 지키지만,
  * 화면이 그 규칙을 실제로 불러 쓰는지는 잡지 못한다.
  *
- * 1층은 한 화면에 한 질문씩 묻고, 답한 질문은 아래로 쌓인다. 진행바가 없는 이유와
- * 쌓기로 결정한 이유는 app/Stepper.tsx 주석에 있다.
+ * 1층은 한 화면에 한 질문씩 묻고, 단계는 주소(?q=)에 있다. next/navigation 은
+ * vitest.setup.ts 가 jsdom history 에 붙인 대역이라 "다음" 이 실제로 주소를 바꾸고
+ * 뒤로가기(history.back)가 popstate 로 이전 질문을 다시 그린다.
  */
 
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock, replace: vi.fn() }) }));
-
 beforeEach(() => {
-  pushMock.mockClear();
+  // 이 탭의 첫 화면이 /find 인 상태. 첫 질문 주소로 replace 되면 기록이 따라 옮겨 간다.
+  resetNavigation("/find");
   window.localStorage.clear();
 });
 
@@ -117,7 +117,9 @@ describe("/find 단계형 흐름", () => {
     await user.click(cta());
     await user.click(뒤로());
 
-    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
+    // 앞 화면이 이 앱 안이라 history.back() 이다. popstate 는 비동기로 온다.
+    await waitFor(() => expect(제목()).toBe("생년월일이 어떻게 되시나요?"));
+    expect(window.location.search).toBe("?q=birth");
   });
 
   it("지역은 시도를 먼저 고른 뒤 해당 시군구만 보여준다", async () => {
@@ -297,7 +299,7 @@ describe("/find CTA", () => {
     expect(cta().textContent).toBe("다음");
 
     await user.click(cta());
-    expect(pushMock).toHaveBeenCalledWith("/find/result");
+    expect(routerMock.push).toHaveBeenCalledWith("/find/result");
   });
 
   it("대상 정책이 없으면 왜 없는지 보러 가게 한다", async () => {
@@ -360,5 +362,81 @@ describe("/find 답변 보관", () => {
   it("이 화면에는 지원금 카드가 없다 (목록은 /find/policies)", () => {
     render(<FindPage />);
     expect(screen.queryByRole("article")).toBeNull();
+  });
+});
+
+describe("/find 단계 주소", () => {
+  it("주소에 단계가 없으면 첫 미답 질문 주소로 replace 한다 — 기록을 늘리지 않는다", () => {
+    render(<FindPage />);
+
+    expect(routerMock.replace).toHaveBeenCalledWith("/find?q=birth");
+    expect(routerMock.push).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?q=birth");
+  });
+
+  it("'다음' 은 다음 질문 주소를 push 한다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+
+    expect(routerMock.push).toHaveBeenCalledWith("/find?q=region");
+    expect(제목()).toBe("먼저 시·도를 선택해주세요");
+  });
+
+  it("시·도를 고르면 주소에 p 가 붙고, 뒤로가기는 시·도 목록으로 돌아온다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "전북특별자치도" }));
+    expect(new URLSearchParams(window.location.search).get("p")).toBe("전북특별자치도");
+
+    await user.click(뒤로());
+    await waitFor(() => expect(제목()).toBe("먼저 시·도를 선택해주세요"));
+  });
+
+  it("앞 질문을 건너뛴 주소로 들어오면 첫 미답 질문으로 replace 한다", () => {
+    resetNavigation("/find?q=income");
+    render(<FindPage />);
+
+    expect(제목()).toBe("생년월일이 어떻게 되시나요?");
+    expect(routerMock.replace).toHaveBeenCalledWith("/find?q=birth");
+  });
+
+  it("휴대폰 뒤로가기(history.back)도 이전 질문으로 간다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    window.history.back();
+
+    await waitFor(() => expect(제목()).toBe("생년월일이 어떻게 되시나요?"));
+  });
+
+  it("첫 질문의 화살표는 이 탭의 첫 화면이면 랜딩으로 간다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await user.click(뒤로());
+
+    expect(routerMock.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("다 답한 사람이 주소 없이 들어오면 마지막 질문 주소로 replace 한다", () => {
+    saveAnswers({
+      birthDate: "1998-03-14",
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+      housingType: "월세",
+    });
+    saveAnsweredKeys(["birthDate", "region", "status", "incomeBracket", "housingType"]);
+    render(<FindPage />);
+
+    expect(routerMock.replace).toHaveBeenCalledWith("/find?q=housing");
   });
 });

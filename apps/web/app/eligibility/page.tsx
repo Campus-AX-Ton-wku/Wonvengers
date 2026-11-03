@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { EligibilityProfile, PolicyMeta } from "@/lib/types";
@@ -10,6 +10,7 @@ import WheelDatePicker from "@/app/WheelDatePicker";
 
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
+import { replaceKeepingEntry, useStepParam } from "@/lib/navigation";
 import { loadAnswers, loadListing, loadProfile, saveAnswers, saveProfile } from "@/lib/storage";
 import {
   AppShell,
@@ -44,18 +45,46 @@ const DEFAULT_PROFILE: EligibilityProfile = {
   employedInTargetSectorOver3Months: "unknown",
 };
 
+type QuestionStep = ReturnType<typeof buildQuestionSteps>[number];
+
+/**
+ * 넘어가기 전에 막는 질문. 생년월일만 '모름' 이 없다 — 나이 요건 때문이다.
+ * 나머지는 비워 두면 모름이고, 모름도 답이다.
+ */
+function blockingQuestion(group: QuestionStep, profile: EligibilityProfile): QuestionDef | null {
+  return group.questions.find((q) => q.key === "birthDate" && !profile.birthDate) ?? null;
+}
+
+/** useSearchParams 를 쓰므로 정적 export 에서 본문을 Suspense 안에 둔다. */
 export default function EligibilityPage() {
+  return (
+    <Suspense fallback={<EligibilityLoading />}>
+      <EligibilitySteps />
+    </Suspense>
+  );
+}
+
+function EligibilityLoading() {
+  return (
+    <AppShell>
+      <TopBar backHref="/calculate" />
+      <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
+    </AppShell>
+  );
+}
+
+function EligibilitySteps() {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
   const [profile, setProfile] = useState<EligibilityProfile>(DEFAULT_PROFILE);
-  const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const listing = loadListing();
     if (!listing) {
       // 계약 조건 없이는 판정할 수 없다. 홈이 아니라 그 입력을 받는 화면으로 보낸다.
-      router.replace("/calculate");
+      // replace 라 이 화면이 이 탭의 첫 화면이었다면 그 기록도 /calculate 로 옮긴다.
+      replaceKeepingEntry(router, "/calculate");
       return;
     }
     setRegion(listing.region);
@@ -78,14 +107,27 @@ export default function EligibilityPage() {
     return buildQuestionSteps(getRequiredQuestions(policiesForRegion(policies, region)));
   }, [region]);
 
+  /** 묶음 주소 값(?g=). 질문이 없는 묶음은 빠지므로 지역에 따라 1~3 개다. */
+  const groupKeys = useMemo(() => steps.map((_, i) => String(i + 1)), [steps]);
+  const { step: stepKey, go } = useStepParam("g", groupKeys, {
+    ready: steps.length > 0,
+    firstUnanswered: "1",
+    // 앞 묶음의 생년월일 없이 ?g=3 으로 바로 들어오면 첫 묶음으로 돌린다.
+    isReachable: (k) =>
+      steps.slice(0, Number(k) - 1).every((s) => blockingQuestion(s, profile) === null),
+  });
+  const step = Math.max(0, Number(stepKey) - 1);
+
+  // 뒤로가기로 묶음이 바뀌면 떠난 묶음의 오류 문구를 남기지 않는다.
+  useEffect(() => setError(null), [stepKey]);
+
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleNext() {
     const current = steps[step];
-    // 생년월일은 나이 요건 때문에 '모름'을 허용하지 않는 유일한 질문이다.
-    if (current?.questions.some((q) => q.key === "birthDate") && !profile.birthDate) {
+    if (current && blockingQuestion(current, profile)) {
       return setError("생년월일을 입력해주세요.");
     }
     setError(null);
@@ -100,35 +142,20 @@ export default function EligibilityPage() {
         saveAnswers({ ...answers, birthDate: profile.birthDate });
       }
     }
-    if (step < steps.length - 1) return setStep(step + 1);
+    if (step < steps.length - 1) return go(String(step + 2));
     router.push("/result");
   }
 
-  function handleBack() {
-    setError(null);
-    // 첫 스텝의 직전 화면은 계약 조건이다. 홈으로 내보내면 입력한 계약 조건을
-    // 고치려고 처음부터 다시 들어와야 한다.
-    if (step === 0) return router.push("/calculate");
-    setStep(step - 1);
-  }
-
-  if (region === null || steps.length === 0) {
-    return (
-      <AppShell>
-        <TopBar backHref="/calculate" backLabel="계약 조건으로 돌아가기" />
-        <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
-      </AppShell>
-    );
-  }
+  if (region === null || steps.length === 0) return <EligibilityLoading />;
 
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
   return (
     <AppShell>
-      <TopBar onBack={handleBack} backLabel="이전 단계로" />
+      <TopBar backHref="/calculate" />
 
-      <main key={step} className="step-in flex flex-1 flex-col gap-8 py-7">
+      <main key={stepKey} className="step-in flex flex-1 flex-col gap-8 py-7">
         <StepHeader title={current.heading} />
 
         {current.questions.map((q) => (
