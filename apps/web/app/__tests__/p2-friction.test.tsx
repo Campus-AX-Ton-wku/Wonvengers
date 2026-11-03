@@ -66,14 +66,16 @@ describe("계약 형태", () => {
    *
    * 기본값을 켜 두는 것과 다르다 — 사용자가 직접 고른 답을 옮기는 것이라
    * F1-1 의 '고르게 한다' 를 어기지 않는다. 옮겼다는 사실은 화면에 밝힌다.
+   * 두 카드를 다시 펼쳐 두면 또 묻는 것처럼 보여서 확인된 한 줄로 접는다.
    */
   it("1층에서 답한 주거 형태를 계약 형태로 이어받는다", () => {
     saveAnswers({ ...EMPTY_ANSWERS, housingType: "연세" });
     render(<CalculatePage />);
 
-    expect(screen.getByRole("button", { name: "연세" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "월세" }).getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByText(/앞에서 답한 주거 형태로 골랐어요/)).toBeTruthy();
+    const row = screen.getByRole("button", { name: "계약 형태 고치기: 연세" });
+    const note = document.getElementById(row.getAttribute("aria-describedby") ?? "");
+    expect(note?.textContent).toContain("앞에서 답했어요");
+    expect(screen.queryByRole("button", { name: "월세" })).toBeNull();
   });
 
   // 전세·그 외는 이 화면이 다루는 계약이 아니다. 둘 중 하나로 단정하면 월 환산액이
@@ -87,7 +89,7 @@ describe("계약 형태", () => {
         "false"
       );
     }
-    expect(screen.queryByText(/앞에서 답한 주거 형태로 골랐어요/)).toBeNull();
+    expect(screen.queryByText(/앞에서 답/)).toBeNull();
   });
 
   it("고르지 않고 다음을 누르면 넘어가지 않고 이유를 말한다", async () => {

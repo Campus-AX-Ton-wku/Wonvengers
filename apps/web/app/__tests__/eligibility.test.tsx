@@ -674,3 +674,208 @@ describe("/eligibility 고르기 전에는 아무 카드도 선택돼 보이지 
     expect(loadProfile()?.canRegisterResidence).toBe("unknown");
   });
 });
+
+/**
+ * 1층 '현재 상태'(대학생·재직·구직)를 2층에서 다시 묻지 않는다.
+ *
+ * 이 질문은 강진군 정책만 쓰므로 계약 지역을 강진군으로 둔다. 생년월일과 같은 규칙으로
+ * 1층 답을 채우고 2층에서 고친 값은 1층에도 쓴다. 다만 2층에서 이미 직접 고른 답이 있으면
+ * 그 답을 지킨다 — 생년월일과 달리 2층 선택지(재학/휴학·구직/미취업)가 1층보다 넓은 말이다.
+ */
+describe("/eligibility 1층에서 받은 현재 상태", () => {
+  const 일층 = (status: "대학생" | "재직" | "구직" | null) => ({
+    ...EMPTY_ANSWERS,
+    birthDate: "2003-08-12",
+    region: "전라남도 강진군",
+    status,
+  });
+  const 상태칸 = () => screen.getByLabelText("현재 상태 (재학·재직 등)") as HTMLSelectElement;
+
+  beforeEach(() => {
+    saveListing(makeListing({ region: "전라남도 강진군" }));
+  });
+
+  it.each([
+    ["대학생", "재학/휴학"],
+    ["재직", "재직"],
+    ["구직", "구직/미취업"],
+  ] as const)("1층 %s → 처음부터 '%s' 로 접힌 줄로 열린다", async (status, label) => {
+    saveAnswers(일층(status));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByRole("button", { name: `현재 상태 고치기: ${label}` })).toBeTruthy();
+    expect(screen.getByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeTruthy();
+    expect(screen.queryByLabelText("현재 상태 (재학·재직 등)")).toBeNull();
+  });
+
+  it("펼치면 이어받은 값이 골라져 있다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "현재 상태 고치기: 재학/휴학" }));
+    expect(상태칸().value).toBe("student");
+  });
+
+  it("1층에서 답하지 않았으면 지금처럼 묻는다", async () => {
+    saveAnswers(일층(null));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(상태칸().value).toBe("unknown");
+    expect(screen.queryByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeNull();
+  });
+
+  it("2층에서 이미 직접 고른 답이 있으면 그 답을 지킨다", async () => {
+    saveProfile(makeProfile({ isStudentOrEmployed: "employed" }));
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(상태칸().value).toBe("employed");
+    expect(screen.queryByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeNull();
+    // 열기만 했는데 2층의 옛 답이 1층 답을 덮으면 안 된다.
+    expect(loadAnswers().status).toBe("대학생");
+  });
+
+  it("2층에서 '모름' 을 직접 골라 뒀으면 그것도 답이다 — 채우지 않는다", async () => {
+    saveProfile(makeProfile({ isStudentOrEmployed: "unknown" }));
+    window.localStorage.setItem("perky.eligibility-answered", JSON.stringify(["isStudentOrEmployed"]));
+    saveAnswers(일층("재직"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(상태칸().value).toBe("unknown");
+  });
+
+  it("저장된 프로필이 있어도 아직 안 고른 질문이면 1층 답으로 채운다", async () => {
+    saveProfile(makeProfile({ isStudentOrEmployed: "unknown" }));
+    window.localStorage.setItem("perky.eligibility-answered", JSON.stringify([]));
+    saveAnswers(일층("구직"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByRole("button", { name: "현재 상태 고치기: 구직/미취업" })).toBeTruthy();
+  });
+
+  it("2층에서 바꾸면 1층 현재 상태에도 쓴다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "현재 상태 고치기: 재학/휴학" }));
+    await user.selectOptions(상태칸(), "employed");
+
+    expect(loadProfile()?.isStudentOrEmployed).toBe("employed");
+    expect(loadAnswers().status).toBe("재직");
+    expect(loadAnswers().birthDate).toBe("2003-08-12");
+    expect(screen.queryByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeNull();
+  });
+
+  it("2층에서 '모름' 으로 바꾸면 1층 답은 그대로 둔다 — 1층에는 모름이 없다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "현재 상태 고치기: 재학/휴학" }));
+    await user.selectOptions(상태칸(), "unknown");
+
+    expect(loadProfile()?.isStudentOrEmployed).toBe("unknown");
+    expect(loadAnswers().status).toBe("대학생");
+  });
+
+  it("1층을 건너뛴 사람의 현재 상태는 만들어내지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.selectOptions(상태칸(), "student");
+    expect(loadAnswers().status).toBeNull();
+  });
+
+  it("채워 열기만 해서는 프로필을 저장하지 않는다", async () => {
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(window.localStorage.getItem("housing-benefit:profile")).toBeNull();
+    expect(loadAnswers()).toEqual(일층("대학생"));
+  });
+
+  it("'다음' 을 누르면 채워 둔 값으로 저장한다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.isStudentOrEmployed).toBe("student");
+  });
+
+  // 채운 값은 직접 고른 답이 아니다. '다음' 으로 한 번 저장한 뒤 1층에서 고쳐 오면 2층도 따라가야
+  // 한다 — 안 그러면 1층은 재직인데 2층은 재학/휴학으로 남아 강진군 규칙이 '해당 없음' 으로 판정된다.
+  it("채운 값으로 저장한 뒤 1층에서 고쳐 오면 2층도 새 1층 답을 따른다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.isStudentOrEmployed).toBe("student");
+    first.unmount();
+
+    saveAnswers(일층("재직"));
+    resetNavigation("/eligibility");
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByRole("button", { name: "현재 상태 고치기: 재직" })).toBeTruthy();
+    expect(screen.getByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeTruthy();
+  });
+
+  it("2층에서 직접 고친 답은 저장 뒤에도 직접 고른 답으로 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "현재 상태 고치기: 재학/휴학" }));
+    await user.selectOptions(상태칸(), "unemployed");
+    first.unmount();
+
+    // 1층도 구직으로 따라갔다. 그 뒤 다른 방문에서 손대지 않고 '다음' 을 눌러도 기록이 지워지면 안 된다.
+    resetNavigation("/eligibility");
+    const second = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    second.unmount();
+
+    saveAnswers(일층("재직"));
+    resetNavigation("/eligibility");
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    expect(상태칸().value).toBe("unemployed");
+  });
+
+  it("이 지역이 묻지 않는 질문이면 채우지 않는다 — 보지도 않은 값을 저장하지 않는다", async () => {
+    const user = userEvent.setup();
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveAnswers({ ...일층("대학생"), region: "전북특별자치도 익산시" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.queryByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.isStudentOrEmployed).toBe("unknown");
+  });
+
+  it("다른 질문은 여전히 고르기 전에 칠하지 않는다", async () => {
+    saveAnswers(일층("대학생"));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(Array.from(document.querySelectorAll('button[aria-pressed="true"]'))).toEqual([]);
+  });
+});

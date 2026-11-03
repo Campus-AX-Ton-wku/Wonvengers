@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
-import type { EligibilityProfile, PolicyMeta, RequiredInputKey } from "@/lib/types";
+import type { DiscoveryStatus, EligibilityProfile, PolicyMeta, RequiredInputKey } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
 import { birthYearOptions } from "@/lib/birth";
 import { formatDotDate } from "@/lib/date";
@@ -26,6 +26,7 @@ import {
   AnswerSummaryBar,
   AppShell,
   Button,
+  CarriedOver,
   ChoiceCard,
   FieldError,
   MoneyInput,
@@ -76,19 +77,61 @@ function answeredFromProfile(profile: EligibilityProfile): RequiredInputKey[] {
   });
 }
 
-/** 프로필과 '직접 고른 질문' 을 저장하고, 고친 생년월일을 1층 답변에도 써 둔다. */
-function persist(profile: EligibilityProfile, answered: ReadonlySet<RequiredInputKey>): void {
+type StudentOrEmployed = EligibilityProfile["isStudentOrEmployed"];
+
+/**
+ * 1층 '현재 상태' → 2층 '현재 상태'. 같은 걸 묻는 질문이라 다시 묻지 않고 옮긴다.
+ * 2층 선택지가 조금 넓다(재학/휴학, 구직/미취업) — 1층 답은 그 안에 그대로 들어간다.
+ */
+const STATUS_FROM_FLOOR1: Record<DiscoveryStatus, StudentOrEmployed> = {
+  대학생: "student",
+  재직: "employed",
+  구직: "unemployed",
+};
+
+/** 2층에서 고친 현재 상태를 1층 말로. '모름' 은 1층에 없는 답이라 옮기지 않는다. */
+const STATUS_TO_FLOOR1: Partial<Record<StudentOrEmployed, DiscoveryStatus>> = {
+  student: "대학생",
+  employed: "재직",
+  unemployed: "구직",
+};
+
+/**
+ * 프로필과 '직접 고른 질문' 을 저장하고, 고친 생년월일·현재 상태를 1층 답변에도 써 둔다.
+ *
+ * statusPrefilled: 현재 상태가 1층 답에서 채운 값 그대로인지(이번 방문에 손대지 않았다).
+ * 그러면 '직접 고른 질문' 기록에서 뺀다 — 기록에 남으면 다음 방문부터 직접 고른 답으로 보여
+ * 1층에서 고쳐 와도 2층이 옛 값을 지킨다. 값 자체는 저장한다("다음" 을 누르면 그 값으로 판정).
+ *
+ * syncStatus: 현재 상태를 이번 방문에 직접 고쳤는지. 생년월일과 달리 현재 상태는 2층에서
+ * 이미 고른 답을 지키므로(1층이 이기지 않는다) 두 화면 값이 다를 수 있다 — 1층에서 나중에
+ * 고치고 온 경우다. 그때 열기만 했는데 2층의 옛 답이 1층을 덮으면 방금 한 수정이 사라진다.
+ * 그래서 여기서 직접 바꿨을 때만 1층에 쓴다.
+ */
+function persist(
+  profile: EligibilityProfile,
+  answered: ReadonlySet<RequiredInputKey>,
+  syncStatus: boolean,
+  statusPrefilled: boolean,
+): void {
   saveProfile(profile);
-  saveEligibilityAnsweredKeys([...answered]);
+  saveEligibilityAnsweredKeys(
+    [...answered].filter((key) => !(statusPrefilled && key === "isStudentOrEmployed")),
+  );
 
   // 1층 답을 프리필의 기준으로 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때
   // 1층의 옛 값이 다시 이겨서 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 둔다.
-  if (profile.birthDate) {
-    const answers = loadAnswers();
-    if (answers.birthDate !== profile.birthDate) {
-      saveAnswers({ ...answers, birthDate: profile.birthDate });
-    }
+  const answers = loadAnswers();
+  let next = answers;
+  if (profile.birthDate && answers.birthDate !== profile.birthDate) {
+    next = { ...next, birthDate: profile.birthDate };
   }
+  // 1층을 건너뛴 사람(status 가 없다)의 답변은 만들지 않는다 — 지역의 규칙과 같다.
+  const status = STATUS_TO_FLOOR1[profile.isStudentOrEmployed];
+  if (syncStatus && answers.status && status && answers.status !== status) {
+    next = { ...next, status };
+  }
+  if (next !== answers) saveAnswers(next);
 }
 
 type QuestionStep = ReturnType<typeof buildQuestionSteps>[number];
@@ -179,6 +222,15 @@ function EligibilitySteps() {
     folded: RequiredInputKey;
     next: RequiredInputKey | null;
   } | null>(null);
+  /**
+   * 현재 상태를 1층 답에서 채웠는지. 접힌 줄 밑에 그렇다고 밝힌다 (/calculate 의 지역·계약 형태와
+   * 같은 표시). 사용자가 직접 고치면 거둔다.
+   */
+  const [statusFromFloor1, setStatusFromFloor1] = useState(false);
+  /** 현재 상태를 이번 방문에 직접 고쳤는지. persist 가 이때만 1층에 쓴다 (persist 주석). */
+  const statusTouched = useRef(false);
+  /** 현재 상태를 이번 방문에 1층 답으로 채웠는지. 손대기 전까지는 직접 고른 답으로 저장하지 않는다. */
+  const statusPrefilled = useRef(false);
   const fieldRefs = useRef(new Map<RequiredInputKey, HTMLDivElement>());
   const titleRefs = useRef(new Map<RequiredInputKey, HTMLLabelElement>());
 
@@ -200,11 +252,33 @@ function EligibilitySteps() {
     // 1층으로 돌아가 날짜를 고치고 오면, 방금 고친 값이 옛 프로필에 막힌다.
     const stored = loadProfile();
     const saved = stored ?? DEFAULT_PROFILE;
-    const 일층생년월일 = loadAnswers().birthDate;
-    setProfile({ ...saved, birthDate: 일층생년월일 ?? saved.birthDate });
-    setSaving(stored !== null);
+    const 일층 = loadAnswers();
+    const next = { ...saved, birthDate: 일층.birthDate ?? saved.birthDate };
     // 프로필이 없으면 남아 있던 기록도 믿지 않는다 — 고른 값이 없는데 고른 것으로 칠하게 된다.
-    setAnswered(new Set(stored ? (loadEligibilityAnsweredKeys() ?? answeredFromProfile(stored)) : []));
+    const chosen = new Set(stored ? (loadEligibilityAnsweredKeys() ?? answeredFromProfile(stored)) : []);
+
+    // 현재 상태도 1층에서 이미 답했다. 다만 생년월일과 달리 2층에서 직접 고른 답('모름' 포함)이
+    // 있으면 그쪽을 지킨다 — 2층 선택지(재학/휴학·구직/미취업)가 더 넓어서, 2층에서 고른 답이
+    // 1층 답보다 정확할 수 있다. 채운 값은 고른 답으로 보고(칠한다) 처음부터 접어 둔다.
+    // 저장은 하지 않는다(saving 은 그대로) — 채운 것만으로는 답한 게 아니다. "다음" 을 누르면
+    // 그때 이 값으로 저장된다. 다만 '직접 고른 질문' 기록에는 넣지 않으므로(persist), 다음 방문에도
+    // 여기서 1층 답으로 다시 채운다 — 1층에서 고쳐 오면 2층이 따라간다.
+    //
+    // 이 지역이 묻지 않는 질문이면 채우지 않는다. 화면에 안 나오는 값을 저장하면 사용자가
+    // 본 적도 없는 답이 프로필에 남는다.
+    const asksStatus = getRequiredQuestions(policiesForRegion(policies, listing.region)).some(
+      (q) => q.key === "isStudentOrEmployed",
+    );
+    if (일층.status && asksStatus && !chosen.has("isStudentOrEmployed")) {
+      next.isStudentOrEmployed = STATUS_FROM_FLOOR1[일층.status];
+      chosen.add("isStudentOrEmployed");
+      statusPrefilled.current = true;
+      setFolded(new Set<RequiredInputKey>(["isStudentOrEmployed"]));
+      setStatusFromFloor1(true);
+    }
+    setProfile(next);
+    setSaving(stored !== null);
+    setAnswered(chosen);
   }, [router]);
 
   // 지역에 해당하지 않는 정책은 후보에서 빠지고, 그 정책만 쓰던 질문도 함께 사라진다.
@@ -250,7 +324,7 @@ function EligibilitySteps() {
   // 빈 프로필로 저장된 답을 덮지 않고, 저장할 때가 아니면(saving) 아무것도 쓰지 않는다.
   useEffect(() => {
     if (region === null || !saving) return;
-    persist(profile, answered);
+    persist(profile, answered, statusTouched.current, statusPrefilled.current);
   }, [region, saving, profile, answered]);
 
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
@@ -258,6 +332,11 @@ function EligibilitySteps() {
   }
 
   function answer(question: QuestionDef, value: unknown, questions: QuestionDef[]) {
+    if (question.key === "isStudentOrEmployed") {
+      statusTouched.current = true;
+      statusPrefilled.current = false;
+      setStatusFromFloor1(false);
+    }
     update(question.key, value as never);
     setAnswered((prev) => new Set(prev).add(question.key));
     setSaving(true);
@@ -289,7 +368,7 @@ function EligibilitySteps() {
     setError(null);
     // 손대지 않고 "다음" 을 누른 것도 그 묶음을 이대로(모름으로) 넘기겠다는 답이다 — 예전처럼
     // 여기서 저장한다. 마지막 묶음은 바로 /result 로 가므로 effect 를 기다리지 않고 지금 쓴다.
-    persist(profile, answered);
+    persist(profile, answered, statusTouched.current, statusPrefilled.current);
     setSaving(true);
     if (step < steps.length - 1) return go(String(step + 2));
     router.push("/result");
@@ -329,6 +408,11 @@ function EligibilitySteps() {
             value={profile[q.key]}
             chosen={answered.has(q.key)}
             folded={folded.has(q.key)}
+            hint={
+              q.key === "isStudentOrEmployed" && statusFromFloor1 ? (
+                <CarriedOver>앞에서 답한 현재 상태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
+              ) : undefined
+            }
             onChange={(v) => answer(q, v, current.questions)}
             onUnfold={() => unfold(q.key)}
             fieldRef={(el) => {
@@ -357,6 +441,7 @@ function QuestionField({
   value,
   chosen,
   folded,
+  hint,
   onChange,
   onUnfold,
   fieldRef,
@@ -367,6 +452,8 @@ function QuestionField({
   /** 사용자가 직접 고른 질문인지. 아니면 값이 'unknown' 이어도 '모름' 카드를 칠하지 않는다. */
   chosen: boolean;
   folded: boolean;
+  /** 질문 밑에 붙는 한 줄. 1층에서 이어받았다는 표시에 쓴다 — 접혀 있어도 보인다. */
+  hint?: React.ReactNode;
   onChange: (value: unknown) => void;
   onUnfold: () => void;
   fieldRef: (el: HTMLDivElement | null) => void;
@@ -381,7 +468,7 @@ function QuestionField({
   if (folded) {
     const text = answerText(question, value);
     return (
-      <div ref={fieldRef}>
+      <div ref={fieldRef} className="flex flex-col gap-2">
         <button
           type="button"
           onClick={onUnfold}
@@ -397,6 +484,7 @@ function QuestionField({
           </span>
           <Pencil size={ICON_SM} aria-hidden="true" className="shrink-0 text-ink-300" />
         </button>
+        {hint}
       </div>
     );
   }
@@ -486,6 +574,7 @@ function QuestionField({
           {question.allowUnknown && <option value="unknown">모름</option>}
         </select>
       )}
+      {hint}
     </div>
   );
 }
