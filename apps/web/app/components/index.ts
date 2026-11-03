@@ -12,6 +12,7 @@ export { AnswerSummaryBar } from "./AnswerSummaryBar";
 export type { SummaryItem } from "./AnswerSummaryBar";
 export { Button, LinkButton, buttonClass } from "./Button";
 export type { ButtonSize, ButtonVariant } from "./Button";
+export { CarriedOver } from "./CarriedOver";
 export { Card } from "./Card";
 export type { CardTone } from "./Card";
 export { ChoiceCard } from "./ChoiceCard";
