@@ -5,6 +5,14 @@ import type {
   ListingInput,
   RequiredInputKey,
 } from "./types";
+import {
+  DISCOVERY_KEYS,
+  ELIGIBILITY_KEYS,
+  emptyContent,
+  sanitizeContent,
+  type ChecklistState,
+  type UserDataContent,
+} from "./user-data";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -27,6 +35,7 @@ function writeJSON(key: string, value: unknown): void {
 
 export function saveListing(listing: ListingInput): void {
   writeJSON(LISTING_KEY, listing);
+  notifyLocalChange();
 }
 
 export function loadListing(): ListingInput | null {
@@ -35,6 +44,7 @@ export function loadListing(): ListingInput | null {
 
 export function saveProfile(profile: EligibilityProfile): void {
   writeJSON(PROFILE_KEY, profile);
+  notifyLocalChange();
 }
 
 export function loadProfile(): EligibilityProfile | null {
@@ -80,6 +90,7 @@ export function saveEligibilityAnsweredKeys(keys: readonly RequiredInputKey[]): 
   } catch {
     // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
   }
+  notifyLocalChange();
 }
 
 // ── 결과 화면에서 직접 답한 '확인 필요' 조건 ──
@@ -103,6 +114,7 @@ export function saveDeclared(key: string, value: DeclaredValue | undefined): voi
   if (value === undefined || value === "") delete next[key];
   else next[key] = value;
   writeJSON(DECLARED_KEY, next);
+  notifyLocalChange();
 }
 
 // ── 1층(발견) 답변 ──
@@ -186,6 +198,7 @@ export function saveAnsweredKeys(keys: AnsweredKey[]): void {
   } catch {
     // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
   }
+  notifyLocalChange();
 }
 
 // ── 온보딩 ──
@@ -229,7 +242,11 @@ export function resetOnboarding(): void {
   }
 }
 
-/** 답변을 브라우저에만 저장한다. 서버로 보내지 않는다. (PRD F0-13) */
+/**
+ * 답변을 브라우저에 저장한다. 로그인 전에는 여기서 끝이다 — 서버로 보내지 않는다.
+ * 카카오로 로그인하고 저장에 동의한 이용자만 lib/sync.ts 가 이 알림을 듣고 서버에 올린다
+ * (PRD F0-13 개정, docs/기획/2026-11-04-카카오-로그인-설계.md "동기화 규칙").
+ */
 export function saveAnswers(answers: DiscoveryAnswers): void {
   if (typeof window === "undefined") return;
   try {
@@ -237,4 +254,159 @@ export function saveAnswers(answers: DiscoveryAnswers): void {
   } catch {
     // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
   }
+  notifyLocalChange();
+}
+
+// ── 신청 체크리스트 (app/find/policies/[id]/prepare) ──
+
+const CHECKLIST_PREFIX = "perky.application-checklist:";
+
+export const EMPTY_CHECKLIST: ChecklistState = { eligibility: false, period: false, documents: false };
+
+export function loadChecklist(policyId: string): ChecklistState {
+  if (typeof window === "undefined") return EMPTY_CHECKLIST;
+  try {
+    const saved = JSON.parse(
+      window.localStorage.getItem(`${CHECKLIST_PREFIX}${policyId}`) ?? "null"
+    ) as Partial<ChecklistState> | null;
+    return {
+      eligibility: saved?.eligibility === true,
+      period: saved?.period === true,
+      documents: saved?.documents === true,
+    };
+  } catch {
+    return EMPTY_CHECKLIST;
+  }
+}
+
+export function saveChecklist(policyId: string, checklist: ChecklistState): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(`${CHECKLIST_PREFIX}${policyId}`, JSON.stringify(checklist));
+  } catch {
+    // 저장이 제한된 환경에서도 체크와 외부 이동은 계속 쓸 수 있어야 한다.
+  }
+  notifyLocalChange();
+}
+
+function checklistIds(): string[] {
+  const ids: string[] = [];
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(CHECKLIST_PREFIX)) ids.push(key.slice(CHECKLIST_PREFIX.length));
+    }
+  } catch {
+    // 읽기가 막혀 있으면 체크리스트는 없는 것으로 본다.
+  }
+  return ids;
+}
+
+// ── 바뀜 알림 ──
+
+/**
+ * save* 가 부를 때마다 듣는 쪽(lib/sync.ts)에 알린다. 듣는 쪽은 로그인 + 동의일 때만 붙는다 —
+ * 그 전에는 아무도 듣지 않으므로 서버 호출이 생길 수 없다.
+ *
+ * 서버 값으로 사본을 덮어쓸 때(writeLocalContent)와 로그아웃으로 비울 때(clearLocalContent)는
+ * 알리지 않는다. 알리면 방금 받은 값을 다시 올린다.
+ */
+export interface LocalChange {
+  /** true 면 1.5초 모으지 않고 바로 올린다('처음부터 다시'). */
+  immediate: boolean;
+}
+
+const localListeners = new Set<(change: LocalChange) => void>();
+let muted = 0;
+
+export function onLocalChange(listener: (change: LocalChange) => void): () => void {
+  localListeners.add(listener);
+  return () => {
+    localListeners.delete(listener);
+  };
+}
+
+function notifyLocalChange(immediate = false): void {
+  if (muted > 0) return;
+  for (const listener of localListeners) listener({ immediate });
+}
+
+function quietly(write: () => void): void {
+  muted++;
+  try {
+    write();
+  } finally {
+    muted--;
+  }
+}
+
+// ── 사본 묶음 — lib/sync.ts 가 이 묶음으로 서버와 주고받는다 (lib/user-data.ts) ──
+
+const SYNCED_KEYS = [ANSWERS_KEY, ANSWERED_KEY, LISTING_KEY, PROFILE_KEY, ELIGIBILITY_ANSWERED_KEY, DECLARED_KEY];
+
+/** 이 기기의 답 일곱 갈래를 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
+export function readLocalContent(): UserDataContent {
+  if (typeof window === "undefined") return emptyContent();
+  const discovery = DISCOVERY_KEYS as readonly string[];
+  const eligibility = ELIGIBILITY_KEYS as readonly string[];
+  const profile = readJSON<Record<string, unknown>>(PROFILE_KEY);
+  const eligibilityKeys = loadEligibilityAnsweredKeys();
+  const declared = readJSON<Record<string, unknown>>(DECLARED_KEY);
+  return sanitizeContent({
+    answers: {
+      values: loadAnswers(),
+      answeredKeys: [...new Set(loadAnsweredKeys())].filter((k) => discovery.includes(k)),
+    },
+    listing: readJSON<unknown>(LISTING_KEY),
+    profile:
+      profile === null
+        ? null
+        : {
+            // 직접 답한 조건은 perky.declared 가 단독 출처다(loadProfile 주석). 프로필 쪽 옛 값은 뺀다.
+            values: Object.fromEntries(Object.entries(profile).filter(([k]) => k !== "selfDeclared")),
+            answeredKeys:
+              eligibilityKeys === null ? null : [...new Set(eligibilityKeys)].filter((k) => eligibility.includes(k)),
+          },
+    declared,
+    checklists: Object.fromEntries(checklistIds().map((id) => [id, loadChecklist(id)])),
+  });
+}
+
+/** 이 기기의 답을 모두 지운다. 로그인·동의·온보딩·가입 시트 기록은 답이 아니라서 남긴다. */
+export function clearLocalContent(): void {
+  if (typeof window === "undefined") return;
+  try {
+    for (const key of SYNCED_KEYS) window.localStorage.removeItem(key);
+    for (const id of checklistIds()) window.localStorage.removeItem(`${CHECKLIST_PREFIX}${id}`);
+  } catch {
+    // 지우기가 막혀 있으면 할 수 있는 것이 없다.
+  }
+}
+
+/** 서버 값으로 사본을 통째로 바꾼다. 알리지 않는다. */
+export function writeLocalContent(content: UserDataContent): void {
+  if (typeof window === "undefined") return;
+  quietly(() => {
+    clearLocalContent();
+    const { values, answeredKeys } = content.answers;
+    if (Object.values(values).some((v) => v !== null)) saveAnswers(values);
+    if (answeredKeys.length > 0) saveAnsweredKeys(answeredKeys);
+    if (content.listing) saveListing(content.listing);
+    if (content.profile) {
+      saveProfile(content.profile.values);
+      if (content.profile.answeredKeys) saveEligibilityAnsweredKeys(content.profile.answeredKeys);
+    }
+    if (content.declared) writeJSON(DECLARED_KEY, content.declared);
+    for (const [id, checklist] of Object.entries(content.checklists)) saveChecklist(id, checklist);
+  });
+}
+
+/**
+ * '처음부터 다시'. 1층 답, 2층 계약 조건·자격 답, 신청 체크리스트(첫 항목이 "자격 조건 확인"이라
+ * 답이 바뀌면 예전 체크가 맞지 않는다), perky.declared 를 지운다. 로그인 상태·가입 시트 닫음 기록은 남긴다.
+ * 로그인 상태면 lib/sync.ts 가 비운 데이터를 기다리지 않고 바로 올린다 — 다른 기기에서도 빈 상태.
+ */
+export function resetAllAnswers(): void {
+  quietly(clearLocalContent);
+  notifyLocalChange(true);
 }

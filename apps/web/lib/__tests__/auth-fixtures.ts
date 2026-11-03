@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import { AUTH_KEY, CONSENT_KEY } from "@/lib/auth";
-import { CONSENT_VERSION } from "@/lib/user-data";
+import { SYNC_META_KEY } from "@/lib/sync";
+import { CONSENT_VERSION, SCHEMA_VERSION, emptyContent, type GetResponseBody, type UserDataContent } from "@/lib/user-data";
 
 /**
  * 로그인을 켠 상태의 환경변수. 기본(아무것도 안 넣음)은 "로그인을 쓸 수 없음" 이다 —
@@ -29,4 +30,37 @@ export function signInAs(sub = "sub-a", { consent = true }: { consent?: boolean 
       JSON.stringify({ sub, version: CONSENT_VERSION, at: "2026-11-04T09:00:00.000Z" })
     );
   }
+}
+
+/** 이 기기가 이미 서버와 한 번 맞춘 상태. 기본은 "09:00 에 맞췄고 올리지 못한 변경 없음". */
+export function seedSyncMeta(
+  sub = "sub-a",
+  meta: { baseUpdatedAt?: string | null; lastSavedAt?: string | null; dirty?: boolean } = {}
+): void {
+  window.localStorage.setItem(
+    SYNC_META_KEY,
+    JSON.stringify({
+      sub,
+      baseUpdatedAt: "baseUpdatedAt" in meta ? meta.baseUpdatedAt : "2026-11-04T09:00:00.000Z",
+      lastSavedAt: "lastSavedAt" in meta ? meta.lastSavedAt : "2026-11-04T09:00:00.000Z",
+      dirty: meta.dirty ?? false,
+    })
+  );
+}
+
+/** 서버가 돌려줄 항목. content 에 없는 묶음은 비어 있다. */
+export function remoteItem(
+  content: Partial<UserDataContent> = {},
+  updatedAt = "2026-11-04T09:00:00.000Z"
+): GetResponseBody {
+  return {
+    data: {
+      ...emptyContent(),
+      ...content,
+      schemaVersion: SCHEMA_VERSION,
+      consentVersion: CONSENT_VERSION,
+      consentAt: "2026-11-04T09:00:00.000Z",
+    },
+    updatedAt,
+  };
 }

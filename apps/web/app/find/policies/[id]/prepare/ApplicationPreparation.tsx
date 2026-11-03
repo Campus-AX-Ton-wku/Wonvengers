@@ -11,42 +11,11 @@ import {
 } from "@/app/components";
 import { Check, ICON_SM, ShieldCheck } from "@/app/components/icons";
 import { formatDotDate } from "@/lib/date";
+import { EMPTY_CHECKLIST, loadChecklist, saveChecklist } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
+import type { ChecklistState } from "@/lib/user-data";
 
-type ChecklistKey = "eligibility" | "period" | "documents";
-type ChecklistState = Record<ChecklistKey, boolean>;
-
-const EMPTY_CHECKLIST: ChecklistState = {
-  eligibility: false,
-  period: false,
-  documents: false,
-};
-
-function storageKey(policyId: string) {
-  return `perky.application-checklist:${policyId}`;
-}
-
-function loadChecklist(policyId: string): ChecklistState {
-  if (typeof window === "undefined") return EMPTY_CHECKLIST;
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(storageKey(policyId)) ?? "null") as Partial<ChecklistState> | null;
-    return {
-      eligibility: saved?.eligibility === true,
-      period: saved?.period === true,
-      documents: saved?.documents === true,
-    };
-  } catch {
-    return EMPTY_CHECKLIST;
-  }
-}
-
-function saveChecklist(policyId: string, checklist: ChecklistState) {
-  try {
-    window.localStorage.setItem(storageKey(policyId), JSON.stringify(checklist));
-  } catch {
-    // 저장이 제한된 환경에서도 체크와 외부 이동은 계속 쓸 수 있어야 한다.
-  }
-}
+type ChecklistKey = keyof ChecklistState;
 
 export default function ApplicationPreparation({ policy }: { policy: PolicyMeta }) {
   const [checklist, setChecklist] = useState<ChecklistState>(EMPTY_CHECKLIST);
