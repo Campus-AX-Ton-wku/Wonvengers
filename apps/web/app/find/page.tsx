@@ -10,7 +10,7 @@ import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
 import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO, fromISODate } from "@/lib/date";
-import { useStepParam } from "@/lib/navigation";
+import { stepHref, useStepParam } from "@/lib/navigation";
 import {
   EMPTY_ANSWERS,
   loadAnswers,
@@ -28,12 +28,12 @@ import type {
 } from "@/lib/types";
 import {
   REGION_HIERARCHY,
-  REGION_OPTIONS,
   isRegionValue,
   provinceForRegion,
+  regionDisplayName,
 } from "@/lib/region";
 import {
-  AnsweredStack,
+  AnswerSummaryBar,
   AppShell,
   Button,
   ChoiceCard,
@@ -52,6 +52,7 @@ import { ICON_SM, TriangleAlert } from "@/app/components/icons";
  * 지금은 질문이 곧 화면 제목이고, 단계는 주소(?q=)에 있다. "다음" 이 기록을 하나씩
  * 쌓아서 휴대폰 뒤로가기와 왼쪽 위 화살표가 이전 질문으로 간다. 지역 질문의 시·도 →
  * 시·군·구도 주소(&p=)로 나눠서 뒤로가기가 시·도 목록으로 돌아온다.
+ * 답한 것은 상단바 아래 한 줄(AnswerSummaryBar)에 고정된다 — 아래로 쌓으면 긴 목록에 밀려 안 보였다.
  *
  * (docs/기획/2026-08-30-화면-구조-개편-설계.md, docs/기획/2026-11-03-단계-이동-설계.md)
  */
@@ -85,19 +86,17 @@ const QUESTIONS = [
 type FindStep = (typeof QUESTIONS)[number]["step"];
 const STEP_KEYS: readonly FindStep[] = QUESTIONS.map((q) => q.step);
 
-/** 쌓인 줄과 요약 칩이 같은 어휘를 쓰도록 지역 라벨은 REGION_OPTIONS 에서만 온다. */
-const regionLabel = (value: string | null) =>
-  REGION_OPTIONS.find((o) => o.value === value)?.chipLabel ?? null;
-
 const bracketLabel = (bracket: number | null) =>
   brackets.find((b) => b.bracket === bracket)?.label ?? null;
 
-/** 저장된 생년월일을 사람이 읽는 형태로. 나이는 기준일이 있어야 하므로 따로 붙인다. */
-function birthDateLabel(birthDate: string | null, age: number | null): string | null {
+/**
+ * 요약 줄의 생년월일. 한 줄에 다섯 답이 들어가야 하므로 날짜 대신 만 나이를 쓴다.
+ * 나이는 기준일이 있어야 하므로 그 전에는 날짜를 보여준다.
+ */
+function birthChipLabel(birthDate: string | null, age: number | null): string | null {
   const parts = birthDate === null ? null : fromISODate(birthDate);
   if (!parts) return null;
-  const 날짜 = `${parts.year}년 ${parts.month}월 ${parts.day}일`;
-  return age === null ? 날짜 : `${날짜} · 만 ${age}세`;
+  return age === null ? `${parts.year}년 ${parts.month}월 ${parts.day}일` : `만 ${age}세`;
 }
 
 /** useSearchParams 를 쓰므로 정적 export 에서 본문을 Suspense 안에 둔다. 경계 밖 HTML 은 불러오는 중 화면이다. */
@@ -185,23 +184,22 @@ function FindSteps() {
   const groups = groupPolicies(policies, resolved);
   const count = candidateCount(groups);
   // Find에서는 모든 질문을 실제 값으로 답해야 하므로 요약에 '모름'을 만들지 않는다.
-  const 답변줄 = [
-    birthDateLabel(answers.birthDate, resolved.age),
-    regionLabel(answers.region),
+  const 요약값 = [
+    birthChipLabel(answers.birthDate, resolved.age),
+    answers.region ? regionDisplayName(answers.region) : null,
     answers.status,
     bracketLabel(answers.incomeBracket),
     answers.housingType,
   ];
 
-  /** 지금 질문보다 앞선 것 중 답한 것만, 가장 최근에 답한 것이 위로 오게 쌓는다. */
-  const 쌓인답 = QUESTIONS.slice(0, step)
-    .map((q, i) => ({
-      label: q.label,
-      value: answered.includes(q.key) ? 답변줄[i] : null,
-      onEdit: () =>
-        go(q.step, q.key === "region" && answeredProvince ? { p: answeredProvince.name } : undefined),
-    }))
-    .reverse();
+  /** 지금 질문보다 앞서 답한 것만, 질문 순서대로. 누르면 그 질문 주소로 간다(기록에 남는다). */
+  const summary = QUESTIONS.slice(0, step).flatMap((q, i) => {
+    const value = answered.includes(q.key) ? 요약값[i] : null;
+    if (value === null) return [];
+    // 사는 곳은 시·군·구 목록으로 바로 연다 — 고치러 온 사람은 대개 같은 시·도 안에서 고친다.
+    const extra = q.key === "region" && answeredProvince ? { p: answeredProvince.name } : undefined;
+    return [{ key: q.key, label: q.label, value, href: stepHref("/find", "q", q.step, extra) }];
+  });
 
   const isLast = step === QUESTIONS.length - 1;
   const currentKey = QUESTIONS[step].key;
@@ -232,6 +230,7 @@ function FindSteps() {
   return (
     <AppShell>
       <TopBar backHref="/" />
+      <AnswerSummaryBar items={summary} />
 
       <main key={`${stepKey}-${province?.name ?? ""}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
         <StepHeader title={heading} />
@@ -331,8 +330,6 @@ function FindSteps() {
             ))}
           </div>
         )}
-
-        <AnsweredStack items={쌓인답} />
       </main>
 
       <StickyBottomAction>

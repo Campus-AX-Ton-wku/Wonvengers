@@ -216,3 +216,31 @@ export function consultCentersForRegion(centers: ConsultCenterMeta[], region: st
     .filter((c) => policyAppliesToRegion(c.regionScope, region))
     .sort((a, b) => scopeRank(b) - scopeRank(a));
 }
+
+/**
+ * 여러 시·도에 같은 이름이 있는 시·군·구 (중구·동구·서구·남구·북구·강서구·고성군).
+ * 손으로 적지 않고 REGION_HIERARCHY 에서 센다 — 시군구가 늘면 같이 늘어난다.
+ */
+export const DUPLICATE_DISTRICT_NAMES: ReadonlySet<string> = (() => {
+  const counts = new Map<string, number>();
+  for (const province of REGION_HIERARCHY) {
+    for (const district of province.districts) {
+      counts.set(district.chipLabel, (counts.get(district.chipLabel) ?? 0) + 1);
+    }
+  }
+  return new Set([...counts].filter(([, n]) => n > 1).map(([name]) => name));
+})();
+
+/**
+ * 답 요약에 쓰는 짧은 지역 이름. "익산시" 처럼 시·군·구 이름만 쓰되, 여러 시·도에 겹치는
+ * 이름이면 "부산 중구" 처럼 시·도 약칭(REGION_HIERARCHY 의 chipLabel)을 붙인다. 모르는 값은
+ * 그대로 돌려준다.
+ */
+export function regionDisplayName(region: string): string {
+  const province = provinceForRegion(region);
+  const district = province?.districts.find((d) => d.value === region);
+  if (!province || !district) return region;
+  return DUPLICATE_DISTRICT_NAMES.has(district.chipLabel)
+    ? `${province.chipLabel} ${district.chipLabel}`
+    : district.chipLabel;
+}

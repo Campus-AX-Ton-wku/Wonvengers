@@ -86,27 +86,60 @@ describe("/find 단계형 흐름", () => {
     expect(screen.queryByText(/\d\s*\/\s*\d/)).toBeNull();
   });
 
-  it("답하면 다음 질문으로 넘어가고, 답한 질문은 아래로 쌓인다", async () => {
+  it("답하면 다음 질문으로 넘어가고, 고른 답은 위 요약 줄에 보인다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
-    await 생년월일고르기(user, 1998, 3, 14);
+    await 생년월일고르기(user, 생년(23), 1, 1);
     await user.click(cta());
 
     expect(제목()).toBe("먼저 시·도를 선택해주세요");
-    expect(screen.getByRole("button", { name: "생년월일 고치기" })).toBeTruthy();
-    expect(screen.getByText(new RegExp(`1998년 3월 14일 · 만 ${생년(0) - 1998}세`))).toBeTruthy();
+    expect(screen.getByRole("link", { name: "생년월일 고치기: 만 23세" })).toBeTruthy();
   });
 
-  it("쌓인 답을 누르면 그 질문으로 돌아간다", async () => {
+  it("요약 줄 항목을 누르면 그 질문 주소로 간다", async () => {
     const user = userEvent.setup();
     render(<FindPage />);
 
     await 생년월일고르기(user, 1998, 3, 14);
     await user.click(cta());
-    await user.click(screen.getByRole("button", { name: "생년월일 고치기" }));
+    await user.click(screen.getByRole("link", { name: /^생년월일 고치기: / }));
 
+    expect(routerMock.push).toHaveBeenCalledWith("/find?q=birth");
     expect(제목()).toBe("생년월일이 어떻게 되시나요?");
+  });
+
+  it("고른 답은 위에 고정된다 — 질문 아래에 쌓던 목록은 없다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+
+    const 요약 = screen.getByRole("navigation", { name: "고른 답" });
+    expect(screen.getByRole("main").contains(요약)).toBe(false);
+    expect(screen.queryAllByRole("button", { name: /고치기/ })).toHaveLength(0);
+  });
+
+  it("첫 질문에는 요약 줄이 없다", () => {
+    render(<FindPage />);
+    expect(screen.queryByRole("navigation", { name: "고른 답" })).toBeNull();
+  });
+
+  it("이름이 겹치는 시·군·구에는 시·도 약칭을 붙이고, 누르면 그 시·도의 목록으로 간다", async () => {
+    const user = userEvent.setup();
+    render(<FindPage />);
+
+    await 생년월일고르기(user, 1998, 3, 14);
+    await user.click(cta());
+    await user.click(screen.getByRole("button", { name: "부산광역시" }));
+    await user.click(screen.getByRole("button", { name: "중구" }));
+    await user.click(cta());
+
+    const link = screen.getByRole("link", { name: "사는 곳 고치기: 부산 중구" });
+    expect(link.getAttribute("href")).toBe(
+      `/find?${new URLSearchParams({ q: "region", p: "부산광역시" })}`
+    );
   });
 
   it("뒤로가기로 앞 질문에 돌아간다", async () => {
@@ -173,7 +206,7 @@ describe("/find 단계형 흐름", () => {
     expect((cta() as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("다시 들어오면 답이 다 쌓인 마지막 단계에서 시작한다 — 답변 고치기 진입점", () => {
+  it("다시 들어오면 마지막 단계에서 시작하고, 앞선 네 답이 위 요약 줄에 있다", () => {
     saveAnswers({
       birthDate: "1998-03-14",
       region: "전북특별자치도 익산시",
@@ -185,8 +218,8 @@ describe("/find 단계형 흐름", () => {
     render(<FindPage />);
 
     expect(제목()).toBe("현재 어떤 형태로 거주하고 있나요?");
-    for (const label of ["생년월일 고치기", "사는 곳 고치기", "현재 상태 고치기", "월 소득 고치기"]) {
-      expect(screen.getByRole("button", { name: label }), label).toBeTruthy();
+    for (const label of ["생년월일", "사는 곳", "현재 상태", "월 소득"]) {
+      expect(screen.getByRole("link", { name: new RegExp(`^${label} 고치기: `) }), label).toBeTruthy();
     }
   });
 });
