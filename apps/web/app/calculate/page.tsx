@@ -9,11 +9,12 @@ import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
-import { REGION_HIERARCHY, isRegionValue, policiesForRegion } from "@/lib/region";
+import { REGION_HIERARCHY, isRegionValue, policiesForRegion, regionDisplayName } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import { useStepParam } from "@/lib/navigation";
 import {
+  AnswerSummaryBar,
   AppShell,
   Button,
   ChoiceCard,
@@ -214,6 +215,22 @@ function CalculateSteps() {
   return (
     <AppShell>
       <TopBar backHref="/find/policies" />
+      {/* 2단계에서 1단계 답이 안 보이면 무엇을 입력했는지 기억에 기대야 한다. 누르면 1단계로. */}
+      {step === 1 && (
+        <AnswerSummaryBar
+          items={[
+            { key: "region", label: "거주 예정 지역", value: regionDisplayName(form.region), href: "/calculate?s=1" },
+            { key: "contractType", label: "계약 형태", value: form.contractType, href: "/calculate?s=1" },
+            { key: "deposit", label: "보증금", value: `보증금 ${formatKoreanMoney(form.deposit)}`, href: "/calculate?s=1" },
+            {
+              key: "rent",
+              label: form.contractType,
+              value: `${form.contractType} ${formatKoreanMoney(form.rentOrYearlyAmount)}`,
+              href: "/calculate?s=1",
+            },
+          ]}
+        />
+      )}
 
       <main key={step} className="step-in flex flex-1 flex-col gap-7 py-7">
         {step === 0 ? (

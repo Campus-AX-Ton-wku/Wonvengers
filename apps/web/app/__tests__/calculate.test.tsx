@@ -338,3 +338,45 @@ describe("/calculate 단계 주소", () => {
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
 });
+
+describe("/calculate 고른 답 요약", () => {
+  async function 스텝2로(user: ReturnType<typeof userEvent.setup>) {
+    render(<CalculatePage />);
+    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 익산시");
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    await user.type(screen.getAllByRole("spinbutton")[0], "300"); // 보증금 300만원
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+  }
+
+  it("2단계 위에 1단계 답(지역·계약 형태·보증금·월세)이 한 줄로 보인다", async () => {
+    await 스텝2로(userEvent.setup());
+
+    expect(screen.getByRole("navigation", { name: "고른 답" }).textContent).toBe(
+      "익산시·월세·보증금 300만원·월세 35만원"
+    );
+  });
+
+  it("항목을 누르면 1단계 주소로 간다", async () => {
+    const user = userEvent.setup();
+    await 스텝2로(user);
+
+    await user.click(screen.getByRole("link", { name: "계약 형태 고치기: 월세" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=1");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("어떤 방을 보고 계신가요?");
+  });
+
+  it("연세 계약이면 마지막 항목이 연세다", () => {
+    saveListing(makeListing({ contractType: "연세", rentOrYearlyAmount: 4_800_000 }));
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("link", { name: "연세 고치기: 연세 480만원" })).toBeTruthy();
+  });
+
+  it("1단계에는 요약 줄이 없다", () => {
+    render(<CalculatePage />);
+    expect(screen.queryByRole("navigation", { name: "고른 답" })).toBeNull();
+  });
+});
