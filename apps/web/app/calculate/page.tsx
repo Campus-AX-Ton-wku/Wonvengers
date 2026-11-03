@@ -215,12 +215,12 @@ function CalculateSteps() {
   return (
     <AppShell>
       <TopBar backHref="/find/policies" />
-      {/* 2단계에서 1단계 답이 안 보이면 무엇을 입력했는지 기억에 기대야 한다. 누르면 1단계로. */}
+      {/* 2단계에서 1단계 답이 안 보이면 무엇을 입력했는지 기억에 기대야 한다. 누르면 1단계로.
+          계약 형태는 따로 두지 않는다 — 마지막 항목("월세 35만원"·"연세 480만원")이 이미 말한다. */}
       {step === 1 && (
         <AnswerSummaryBar
           items={[
             { key: "region", label: "거주 예정 지역", value: regionDisplayName(form.region), href: "/calculate?s=1" },
-            { key: "contractType", label: "계약 형태", value: form.contractType, href: "/calculate?s=1" },
             { key: "deposit", label: "보증금", value: `보증금 ${formatKoreanMoney(form.deposit)}`, href: "/calculate?s=1" },
             {
               key: "rent",

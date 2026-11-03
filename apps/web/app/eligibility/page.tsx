@@ -149,7 +149,7 @@ function EligibilitySteps() {
 
     // 생년월일은 1층과 2층이 나눠 갖는 값이 아니라 하나다. 1층 답을 소스 오브
     // 트루스로 삼아 여기서는 다시 묻지 않고 채워 둔다 — 고치는 건 그대로 된다
-    // (handleNext 가 고친 값을 1층 답변에도 써서 둘을 붙여 둔다).
+    // (아래 저장 effect 가 고친 값을 1층 답변에도 써서 둘을 붙여 둔다).
     //
     // 저장된 프로필이 이기게 두면 안 된다: 1층에서 답하고 2층에 들렀다가 다시
     // 1층으로 돌아가 날짜를 고치고 오면, 방금 고친 값이 옛 프로필에 막힌다.
@@ -196,6 +196,24 @@ function EligibilitySteps() {
     setUnfolded(null);
   }, [unfolded]);
 
+  // 답할 때마다 저장한다. "다음" 에서만 저장하면 첫 묶음에서 화살표로 /calculate 에 돌아갔을 때
+  // (뒤로가기라 "다음" 을 안 거친다) 그 묶음의 답이 사라진다. 불러오기 전(region === null)의
+  // 빈 프로필로 저장된 답을 덮지 않는다.
+  useEffect(() => {
+    if (region === null) return;
+    saveProfile(profile);
+
+    // 여기서 고친 생년월일을 1층 답변에도 써 둔다. 1층 답을 프리필의 기준으로
+    // 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때 1층의 옛 값이 다시 이겨서
+    // 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 두는 것이다.
+    if (profile.birthDate) {
+      const answers = loadAnswers();
+      if (answers.birthDate !== profile.birthDate) {
+        saveAnswers({ ...answers, birthDate: profile.birthDate });
+      }
+    }
+  }, [region, profile]);
+
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
@@ -228,17 +246,6 @@ function EligibilitySteps() {
       return;
     }
     setError(null);
-    saveProfile(profile); // 스텝마다 저장 — 새로고침해도 답이 남는다.
-
-    // 여기서 고친 생년월일을 1층 답변에도 써 둔다. 1층 답을 프리필의 기준으로
-    // 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때 1층의 옛 값이 다시 이겨서
-    // 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 두는 것이다.
-    if (profile.birthDate) {
-      const answers = loadAnswers();
-      if (answers.birthDate !== profile.birthDate) {
-        saveAnswers({ ...answers, birthDate: profile.birthDate });
-      }
-    }
     if (step < steps.length - 1) return go(String(step + 2));
     router.push("/result");
   }
@@ -351,7 +358,7 @@ function QuestionField({
         ref={titleRef}
         htmlFor={inputId}
         tabIndex={-1}
-        className="rounded-control text-base font-bold leading-snug text-ink-900 outline-none focus:ring-4 focus:ring-brand-100"
+        className="rounded-control text-base font-bold leading-snug text-ink-900 focus-ring outline-none"
       >
         {question.label}
       </label>

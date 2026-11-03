@@ -447,6 +447,39 @@ describe("/eligibility 진행 표시·답 접기", () => {
     );
   });
 
+  it("답하면 '다음' 없이도 저장된다 — 첫 묶음에서 화살표로 /calculate 에 가도 답이 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+    expect(loadProfile()?.livesApartFromParents).toBe(true);
+
+    await user.click(screen.getByLabelText("이전 단계로"));
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
+    expect(loadProfile()?.livesApartFromParents).toBe(true);
+  });
+
+  it("불러오기 전의 빈 프로필로 저장된 답을 덮지 않는다", async () => {
+    saveAnswers(일층);
+    saveProfile(makeProfile({ livesApartFromParents: false }));
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(loadProfile()?.livesApartFromParents).toBe(false);
+  });
+
+  it("질문 제목의 포커스 표시는 공용 focus-ring 이다 — 옅은 brand-100 링은 지면과 3:1 이 안 된다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    const title = screen.getByText("부모와 별도로 거주하나요?", { selector: "label" });
+    expect(title.className).toContain("focus-ring");
+    expect(title.className).not.toContain("ring-brand-100");
+  });
+
   it("'모름' 도 답이다 — 고르면 접힌다", async () => {
     const user = userEvent.setup();
     saveAnswers(일층);

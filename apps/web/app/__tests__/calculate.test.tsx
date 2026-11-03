@@ -349,19 +349,20 @@ describe("/calculate 고른 답 요약", () => {
     await user.click(screen.getByRole("button", { name: "다음" }));
   }
 
-  it("2단계 위에 1단계 답(지역·계약 형태·보증금·월세)이 한 줄로 보인다", async () => {
+  it("2단계 위에 1단계 답(지역·보증금·월세)이 한 줄로 보인다 — 계약 형태는 월세 항목이 말해 두 번 쓰지 않는다", async () => {
     await 스텝2로(userEvent.setup());
 
     expect(screen.getByRole("navigation", { name: "고른 답" }).textContent).toBe(
-      "익산시·월세·보증금 300만원·월세 35만원"
+      "익산시·보증금 300만원·월세 35만원"
     );
+    expect(screen.queryByRole("link", { name: /^계약 형태 고치기/ })).toBeNull();
   });
 
   it("항목을 누르면 1단계 주소로 간다", async () => {
     const user = userEvent.setup();
     await 스텝2로(user);
 
-    await user.click(screen.getByRole("link", { name: "계약 형태 고치기: 월세" }));
+    await user.click(screen.getByRole("link", { name: "월세 고치기: 월세 35만원" }));
 
     expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=1");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("어떤 방을 보고 계신가요?");
