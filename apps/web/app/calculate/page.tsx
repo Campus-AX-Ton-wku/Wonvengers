@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
@@ -195,12 +195,14 @@ function CalculateSteps() {
       }
     }
     if (key === "contractType") {
-      // 지역과 같다. 1층에서 주거 형태를 답한 사람이 여기서 계약 형태를 고르면 1층 답도
+      // 지역과 같다. 1층에서 월세·연세라고 답한 사람이 여기서 계약 형태를 바꾸면 1층 답도
       // 그 값으로 맞춘다 — 안 그러면 다음에 들어올 때 1층의 옛 답이 다시 이긴다.
-      // 1층을 건너뛴 사람의 답변은 만들지 않는다(전세·그 외였던 답은 고친 것으로 본다).
+      // 전세·그 외는 건드리지 않는다: 1층은 '지금 사는 집', 여기는 '계산해 볼 매물' 이다.
+      // 전세 사는 사람이 월세 매물을 계산해 봤다고 1층을 월세로 바꾸면 전세 전용 정책
+      // (보증료 지원 등)이 목록에서 말없이 빠진다. 1층을 건너뛴 사람의 답변도 만들지 않는다.
       setContractTypeFromFloor1(false);
       const answers = loadAnswers();
-      if (answers.housingType) {
+      if (answers.housingType === "월세" || answers.housingType === "연세") {
         saveAnswers({ ...answers, housingType: value as ContractType });
       }
     }
@@ -410,11 +412,15 @@ function CalculateSteps() {
  * 이 화면에서 답한 적이 없는데 답이 들어 있으면 왜 그런지 말해야 한다.
  */
 function ConfirmedRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+  // aria-label 이 버튼 안 글자를 대신 읽으므로 '앞에서 답했어요' 는 설명으로 따로 묶는다.
+  // 안 묶으면 스크린리더 사용자는 왜 답이 들어 있는지 듣지 못한다.
+  const noteId = useId();
   return (
     <button
       type="button"
       onClick={onEdit}
       aria-label={`${label} 고치기: ${value}`}
+      aria-describedby={noteId}
       className="focus-ring flex min-h-11 w-full items-center justify-between gap-3 rounded-control bg-surface px-4 py-2.5 text-left shadow-card transition-colors hover:bg-brand-50"
     >
       <span className="min-w-0 truncate text-sm">
@@ -425,7 +431,9 @@ function ConfirmedRow({ label, value, onEdit }: { label: string; value: string; 
         <span className="font-bold text-ink-900">{value}</span>
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <CarriedOver>앞에서 답했어요</CarriedOver>
+        <span id={noteId}>
+          <CarriedOver>앞에서 답했어요</CarriedOver>
+        </span>
         <Pencil size={ICON_SM} aria-hidden="true" className="text-ink-300" />
       </span>
     </button>

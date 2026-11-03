@@ -99,6 +99,10 @@ const STATUS_TO_FLOOR1: Partial<Record<StudentOrEmployed, DiscoveryStatus>> = {
 /**
  * 프로필과 '직접 고른 질문' 을 저장하고, 고친 생년월일·현재 상태를 1층 답변에도 써 둔다.
  *
+ * statusPrefilled: 현재 상태가 1층 답에서 채운 값 그대로인지(이번 방문에 손대지 않았다).
+ * 그러면 '직접 고른 질문' 기록에서 뺀다 — 기록에 남으면 다음 방문부터 직접 고른 답으로 보여
+ * 1층에서 고쳐 와도 2층이 옛 값을 지킨다. 값 자체는 저장한다("다음" 을 누르면 그 값으로 판정).
+ *
  * syncStatus: 현재 상태를 이번 방문에 직접 고쳤는지. 생년월일과 달리 현재 상태는 2층에서
  * 이미 고른 답을 지키므로(1층이 이기지 않는다) 두 화면 값이 다를 수 있다 — 1층에서 나중에
  * 고치고 온 경우다. 그때 열기만 했는데 2층의 옛 답이 1층을 덮으면 방금 한 수정이 사라진다.
@@ -108,9 +112,12 @@ function persist(
   profile: EligibilityProfile,
   answered: ReadonlySet<RequiredInputKey>,
   syncStatus: boolean,
+  statusPrefilled: boolean,
 ): void {
   saveProfile(profile);
-  saveEligibilityAnsweredKeys([...answered]);
+  saveEligibilityAnsweredKeys(
+    [...answered].filter((key) => !(statusPrefilled && key === "isStudentOrEmployed")),
+  );
 
   // 1층 답을 프리필의 기준으로 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때
   // 1층의 옛 값이 다시 이겨서 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 둔다.
@@ -222,6 +229,8 @@ function EligibilitySteps() {
   const [statusFromFloor1, setStatusFromFloor1] = useState(false);
   /** 현재 상태를 이번 방문에 직접 고쳤는지. persist 가 이때만 1층에 쓴다 (persist 주석). */
   const statusTouched = useRef(false);
+  /** 현재 상태를 이번 방문에 1층 답으로 채웠는지. 손대기 전까지는 직접 고른 답으로 저장하지 않는다. */
+  const statusPrefilled = useRef(false);
   const fieldRefs = useRef(new Map<RequiredInputKey, HTMLDivElement>());
   const titleRefs = useRef(new Map<RequiredInputKey, HTMLLabelElement>());
 
@@ -252,10 +261,18 @@ function EligibilitySteps() {
     // 있으면 그쪽을 지킨다 — 2층 선택지(재학/휴학·구직/미취업)가 더 넓어서, 2층에서 고른 답이
     // 1층 답보다 정확할 수 있다. 채운 값은 고른 답으로 보고(칠한다) 처음부터 접어 둔다.
     // 저장은 하지 않는다(saving 은 그대로) — 채운 것만으로는 답한 게 아니다. "다음" 을 누르면
-    // 그때 이 값으로 저장된다.
-    if (일층.status && next.isStudentOrEmployed === "unknown" && !chosen.has("isStudentOrEmployed")) {
+    // 그때 이 값으로 저장된다. 다만 '직접 고른 질문' 기록에는 넣지 않으므로(persist), 다음 방문에도
+    // 여기서 1층 답으로 다시 채운다 — 1층에서 고쳐 오면 2층이 따라간다.
+    //
+    // 이 지역이 묻지 않는 질문이면 채우지 않는다. 화면에 안 나오는 값을 저장하면 사용자가
+    // 본 적도 없는 답이 프로필에 남는다.
+    const asksStatus = getRequiredQuestions(policiesForRegion(policies, listing.region)).some(
+      (q) => q.key === "isStudentOrEmployed",
+    );
+    if (일층.status && asksStatus && !chosen.has("isStudentOrEmployed")) {
       next.isStudentOrEmployed = STATUS_FROM_FLOOR1[일층.status];
       chosen.add("isStudentOrEmployed");
+      statusPrefilled.current = true;
       setFolded(new Set<RequiredInputKey>(["isStudentOrEmployed"]));
       setStatusFromFloor1(true);
     }
@@ -307,7 +324,7 @@ function EligibilitySteps() {
   // 빈 프로필로 저장된 답을 덮지 않고, 저장할 때가 아니면(saving) 아무것도 쓰지 않는다.
   useEffect(() => {
     if (region === null || !saving) return;
-    persist(profile, answered, statusTouched.current);
+    persist(profile, answered, statusTouched.current, statusPrefilled.current);
   }, [region, saving, profile, answered]);
 
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
@@ -317,6 +334,7 @@ function EligibilitySteps() {
   function answer(question: QuestionDef, value: unknown, questions: QuestionDef[]) {
     if (question.key === "isStudentOrEmployed") {
       statusTouched.current = true;
+      statusPrefilled.current = false;
       setStatusFromFloor1(false);
     }
     update(question.key, value as never);
@@ -350,7 +368,7 @@ function EligibilitySteps() {
     setError(null);
     // 손대지 않고 "다음" 을 누른 것도 그 묶음을 이대로(모름으로) 넘기겠다는 답이다 — 예전처럼
     // 여기서 저장한다. 마지막 묶음은 바로 /result 로 가므로 effect 를 기다리지 않고 지금 쓴다.
-    persist(profile, answered, statusTouched.current);
+    persist(profile, answered, statusTouched.current, statusPrefilled.current);
     setSaving(true);
     if (step < steps.length - 1) return go(String(step + 2));
     router.push("/result");

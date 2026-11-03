@@ -816,6 +816,61 @@ describe("/eligibility 1층에서 받은 현재 상태", () => {
     expect(loadProfile()?.isStudentOrEmployed).toBe("student");
   });
 
+  // 채운 값은 직접 고른 답이 아니다. '다음' 으로 한 번 저장한 뒤 1층에서 고쳐 오면 2층도 따라가야
+  // 한다 — 안 그러면 1층은 재직인데 2층은 재학/휴학으로 남아 강진군 규칙이 '해당 없음' 으로 판정된다.
+  it("채운 값으로 저장한 뒤 1층에서 고쳐 오면 2층도 새 1층 답을 따른다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.isStudentOrEmployed).toBe("student");
+    first.unmount();
+
+    saveAnswers(일층("재직"));
+    resetNavigation("/eligibility");
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByRole("button", { name: "현재 상태 고치기: 재직" })).toBeTruthy();
+    expect(screen.getByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeTruthy();
+  });
+
+  it("2층에서 직접 고친 답은 저장 뒤에도 직접 고른 답으로 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층("대학생"));
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "현재 상태 고치기: 재학/휴학" }));
+    await user.selectOptions(상태칸(), "unemployed");
+    first.unmount();
+
+    // 1층도 구직으로 따라갔다. 그 뒤 다른 방문에서 손대지 않고 '다음' 을 눌러도 기록이 지워지면 안 된다.
+    resetNavigation("/eligibility");
+    const second = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    second.unmount();
+
+    saveAnswers(일층("재직"));
+    resetNavigation("/eligibility");
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    expect(상태칸().value).toBe("unemployed");
+  });
+
+  it("이 지역이 묻지 않는 질문이면 채우지 않는다 — 보지도 않은 값을 저장하지 않는다", async () => {
+    const user = userEvent.setup();
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveAnswers({ ...일층("대학생"), region: "전북특별자치도 익산시" });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.queryByText(/앞에서 답한 현재 상태로 골랐어요/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(loadProfile()?.isStudentOrEmployed).toBe("unknown");
+  });
+
   it("다른 질문은 여전히 고르기 전에 칠하지 않는다", async () => {
     saveAnswers(일층("대학생"));
     render(<EligibilityPage />);

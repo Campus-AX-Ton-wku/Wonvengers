@@ -407,7 +407,9 @@ describe("/calculate 계약 형태 이어받기", () => {
     const row = 접힌줄("월세");
     expect(row.textContent).toContain("계약 형태");
     expect(row.textContent).toContain("월세");
-    expect(row.textContent).toContain("앞에서 답했어요");
+    // aria-label 이 버튼 이름을 대신하므로 안의 글자는 읽히지 않는다. 설명으로 묶어 함께 읽힌다.
+    const note = document.getElementById(row.getAttribute("aria-describedby") ?? "");
+    expect(note?.textContent).toContain("앞에서 답했어요");
     // 탭 목표는 44px 이상 — 접힌 줄도 눌러서 고치는 버튼이다.
     expect(row.className).toContain("min-h-11");
     expect(screen.queryByRole("button", { name: "월세" })).toBeNull();
@@ -466,13 +468,16 @@ describe("/calculate 계약 형태 이어받기", () => {
     expect(접힌줄("연세")).toBeTruthy();
   });
 
-  it("1층이 전세였어도 2층에서 고른 계약 형태를 1층에 쓴다", async () => {
+  // 1층은 '지금 사는 집', 2층은 '계산해 볼 매물' 이다. 전세 사는 사람이 월세 매물을 계산해 본다고
+  // 1층 답을 월세로 바꾸면 전세 전용 정책(보증료 지원 등)이 /find/policies 에서 말없이 사라진다.
+  // 월세·연세끼리만 같은 질문으로 보고 되돌려 쓴다.
+  it.each(["전세", "그 외"] as const)("1층이 %s 이면 2층에서 계약 형태를 골라도 1층 답을 지킨다", async (housing) => {
     const user = userEvent.setup();
-    일층("전세");
+    일층(housing);
     render(<CalculatePage />);
 
     await user.click(screen.getByRole("button", { name: "월세" }));
-    expect(loadAnswers().housingType).toBe("월세");
+    expect(loadAnswers().housingType).toBe(housing);
   });
 
   it("1층을 건너뛴 사람의 답변은 만들어내지 않는다", async () => {

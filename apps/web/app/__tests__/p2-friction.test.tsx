@@ -73,7 +73,8 @@ describe("계약 형태", () => {
     render(<CalculatePage />);
 
     const row = screen.getByRole("button", { name: "계약 형태 고치기: 연세" });
-    expect(row.textContent).toContain("앞에서 답했어요");
+    const note = document.getElementById(row.getAttribute("aria-describedby") ?? "");
+    expect(note?.textContent).toContain("앞에서 답했어요");
     expect(screen.queryByRole("button", { name: "월세" })).toBeNull();
   });
 
