@@ -31,17 +31,17 @@ export function ResultSummary({
   unknownConditions: { policy: string; label: string }[];
 }) {
   return (
-    <section className="amount-in rounded-card bg-surface p-5 shadow-card">
-      {/* 받는 돈 — 화면에서 가장 큰 숫자. Perky 의 모자·동전과 같은 금색 면에 올린다. */}
-      <div className="rounded-control bg-accent-50 px-4 py-4">
-        <p className="text-xs font-bold text-accent-700">최대 지원 가능액 (12개월 기준)</p>
-        <p className="mt-1 text-4xl font-extrabold leading-tight text-accent-600 tabular-nums">
+    <section className="amount-in rounded-card border border-ink-200 bg-surface p-5 shadow-card">
+      {/* 받는 돈 — 금색 면 대신 금액 글자에만 accent를 써서 시선을 모은다. */}
+      <div className="pb-4">
+        <p className="text-xs font-bold text-ink-500">최대 지원 가능액 (12개월 기준)</p>
+        <p className="mt-1 text-4xl font-extrabold leading-tight text-accent-700 tabular-nums">
           {formatKoreanMoney(supportAmount)}
         </p>
       </div>
 
-      {/* 내는 돈 — 같은 카드 안이지만 면을 나누지 않는다. 색과 크기로만 갈린다. */}
-      <div className="mt-4 px-1">
+      {/* 내는 돈 — 얇은 구분선과 크기 차이로 지원금과 위계를 나눈다. */}
+      <div className="border-t border-ink-100 pt-4">
         <p className="text-xs font-semibold text-ink-500">
           최종 예상 주거비 (명목 지출 − 최대 지원 가능액)
         </p>
@@ -54,12 +54,16 @@ export function ResultSummary({
       </div>
 
       {unknownConditions.length > 0 && (
-        <div className="mt-4 rounded-control bg-warn-50 p-3.5 text-xs text-warn-800">
-          <p className="flex items-start gap-1.5 font-bold">
-            <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-px shrink-0" />
+        <div className="mt-5 border-t border-ink-100 pt-4 text-xs text-ink-600">
+          <p className="flex items-start gap-2 font-bold text-ink-700">
+            <TriangleAlert
+              size={ICON_SM}
+              aria-hidden="true"
+              className="mt-px shrink-0 text-warn-800"
+            />
             <span>이 금액에는 아직 확인되지 않은 조건이 포함되어 있습니다</span>
           </p>
-          <ul className="mt-1.5 list-disc pl-5 leading-relaxed">
+          <ul className="mt-2 list-disc space-y-1 pl-6 leading-relaxed">
             {unknownConditions.map((u, i) => (
               <li key={i}>
                 [{u.policy}] {u.label}

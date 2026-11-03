@@ -45,11 +45,12 @@ describe("/find/policies", () => {
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
     // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 시도 한정 정책도 다 후보에
-    // 남는다 — 34건 중 마감이 아닌 16건(대전 청년 월세 지원사업이 2026.9.10까지
-    // 접수 중이라 새로 포함된다). 제목은 지금 신청할 수 있는 것만 센다.
+    // 남는다 — 34건 중 마감이 아닌 15건(대전 청년 월세 지원사업이 2026.9.10까지
+    // 접수 중이라 포함된다. 익산 이사비·중개보수는 2026-05-14 예산 소진 마감이라
+    // 빠진다 — 2026-11-03 원문 재대조). 제목은 지금 신청할 수 있는 것만 센다.
     // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 16개"
+      "받을 수 있는 주거 혜택 15개"
     );
   });
 
@@ -76,18 +77,18 @@ describe("/find/policies", () => {
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });
-    // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세 1건은
-    // 마감), 해당 없음 32건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
+    // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세와
+    // 익산 이사비·중개보수 2건은 마감 — 이사비는 2026-05-14 예산 소진), 해당 없음 32건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
     // 부산·세종·광주 서구·경기(평택시·용인시)·충북(음성군·괴산군)·경북(고령군·구미시·
     // 울릉군)·경남(하동군·산청군·합천군·통영시·창원시·남해군)·대전·전남 강진군 전용
     // 정책 포함)
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 2개"
+      "받을 수 있는 주거 혜택 1개"
     );
 
-    const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 2개" });
-    expect(within(신청가능영역).getAllByRole("link")).toHaveLength(2);
-    expect(screen.getByText("신청할 수 없는 지원금 33개")).toBeTruthy();
+    const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 1개" });
+    expect(within(신청가능영역).getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByText("신청할 수 없는 지원금 34개")).toBeTruthy();
   });
 
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
@@ -156,6 +157,22 @@ describe("/find/policies", () => {
       "아쉽게도 해당되는 주거 혜택이 없어요"
     );
     expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
+  });
+
+  it("시범 지역 밖이면 정보를 모으는 중이라고 밝힌다", async () => {
+    saveAnswers({ ...익산_대학생, region: "강원특별자치도 춘천시" as const });
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByText(/아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요/)).toBeTruthy();
+  });
+
+  it("익산이면 그 안내가 없다", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByText(/아직 정보를 모으는 중/)).toBeNull();
   });
 
   it("고지 문구는 접히지 않고 항상 보인다", async () => {

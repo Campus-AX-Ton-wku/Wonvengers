@@ -1,4 +1,4 @@
-import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "./types";
+import type { ConsultCenterMeta, HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "./types";
 
 /** 정책 데이터와 화면이 함께 쓰는 시·군·구 한 항목. */
 export interface RegionOption {
@@ -204,4 +204,15 @@ export function loanProductsForRegion(products: LoanProductMeta[], region: strin
 /** 사용자 지역에 해당하는 저가 주택 공급 정책만 남긴다. */
 export function housingSupplyForRegion(items: HousingSupplyMeta[], region: string): HousingSupplyMeta[] {
   return items.filter((item) => policyAppliesToRegion(item.regionScope, region));
+}
+
+/**
+ * 지역 상담 창구. 가까운 곳이 먼저 오게 regionScope 가 긴 순서로 — 익산시 창구가
+ * 전국 콜센터보다 위에 있어야 한다.
+ */
+export function consultCentersForRegion(centers: ConsultCenterMeta[], region: string): ConsultCenterMeta[] {
+  const scopeRank = (c: ConsultCenterMeta) => (c.regionScope === "전국" ? 0 : strip(c.regionScope).length);
+  return centers
+    .filter((c) => policyAppliesToRegion(c.regionScope, region))
+    .sort((a, b) => scopeRank(b) - scopeRank(a));
 }

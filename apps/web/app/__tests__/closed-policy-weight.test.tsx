@@ -44,8 +44,11 @@ function 카드(정책명: string): HTMLElement {
 
 /** 국토부 청년월세 — 2026-05-29 에 접수가 끝났다. */
 const 마감된_카드 = () => 카드("청년월세 지원 (2026년 상시사업 전환)");
-/** 익산 이사비 — 상시 접수라 지금 신청할 수 있다. */
-const 열린_카드 = () => 카드("익산시 전입 청년 이사비·중개보수 지원사업");
+/**
+ * 청년 주거급여 분리지급 — 상시 신청이라 지금 신청할 수 있다.
+ * (예전엔 익산 이사비였는데, 2026-11-03 원문 재대조에서 2026-05-14 예산 소진 마감이 확인됐다.)
+ */
+const 열린_카드 = () => 카드("청년 주거급여 분리지급");
 
 describe("접수가 끝난 정책", () => {
   it("공고 상한 금액을 accent 색으로 띄우지 않는다", async () => {
@@ -75,7 +78,8 @@ describe("접수가 끝난 정책", () => {
   it("접수 중인 정책의 금액은 accent 색을 유지한다", async () => {
     await renderList();
 
-    expect(within(열린_카드()).getByText("최대 50만원").className).toContain("accent");
-    expect(within(열린_카드()).getByText("신청 가능")).toBeTruthy();
+    expect(within(열린_카드()).getByText("월 최대 21만 2,000원").className).toContain("accent");
+    // 분리지급은 원가구 소득을 1층에서 못 가려 배지가 '확인 필요' 다 — 요점은 '접수 마감' 이 아니라는 것.
+    expect(within(열린_카드()).queryByText("접수 마감")).toBeNull();
   });
 });

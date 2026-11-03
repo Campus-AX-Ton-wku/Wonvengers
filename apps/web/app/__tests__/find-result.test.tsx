@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import FindResultPage from "@/app/find/result/page";
 import policiesJson from "@/data/policies.json";
@@ -34,36 +34,50 @@ beforeEach(() => {
 });
 
 describe("/find/result", () => {
-  it("가장 큰 금액과 건수를 말한다", async () => {
-    await render요약(익산_대학생);
-
-    expect(screen.getByText("지금 신청할 수 있는")).toBeTruthy();
-    expect(screen.getByText("최대 50만원")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 2건이 있어요");
-  });
-
   /*
-   * 합산하지 않는다. 중복 수급 제한(exclusiveGroup) 때문에 상한을 더하면 실제로는
-   * 받을 수 없는 금액이 되고, 정확한 조합은 계약 조건이 있어야 계산할 수 있다.
-   * 큰 숫자를 크게 띄우는 화면이라 이 약속이 깨지면 피해가 가장 크다.
+   * 익산 이사비·중개보수(최대 50만원)는 2026-05-14 예산 소진으로 마감됐다(2026-11-03 원문
+   * 재대조). 금액 헤드라인을 보려면 그 사업이 접수 중이던 날로 고정한다 — 2026-02-02 에는
+   * 이사비와 주거급여 분리지급 2건이 열려 있고 국토부 청년월세(3/30 시작)는 아직이다.
+   * Date 만 고정해야 findBy* 의 대기 타이머가 그대로 돈다.
    */
-  it("금액을 합산하지 않는다 — 어떤 한 정책의 상한과 같다", async () => {
-    await render요약(익산_대학생);
+  describe("이사비가 접수 중이던 날(2026-02-02)", () => {
+    beforeAll(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-02-02T12:00:00+09:00"));
+    });
+    afterAll(() => vi.useRealTimers());
 
-    const 개별상한 = (policiesJson as PolicyMeta[])
-      .map((p) => benefitCeiling(p)?.label)
-      .filter((l): l is string => l !== undefined);
-    const 보이는금액 = screen.getByText(/^최대 |^월 최대 /).textContent;
+    it("가장 큰 금액과 건수를 말한다", async () => {
+      await render요약(익산_대학생);
 
-    expect(개별상한).toContain(보이는금액);
-  });
+      expect(screen.getByText("지금 신청할 수 있는")).toBeTruthy();
+      expect(screen.getByText("최대 50만원")).toBeTruthy();
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 2건이 있어요");
+    });
 
-  it("CTA 가 목록으로 보낸다", async () => {
-    await render요약(익산_대학생);
+    /*
+     * 합산하지 않는다. 중복 수급 제한(exclusiveGroup) 때문에 상한을 더하면 실제로는
+     * 받을 수 없는 금액이 되고, 정확한 조합은 계약 조건이 있어야 계산할 수 있다.
+     * 큰 숫자를 크게 띄우는 화면이라 이 약속이 깨지면 피해가 가장 크다.
+     */
+    it("금액을 합산하지 않는다 — 어떤 한 정책의 상한과 같다", async () => {
+      await render요약(익산_대학생);
 
-    expect(
-      screen.getByRole("link", { name: /지원금 2건 자세히 보기/ }).getAttribute("href")
-    ).toBe("/find/policies");
+      const 개별상한 = (policiesJson as PolicyMeta[])
+        .map((p) => benefitCeiling(p)?.label)
+        .filter((l): l is string => l !== undefined);
+      const 보이는금액 = screen.getByText(/^최대 |^월 최대 /).textContent;
+
+      expect(개별상한).toContain(보이는금액);
+    });
+
+    it("CTA 가 목록으로 보낸다", async () => {
+      await render요약(익산_대학생);
+
+      expect(
+        screen.getByRole("link", { name: /지원금 2건 자세히 보기/ }).getAttribute("href")
+      ).toBe("/find/policies");
+    });
   });
 
   /*

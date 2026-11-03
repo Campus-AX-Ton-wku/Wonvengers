@@ -33,6 +33,7 @@ export {
   ListChecks,
   MapPin,
   Pencil,
+  Phone,
   Search,
   ShieldCheck,
   TriangleAlert,

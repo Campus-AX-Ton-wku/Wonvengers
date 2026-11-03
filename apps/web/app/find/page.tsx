@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
+import { RegionSummary } from "@/app/find/ConsultCenters";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
@@ -325,6 +326,9 @@ export default function FindPage() {
       </main>
 
       <StickyBottomAction>
+        {step === 1 && province !== null && answers.region?.startsWith(province.name) && (
+          <RegionSummary region={answers.region} label={answers.region.split(" ").at(-1) ?? answers.region} />
+        )}
         <Button onClick={handleNext} disabled={!hasCurrentAnswer}>
           다음
         </Button>
