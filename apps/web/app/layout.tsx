@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ENTRY_SCRIPT } from "@/lib/entry";
 
 /*
  * ── 이 앱의 디자인 계약 (2026-09-02 전면 리디자인) ─────────────────────────
@@ -91,6 +92,9 @@ export const metadata: Metadata = {
  * 조건이 pathname === "/" 인 이유: 목록·결과 링크로 바로 들어온 사람을 온보딩으로
  * 끌고 가면 자기가 열려던 화면을 못 본다.
  *
+ * 같은 스크립트가 이 탭의 첫 화면 주소도 sessionStorage 에 적는다(lib/entry.ts). 왼쪽 위
+ * 화살표가 그 기록으로 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지 정한다. React 가 뜨기 전에
+ * 적어야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도 놓치지 않는다.
  */
 const ONBOARDING_REDIRECT = `if(location.pathname==="/"){location.replace("/onboarding")}`;
 
@@ -110,7 +114,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: ONBOARDING_REDIRECT }} />
+        <script dangerouslySetInnerHTML={{ __html: `${ONBOARDING_REDIRECT};${ENTRY_SCRIPT}` }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>
     </html>
