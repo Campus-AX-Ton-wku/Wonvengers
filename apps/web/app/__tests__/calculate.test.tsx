@@ -1,16 +1,14 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
 import { loadListing, saveAnswers, saveListing } from "@/lib/storage";
 import { birthDateForAge, makeListing } from "@/lib/__tests__/fixtures";
+import { resetNavigation, routerMock } from "./navigation-mock";
 
-vi.mock("next/navigation", () => {
-  // 렌더마다 새 객체를 주면 router 를 의존성으로 쓰는 useEffect 가 무한히 다시 돈다.
-  // 실제 next/navigation 의 useRouter 는 컨텍스트에서 같은 객체를 준다.
-  const router = { push: vi.fn(), replace: vi.fn() };
-  return { useRouter: () => router };
+beforeEach(() => {
+  resetNavigation("/calculate");
 });
 
 /**
@@ -301,10 +299,85 @@ describe("/calculate 이사비 질문", () => {
 
     await user.type(screen.getByLabelText(/이사비·중개보수로 얼마를/), "60");
     await user.click(screen.getByRole("button", { name: "이전 단계로" }));
+    await screen.findByRole("combobox");
     await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 전주시");
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.queryByLabelText(/이사비·중개보수로 얼마를/)).toBeNull();
     expect(loadListing()?.oneTimeMoveCost).toBe(0);
+  });
+});
+
+describe("/calculate 단계 주소", () => {
+  it("1단계를 채우고 '다음' 을 누르면 ?s=2 를 push 한다", async () => {
+    const user = userEvent.setup();
+    render(<CalculatePage />);
+    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 익산시");
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=2");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("비용과 기간을 알려주세요");
+  });
+
+  it("1단계가 비어 있는데 ?s=2 로 들어오면 ?s=1 로 replace 한다", () => {
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("어떤 방을 보고 계신가요?");
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate?s=1");
+  });
+
+  it("저장된 1단계가 있으면 ?s=2 로 바로 열린다 — 새로고침해도 그 단계다", () => {
+    saveListing(makeListing());
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("비용과 기간을 알려주세요");
+    expect(routerMock.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("/calculate 고른 답 요약", () => {
+  async function 스텝2로(user: ReturnType<typeof userEvent.setup>) {
+    render(<CalculatePage />);
+    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 익산시");
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    await user.type(screen.getAllByRole("spinbutton")[0], "300"); // 보증금 300만원
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+  }
+
+  it("2단계 위에 1단계 답(지역·보증금·월세)이 한 줄로 보인다 — 계약 형태는 월세 항목이 말해 두 번 쓰지 않는다", async () => {
+    await 스텝2로(userEvent.setup());
+
+    expect(screen.getByRole("navigation", { name: "고른 답" }).textContent).toBe(
+      "익산시·보증금 300만원·월세 35만원"
+    );
+    expect(screen.queryByRole("link", { name: /^계약 형태 고치기/ })).toBeNull();
+  });
+
+  it("항목을 누르면 1단계 주소로 간다", async () => {
+    const user = userEvent.setup();
+    await 스텝2로(user);
+
+    await user.click(screen.getByRole("link", { name: "월세 고치기: 월세 35만원" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=1");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("어떤 방을 보고 계신가요?");
+  });
+
+  it("연세 계약이면 마지막 항목이 연세다", () => {
+    saveListing(makeListing({ contractType: "연세", rentOrYearlyAmount: 4_800_000 }));
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("link", { name: "연세 고치기: 연세 480만원" })).toBeTruthy();
+  });
+
+  it("1단계에는 요약 줄이 없다", () => {
+    render(<CalculatePage />);
+    expect(screen.queryByRole("navigation", { name: "고른 답" })).toBeNull();
   });
 });

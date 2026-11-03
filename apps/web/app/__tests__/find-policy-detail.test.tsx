@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import PolicyDetail from "@/app/find/policies/[id]/PolicyDetail";
 import policiesJson from "@/data/policies.json";
 import { saveAnswers, saveListing, saveProfile } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
 import { birthDateForAge, makeListing, makeProfile } from "@/lib/__tests__/fixtures";
+import { routerMock } from "./navigation-mock";
 
 /**
  * 정책 상세.
@@ -114,13 +116,22 @@ describe("/find/policies/[id]", () => {
     }
   });
 
-  it("없는 id 로 들어오면 목록으로 돌아갈 길을 준다", () => {
+  it("없는 id 로 들어오면 목록으로 돌아갈 길을 준다", async () => {
     render(<PolicyDetail id="없는-정책" />);
 
     expect(screen.getByText("찾을 수 없는 지원금입니다.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "목록으로 돌아가기" }).getAttribute("href")).toBe(
-      "/find/policies"
-    );
+    // 링크로 바로 들어온 사람이다(이 탭의 첫 화면) — 화살표가 목록으로 간다.
+    await userEvent.setup().click(screen.getByRole("button", { name: "이전 단계로" }));
+    expect(routerMock.replace).toHaveBeenCalledWith("/find/policies");
+  });
+
+  it("지금 할 일이 없는 혜택(마감·대상 아님)에는 하단 버튼을 두지 않는다 — 화살표가 목록으로 간다", async () => {
+    saveAnswers(익산_대학생);
+    // 2026-05-14 예산 소진으로 마감 (위 '지원 대상과 신청 기간' 테스트와 같은 원문)
+    await render상세("iksan-newcomer-moving-cost-support");
+
+    expect(screen.queryByRole("link", { name: "다른 혜택 보기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "신청 준비하기" })).toBeNull();
   });
 });
 

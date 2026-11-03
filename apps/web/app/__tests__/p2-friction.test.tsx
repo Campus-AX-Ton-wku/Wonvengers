@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
@@ -7,15 +7,7 @@ import EligibilityPage from "@/app/eligibility/page";
 import ResultPage from "@/app/result/page";
 import { EMPTY_ANSWERS, loadListing, saveAnswers, saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
-
-const { pushMock, replaceMock } = vi.hoisted(() => ({
-  pushMock: vi.fn(),
-  replaceMock: vi.fn(),
-}));
-vi.mock("next/navigation", () => {
-  const router = { push: pushMock, replace: replaceMock };
-  return { useRouter: () => router };
-});
+import { routerMock } from "./navigation-mock";
 
 /**
  * 사용자 흐름 검토의 P2 세 건.
@@ -27,8 +19,6 @@ vi.mock("next/navigation", () => {
  */
 
 beforeEach(() => {
-  pushMock.mockClear();
-  replaceMock.mockClear();
   // 1층 답변이 테스트끼리 새지 않게 비운다 — 계약 형태 이어받기가 순서에 따라
   // 켜졌다 꺼졌다 하면 무엇을 검증한 것인지 알 수 없다.
   saveAnswers(EMPTY_ANSWERS);
@@ -39,7 +29,7 @@ describe("입력 없이 결과 화면에 들어왔을 때", () => {
     render(<ResultPage />);
 
     expect(await screen.findByText(/계산할 계약 조건이 없어요/)).toBeTruthy();
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(routerMock.replace).not.toHaveBeenCalled();
   });
 
   it("계약 조건 입력으로 가는 길을 준다", async () => {
@@ -57,7 +47,7 @@ describe("입력 없이 결과 화면에 들어왔을 때", () => {
   it("판정 질문 화면은 필요한 입력을 받는 곳으로 보낸다", async () => {
     render(<EligibilityPage />);
     // 계약 조건이 없으면 판정할 수 없다 — 홈이 아니라 계약 조건 화면으로 보낸다
-    expect(replaceMock).toHaveBeenCalledWith("/calculate");
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
   });
 });
 

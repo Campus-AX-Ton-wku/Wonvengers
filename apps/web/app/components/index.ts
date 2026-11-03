@@ -8,6 +8,8 @@
  * (예: app/find/PolicyCard.tsx). 재사용되지 않는 것을 여기로 올리지 말 것.
  */
 export { AppShell, StickyBottomAction } from "./AppShell";
+export { AnswerSummaryBar } from "./AnswerSummaryBar";
+export type { SummaryItem } from "./AnswerSummaryBar";
 export { Button, LinkButton, buttonClass } from "./Button";
 export type { ButtonSize, ButtonVariant } from "./Button";
 export { Card } from "./Card";
@@ -23,7 +25,6 @@ export type { PerkyState } from "./PerkyCharacter";
 export { ResultSummary } from "./ResultSummary";
 export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";
 export type { BadgeTone } from "./StatusBadge";
-export { AnsweredStack, StepHeader } from "./StepHeader";
-export type { AnsweredItem } from "./StepHeader";
+export { StepHeader } from "./StepHeader";
 export { TopBar } from "./TopBar";
 export { HomeMark, Wordmark } from "./Wordmark";

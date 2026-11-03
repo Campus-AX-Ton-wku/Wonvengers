@@ -110,4 +110,11 @@ describe("정책별 확인 필요 조건", () => {
     expect(loadDeclared().guaranteeEnrolled).toBe(true);
     expect(loadProfile()?.selfDeclared?.guaranteeEnrolled).toBe(true);
   });
+
+  it("하단에 '결과로 돌아가기' 를 두지 않는다 — 왼쪽 위 화살표와 같은 곳이다", async () => {
+    render(<RequirementReview policy={policy} />);
+    await screen.findByRole("heading", { name: "3가지만 답하면 돼요" });
+
+    expect(screen.queryByRole("link", { name: "결과로 돌아가기" })).toBeNull();
+  });
 });

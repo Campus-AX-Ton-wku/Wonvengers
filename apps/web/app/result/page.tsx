@@ -83,7 +83,7 @@ export default function ResultPage() {
 
   return (
     <AppShell className="step-in">
-      <TopBar onBack={() => router.push("/eligibility")} backLabel="이전 화면으로" />
+      <TopBar backHref="/eligibility" />
 
       <main className="flex flex-col gap-5 pb-10 pt-3">
         <header>
@@ -253,7 +253,7 @@ export default function ResultPage() {
         </p>
       </div>
 
-      <Button variant="quiet" onClick={() => router.push("/eligibility")}>
+      <Button variant="quiet" onClick={() => router.push("/eligibility?g=1")}>
         답변 수정하기
       </Button>
       </main>

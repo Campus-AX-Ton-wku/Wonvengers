@@ -117,7 +117,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
 
   return (
     <AppShell className="step-in">
-      <TopBar backHref={`/find/policies/${policy.id}`} backLabel="혜택 상세로 돌아가기" />
+      <TopBar backHref={`/find/policies/${policy.id}`} />
       <main className="flex flex-1 flex-col pb-6 pt-1">
         <header>
           <p className="text-[11px] font-bold leading-4 text-ink-500">신청 준비</p>

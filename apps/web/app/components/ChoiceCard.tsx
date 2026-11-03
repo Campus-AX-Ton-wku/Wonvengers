@@ -5,9 +5,9 @@ import { Check, ICON_MD } from "./icons";
 /**
  * 세로로 쌓이는 선택 버튼. 가로 3분할보다 터치 타깃이 크다.
  *
- * 비선택 상태에 테두리를 두르지 않는다. 선택지 여섯에 전부 테두리가 있으면 아직
- * 아무것도 고르지 않았는데도 화면이 상자로 가득 찬다. 지면(옅은 파랑) 위의 흰 면
- * 만으로 눌리는 자리가 보이므로 선은 필요 없다. 색은 실제로 고른 것에만 쓴다.
+ * 비선택 상태에도 옅은 테두리(ring-1 ink-200)를 둔다. 예전에는 흰 면만 두었는데
+ * 선택된 카드와의 대비가 약하다는 지적("선택된 부분 하이라이트", 2026-10-23 멘토링)을
+ * 받았다. 색은 여전히 실제로 고른 것에만 쓴다 (docs/기획/2026-11-03-단계-이동-설계.md).
  *
  * 테두리 대신 ring 을 쓰는 이유: 두 상태의 높이가 1px 도 어긋나면 안 된다.
  * 고를 때마다 줄이 밀리면 목록 전체가 덜컥거린다.
@@ -35,7 +35,7 @@ export function ChoiceCard({
       className={`focus-ring flex w-full items-center justify-between gap-3 rounded-control px-4 py-4 text-left transition-colors ${
         active
           ? "bg-brand-50 text-brand-900 ring-2 ring-inset ring-brand-600"
-          : "bg-surface text-ink-700 hover:bg-brand-50 hover:ring-2 hover:ring-inset hover:ring-brand-200"
+          : "bg-surface text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-brand-50 hover:ring-2 hover:ring-inset hover:ring-brand-200"
       }`}
     >
       <span className="min-w-0">
