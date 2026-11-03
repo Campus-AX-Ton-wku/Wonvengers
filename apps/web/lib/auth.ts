@@ -62,6 +62,8 @@ let session: Session | null = null;
 let refreshing: Promise<Session | null> | null = null;
 let clientPromise: Promise<OidcClient> | null = null;
 let clientKey = "";
+/** forgetLogin 마다 1 씩 오른다. 갱신 도중 로그아웃했으면 늦게 온 결과를 버린다(공용 PC). */
+let generation = 0;
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -138,10 +140,20 @@ function client(config: AuthConfig): Promise<OidcClient> {
 
 /** 로그인 뒤 돌아갈 곳은 앱 안 경로만. 바깥 주소로 튕기는 열린 리다이렉트를 막는다. */
 export function safeReturnTo(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/auth/")) {
+  // 브라우저는 \ 를 / 로 읽고 탭·CR·LF 를 지운다("/\\evil.com" → https://evil.com/). 그런 글자는 아예 받지 않고,
+  // 나머지는 브라우저와 같은 URL 파서로 풀어 같은 출처인지 본다.
+  if (!value || !value.startsWith("/") || /[\\\x00-\x1f\x7f]/.test(value)) return DEFAULT_RETURN;
+  const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+  let url: URL;
+  try {
+    url = new URL(value, origin);
+  } catch {
     return DEFAULT_RETURN;
   }
-  return value;
+  if (url.origin !== origin || url.pathname.startsWith("//") || url.pathname.startsWith("/auth/")) {
+    return DEFAULT_RETURN;
+  }
+  return url.pathname + url.search + url.hash;
 }
 
 export function consumeReturnTo(): string {
@@ -200,13 +212,18 @@ export function getSession(): Promise<Session | null> {
   if (session && session.sub === stored.sub && session.expiresAt - REFRESH_MARGIN_SECONDS > nowSeconds()) {
     return Promise.resolve(session);
   }
-  refreshing ??= refresh(config, stored).finally(() => {
-    refreshing = null;
-  });
+  if (!refreshing) {
+    const pending: Promise<Session | null> = refresh(config, stored).finally(() => {
+      // 로그아웃 뒤 새로 시작된 갱신을 지우지 않게, 자기 것일 때만.
+      if (refreshing === pending) refreshing = null;
+    });
+    refreshing = pending;
+  }
   return refreshing;
 }
 
 async function refresh(config: AuthConfig, stored: StoredAuth): Promise<Session | null> {
+  const startedAt = generation;
   const { ErrorResponse } = await import("oidc-client-ts");
   // RefreshState 는 타입 선언에만 있고 런타임에는 내보내지 않는다(3.5.0) — 같은 모양의 값을 넘긴다.
   // 갱신 응답에 id_token 이 있으면 그 sub 가, 없으면 여기 profile 이 response.profile 이 된다.
@@ -217,6 +234,7 @@ async function refresh(config: AuthConfig, stored: StoredAuth): Promise<Session 
   };
   try {
     const response = await (await client(config)).useRefreshToken({ state });
+    if (generation !== startedAt) return null;
     if (response.profile.sub !== stored.sub) {
       forgetLogin();
       return null;
@@ -224,6 +242,7 @@ async function refresh(config: AuthConfig, stored: StoredAuth): Promise<Session 
     return accept(response, stored.refreshToken);
   } catch (err) {
     // 서버가 거절했다(만료·취소·탈퇴한 사용자). 네트워크 실패는 그대로 던진다 — 기록을 지우면 안 된다.
+    if (generation !== startedAt) return null;
     if (err instanceof ErrorResponse) {
       forgetLogin();
       return null;
@@ -233,7 +252,9 @@ async function refresh(config: AuthConfig, stored: StoredAuth): Promise<Session 
 }
 
 function forgetLogin(): void {
+  generation++;
   session = null;
+  refreshing = null;
   writeStored(null);
   try {
     window.sessionStorage.removeItem(RETURN_KEY);

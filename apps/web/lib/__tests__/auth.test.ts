@@ -129,9 +129,32 @@ describe("signIn", () => {
 
   it("돌아올 곳은 앱 안 경로만 — 바깥 주소·//·/auth/ 는 /find 로", () => {
     expect(safeReturnTo("/account")).toBe("/account");
-    for (const bad of ["https://evil.example", "//evil.example", "/auth/callback", null, ""]) {
+    expect(safeReturnTo("/find/policies?x=1#a")).toBe("/find/policies?x=1#a");
+    const bads = [
+      "https://evil.example",
+      "https://evil.com",
+      "//evil.example",
+      "//evil.com",
+      "/auth/callback",
+      "/./auth/callback",
+      null,
+      "",
+      "find",
+      "javascript:alert(1)",
+      // 브라우저는 \ 를 / 로 읽고 탭·CR·LF 를 지운다 — 모두 https://evil.com/ 이 된다.
+      "/\\evil.com",
+      "/\t/evil.com",
+      "/\n/evil.com",
+      "/\\\\evil.com",
+      "\\/evil.com",
+    ];
+    for (const bad of bads) {
       expect(safeReturnTo(bad)).toBe("/find");
     }
+    // %5C 는 브라우저가 풀지 않는다 — 앱 안의 (없는) 경로로 남는다.
+    const encoded = safeReturnTo("/%5Cevil.com");
+    expect(new URL(encoded, "http://localhost:3000").origin).toBe("http://localhost:3000");
+    expect(encoded.startsWith("//")).toBe(false);
   });
 
   it("consumeReturnTo 는 한 번 읽고 지운다", () => {
@@ -233,6 +256,22 @@ describe("getSession — 토큰 갱신", () => {
 });
 
 describe("signOut", () => {
+  it("갱신이 끝나기 전에 로그아웃하면, 늦게 온 갱신 결과로 로그인이 되살아나지 않는다", async () => {
+    enableLogin();
+    signInAs("sub-a");
+    let resolveRefresh!: (value: unknown) => void;
+    oidc.useRefreshToken.mockReturnValue(new Promise((resolve) => (resolveRefresh = resolve)));
+
+    const pending = getSession();
+    await vi.waitFor(() => expect(oidc.useRefreshToken).toHaveBeenCalled());
+    signOut({ redirect: false });
+    resolveRefresh(signinResponse());
+
+    expect(await pending).toBeNull();
+    expect(hasStoredLogin()).toBe(false);
+    expect(await getSession()).toBeNull();
+  });
+
   it("메모리·perky.auth 를 지우고 Cognito 로그아웃으로 보낸다", async () => {
     enableLogin();
     oidc.processSigninResponse.mockResolvedValue(signinResponse());
