@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalculatePage from "@/app/calculate/page";
-import { loadListing, saveAnswers, saveListing } from "@/lib/storage";
+import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
 import { birthDateForAge, makeListing } from "@/lib/__tests__/fixtures";
 import { resetNavigation, routerMock } from "./navigation-mock";
 
@@ -379,5 +379,134 @@ describe("/calculate 고른 답 요약", () => {
   it("1단계에는 요약 줄이 없다", () => {
     render(<CalculatePage />);
     expect(screen.queryByRole("navigation", { name: "고른 답" })).toBeNull();
+  });
+});
+
+/**
+ * 1층 '주거 형태' 에서 월세·연세를 답한 사람에게 계약 형태를 다시 묻지 않는다.
+ *
+ * 전에는 저장된 계산 입력이 있으면 1층 답을 무시했고(지역은 1층이 이기는데),
+ * 이어받아도 두 카드를 처음 묻는 질문처럼 다시 보여줬다. 지역과 같은 규칙으로 맞춘다:
+ * 1층이 이기고, 2층에서 고치면 1층에도 쓴다. 이어받은 답은 한 줄로 접어 둔다.
+ */
+describe("/calculate 계약 형태 이어받기", () => {
+  const 일층 = (housingType: "월세" | "연세" | "전세" | "그 외" | null) =>
+    saveAnswers({
+      birthDate: birthDateForAge(23),
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+      housingType,
+    });
+  const 접힌줄 = (type: string) => screen.getByRole("button", { name: `계약 형태 고치기: ${type}` });
+
+  it("1층에서 월세라고 답했으면 두 카드 대신 확인된 한 줄로 보여준다", () => {
+    일층("월세");
+    render(<CalculatePage />);
+
+    const row = 접힌줄("월세");
+    expect(row.textContent).toContain("계약 형태");
+    expect(row.textContent).toContain("월세");
+    expect(row.textContent).toContain("앞에서 답했어요");
+    // 탭 목표는 44px 이상 — 접힌 줄도 눌러서 고치는 버튼이다.
+    expect(row.className).toContain("min-h-11");
+    expect(screen.queryByRole("button", { name: "월세" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "연세" })).toBeNull();
+  });
+
+  it("접힌 줄을 누르면 두 카드가 펼쳐지고, 이어받은 답이 눌려 있다 — 포커스는 그 카드로 간다", async () => {
+    const user = userEvent.setup();
+    일층("연세");
+    render(<CalculatePage />);
+
+    await user.click(접힌줄("연세"));
+
+    const 연세 = screen.getByRole("button", { name: "연세" });
+    expect(연세.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "월세" }).getAttribute("aria-pressed")).toBe("false");
+    expect(document.activeElement).toBe(연세);
+  });
+
+  it("저장된 계산 입력이 있어도 1층에서 답한 주거 형태가 이긴다 — 지역과 같다", () => {
+    saveListing(makeListing({ contractType: "연세", rentOrYearlyAmount: 4_800_000 }));
+    일층("월세");
+    render(<CalculatePage />);
+
+    expect(접힌줄("월세")).toBeTruthy();
+    expect(screen.getByText("월세액 (만원)")).toBeTruthy();
+  });
+
+  it("1층이 이긴 계약 형태로 저장하고, 2단계 요약에도 그대로 쓴다", async () => {
+    const user = userEvent.setup();
+    saveListing(makeListing({ contractType: "연세", rentOrYearlyAmount: 350_000 }));
+    일층("월세");
+    render(<CalculatePage />);
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(loadListing()?.contractType).toBe("월세");
+    expect(screen.getByRole("link", { name: "월세 고치기: 월세 35만원" })).toBeTruthy();
+  });
+
+  it("2층에서 계약 형태를 바꾸면 1층 주거 형태에도 쓴다 — 새로고침해도 옛 답으로 돌아가지 않는다", async () => {
+    const user = userEvent.setup();
+    일층("월세");
+    const first = render(<CalculatePage />);
+
+    await user.click(접힌줄("월세"));
+    await user.click(screen.getByRole("button", { name: "연세" }));
+
+    expect(loadAnswers().housingType).toBe("연세");
+    // 직접 바꿨으니 '앞에서 답했어요' 표시는 거둔다. 카드는 펼친 채로 둔다.
+    expect(screen.queryByText(/앞에서 답/)).toBeNull();
+    expect(screen.getByRole("button", { name: "연세" }).getAttribute("aria-pressed")).toBe("true");
+
+    first.unmount();
+    render(<CalculatePage />);
+    expect(접힌줄("연세")).toBeTruthy();
+  });
+
+  it("1층이 전세였어도 2층에서 고른 계약 형태를 1층에 쓴다", async () => {
+    const user = userEvent.setup();
+    일층("전세");
+    render(<CalculatePage />);
+
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    expect(loadAnswers().housingType).toBe("월세");
+  });
+
+  it("1층을 건너뛴 사람의 답변은 만들어내지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<CalculatePage />);
+
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    expect(loadAnswers().housingType).toBeNull();
+    expect(window.localStorage.getItem("perky.answers")).toBeNull();
+  });
+
+  it.each(["전세", "그 외", null] as const)("1층이 %s 이면 지금처럼 두 카드로 묻고, 고르기 전에는 넘어가지 않는다", async (housing) => {
+    const user = userEvent.setup();
+    일층(housing);
+    render(<CalculatePage />);
+
+    expect(screen.queryByRole("button", { name: /^계약 형태 고치기/ })).toBeNull();
+    for (const type of ["월세", "연세"]) {
+      expect(screen.getByRole("button", { name: type }).getAttribute("aria-pressed"), type).toBe("false");
+    }
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByText(/계약 형태를 선택해주세요/)).toBeTruthy();
+  });
+
+  it("접힌 채로도 검증을 통과한다 — 이어받은 답은 고른 답이다", async () => {
+    const user = userEvent.setup();
+    일층("월세");
+    render(<CalculatePage />);
+
+    await user.type(screen.getAllByRole("spinbutton")[1], "35");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=2");
+    expect(loadListing()?.contractType).toBe("월세");
   });
 });

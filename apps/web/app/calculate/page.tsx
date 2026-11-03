@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
@@ -17,6 +17,7 @@ import {
   AnswerSummaryBar,
   AppShell,
   Button,
+  CarriedOver,
   ChoiceCard,
   Field,
   FieldError,
@@ -27,7 +28,7 @@ import {
   StickyBottomAction,
   TopBar,
 } from "@/app/components";
-import { Check, ICON_SM } from "@/app/components/icons";
+import { ICON_SM, Pencil } from "@/app/components/icons";
 
 const policies = policiesData as PolicyMeta[];
 
@@ -100,22 +101,36 @@ function CalculateSteps() {
    * 않는다: 그 답들은 월세인지 연세인지를 말해주지 않는다.
    */
   const [contractTypeFromFloor1, setContractTypeFromFloor1] = useState(false);
+  /**
+   * 이어받은 계약 형태를 고치려고 두 카드를 펼쳤는지. 이어받은 답은 한 줄로 접어 둔다 —
+   * 카드 두 장을 그대로 다시 보여주면 표시가 붙어 있어도 또 묻는 질문처럼 읽힌다.
+   */
+  const [contractTypeEditing, setContractTypeEditing] = useState(false);
+  const contractTypeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = loadListing();
     const answers = loadAnswers();
     const regionFromAnswers =
       answers.region && isRegionValue(answers.region) ? answers.region : null;
+    // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
+    // 계약이 아니고, 무응답은 아무것도 말해주지 않는다.
+    const contractTypeFromAnswers: ContractType | null =
+      answers.housingType === "월세" || answers.housingType === "연세" ? answers.housingType : null;
 
     if (saved) {
       // Find에서 고른 지역은 이전 Calculate 저장값보다 최신의 명시적 답변이다.
-      // 금액·계약 정보는 유지하되 정책 범위를 정하는 지역만 Find 답변을 우선한다.
+      // 금액 정보는 유지하되 지역과 계약 형태는 Find 답변을 우선한다. 계약 형태도
+      // 지역과 같은 이유다 — 여기서 바꾼 값은 아래 update 가 1층에도 써 두므로, 둘이
+      // 다르면 1층에서 나중에 고친 것이다. 저장값이 이기면 방금 고친 답이 사라진다.
       setForm({
         ...saved,
         region: regionFromAnswers ?? (isRegionValue(saved.region) ? saved.region : ""),
+        contractType: contractTypeFromAnswers ?? saved.contractType,
       });
       setRegionFromFloor1(regionFromAnswers !== null);
       setContractTypeChosen(true); // 저장된 입력에는 이미 고른 계약 형태가 있다
+      setContractTypeFromFloor1(contractTypeFromAnswers !== null);
       setLoaded(true);
       return;
     }
@@ -126,11 +141,8 @@ function CalculateSteps() {
       setForm((prev) => ({ ...prev, region: regionFromAnswers }));
       setRegionFromFloor1(true);
     }
-    // 주거 형태 중 월세·연세만 계약 형태가 된다. 전세·그 외는 이 화면이 다루는
-    // 계약이 아니고, 무응답은 아무것도 말해주지 않는다.
-    const housingType = answers.housingType;
-    if (housingType === "월세" || housingType === "연세") {
-      setForm((prev) => ({ ...prev, contractType: housingType }));
+    if (contractTypeFromAnswers) {
+      setForm((prev) => ({ ...prev, contractType: contractTypeFromAnswers }));
       setContractTypeChosen(true);
       setContractTypeFromFloor1(true);
     }
@@ -162,6 +174,15 @@ function CalculateSteps() {
   // 뒤로가기로 단계가 바뀌면 떠난 단계의 오류 문구를 남기지 않는다.
   useEffect(() => setError(null), [stepKey]);
 
+  // 누른 접힌 줄이 카드로 바뀌며 사라졌다. 포커스를 이어받은 답 카드로 옮긴다 —
+  // 안 옮기면 body 로 떨어져 키보드·스크린리더 사용자가 자리를 잃는다 (/eligibility 와 같다).
+  useEffect(() => {
+    if (!contractTypeEditing) return;
+    contractTypeRef.current
+      ?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
+      ?.focus({ preventScroll: true });
+  }, [contractTypeEditing]);
+
   function update<K extends keyof ListingInput>(key: K, value: ListingInput[K]) {
     if (key === "region") {
       setRegionFromFloor1(false);
@@ -171,6 +192,16 @@ function CalculateSteps() {
       const answers = loadAnswers();
       if (answers.region) {
         saveAnswers({ ...answers, region: value ? String(value) : null });
+      }
+    }
+    if (key === "contractType") {
+      // 지역과 같다. 1층에서 주거 형태를 답한 사람이 여기서 계약 형태를 고르면 1층 답도
+      // 그 값으로 맞춘다 — 안 그러면 다음에 들어올 때 1층의 옛 답이 다시 이긴다.
+      // 1층을 건너뛴 사람의 답변은 만들지 않는다(전세·그 외였던 답은 고친 것으로 본다).
+      setContractTypeFromFloor1(false);
+      const answers = loadAnswers();
+      if (answers.housingType) {
+        saveAnswers({ ...answers, housingType: value as ContractType });
       }
     }
     setForm((prev) => {
@@ -259,25 +290,33 @@ function CalculateSteps() {
               </select>
             </Field>
 
-            <FieldGroup label="계약 형태">
-              <div className="flex flex-col gap-2">
-                {(["월세", "연세"] as ContractType[]).map((type) => (
-                  <ChoiceCard
-                    key={type}
-                    active={contractTypeChosen && form.contractType === type}
-                    onClick={() => {
-                      setContractTypeChosen(true);
-                      update("contractType", type);
-                    }}
-                  >
-                    {type}
-                  </ChoiceCard>
-                ))}
-              </div>
-              {contractTypeFromFloor1 && (
-                <CarriedOver>앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
-              )}
-            </FieldGroup>
+            {contractTypeFromFloor1 && !contractTypeEditing ? (
+              <ConfirmedRow
+                label="계약 형태"
+                value={form.contractType}
+                onEdit={() => setContractTypeEditing(true)}
+              />
+            ) : (
+              <FieldGroup label="계약 형태">
+                <div ref={contractTypeRef} className="flex flex-col gap-2">
+                  {(["월세", "연세"] as ContractType[]).map((type) => (
+                    <ChoiceCard
+                      key={type}
+                      active={contractTypeChosen && form.contractType === type}
+                      onClick={() => {
+                        setContractTypeChosen(true);
+                        update("contractType", type);
+                      }}
+                    >
+                      {type}
+                    </ChoiceCard>
+                  ))}
+                </div>
+                {contractTypeFromFloor1 && (
+                  <CarriedOver>앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
+                )}
+              </FieldGroup>
+            )}
 
             <Field label="보증금 (만원)">
               <MoneyInput placeholder="0" value={form.deposit} onChange={(v) => update("deposit", v ?? 0)} />
@@ -363,12 +402,32 @@ function CalculateSteps() {
   );
 }
 
-/** 앞 화면의 답을 그대로 옮겨 왔다는 표시. 색만으로 말하지 않도록 체크를 붙인다. */
-function CarriedOver({ children }: { children: React.ReactNode }) {
+/**
+ * 1층에서 이미 답한 것을 한 줄로 보여준다. 누르면 고칠 수 있게 펼친다.
+ *
+ * /eligibility 의 접힌 줄과 같은 모양이다 — 같은 앱 안에서 "답한 것" 이 같은 모습이어야
+ * 처음 보는 화면에서도 눌러서 고칠 수 있다는 걸 안다. 다른 점은 '앞에서 답했어요' 표시다:
+ * 이 화면에서 답한 적이 없는데 답이 들어 있으면 왜 그런지 말해야 한다.
+ */
+function ConfirmedRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-700">
-      <Check size={ICON_SM - 2} strokeWidth={3} aria-hidden="true" className="shrink-0" />
-      {children}
-    </span>
+    <button
+      type="button"
+      onClick={onEdit}
+      aria-label={`${label} 고치기: ${value}`}
+      className="focus-ring flex min-h-11 w-full items-center justify-between gap-3 rounded-control bg-surface px-4 py-2.5 text-left shadow-card transition-colors hover:bg-brand-50"
+    >
+      <span className="min-w-0 truncate text-sm">
+        <span className="font-semibold text-ink-500">{label}</span>
+        <span aria-hidden="true" className="px-1.5 text-ink-300">
+          ·
+        </span>
+        <span className="font-bold text-ink-900">{value}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <CarriedOver>앞에서 답했어요</CarriedOver>
+        <Pencil size={ICON_SM} aria-hidden="true" className="text-ink-300" />
+      </span>
+    </button>
   );
 }
