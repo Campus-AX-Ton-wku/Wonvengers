@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EligibilityPage from "@/app/eligibility/page";
@@ -29,6 +29,7 @@ beforeEach(() => {
   // 1층 답변이 테스트 사이로 새면 2층 생년월일 프리필이 앞 테스트에 물든다.
   window.localStorage.clear();
   saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 describe("뒤로가기", () => {
@@ -146,12 +147,13 @@ describe("생년월일 선택 (휠 피커)", () => {
     expect(loadProfile()?.birthDate).toBe("2003-02-28");
   });
 
-  it("고른 날짜를 트리거 버튼에 그대로 보여준다", async () => {
+  it("고른 날짜는 접힌 줄에 보이고, 누르면 트리거 버튼에 그대로 보인다", async () => {
     const user = userEvent.setup();
     await openFirstStep();
 
     expect(screen.getByRole("button", { name: "생년월일 — 선택 안 함" })).toBeTruthy();
     await pickBirthDate(user, 2003, 8, 12);
+    await user.click(screen.getByRole("button", { name: "생년월일 고치기: 2003.08.12" }));
     expect(screen.getByRole("button", { name: "생년월일 — 2003년 8월 12일" })).toBeTruthy();
   });
 });
@@ -383,5 +385,111 @@ describe("/eligibility 묶음 주소", () => {
     window.history.back();
 
     expect(await screen.findByRole("heading", { name: "기본 자격을 확인할게요" })).toBeTruthy();
+  });
+});
+
+describe("/eligibility 진행 표시·답 접기", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("요약 줄 앞에 '1/3 기본 자격' 처럼 어디쯤인지 말한다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getByText("1/3 기본 자격")).toBeTruthy();
+  });
+
+  it("다음 묶음에서는 앞 묶음이 항목으로 남고, 누르면 그 묶음 주소로 간다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.getByText("2/3 가구 · 소득")).toBeTruthy();
+    const link = screen.getByRole("link", { name: "1단계 고치기: 기본 자격" });
+    expect(link.getAttribute("href")).toBe("/eligibility?g=1");
+  });
+
+  it("예/아니오에 답하면 그 질문이 한 줄로 접히고, 누르면 다시 펼친다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const 처음 = screen.getAllByRole("button", { name: "그렇다" }).length;
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    const 접힌줄 = screen.getByRole("button", { name: "부모와 따로 거주 고치기: 그렇다" });
+    expect(screen.getAllByRole("button", { name: "그렇다" })).toHaveLength(처음 - 1);
+    // 누른 선택지가 사라졌으므로 포커스는 접힌 줄로 옮긴다 — body 로 떨어지면 안 된다.
+    expect(document.activeElement).toBe(접힌줄);
+
+    await user.click(접힌줄);
+    expect(screen.getAllByRole("button", { name: "그렇다" })).toHaveLength(처음);
+  });
+
+  it("'모름' 도 답이다 — 고르면 접힌다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "모름" })[0]);
+    expect(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 모름" })).toBeTruthy();
+  });
+
+  it("숫자 칸은 치는 중에 접지 않는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    await user.type(screen.getAllByRole("spinbutton")[0], "2");
+    expect(screen.queryByRole("button", { name: /^가구원 수 고치기/ })).toBeNull();
+  });
+
+  it("답하면 다음 질문을 화면 가운데로 데려온다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    expect(scroll).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+    expect((scroll.mock.contexts.at(-1) as HTMLElement).textContent).toContain(
+      "해당 주소로 전입신고가 가능한가요?"
+    );
+  });
+
+  it("움직임 줄이기 설정이면 즉시 스크롤한다", async () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "그렇다" })[0]);
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "auto" });
+  });
+
+  it("생년월일 없이 '다음' 을 누르면 그 질문으로 스크롤하고 제목에 포커스한다 — 아래 한 줄 오류도 남긴다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(document.activeElement).toBe(screen.getByText("생년월일", { selector: "label" }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
   });
 });
