@@ -1,6 +1,7 @@
 /**
  * 뒤로가기 재현 시나리오 — docs/기획/2026-11-03-단계-이동-설계.md "왜" 의 표(A·B·C)와
- * "결과에서 화살표로 끝까지(D)" 를 정적 export(`out/`) 위에서 돌린다.
+ * "결과에서 화살표로 끝까지(D)", "요약 줄로 첫 질문에 돌아온 뒤 화살표(E)" 를 정적
+ * export(`out/`) 위에서 돌린다.
  *
  *   npm run build && node scripts/check-back-nav.mjs
  *
@@ -83,6 +84,12 @@ async function press(page, name) {
 }
 
 const arrow = (page) => press(page, "이전 단계로");
+
+/** 요약 줄 항목(링크). 이름은 "생년월일 고치기: 만 N세" 처럼 나이에 따라 달라 앞부분으로 찾는다. */
+async function chip(page, label) {
+  await page.getByRole("link", { name: new RegExp(`^${label} 고치기:`) }).click();
+  await settle(page);
+}
 
 async function browserBack(page) {
   await page.goBack();
@@ -201,6 +208,26 @@ const SCENARIOS = [
         seen.push(where(page));
       }
       await browserBack(page);
+      seen.push(where(page));
+      return seen;
+    },
+  },
+  {
+    id: "E",
+    action: "현재 상태에서 요약 줄 '생년월일' 로 첫 질문에 돌아간 뒤 화살표 두 번",
+    expected: [
+      "/find?q=birth", // 요약 줄은 push 한다 — 첫 화면과 같은 주소지만 새 기록 칸이다
+      "/find?q=status", // 그래서 화살표는 랜딩이 아니라 방금 떠난 질문으로 간다
+      지역목록,
+    ],
+    async run(page) {
+      await answer(page, "status");
+      const seen = [];
+      await chip(page, "생년월일");
+      seen.push(where(page));
+      await arrow(page);
+      seen.push(where(page));
+      await arrow(page);
       seen.push(where(page));
       return seen;
     },

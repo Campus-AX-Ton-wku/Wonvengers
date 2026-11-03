@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { isEntryPage, moveEntryOnReplace } from "./entry";
+import { isEntryPage, replaceCarryingEntry } from "./entry";
 
 /**
  * 단계 주소와 뒤로가기 (docs/기획/2026-11-03-단계-이동-설계.md "이동 규칙").
@@ -35,10 +35,12 @@ export function stepHref(
   return `${pathname}?${new URLSearchParams({ [param]: step, ...extra }).toString()}`;
 }
 
-/** replace 하면서 "이 탭의 첫 화면" 기록도 따라 옮긴다 (lib/entry.ts 의 moveEntryOnReplace). */
+/**
+ * replace 하면서, 지금 칸이 "이 탭의 첫 화면" 이면 바뀐 화면에도 그 표를 다시 단다
+ * (lib/entry.ts 의 replaceCarryingEntry). Next 의 replace 는 history.state 를 새로 써서 표를 지운다.
+ */
 export function replaceKeepingEntry(router: { replace(href: string): void }, href: string): void {
-  moveEntryOnReplace(href);
-  router.replace(href);
+  replaceCarryingEntry(href, () => router.replace(href));
 }
 
 export interface StepNavigation<K extends string> {

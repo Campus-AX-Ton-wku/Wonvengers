@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TopBar } from "@/app/components";
-import { ENTRY_KEY } from "@/lib/entry";
+import { isEntryPage } from "@/lib/entry";
 import { resetNavigation, routerMock } from "./navigation-mock";
 
 /**
@@ -55,7 +55,8 @@ describe("TopBar 뒤로가기", () => {
 
     expect(routerMock.replace).toHaveBeenCalledWith("/find/result");
     expect(back).not.toHaveBeenCalled();
-    expect(window.sessionStorage.getItem(ENTRY_KEY)).toBe("/find/result");
+    expect(window.location.pathname).toBe("/find/result");
+    expect(isEntryPage()).toBe(true);
   });
 
   it("sessionStorage 가 막혀 있으면 앱 밖으로 튕기지 않게 backHref 로 간다", async () => {

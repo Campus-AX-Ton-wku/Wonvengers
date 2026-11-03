@@ -10,7 +10,7 @@
  */
 import { useMemo, useSyncExternalStore } from "react";
 import { vi } from "vitest";
-import { ENTRY_KEY } from "@/lib/entry";
+import { ENTRY_KEY, ENTRY_STATE } from "@/lib/entry";
 
 const listeners = new Set<() => void>();
 
@@ -60,15 +60,27 @@ export const navigationModule = {
   redirect: vi.fn(),
 };
 
+/** 테스트가 쓰는 첫 화면 표의 값. */
+export const TEST_ENTRY_TAG = "test-entry";
+
 /**
- * 주소를 url 로 두고, 이 탭의 첫 화면 기록을 entry 로 맞춘다(null = 기록 없음).
+ * 주소를 url 로 두고, 이 탭의 첫 화면을 entry 로 맞춘다(null = 기록 없음).
  * 기본값은 "지금 화면이 첫 화면" — 링크로 바로 들어온 상태다.
+ *
+ * entry 가 url 과 다르면 entry 칸에 표를 달고 그 위에 url 을 push 한다. 진짜 브라우저처럼
+ * 첫 화면은 기록의 칸으로 가린다(lib/entry.ts). history.back() 하면 entry 로 돌아간다.
  */
 export function resetNavigation(url = "/", entry: string | null = url): void {
-  window.history.replaceState(null, "", url);
+  const tagged = { [ENTRY_STATE]: TEST_ENTRY_TAG };
+  if (entry === null) window.history.replaceState(null, "", url);
+  else if (entry === url) window.history.replaceState(tagged, "", url);
+  else {
+    window.history.replaceState(tagged, "", entry);
+    window.history.pushState(null, "", url);
+  }
   try {
     window.sessionStorage.clear();
-    if (entry !== null) window.sessionStorage.setItem(ENTRY_KEY, entry);
+    if (entry !== null) window.sessionStorage.setItem(ENTRY_KEY, TEST_ENTRY_TAG);
   } catch {
     // 저장소를 막아 둔 테스트가 있다. 그 테스트가 스스로 되돌린다.
   }
