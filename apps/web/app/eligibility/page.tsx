@@ -13,7 +13,15 @@ import WheelDatePicker from "@/app/WheelDatePicker";
 
 import { buildQuestionSteps } from "@/lib/steps";
 import { policiesForRegion } from "@/lib/region";
-import { loadAnswers, loadListing, loadProfile, saveAnswers, saveProfile } from "@/lib/storage";
+import {
+  loadAnswers,
+  loadEligibilityAnsweredKeys,
+  loadListing,
+  loadProfile,
+  saveAnswers,
+  saveEligibilityAnsweredKeys,
+  saveProfile,
+} from "@/lib/storage";
 import {
   AnswerSummaryBar,
   AppShell,
@@ -56,6 +64,32 @@ const DEFAULT_PROFILE: EligibilityProfile = {
   jeonbukResidentOverOneYear: "unknown",
   employedInTargetSectorOver3Months: "unknown",
 };
+
+/**
+ * '직접 고른 질문' 기록이 생기기 전에 저장된 프로필. 모름이 아닌 값은 고른 것이 분명하고,
+ * 모름은 고른 것인지 기본값인지 알 수 없으니 안 고른 것으로 본다 — 칠하지 않는 쪽이 덜 틀린다.
+ */
+function answeredFromProfile(profile: EligibilityProfile): RequiredInputKey[] {
+  return (Object.keys(DEFAULT_PROFILE) as RequiredInputKey[]).filter((key) => {
+    const value = profile[key];
+    return value !== "unknown" && value !== "" && value !== undefined;
+  });
+}
+
+/** 프로필과 '직접 고른 질문' 을 저장하고, 고친 생년월일을 1층 답변에도 써 둔다. */
+function persist(profile: EligibilityProfile, answered: ReadonlySet<RequiredInputKey>): void {
+  saveProfile(profile);
+  saveEligibilityAnsweredKeys([...answered]);
+
+  // 1층 답을 프리필의 기준으로 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때
+  // 1층의 옛 값이 다시 이겨서 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 둔다.
+  if (profile.birthDate) {
+    const answers = loadAnswers();
+    if (answers.birthDate !== profile.birthDate) {
+      saveAnswers({ ...answers, birthDate: profile.birthDate });
+    }
+  }
+}
 
 type QuestionStep = ReturnType<typeof buildQuestionSteps>[number];
 
@@ -127,6 +161,17 @@ function EligibilitySteps() {
   const [region, setRegion] = useState<string | null>(null);
   const [profile, setProfile] = useState<EligibilityProfile>(DEFAULT_PROFILE);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * 저장할지. 저장된 프로필이 있었으면 처음부터, 없었으면 이번 방문에 처음 답할 때부터다.
+   * 열기만 하고 떠난 사람에게 모두 '모름' 인 프로필을 남기면, 정책 상세·결과 화면이 그 사람을
+   * 2층을 마친 사람으로 보고 모름투성이 판정을 보여준다.
+   */
+  const [saving, setSaving] = useState(false);
+  /**
+   * 사용자가 직접 고른 질문 (이번 방문 + 저장된 기록). 손대지 않은 질문도 값은 'unknown' 이라,
+   * 이게 없으면 '모름' 카드가 고르기 전부터 칠해져 보인다. 판정에는 쓰지 않는다.
+   */
+  const [answered, setAnswered] = useState<ReadonlySet<RequiredInputKey>>(() => new Set());
   /** 이번 방문에서 답해서 한 줄로 접힌 질문. 누르면 다시 펼친다. */
   const [folded, setFolded] = useState<ReadonlySet<RequiredInputKey>>(() => new Set());
   /** 방금 접은 질문과 화면 안으로 데려올 다음 질문. 렌더가 끝난 뒤 다뤄야 해서 상태로 둔다. */
@@ -153,9 +198,13 @@ function EligibilitySteps() {
     //
     // 저장된 프로필이 이기게 두면 안 된다: 1층에서 답하고 2층에 들렀다가 다시
     // 1층으로 돌아가 날짜를 고치고 오면, 방금 고친 값이 옛 프로필에 막힌다.
-    const saved = loadProfile() ?? DEFAULT_PROFILE;
+    const stored = loadProfile();
+    const saved = stored ?? DEFAULT_PROFILE;
     const 일층생년월일 = loadAnswers().birthDate;
     setProfile({ ...saved, birthDate: 일층생년월일 ?? saved.birthDate });
+    setSaving(stored !== null);
+    // 프로필이 없으면 남아 있던 기록도 믿지 않는다 — 고른 값이 없는데 고른 것으로 칠하게 된다.
+    setAnswered(new Set(stored ? (loadEligibilityAnsweredKeys() ?? answeredFromProfile(stored)) : []));
   }, [router]);
 
   // 지역에 해당하지 않는 정책은 후보에서 빠지고, 그 정책만 쓰던 질문도 함께 사라진다.
@@ -198,21 +247,11 @@ function EligibilitySteps() {
 
   // 답할 때마다 저장한다. "다음" 에서만 저장하면 첫 묶음에서 화살표로 /calculate 에 돌아갔을 때
   // (뒤로가기라 "다음" 을 안 거친다) 그 묶음의 답이 사라진다. 불러오기 전(region === null)의
-  // 빈 프로필로 저장된 답을 덮지 않는다.
+  // 빈 프로필로 저장된 답을 덮지 않고, 저장할 때가 아니면(saving) 아무것도 쓰지 않는다.
   useEffect(() => {
-    if (region === null) return;
-    saveProfile(profile);
-
-    // 여기서 고친 생년월일을 1층 답변에도 써 둔다. 1층 답을 프리필의 기준으로
-    // 삼았으므로, 안 써 두면 다음에 이 화면에 들어올 때 1층의 옛 값이 다시 이겨서
-    // 방금 한 수정이 사라진다. 두 화면이 같은 값을 보게 붙여 두는 것이다.
-    if (profile.birthDate) {
-      const answers = loadAnswers();
-      if (answers.birthDate !== profile.birthDate) {
-        saveAnswers({ ...answers, birthDate: profile.birthDate });
-      }
-    }
-  }, [region, profile]);
+    if (region === null || !saving) return;
+    persist(profile, answered);
+  }, [region, saving, profile, answered]);
 
   function update<K extends keyof EligibilityProfile>(key: K, value: EligibilityProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
@@ -220,6 +259,8 @@ function EligibilitySteps() {
 
   function answer(question: QuestionDef, value: unknown, questions: QuestionDef[]) {
     update(question.key, value as never);
+    setAnswered((prev) => new Set(prev).add(question.key));
+    setSaving(true);
     if (!FOLDS_ON_ANSWER.has(question.type)) return;
     const next = new Set(folded).add(question.key);
     setFolded(next);
@@ -246,6 +287,10 @@ function EligibilitySteps() {
       return;
     }
     setError(null);
+    // 손대지 않고 "다음" 을 누른 것도 그 묶음을 이대로(모름으로) 넘기겠다는 답이다 — 예전처럼
+    // 여기서 저장한다. 마지막 묶음은 바로 /result 로 가므로 effect 를 기다리지 않고 지금 쓴다.
+    persist(profile, answered);
+    setSaving(true);
     if (step < steps.length - 1) return go(String(step + 2));
     router.push("/result");
   }
@@ -282,6 +327,7 @@ function EligibilitySteps() {
             key={q.key}
             question={q}
             value={profile[q.key]}
+            chosen={answered.has(q.key)}
             folded={folded.has(q.key)}
             onChange={(v) => answer(q, v, current.questions)}
             onUnfold={() => unfold(q.key)}
@@ -309,6 +355,7 @@ function EligibilitySteps() {
 function QuestionField({
   question,
   value,
+  chosen,
   folded,
   onChange,
   onUnfold,
@@ -317,13 +364,16 @@ function QuestionField({
 }: {
   question: QuestionDef;
   value: unknown;
+  /** 사용자가 직접 고른 질문인지. 아니면 값이 'unknown' 이어도 '모름' 카드를 칠하지 않는다. */
+  chosen: boolean;
   folded: boolean;
   onChange: (value: unknown) => void;
   onUnfold: () => void;
   fieldRef: (el: HTMLDivElement | null) => void;
   titleRef: (el: HTMLLabelElement | null) => void;
 }) {
-  const isUnknown = value === "unknown";
+  // 손대지 않은 질문도 값은 'unknown' 이다(판정은 모름). 화면에서는 직접 고른 모름만 칠한다.
+  const isUnknown = chosen && value === "unknown";
   // 라벨을 for/id 로 묶는다. 묶이지 않으면 스크린리더가 입력칸을 이름 없이 읽고,
   // 라벨을 눌러도 칸에 포커스가 가지 않는다.
   const inputId = `q-${question.key}`;

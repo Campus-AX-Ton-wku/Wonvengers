@@ -540,3 +540,137 @@ describe("/eligibility 진행 표시·답 접기", () => {
     expect(screen.getByText("생년월일을 입력해주세요.")).toBeTruthy();
   });
 });
+
+/**
+ * 열기만 하고 떠난 사람의 저장소는 그대로여야 한다. 모두 '모름' 인 프로필이 저장되면
+ * 정책 상세·결과 화면이 그 사람을 2층을 마친 사람으로 보고 모름투성이 판정을 보여준다.
+ */
+describe("/eligibility 열기만 하면 저장하지 않는다", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+
+  it("답하지 않고 화살표로 떠나면 프로필이 저장되지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getByLabelText("이전 단계로"));
+    expect(routerMock.replace).toHaveBeenCalledWith("/calculate");
+    expect(window.localStorage.getItem("housing-benefit:profile")).toBeNull();
+  });
+
+  it("1층 생년월일이 채워져 열려도, 답하지 않으면 프로필이 저장되지 않는다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(window.localStorage.getItem("housing-benefit:profile")).toBeNull();
+    expect(loadAnswers()).toEqual(일층);
+  });
+
+  it("하나라도 답하면 그때부터 저장한다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(screen.getAllByRole("button", { name: "아니다" })[0]);
+    expect(loadProfile()?.livesApartFromParents).toBe(false);
+  });
+
+  it("저장된 프로필이 있던 사람은 지금처럼 계속 저장한다 — 1층에서 고친 생년월일이 바로 들어간다", async () => {
+    saveProfile(makeProfile({ birthDate: "1999-05-05" }));
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(loadProfile()?.birthDate).toBe("2003-08-12");
+  });
+});
+
+/**
+ * 손대지 않은 질문의 값은 판정상 '모름' 이지만, 화면에서는 아무것도 고르지 않은 상태다.
+ * 예전에는 기본값이 'unknown' 이라 '모름' 카드가 고른 것처럼 칠해져 있었다.
+ */
+describe("/eligibility 고르기 전에는 아무 카드도 선택돼 보이지 않는다", () => {
+  const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
+  const 질문칸 = (label: string) =>
+    screen.getByText(label, { selector: "label" }).parentElement as HTMLElement;
+  const 눌린카드 = (root: HTMLElement = document.body) =>
+    Array.from(root.querySelectorAll('button[aria-pressed="true"]')).map((b) => b.textContent);
+
+  it("처음 열면 예/아니오/모름 어느 카드도 눌려 있지 않다", async () => {
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+    expect(눌린카드()).toEqual([]);
+  });
+
+  it("숫자 질문의 '모름' 도 고르기 전에는 눌려 있지 않다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(screen.getAllByRole("button", { name: "모름" }).length).toBeGreaterThan(0);
+    expect(눌린카드()).toEqual([]);
+  });
+
+  it("'모름' 을 직접 고르면 그 질문의 '모름' 만 눌린다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "모름" }));
+    await user.click(screen.getByRole("button", { name: "부모와 따로 거주 고치기: 모름" }));
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["모름"]);
+    expect(눌린카드()).toEqual(["모름"]);
+    expect(loadProfile()?.livesApartFromParents).toBe("unknown");
+  });
+
+  it("다시 들어오면 직접 고른 답만 눌려 있다 — '모름' 으로 고른 것도 남는다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    const first = render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "아니다" }));
+    await user.click(within(질문칸("해당 주소로 전입신고가 가능한가요?")).getByRole("button", { name: "모름" }));
+    first.unmount();
+
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["아니다"]);
+    expect(눌린카드(질문칸("해당 주소로 전입신고가 가능한가요?"))).toEqual(["모름"]);
+    expect(눌린카드()).toEqual(["아니다", "모름"]);
+  });
+
+  it("답한 질문 기록이 없는 옛 프로필은 모름이 아닌 값만 고른 것으로 본다", async () => {
+    saveAnswers(일층);
+    saveProfile({
+      ...makeProfile(),
+      livesApartFromParents: false,
+      canRegisterResidence: "unknown",
+      hasNoHouse: "unknown",
+      isContractHolder: "unknown",
+    });
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(눌린카드(질문칸("부모와 별도로 거주하나요?"))).toEqual(["아니다"]);
+    expect(눌린카드(질문칸("해당 주소로 전입신고가 가능한가요?"))).toEqual([]);
+  });
+
+  it("손대지 않은 질문은 판정에 여전히 '모름' 으로 저장된다", async () => {
+    const user = userEvent.setup();
+    saveAnswers(일층);
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+
+    await user.click(within(질문칸("부모와 별도로 거주하나요?")).getByRole("button", { name: "그렇다" }));
+    expect(loadProfile()?.canRegisterResidence).toBe("unknown");
+  });
+});

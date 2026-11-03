@@ -1,4 +1,10 @@
-import type { DeclaredValue, DiscoveryAnswers, EligibilityProfile, ListingInput } from "./types";
+import type {
+  DeclaredValue,
+  DiscoveryAnswers,
+  EligibilityProfile,
+  ListingInput,
+  RequiredInputKey,
+} from "./types";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -37,6 +43,43 @@ export function loadProfile(): EligibilityProfile | null {
   // 직접 신고한 값은 별도 키가 단독 출처다. 프로필 안에 남아 있던 옛 값이 있어도
   // 덮어쓴다 — /eligibility 가 프로필을 통째로 저장하므로 두 벌을 두면 어긋난다.
   return { ...profile, selfDeclared: loadDeclared() };
+}
+
+// ── 2층에서 '직접 고른 질문' 기록 ──
+
+const ELIGIBILITY_ANSWERED_KEY = "perky.eligibility-answered";
+
+/**
+ * /eligibility 에서 사용자가 직접 고른 질문. 1층의 loadAnsweredKeys 와 같은 방식이다.
+ *
+ * 2층은 손대지 않은 질문도 판정상 'unknown'(모름)이라, 값만 보고는 "모름을 골랐다" 와
+ * "아직 안 골랐다" 를 가를 수 없다. 화면이 모름 카드를 칠할지 정하려면 이 기록이 따로 필요하다.
+ * 프로필에 넣지 않는 이유: 판정에 쓰이지 않는 화면 상태다.
+ *
+ * 기록이 아예 없으면(이 키가 생기기 전에 저장된 프로필) null 을 준다 — 빈 목록과 구분해야
+ * 화면이 옛 프로필의 값으로 기록을 대신 만들 수 있다.
+ */
+export function loadEligibilityAnsweredKeys(): RequiredInputKey[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ELIGIBILITY_ANSWERED_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? (parsed.filter((k) => typeof k === "string") as RequiredInputKey[])
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveEligibilityAnsweredKeys(keys: readonly RequiredInputKey[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ELIGIBILITY_ANSWERED_KEY, JSON.stringify(keys));
+  } catch {
+    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
+  }
 }
 
 // ── 결과 화면에서 직접 답한 '확인 필요' 조건 ──
