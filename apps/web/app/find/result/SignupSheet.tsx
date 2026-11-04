@@ -24,7 +24,7 @@ export default function SignupSheet({ onClose }: { onClose: () => void }) {
         onClose();
       }}
     >
-      <KakaoButton onClick={() => void signIn(SIGNUP_NEXT)} />
+      <KakaoButton onClick={() => signIn(SIGNUP_NEXT)} />
       <Button
         size="screen"
         variant="text"

@@ -63,6 +63,16 @@ describe("/auth/consent (설계 '화면' 3)", () => {
     expect(screen.getByRole("link", { name: /개인정보 처리방침/ }).getAttribute("href")).toBe("/privacy");
   });
 
+  it("소득·재산·수급 정보가 들어갈 수 있는 줄은 모두 '민감 정보'로 표시한다", async () => {
+    render(<ConsentPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const rows = screen.getAllByRole("row");
+    const sensitive = rows.filter((row) => /소득|재산|수급/.test(row.textContent ?? ""));
+    expect(sensitive.length).toBeGreaterThanOrEqual(3);
+    for (const row of sensitive) expect(row.textContent).toContain("민감 정보");
+    expect(rows.find((r) => r.textContent?.includes("계약 조건"))?.textContent).toContain("이사 비용");
+  });
+
   it("동의 전에는 서버로 아무것도 보내지 않는다", async () => {
     render(<ConsentPage />);
     await screen.findByRole("button", { name: "동의하고 저장" });

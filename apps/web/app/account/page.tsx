@@ -107,7 +107,7 @@ export default function AccountPage() {
             <p className={body}>
               지금 고른 답은 이 기기에만 있어요. 카카오로 로그인하면 다른 기기에서도 이어 볼 수 있어요.
             </p>
-            <KakaoButton onClick={() => void signIn("/account")} />
+            <KakaoButton onClick={() => signIn("/account")} />
           </section>
         ) : (
           <>

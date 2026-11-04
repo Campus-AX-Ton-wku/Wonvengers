@@ -69,11 +69,31 @@ describe("/auth/callback", () => {
     await waitFor(() => expect(replacePage).toHaveBeenCalledWith("/find/policies"));
   });
 
-  it("카카오에서 취소하면 로그인하지 못했다고 말하고 질문으로 돌아갈 길을 준다", async () => {
+  it("코드 교환이 실패하면 로그인하지 못했다고 말하고, 로그인 없이 보던 곳으로·질문으로 돌아갈 길을 준다", async () => {
     vi.mocked(handleCallback).mockRejectedValue(new Error("access_denied"));
     render(<AuthCallbackPage />);
 
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("로그인하지 못했어요");
+    expect(screen.getByRole("link", { name: "로그인 없이 계속하기" }).getAttribute("href")).toBe("/find/policies");
     expect(screen.getByRole("link", { name: "질문으로 돌아가기" }).getAttribute("href")).toBe("/find");
+  });
+
+  it("카카오에서 취소했으면(access_denied) 취소했다고 말하고, 보던 결과로 돌아가게 한다", async () => {
+    resetNavigation("/auth/callback?error=access_denied&state=s");
+    window.sessionStorage.setItem(RETURN_KEY, "/find/policies");
+    vi.mocked(handleCallback).mockRejectedValue(new Error("access_denied"));
+    render(<AuthCallbackPage />);
+
+    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("로그인을 취소했어요");
+    expect(screen.getByRole("link", { name: "로그인 없이 계속하기" }).getAttribute("href")).toBe("/find/policies");
+  });
+
+  it("돌아갈 곳 기록이 없으면 질문 화면으로 — 같은 곳을 가리키는 링크를 둘 두지 않는다", async () => {
+    resetNavigation("/auth/callback?error=access_denied&state=s");
+    vi.mocked(handleCallback).mockRejectedValue(new Error("access_denied"));
+    render(<AuthCallbackPage />);
+
+    expect((await screen.findByRole("link", { name: "로그인 없이 계속하기" })).getAttribute("href")).toBe("/find");
+    expect(screen.queryByRole("link", { name: "질문으로 돌아가기" })).toBeNull();
   });
 });

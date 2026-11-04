@@ -8,7 +8,7 @@ import { consumeReturnTo, handleCallback, isLoginAvailable } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
 import { initialSync } from "@/lib/sync";
 
-type Phase = "working" | "conflict" | "error" | "unavailable";
+type Phase = "working" | "conflict" | "error" | "cancelled" | "unavailable";
 
 /**
  * Cognito 가 돌려보내는 곳 (설계 '화면' 2). 정적 페이지다 — 주소의 code·state 는 브라우저에서 읽는다
@@ -22,6 +22,8 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const started = useRef(false);
   const [phase, setPhase] = useState<Phase>("working");
+  /** 로그인하지 못했을 때 "로그인 없이 계속하기"가 가는 곳 — 시트를 띄운 화면의 목적지. 결과를 막지 않는다. */
+  const [fallback, setFallback] = useState("/find");
 
   useEffect(() => {
     if (started.current) return;
@@ -33,7 +35,10 @@ export default function AuthCallbackPage() {
     void (async () => {
       const signedIn = await handleCallback(window.location.href).catch(() => null);
       if (signedIn === null) {
-        setPhase("error");
+        setFallback(consumeReturnTo());
+        // 카카오 동의 화면에서 [취소]하면 Cognito 가 error=access_denied 로 돌려보낸다.
+        const cancelled = new URLSearchParams(window.location.search).get("error") === "access_denied";
+        setPhase(cancelled ? "cancelled" : "error");
         return;
       }
       if (signedIn.needsConsent) {
@@ -52,7 +57,8 @@ export default function AuthCallbackPage() {
     })();
   }, [router]);
 
-  const done = phase === "error" || phase === "unavailable";
+  const done = phase === "error" || phase === "cancelled" || phase === "unavailable";
+  const failed = phase === "error" || phase === "cancelled";
 
   return (
     <AppShell>
@@ -61,14 +67,25 @@ export default function AuthCallbackPage() {
         {done ? (
           <>
             <h1 className="text-xl font-extrabold text-ink-900">
-              {phase === "unavailable" ? "지금은 로그인을 쓸 수 없어요" : "로그인하지 못했어요"}
+              {phase === "unavailable"
+                ? "지금은 로그인을 쓸 수 없어요"
+                : phase === "cancelled"
+                  ? "로그인을 취소했어요"
+                  : "로그인하지 못했어요"}
             </h1>
             <p className="text-sm leading-relaxed text-ink-600">
               로그인하지 않아도 모든 기능을 그대로 쓸 수 있어요. 답은 이 기기에 저장돼요.
             </p>
-            <Link href="/find" className={buttonClass({ variant: "secondary", size: "md", full: false })}>
-              질문으로 돌아가기
-            </Link>
+            {failed && (
+              <Link replace href={fallback} className={buttonClass({ size: "screen", full: false })}>
+                로그인 없이 계속하기
+              </Link>
+            )}
+            {!(failed && fallback === "/find") && (
+              <Link href="/find" className={buttonClass({ variant: "secondary", size: "md", full: false })}>
+                질문으로 돌아가기
+              </Link>
+            )}
           </>
         ) : (
           <p role="status" className="text-sm text-ink-500">

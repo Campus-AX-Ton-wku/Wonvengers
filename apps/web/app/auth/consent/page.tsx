@@ -7,16 +7,24 @@ import { consumeReturnTo, isLoginAvailable, recordConsent, storedSub } from "@/l
 import { replacePage } from "@/lib/redirect";
 import { initialSync, logout } from "@/lib/sync";
 
-/** 저장하는 것. 민감할 수 있는 항목은 따로 표시한다(설계 '화면' 3 — 소득·재산·수급 여부). */
+/**
+ * 저장하는 것. 소득·재산·수급 여부가 들어가는(들어갈 수 있는) 줄은 모두 '민감 정보'로 표시한다(설계 '화면' 3).
+ * 첫 질문의 월 소득 구간도 소득이라 따로 줄을 나눠 표시한다.
+ */
 const STORED_ITEMS: { name: string; detail: string; sensitive?: boolean }[] = [
-  { name: "첫 질문의 답", detail: "생년월일, 사는 곳, 현재 상태, 월 소득 구간, 주거 형태" },
-  { name: "계약 조건", detail: "지역, 계약 형태, 보증금·월세·관리비, 계약 시작일, 거주 개월 수" },
+  { name: "첫 질문의 답", detail: "생년월일, 사는 곳, 현재 상태, 주거 형태" },
+  { name: "월 소득 구간", detail: "첫 질문에서 고른 월 소득 구간", sensitive: true },
+  { name: "계약 조건", detail: "지역, 계약 형태, 보증금·월세·관리비, 이사 비용, 계약 시작일, 거주 개월 수" },
   {
     name: "자격 질문의 답",
     detail: "가구원 수, 본인·부모 가구 소득, 재산 기준 충족 여부, 기초생활수급·차상위 여부, 무주택 여부 등",
     sensitive: true,
   },
-  { name: "결과 화면에서 답한 조건", detail: "정책마다 직접 답한 '확인 필요' 조건" },
+  {
+    name: "결과 화면에서 답한 조건",
+    detail: "정책마다 직접 답한 '확인 필요' 조건(소득·재산·수급 여부 등이 포함될 수 있어요)",
+    sensitive: true,
+  },
   { name: "신청 체크리스트", detail: "정책마다 확인 표시한 항목" },
 ];
 

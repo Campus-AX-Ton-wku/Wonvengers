@@ -124,6 +124,29 @@ describe("가입 제안 시트 (설계 '화면' 1)", () => {
     expect(window.localStorage.getItem("perky.signup-dismissed")).toBeNull();
   });
 
+  it("'카카오로 계속하기'는 누르는 동안 막혀 두 번 가지 않는다", async () => {
+    vi.mocked(signIn).mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    await user.click(await 결과열기());
+    const button = screen.getByRole("button", { name: "카카오로 계속하기" });
+    await user.click(button);
+    await user.click(button);
+
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("로그인을 시작하지 못하면 시트 안에서 짧게 알리고 다시 누를 수 있다", async () => {
+    vi.mocked(signIn).mockRejectedValue(new TypeError("Failed to fetch"));
+    const user = userEvent.setup();
+    await user.click(await 결과열기());
+    const button = screen.getByRole("button", { name: "카카오로 계속하기" });
+    await user.click(button);
+
+    expect((await screen.findByRole("alert")).textContent).toBe("지금은 로그인할 수 없어요. 잠시 후 다시 시도해 주세요");
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("로그인 상태면 띄우지 않는다", async () => {
     signInAs("sub-a", { consent: false });
     const user = userEvent.setup();

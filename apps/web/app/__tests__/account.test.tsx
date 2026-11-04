@@ -5,6 +5,10 @@ import userEvent from "@testing-library/user-event";
 
 vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), deleteAccountRemote: vi.fn() }));
 vi.mock("@/lib/redirect", () => ({ goTo: vi.fn(), replacePage: vi.fn(), reloadPage: vi.fn() }));
+vi.mock("@/lib/auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/auth")>()),
+  signIn: vi.fn(),
+}));
 vi.mock("@/lib/sync", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/sync")>()),
   logout: vi.fn(),
@@ -12,7 +16,7 @@ vi.mock("@/lib/sync", async (importOriginal) => ({
 }));
 
 import AccountPage from "@/app/account/page";
-import { resetAuthForTests } from "@/lib/auth";
+import { resetAuthForTests, signIn } from "@/lib/auth";
 import { loadRemote, saveRemote } from "@/lib/remote";
 import { logout, resetSyncForTests, withdraw } from "@/lib/sync";
 import { enableLogin, remoteItem, seedSyncMeta, signInAs } from "@/lib/__tests__/auth-fixtures";
@@ -24,6 +28,7 @@ beforeEach(() => {
   vi.mocked(saveRemote).mockReset();
   vi.mocked(logout).mockReset();
   vi.mocked(withdraw).mockReset();
+  vi.mocked(signIn).mockReset();
   enableLogin();
 });
 
@@ -120,6 +125,22 @@ describe("/account (설계 '화면' 5)", () => {
   it("로그인하지 않았으면 카카오로 로그인할 수 있다", async () => {
     render(<AccountPage />);
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("로그인하지 않았어요");
-    expect(screen.getByRole("button", { name: "카카오로 계속하기" })).toBeTruthy();
+    const button = screen.getByRole("button", { name: "카카오로 계속하기" }) as HTMLButtonElement;
+    vi.mocked(signIn).mockRejectedValue(new TypeError("Failed to fetch"));
+    await userEvent.setup().click(button);
+    expect(signIn).toHaveBeenCalledWith("/account");
+    expect((await screen.findByRole("alert")).textContent).toBe("지금은 로그인할 수 없어요. 잠시 후 다시 시도해 주세요");
+    expect(button.disabled).toBe(false);
+  });
+
+  it("카카오 버튼은 누르는 동안 막힌다", async () => {
+    vi.mocked(signIn).mockReturnValue(new Promise(() => {}));
+    render(<AccountPage />);
+    const user = userEvent.setup();
+    const button = (await screen.findByRole("button", { name: "카카오로 계속하기" })) as HTMLButtonElement;
+    await user.click(button);
+    await user.click(button);
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(button.disabled).toBe(true);
   });
 });
