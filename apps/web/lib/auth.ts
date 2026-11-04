@@ -315,6 +315,11 @@ export function recordConsent(sub: string, now: Date = new Date()): string {
   return at;
 }
 
+/** 버전과 상관없이 이 사람이 이 기기에서 동의한 적이 있는가. 로그아웃이 사본을 지울지 정한다(문구가 바뀐 뒤에도). */
+export function hasAnyConsentRecord(sub: string): boolean {
+  return readConsent()?.sub === sub;
+}
+
 export function consentAtFor(sub: string): string | null {
   return hasConsent(sub) ? (readConsent()?.at ?? null) : null;
 }

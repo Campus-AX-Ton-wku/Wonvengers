@@ -7,7 +7,7 @@ vi.mock("@/lib/auth", async (importOriginal) => ({
 }));
 
 import { getSession } from "@/lib/auth";
-import { RemoteError, deleteAccountRemote, loadRemote, saveRemote } from "@/lib/remote";
+import { REMOTE_TIMEOUT_MS, RemoteError, deleteAccountRemote, loadRemote, saveRemote } from "@/lib/remote";
 import { CONSENT_VERSION, SCHEMA_VERSION, emptyContent, type UserDataPayload } from "@/lib/user-data";
 import { enableLogin } from "./auth-fixtures";
 
@@ -27,6 +27,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
@@ -81,4 +82,25 @@ describe("lib/remote", () => {
     fetchMock.mockResolvedValueOnce(Response.json({ error: "internal" }, { status: 500 }));
     await expect(deleteAccountRemote()).rejects.toBeInstanceOf(RemoteError);
   });
+
+  it("응답이 오지 않으면 8초 뒤 요청을 끊고 RemoteError — 로그아웃이 영원히 기다리지 않게", async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    fetchMock.mockImplementation((_url, init) => {
+      signal = init?.signal ?? undefined;
+      return new Promise<Response>(() => {});
+    });
+    const pending = saveRemote(payload, null);
+    const settled = pending.then(
+      () => "resolved",
+      (err: unknown) => err
+    );
+    await vi.advanceTimersByTimeAsync(REMOTE_TIMEOUT_MS - 1);
+    expect(signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const err = await settled;
+    expect(err).toBeInstanceOf(RemoteError);
+    expect(signal?.aborted).toBe(true);
+  });
 });
+

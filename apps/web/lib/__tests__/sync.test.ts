@@ -7,10 +7,19 @@ vi.mock("@/lib/redirect", () => ({ goTo: vi.fn(), replacePage: vi.fn(), reloadPa
 import { AUTH_KEY, CONSENT_KEY, resetAuthForTests } from "@/lib/auth";
 import { goTo, reloadPage } from "@/lib/redirect";
 import { deleteAccountRemote, loadRemote, saveRemote } from "@/lib/remote";
-import { EMPTY_ANSWERS, loadAnswers, resetAllAnswers, saveAnswers, saveChecklist } from "@/lib/storage";
+import {
+  EMPTY_ANSWERS,
+  loadAnswers,
+  loadChecklist,
+  resetAllAnswers,
+  saveAnswers,
+  saveAnsweredKeys,
+  saveChecklist,
+} from "@/lib/storage";
 import {
   SAVE_DEBOUNCE_MS,
   SYNC_META_KEY,
+  flushNow,
   getSyncState,
   initialSync,
   logout,
@@ -94,13 +103,15 @@ describe("로그인 후 쓰기", () => {
 
   it("'처음부터 다시'는 기다리지 않고 빈 데이터를 PUT 한다", async () => {
     await bootSynced();
-    saveAnswers(답);
     save.mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:01:00.000Z" });
+    saveAnswers(답);
+    await flushNow(); // 서버에도 답이 있는 상태
+    expect(save).toHaveBeenCalledTimes(1);
 
     resetAllAnswers();
 
-    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
-    const [payload] = save.mock.calls[0];
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+    const [payload] = save.mock.calls[1];
     expect(payload.answers).toEqual({ values: EMPTY_ANSWERS, answeredKeys: [] });
     expect(payload.listing).toBeNull();
     expect(payload.profile).toBeNull();
@@ -366,3 +377,181 @@ describe("로그아웃·탈퇴", () => {
     expect(reloadPage).not.toHaveBeenCalled();
   });
 });
+
+describe("검토 1차 — 로그아웃은 동의 버전과 무관하게 비운다", () => {
+  const 옛동의 = (sub: string) =>
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ sub, version: "2025-01-01", at: "2025-01-01T00:00:00.000Z" }));
+
+  it("동기화했던 사람은 동의 문구가 바뀐 뒤 로그아웃해도 답·체크리스트·perky.sync 가 모두 지워진다", async () => {
+    await bootSynced();
+    save.mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:20:00.000Z" });
+    saveAnswers(답);
+    saveChecklist("iksan-newcomer-moving-cost-support", { eligibility: true, period: false, documents: false });
+    await flushNow();
+    stopSync();
+    옛동의("sub-a"); // CONSENT_VERSION 이 오른 것과 같다 — 지금 문구에는 동의하지 않은 상태
+
+    await logout();
+
+    for (const key of ["perky.answers", "perky.answered", "housing-benefit:listing", "housing-benefit:profile", "perky.declared"]) {
+      expect(window.localStorage.getItem(key)).toBeNull();
+    }
+    expect(loadChecklist("iksan-newcomer-moving-cost-support")).toEqual({ eligibility: false, period: false, documents: false });
+    expect(window.localStorage.getItem(SYNC_META_KEY)).toBeNull();
+    expect(save).toHaveBeenCalledTimes(1); // 옛 동의로는 올리지 않는다
+  });
+
+  it("perky.sync 가 없어도 이 사람의 (옛) 동의 기록이 있으면 지운다", async () => {
+    옛동의("sub-a");
+    saveAnswers(답);
+    await logout();
+    expect(window.localStorage.getItem("perky.answers")).toBeNull();
+  });
+
+  it("동의하지 않은 사람의 로그인 전 답은 남긴다", async () => {
+    signInAs("sub-b", { consent: false });
+    window.localStorage.removeItem(CONSENT_KEY);
+    saveAnswers(답);
+    expect(await logout()).toEqual({ discardedUnsynced: false });
+    expect(loadAnswers()).toEqual(답);
+  });
+
+  it("올리지 못하면 그래도 지우고 discardedUnsynced 로 알린다", async () => {
+    await bootSynced();
+    save.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    saveAnswers(답);
+    expect(await logout()).toEqual({ discardedUnsynced: true });
+    expect(window.localStorage.getItem("perky.answers")).toBeNull();
+    expect(goTo).toHaveBeenCalledWith(TEST_LOGOUT_URL);
+  });
+
+  it("충돌로 멈춰 있으면 discardedUnsynced", async () => {
+    await bootSynced();
+    save.mockResolvedValueOnce({ ok: false, conflict: true });
+    load.mockResolvedValueOnce(remoteItem({ declared: { singleHousehold: true } }, "2026-11-04T09:30:00.000Z"));
+    saveAnswers(답);
+    expect(await logout()).toEqual({ discardedUnsynced: true });
+    expect(window.localStorage.getItem("perky.answers")).toBeNull();
+  });
+
+  it("다 올렸으면 discardedUnsynced 는 false", async () => {
+    await bootSynced();
+    save.mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:20:00.000Z" });
+    saveAnswers(답);
+    expect(await logout()).toEqual({ discardedUnsynced: false });
+  });
+});
+
+describe("검토 1차 — 바뀐 것이 없으면 PUT 하지 않는다", () => {
+  it("같은 답을 다시 적는 것만으로는 PUT 하지 않고 dirty 를 지운다", async () => {
+    vi.useFakeTimers();
+    await bootSynced();
+    saveAnsweredKeys([]); // /find 마운트가 하는 일 — 키는 새로 생기지만 묶음 내용은 같다
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    expect(save).not.toHaveBeenCalled();
+    expect(meta().dirty).toBe(false);
+  });
+
+  it("탭을 1.5초 안에 닫아 dirty 만 남았어도 다음 방문에 거짓 충돌을 띄우지 않고 서버 값을 받는다", async () => {
+    await bootSynced();
+    // 바뀐 것 없이 dirty 만 남은 채 탭을 닫았다
+    window.localStorage.setItem(SYNC_META_KEY, JSON.stringify({ ...meta(), dirty: true }));
+    resetSyncForTests();
+    load.mockResolvedValueOnce(remoteItem({ answers: { values: 답, answeredKeys: [] } }, "2026-11-04T10:00:00.000Z"));
+
+    startSync();
+    await vi.waitFor(() => expect(reloadPage).toHaveBeenCalledTimes(1));
+    expect(save).not.toHaveBeenCalled();
+    expect(getSyncState().status).toBe("idle");
+    expect(loadAnswers()).toEqual(답);
+  });
+
+  it("409 때 이 기기 답이 마지막으로 맞춘 그대로면 묻지 않고 서버 값을 받는다", async () => {
+    vi.useFakeTimers();
+    await bootSynced();
+    let finishSave!: (r: { ok: false; conflict: true }) => void;
+    save.mockImplementationOnce(() => new Promise((resolve) => (finishSave = resolve)));
+    load.mockResolvedValueOnce(remoteItem({ declared: { singleHousehold: true } }, "2026-11-04T09:30:00.000Z"));
+    saveAnswers(답);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    expect(save).toHaveBeenCalledTimes(1);
+    window.localStorage.removeItem("perky.answers"); // 다른 탭이 되돌렸다 — 마지막으로 맞춘 값과 같아졌다
+    finishSave({ ok: false, conflict: true });
+    await settle();
+
+    expect(getSyncState()).toMatchObject({ status: "idle", conflict: null });
+    expect(window.localStorage.getItem("perky.declared")).not.toBeNull();
+    expect(meta()).toMatchObject({ baseUpdatedAt: "2026-11-04T09:30:00.000Z", dirty: false });
+  });
+});
+
+describe("검토 1차 — 두 탭", () => {
+  it("탭 A 의 PUT 이 가는 사이 탭 B 가 고친 답은 dirty 로 남아 다시 올라간다", async () => {
+    vi.useFakeTimers();
+    await bootSynced();
+    let finishSave!: (r: { ok: true; updatedAt: string }) => void;
+    save.mockImplementationOnce(() => new Promise((resolve) => (finishSave = resolve)));
+    saveAnswers(답);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    expect(save).toHaveBeenCalledTimes(1);
+
+    // 탭 B: 같은 localStorage 에 쓰고 자기 모듈에서 dirty 를 적는다 — 이 탭의 모듈은 모른다
+    window.localStorage.setItem("perky.answers", JSON.stringify({ ...답, status: "재직" }));
+    window.localStorage.setItem(SYNC_META_KEY, JSON.stringify({ ...meta(), dirty: true }));
+
+    finishSave({ ok: true, updatedAt: "2026-11-04T09:05:00.000Z" });
+    await settle();
+    expect(meta()).toMatchObject({ baseUpdatedAt: "2026-11-04T09:05:00.000Z", dirty: true });
+
+    save.mockResolvedValueOnce({ ok: true, updatedAt: "2026-11-04T09:06:00.000Z" });
+    await flushNow();
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save.mock.calls[1][0].answers.values.status).toBe("재직");
+    expect(save.mock.calls[1][1]).toBe("2026-11-04T09:05:00.000Z");
+  });
+
+  it("다른 탭이 먼저 올려 409 가 나면(서버 시각이 이 기기 메타와 같음) 묻지 않고 새 기준으로 다시 올린다", async () => {
+    vi.useFakeTimers();
+    await bootSynced();
+    let finishSave!: (r: { ok: false; conflict: true }) => void;
+    save.mockImplementationOnce(() => new Promise((resolve) => (finishSave = resolve)));
+    saveAnswers(답);
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS);
+    // 탭 B 가 같은 기준으로 먼저 올려 성공했다
+    const B시각 = "2026-11-04T09:04:00.000Z";
+    window.localStorage.setItem(SYNC_META_KEY, JSON.stringify({ ...meta(), baseUpdatedAt: B시각, dirty: true }));
+    load.mockResolvedValueOnce(remoteItem({}, B시각));
+    save.mockResolvedValueOnce({ ok: true, updatedAt: "2026-11-04T09:05:00.000Z" });
+
+    finishSave({ ok: false, conflict: true });
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+    expect(save.mock.calls[1][1]).toBe(B시각);
+    await vi.waitFor(() => expect(getSyncState().status).toBe("idle"));
+  });
+});
+
+describe("검토 1차 — 늦게 온 응답", () => {
+  it("initialSync 의 GET 이 로그아웃 뒤에 와도 사본을 채우지 않는다", async () => {
+    let finishLoad!: (v: ReturnType<typeof remoteItem>) => void;
+    load.mockImplementationOnce(() => new Promise((resolve) => (finishLoad = resolve)));
+    const pending = initialSync();
+    await logout();
+    finishLoad(remoteItem({ answers: { values: 답, answeredKeys: [] } }));
+    await expect(pending).rejects.toThrow();
+    expect(loadAnswers()).toEqual(EMPTY_ANSWERS);
+    expect(window.localStorage.getItem(SYNC_META_KEY)).toBeNull();
+  });
+
+  it("부팅 GET 이 가는 사이 고친 답을 서버 값으로 덮어쓰지 않는다", async () => {
+    seedSyncMeta("sub-a", { baseUpdatedAt: T0 });
+    let finishLoad!: (v: ReturnType<typeof remoteItem>) => void;
+    load.mockImplementationOnce(() => new Promise((resolve) => (finishLoad = resolve)));
+    startSync();
+    saveAnswers(답);
+    finishLoad(remoteItem({ declared: { singleHousehold: true } }, "2026-11-04T11:00:00.000Z"));
+    await settle();
+    expect(loadAnswers()).toEqual(답);
+    expect(reloadPage).not.toHaveBeenCalled();
+  });
+});
+

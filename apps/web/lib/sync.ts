@@ -1,11 +1,20 @@
 import { useSyncExternalStore } from "react";
-import { consentAtFor, forgetConsent, hasConsent, isLoginAvailable, signOut, storedSub } from "./auth";
+import {
+  consentAtFor,
+  forgetConsent,
+  hasAnyConsentRecord,
+  hasConsent,
+  isLoginAvailable,
+  signOut,
+  storedSub,
+} from "./auth";
 import { reloadPage } from "./redirect";
 import { deleteAccountRemote, loadRemote, saveRemote } from "./remote";
 import { clearLocalContent, onLocalChange, readLocalContent, writeLocalContent } from "./storage";
 import {
   CONSENT_VERSION,
   SCHEMA_VERSION,
+  contentFingerprint,
   isEmptyContent,
   sameContent,
   type GetResponseBody,
@@ -25,7 +34,10 @@ import {
  */
 
 export const SAVE_DEBOUNCE_MS = 1500;
-/** { sub, baseUpdatedAt, lastSavedAt, dirty } — 이 기기가 마지막으로 본 서버 시각과 올리지 못한 변경 여부. */
+/**
+ * { sub, baseUpdatedAt, lastSavedAt, dirty, syncedHash } — 이 기기가 마지막으로 본 서버 시각, 올리지 못한 변경 여부,
+ * 마지막으로 서버와 맞춘 답 묶음의 지문. 같은 출처의 탭들이 함께 쓴다.
+ */
 export const SYNC_META_KEY = "perky.sync";
 
 export type SyncStatus = "off" | "idle" | "saving" | "error" | "conflict";
@@ -44,6 +56,12 @@ interface SyncMeta {
   baseUpdatedAt: string | null;
   lastSavedAt: string | null;
   dirty: boolean;
+  /**
+   * 마지막으로 서버와 같다고 확인한 답 묶음의 contentFingerprint. 모르면(옛 메타) null.
+   * dirty 여도 지금 사본의 지문이 이것과 같으면 바뀐 것이 없다 — PUT 하지 않는다.
+   * 탭마다 따로인 카운터 대신 이것으로 "올리는 사이 (다른 탭에서라도) 바뀌었나"를 본다.
+   */
+  syncedHash: string | null;
 }
 
 let state: SyncState = OFF;
@@ -91,8 +109,15 @@ function readMeta(): SyncMeta | null {
   try {
     const raw = window.localStorage.getItem(SYNC_META_KEY);
     if (!raw) return null;
-    const meta = JSON.parse(raw) as SyncMeta;
-    return meta.sub === sub ? meta : null;
+    const meta = JSON.parse(raw) as Partial<SyncMeta>;
+    if (meta.sub !== sub) return null;
+    return {
+      sub,
+      baseUpdatedAt: typeof meta.baseUpdatedAt === "string" ? meta.baseUpdatedAt : null,
+      lastSavedAt: typeof meta.lastSavedAt === "string" ? meta.lastSavedAt : null,
+      dirty: meta.dirty === true,
+      syncedHash: typeof meta.syncedHash === "string" ? meta.syncedHash : null,
+    };
   } catch {
     return null;
   }
@@ -103,6 +128,24 @@ function writeMeta(meta: SyncMeta): void {
     window.localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta));
   } catch {
     // 못 적으면 다음 방문에 처음 로그인처럼 다시 맞춘다.
+  }
+}
+
+/** 누구 것이든 perky.sync 가 있는가 — 이 기기에 서버와 맞춘 답이 있었다는 뜻이다. */
+function hasAnyMeta(): boolean {
+  try {
+    return window.localStorage.getItem(SYNC_META_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function anyMetaDirty(): boolean {
+  try {
+    const raw = window.localStorage.getItem(SYNC_META_KEY);
+    return raw !== null && (JSON.parse(raw) as Partial<SyncMeta>).dirty === true;
+  } catch {
+    return false;
   }
 }
 
@@ -127,8 +170,21 @@ function markDirty(): void {
   const sub = storedSub();
   if (sub === null) return;
   changeSeq++;
-  const meta = readMeta() ?? { sub, baseUpdatedAt: null, lastSavedAt: null, dirty: false };
+  const meta = readMeta() ?? { sub, baseUpdatedAt: null, lastSavedAt: null, dirty: false, syncedHash: null };
   writeMeta({ ...meta, dirty: true });
+}
+
+const localFingerprint = () => contentFingerprint(readLocalContent());
+
+/**
+ * dirty 지만 사본이 마지막으로 맞춘 그대로면 dirty 를 내린다. 같은 값을 다시 적기만 하고 1.5초 안에 탭을
+ * 닫으면 dirty 만 남는다 — 그대로 올리면 옛 기준 시각으로 409 가 나서, 고친 적 없는 답으로 충돌을 묻게 된다.
+ */
+function settleNoopDirty(meta: SyncMeta): SyncMeta {
+  if (!meta.dirty || meta.syncedHash === null || meta.syncedHash !== localFingerprint()) return meta;
+  const next = { ...meta, dirty: false };
+  writeMeta(next);
+  return next;
 }
 
 function schedule(): void {
@@ -187,18 +243,32 @@ export async function flushNow(): Promise<void> {
   }
   while (inflight) await inflight;
   if (withdrawing || !syncEnabled()) return;
-  const meta = readMeta();
-  if (meta === null || !meta.dirty) return;
-  const seq = changeSeq;
+  const stored = readMeta();
+  if (stored === null || !stored.dirty) return;
+  const meta = settleNoopDirty(stored);
+  if (!meta.dirty) {
+    if (state.status === "error") setState({ status: "idle" });
+    return;
+  }
+  let again = false;
   const run = (async () => {
     setState({ status: "saving" });
     try {
-      const result = await saveRemote(payloadFor(meta.sub, readLocalContent()), meta.baseUpdatedAt);
+      const content = readLocalContent();
+      const sentHash = contentFingerprint(content);
+      const result = await saveRemote(payloadFor(meta.sub, content), meta.baseUpdatedAt);
       if (result.ok) {
-        const changedMeanwhile = changeSeq !== seq;
-        writeMeta({ sub: meta.sub, baseUpdatedAt: result.updatedAt, lastSavedAt: result.updatedAt, dirty: changedMeanwhile });
+        // 같은 localStorage 를 쓰는 다른 탭이 그 사이 고쳤을 수 있다 — 이 탭의 카운터로는 모른다. 내용으로 본다.
+        const stillDirty = localFingerprint() !== sentHash;
+        writeMeta({
+          sub: meta.sub,
+          baseUpdatedAt: result.updatedAt,
+          lastSavedAt: result.updatedAt,
+          dirty: stillDirty,
+          syncedHash: sentHash,
+        });
         setState({ status: "idle", lastSavedAt: result.updatedAt });
-        if (changedMeanwhile) schedule();
+        if (stillDirty) schedule();
         return;
       }
       const remote = await loadRemote();
@@ -206,6 +276,21 @@ export async function flushNow(): Promise<void> {
         // 409 뒤에 항목이 없다 = 그 사이 (다른 기기에서) 탈퇴했다. 다시 쓰면 지운 자리에 항목이 되살아난다 —
         // 아직 유효한 access 토큰이 남아 있어도. 페이지를 다시 열 때와 같이 이 기기도 끝낸다.
         endLocalSession();
+        return;
+      }
+      const fresh = readMeta();
+      if (fresh !== null && fresh.baseUpdatedAt === remote.updatedAt && fresh.baseUpdatedAt !== meta.baseUpdatedAt) {
+        // 이 기기의 다른 탭이 먼저 올렸다. 사본(localStorage)은 탭끼리 같으니 새 기준 시각으로 다시 올리면 된다.
+        writeMeta({ ...fresh, dirty: true });
+        setState({ status: "idle" });
+        again = true;
+        return;
+      }
+      if (meta.syncedHash !== null && localFingerprint() === meta.syncedHash) {
+        // 이 기기 답은 마지막으로 맞춘 그대로다 — 물을 것이 없다. 서버 값을 받는다.
+        const changed = !sameContent(readLocalContent(), remote.data);
+        applyRemote(remote);
+        if (changed) reloadPage();
         return;
       }
       setState({ status: "conflict", conflict: remote });
@@ -219,6 +304,7 @@ export async function flushNow(): Promise<void> {
   } finally {
     if (inflight === run) inflight = null;
   }
+  if (again) await flushNow();
 }
 
 /** "다시 시도" 버튼과 online 이벤트. 올리지 못한 것이 있으면 올리고, 없으면 서버 값을 다시 본다. */
@@ -233,7 +319,13 @@ function applyRemote(remote: GetResponseBody): void {
   const sub = storedSub();
   if (sub === null) return;
   writeLocalContent(remote.data);
-  writeMeta({ sub, baseUpdatedAt: remote.updatedAt, lastSavedAt: remote.updatedAt, dirty: false });
+  writeMeta({
+    sub,
+    baseUpdatedAt: remote.updatedAt,
+    lastSavedAt: remote.updatedAt,
+    dirty: false,
+    syncedHash: contentFingerprint(remote.data),
+  });
   setState({ status: "idle", lastSavedAt: remote.updatedAt, conflict: null });
 }
 
@@ -247,18 +339,20 @@ function endLocalSession(): void {
 
 async function refreshFromServer(): Promise<void> {
   if (!syncEnabled()) return;
-  const meta = readMeta();
-  if (meta === null) {
+  const startedAt = epoch;
+  const stored = readMeta();
+  if (stored === null) {
     // 이 기기는 아직 서버와 맞춘 적이 없다(동의 직후 실패했거나 충돌을 고르지 않고 떠났다).
     try {
       await initialSync();
     } catch {
-      setState({ status: "error" });
+      if (startedAt === epoch) setState({ status: "error" });
     }
     return;
   }
+  const meta = settleNoopDirty(stored);
   if (meta.dirty) return flushNow();
-  const startedAt = epoch;
+  const seqAtStart = changeSeq;
   try {
     const remote = await loadRemote();
     if (startedAt !== epoch || withdrawing) return;
@@ -270,7 +364,15 @@ async function refreshFromServer(): Promise<void> {
       markDirty();
       return flushNow();
     }
+    if (changeSeq !== seqAtStart) {
+      // GET 이 가는 사이 이 기기에서 고쳤다. 덮어쓰지 않는다 — 곧 나갈 PUT 이 옛 기준 시각으로 409 를 받아 가린다.
+      return;
+    }
     if (remote.updatedAt === meta.baseUpdatedAt) {
+      const fresh = readMeta();
+      if (fresh !== null && fresh.baseUpdatedAt === remote.updatedAt && fresh.syncedHash === null) {
+        writeMeta({ ...fresh, syncedHash: contentFingerprint(remote.data) });
+      }
       setState({ status: "idle", conflict: null });
       return;
     }
@@ -293,11 +395,14 @@ export type InitialSyncResult = "uploaded" | "downloaded" | "conflict";
 export async function initialSync(): Promise<InitialSyncResult> {
   const sub = storedSub();
   if (!syncEnabled() || sub === null) throw new Error("sync is not enabled");
+  const startedAt = epoch;
   const remote = await loadRemote();
+  // 기다리는 사이 로그아웃·탈퇴했으면 늦게 온 값으로 사본을 채우지 않는다.
+  if (startedAt !== epoch || withdrawing || storedSub() !== sub) throw new Error("sync stopped");
   const local = readLocalContent();
   if (remote === null) {
     changeSeq++;
-    writeMeta({ sub, baseUpdatedAt: null, lastSavedAt: null, dirty: true });
+    writeMeta({ sub, baseUpdatedAt: null, lastSavedAt: null, dirty: true, syncedHash: null });
     await flushNow();
     return getSyncState().status === "conflict" ? "conflict" : "uploaded";
   }
@@ -318,24 +423,44 @@ export async function resolveConflict(choice: "local" | "remote"): Promise<void>
     return;
   }
   changeSeq++;
-  writeMeta({ sub, baseUpdatedAt: remote.updatedAt, lastSavedAt: state.lastSavedAt, dirty: true });
+  writeMeta({
+    sub,
+    baseUpdatedAt: remote.updatedAt,
+    lastSavedAt: state.lastSavedAt,
+    dirty: true,
+    syncedHash: contentFingerprint(remote.data),
+  });
   setState({ status: "idle", conflict: null });
   await flushNow();
 }
 
+export interface LogoutResult {
+  /** 올리지 못한(또는 충돌로 멈춘) 변경을 지운 채 로그아웃했다. 계정 화면이 "저장 안 된 변경이 있어요"를 보인다. */
+  discardedUnsynced: boolean;
+}
+
 /**
- * 로그아웃. 남은 쓰기를 올려 보고(실패해도 로그아웃은 한다), 동기화가 켜져 있었으면 이 기기의 사본을
- * 지운다(공용 PC). 동의하지 않은 채 로그아웃하는 길(/auth/consent)은 이 함수가 아니라 signOut 을 바로 부른다.
+ * 로그아웃. 지금 문구에 동의한 상태면 남은 쓰기를 올려 본다(요청마다 REMOTE_TIMEOUT_MS 상한 — 실패·충돌이어도
+ * 로그아웃은 한다). 그다음, 이 기기가 서버와 맞춘 적이 있거나(perky.sync) 이 사람이 동의한 적이 있으면
+ * (버전 무관 — 문구가 바뀌어 지금은 동기화가 꺼져 있어도 사본은 서버에서 온 답이다) 이 기기의 사본을 지운다(공용 PC).
+ * 동의하지 않은 채 로그아웃하는 길(/auth/consent)은 이 함수가 아니라 signOut 을 바로 부른다.
  */
-export async function logout(): Promise<void> {
-  const enabled = syncEnabled();
-  if (enabled) await flushNow();
-  stopSync();
-  if (enabled) {
-    clearLocalContent();
-    removeMeta();
+export async function logout(): Promise<LogoutResult> {
+  const sub = storedSub();
+  const clear = hasAnyMeta() || (sub !== null && hasAnyConsentRecord(sub));
+  let discardedUnsynced = false;
+  try {
+    if (syncEnabled()) await flushNow();
+  } finally {
+    if (clear) discardedUnsynced = state.status === "conflict" || anyMetaDirty();
+    stopSync();
+    if (clear) {
+      clearLocalContent();
+      removeMeta();
+    }
+    signOut();
   }
-  signOut();
+  return { discardedUnsynced };
 }
 
 /**

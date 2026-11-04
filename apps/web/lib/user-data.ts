@@ -422,3 +422,22 @@ function stable(v: unknown): unknown {
 export function sameContent(a: UserDataContent, b: UserDataContent): boolean {
   return JSON.stringify(stable(contentOf(a))) === JSON.stringify(stable(contentOf(b)));
 }
+
+/**
+ * 답 묶음의 짧은 지문(cyrb53, 16진수). 키 순서와 상관없고 머리 정보는 뺀다.
+ * 클라이언트가 "마지막으로 서버와 맞춘 내용"을 perky.sync 에 64KB 사본 대신 적어 두고,
+ * 바뀐 것이 없으면 PUT 하지 않는 데 쓴다.
+ */
+export function contentFingerprint(c: UserDataContent): string {
+  const text = JSON.stringify(stable(contentOf(c)));
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}

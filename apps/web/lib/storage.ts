@@ -28,14 +28,41 @@ function readJSON<T>(key: string): T | null {
   }
 }
 
-function writeJSON(key: string, value: unknown): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+function readRaw(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 값을 적고, 실제로 바뀌었는지 돌려준다. 같은 값이면 적지도 알리지도 않는다 —
+ * /find 마운트처럼 같은 값을 다시 적는 화면이 있어서, 알리면 로그인 상태에서 쓸데없는 PUT 이 생긴다.
+ */
+function writeJSON(key: string, value: unknown): boolean {
+  if (typeof window === "undefined") return false;
+  const next = JSON.stringify(value);
+  if (readRaw(key) === next) return false;
+  window.localStorage.setItem(key, next);
+  return true;
+}
+
+/** writeJSON 과 같지만 저장이 막혀도 던지지 않는다(시크릿 모드 등). 바뀌었는지(적으려 했는지) 돌려준다. */
+function writeJSONSafely(key: string, value: unknown): boolean {
+  if (typeof window === "undefined") return false;
+  const next = JSON.stringify(value);
+  if (readRaw(key) === next) return false;
+  try {
+    window.localStorage.setItem(key, next);
+  } catch {
+    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
+  }
+  return true;
 }
 
 export function saveListing(listing: ListingInput): void {
-  writeJSON(LISTING_KEY, listing);
-  notifyLocalChange();
+  if (writeJSON(LISTING_KEY, listing)) notifyLocalChange();
 }
 
 export function loadListing(): ListingInput | null {
@@ -43,8 +70,7 @@ export function loadListing(): ListingInput | null {
 }
 
 export function saveProfile(profile: EligibilityProfile): void {
-  writeJSON(PROFILE_KEY, profile);
-  notifyLocalChange();
+  if (writeJSON(PROFILE_KEY, profile)) notifyLocalChange();
 }
 
 export function loadProfile(): EligibilityProfile | null {
@@ -84,13 +110,7 @@ export function loadEligibilityAnsweredKeys(): RequiredInputKey[] | null {
 }
 
 export function saveEligibilityAnsweredKeys(keys: readonly RequiredInputKey[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(ELIGIBILITY_ANSWERED_KEY, JSON.stringify(keys));
-  } catch {
-    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
-  }
-  notifyLocalChange();
+  if (writeJSONSafely(ELIGIBILITY_ANSWERED_KEY, keys)) notifyLocalChange();
 }
 
 // ── 결과 화면에서 직접 답한 '확인 필요' 조건 ──
@@ -113,8 +133,7 @@ export function saveDeclared(key: string, value: DeclaredValue | undefined): voi
   const next = loadDeclared();
   if (value === undefined || value === "") delete next[key];
   else next[key] = value;
-  writeJSON(DECLARED_KEY, next);
-  notifyLocalChange();
+  if (writeJSON(DECLARED_KEY, next)) notifyLocalChange();
 }
 
 // ── 1층(발견) 답변 ──
@@ -192,13 +211,7 @@ export function loadAnsweredKeys(): AnsweredKey[] {
 }
 
 export function saveAnsweredKeys(keys: AnsweredKey[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(ANSWERED_KEY, JSON.stringify(keys));
-  } catch {
-    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
-  }
-  notifyLocalChange();
+  if (writeJSONSafely(ANSWERED_KEY, keys)) notifyLocalChange();
 }
 
 // ── 온보딩 ──
@@ -248,13 +261,7 @@ export function resetOnboarding(): void {
  * (PRD F0-13 개정, docs/기획/2026-11-04-카카오-로그인-설계.md "동기화 규칙").
  */
 export function saveAnswers(answers: DiscoveryAnswers): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
-  } catch {
-    // 시크릿 모드 등에서 저장이 막혀도 앱은 계속 동작해야 한다.
-  }
-  notifyLocalChange();
+  if (writeJSONSafely(ANSWERS_KEY, answers)) notifyLocalChange();
 }
 
 // ── 신청 체크리스트 (app/find/policies/[id]/prepare) ──
@@ -280,13 +287,8 @@ export function loadChecklist(policyId: string): ChecklistState {
 }
 
 export function saveChecklist(policyId: string, checklist: ChecklistState): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(`${CHECKLIST_PREFIX}${policyId}`, JSON.stringify(checklist));
-  } catch {
-    // 저장이 제한된 환경에서도 체크와 외부 이동은 계속 쓸 수 있어야 한다.
-  }
-  notifyLocalChange();
+  // 저장이 제한된 환경에서도 체크와 외부 이동은 계속 쓸 수 있어야 한다(writeJSONSafely 는 던지지 않는다).
+  if (writeJSONSafely(`${CHECKLIST_PREFIX}${policyId}`, checklist)) notifyLocalChange();
 }
 
 function checklistIds(): string[] {

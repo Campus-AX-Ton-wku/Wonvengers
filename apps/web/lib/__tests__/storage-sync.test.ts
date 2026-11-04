@@ -146,3 +146,21 @@ describe("바뀜 알림 — lib/sync.ts 가 듣는다", () => {
     stop();
   });
 });
+
+describe("바뀐 것이 없으면 알리지 않는다 — /find 마운트처럼 같은 값을 다시 적는 화면이 있다", () => {
+  it("save* 를 같은 값으로 두 번 부르면 처음 한 번만 알린다", () => {
+    const listener = vi.fn();
+    const stop = onLocalChange(listener);
+    전부저장();
+    expect(listener).toHaveBeenCalledTimes(7);
+    listener.mockClear();
+
+    전부저장();
+    expect(listener).not.toHaveBeenCalled();
+
+    saveAnswers({ ...답, housingType: null });
+    expect(listener).toHaveBeenCalledTimes(1);
+    stop();
+  });
+});
+
