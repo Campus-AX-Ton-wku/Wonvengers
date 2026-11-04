@@ -35,6 +35,7 @@ import {
 import {
   AnswerSummaryBar,
   AppShell,
+  ResetAnswersButton,
   Button,
   ChoiceCard,
   StepHeader,
@@ -128,6 +129,8 @@ function FindSteps() {
    * (lib/storage.ts의 loadAnsweredKeys 주석 참고).
    */
   const [answered, setAnswered] = useState<AnsweredKey[]>([]);
+  /** '처음부터 다시' 를 할 때마다 올린다. 본문을 새로 그려 휠 같은 안쪽 상태도 비운다. */
+  const [round, setRound] = useState(0);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
@@ -230,9 +233,22 @@ function FindSteps() {
   return (
     <AppShell>
       <TopBar backHref="/" />
-      <AnswerSummaryBar items={summary} />
+      <AnswerSummaryBar
+        items={summary}
+        trailing={
+          answered.length > 0 ? (
+            <ResetAnswersButton
+              onReset={() => {
+                setAnswers(EMPTY_ANSWERS);
+                setAnswered([]);
+                setRound((r) => r + 1);
+              }}
+            />
+          ) : undefined
+        }
+      />
 
-      <main key={`${stepKey}-${province?.name ?? ""}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
+      <main key={`${stepKey}-${province?.name ?? ""}-${round}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
         <StepHeader title={heading} />
 
         {step === 0 && (

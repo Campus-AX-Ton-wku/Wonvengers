@@ -6,6 +6,7 @@ import {
   AppShell,
   LinkButton,
   PerkyCharacter,
+  ResetAnswersButton,
   StickyBottomAction,
   TopBar,
 } from "@/app/components";
@@ -134,6 +135,12 @@ export default function FindResultPage() {
                   ? "어떤 지원금이었는지 보기"
                   : "왜 해당되지 않는지 보기"}
             </LinkButton>
+            {/* 이 화면에는 '조건 수정'이 없다. CTA 를 누르기 전에 처음부터 다시 고를 수 있게 그 아래에 둔다. */}
+            {Object.values(answers).some((v) => v !== null) && (
+              <div className="mt-1 flex justify-center">
+                <ResetAnswersButton />
+              </div>
+            )}
           </StickyBottomAction>
         </>
       )}

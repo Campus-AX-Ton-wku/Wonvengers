@@ -24,7 +24,8 @@ export interface SummaryItem {
  * 이미 router 로 움직이고(테스트 대역도 그것만 따른다), 이 줄은 같은 페이지 안의 이동이라서다.
  *
  * lead 는 왼쪽 앞의 고정 자리다 — /eligibility 의 진행 표시("2/3 가구 · 소득").
- * 항목도 lead 도 없으면 아무것도 그리지 않는다.
+ * trailing 은 오른쪽 끝의 고정 자리다 — /find 의 '처음부터 다시'.
+ * 항목도 lead 도 trailing 도 없으면 아무것도 그리지 않는다.
  *
  * 상단바(TopBar)는 h-14 + safe-area 높이로 sticky top-0 이다. 이 줄은 그 바로 아래에
  * 붙고 z 는 상단바보다 낮다.
@@ -32,12 +33,14 @@ export interface SummaryItem {
 export function AnswerSummaryBar({
   items,
   lead,
+  trailing,
 }: {
   items: SummaryItem[];
   lead?: React.ReactNode;
+  trailing?: React.ReactNode;
 }) {
   const router = useRouter();
-  if (items.length === 0 && !lead) return null;
+  if (items.length === 0 && !lead && !trailing) return null;
 
   return (
     <nav
@@ -70,6 +73,7 @@ export function AnswerSummaryBar({
           ))}
         </ol>
       )}
+      {trailing && <div className="ml-auto shrink-0">{trailing}</div>}
     </nav>
   );
 }

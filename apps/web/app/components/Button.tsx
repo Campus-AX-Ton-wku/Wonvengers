@@ -5,16 +5,18 @@ import Link from "next/link";
  *
  * 예전에는 화면마다 `rounded-xl bg-brand-600 py-4 …` 를 손으로 다시 썼다. 그래서
  * 랜딩 CTA 는 text-lg, 스텝 CTA 는 text-base, 결과의 '답변 수정하기' 는 border 만
- * 있는 식으로 조금씩 어긋났다. 여기 세 변주만 둔다.
+ * 있는 식으로 조금씩 어긋났다. 여기 다섯 변주만 둔다.
  *
  *   primary   — 화면당 하나. 다음으로 나아가는 동작.
  *   secondary — primary 옆에 서는 대안. 면은 옅은 파랑, 글씨는 진한 파랑.
  *   quiet     — 되돌아가기·고치기처럼 흐름을 벗어나는 동작. 테두리만.
+ *   text      — 시트 안에서 물러서는 동작(취소·로그인 없이 보기). 면도 테두리도 없다.
+ *   danger    — 되돌릴 수 없는 동작 하나(회원 탈퇴 확인). 이 앱에서 빨간 면은 이것뿐이다.
  *
  * 크기는 lg(56px), screen(52px), md(44px)이며 모두 손가락이 닿는 44px 이상이다.
  */
 
-export type ButtonVariant = "primary" | "secondary" | "quiet";
+export type ButtonVariant = "primary" | "secondary" | "quiet" | "text" | "danger";
 export type ButtonSize = "lg" | "md" | "screen";
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -24,6 +26,9 @@ const VARIANT: Record<ButtonVariant, string> = {
     "bg-brand-50 text-brand-800 hover:bg-brand-100 active:bg-brand-200 disabled:bg-ink-100 disabled:text-ink-500",
   quiet:
     "border border-ink-200 bg-surface text-ink-600 hover:border-ink-300 hover:bg-ink-50 active:bg-ink-100 disabled:text-ink-300",
+  text: "bg-transparent text-ink-600 hover:bg-ink-50 active:bg-ink-100 disabled:text-ink-300",
+  danger:
+    "bg-danger-600 text-white hover:bg-danger-700 active:bg-danger-700 disabled:bg-ink-200 disabled:text-ink-500",
 };
 
 const SIZE: Record<ButtonSize, string> = {

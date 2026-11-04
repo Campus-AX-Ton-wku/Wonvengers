@@ -5,7 +5,7 @@ import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import ConsultCenters, { centersFor } from "@/app/find/ConsultCenters";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, TopBar } from "@/app/components";
+import { AppShell, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
@@ -96,13 +96,16 @@ export default function FindPoliciesPage() {
               소득 구간은 여기 두지 않는다 — 조건 수정 화면에 그대로 있다. */}
           <div className="mt-2 flex items-center justify-between gap-3">
             <p className="min-w-0 truncate text-sm text-ink-500">{answerLine(resolved)}</p>
-            <Link
-              href="/find"
-              className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
-            >
-              조건 수정
-              <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
-            </Link>
+            <div className="flex shrink-0 items-center">
+              <ResetAnswersButton />
+              <Link
+                href="/find"
+                className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
+              >
+                조건 수정
+                <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
+              </Link>
+            </div>
           </div>
 
           {resolved.region && (
