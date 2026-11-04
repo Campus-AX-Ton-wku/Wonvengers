@@ -145,7 +145,7 @@ MVP는 부동산 플랫폼처럼 현재 광고 중인 매물 DB를 제공하지 
 - 민간 부동산 사이트 크롤링 또는 비공식 API 연동
 - 계약 안전·등기·하자 확인 기능
 - 정책 신청 대행 또는 승인 보장
-- 회원가입, 사용자 DB, 서류 업로드
+- 아이디·비밀번호 회원가입, 서류 업로드 (카카오 선택 로그인과 답 저장은 2026-11-04 개정으로 범위 안)
 - AI를 이용한 자격 판정 또는 금액 계산
 - 법률·금융 자문
 
@@ -539,7 +539,7 @@ lib/
   benefit.ts            2층 금액 계산
   combine.ts            배타 그룹 처리
   questions.ts          아직 묻지 않은 항목 계산
-  storage.ts            localStorage (키 1개)
+  storage.ts            localStorage (여러 키: 계약 조건·자격 답·체크리스트 등)
 data/
   policies.json  income-brackets.json  income-thresholds.json
   test-cases.json  demo-preset.json

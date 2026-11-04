@@ -20,7 +20,7 @@ describe("/privacy — 처리방침 초안 (설계 '화면' 6)", () => {
     const text = document.body.textContent ?? "";
     for (const phrase of [
       "정식 공개 전 팀·학교 검토",
-      "로그인하지 않으면 수집하지 않아요",
+      "로그인하지 않으면 고른 답을 서버에 보내지 않아요",
       "마지막 저장 후 1년",
       "AWS 서울 리전",
       "Amazon Web Services, Inc.",
