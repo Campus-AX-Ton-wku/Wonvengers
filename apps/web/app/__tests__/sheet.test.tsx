@@ -75,4 +75,16 @@ describe("Sheet", () => {
     await user.click(dialog.parentElement!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("data-autofocus 가 붙은 요소가 있으면 그쪽에 먼저 포커스 — 되돌릴 수 없는 확인은 안전한 쪽부터", () => {
+    render(
+      <Sheet title="지울까요?" onClose={() => {}}>
+        <button type="button">지우기</button>
+        <button type="button" data-autofocus>
+          취소
+        </button>
+      </Sheet>
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "취소" }));
+  });
 });

@@ -84,7 +84,9 @@ describe("/find/policies — '조건 수정' 옆", () => {
     render(<FindPoliciesPage />);
 
     await user.click(await screen.findByRole("button", { name: "처음부터 다시" }));
-    await user.click(screen.getByRole("button", { name: "취소" }));
+    // 열리자마자 Enter 를 눌러도 지워지지 않게, 포커스는 '취소' 에 먼저 간다.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "취소" }));
+    await user.keyboard("{Enter}");
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(loadAnswers()).toEqual(답);
@@ -122,6 +124,8 @@ describe("/find — 답 요약 줄 끝", () => {
 
     expect(routerMock.replace).toHaveBeenCalledWith("/find?q=birth");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("생년월일이 어떻게 되시나요?");
+    // 연 버튼은 요약 줄과 함께 사라졌다. 포커스가 body 로 떨어지지 않고 새 질문 제목으로 간다.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 })));
     expect(screen.queryByRole("navigation", { name: "고른 답" })).toBeNull();
     expect(loadAnswers()).toEqual(EMPTY_ANSWERS);
   });

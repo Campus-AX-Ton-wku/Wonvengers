@@ -4,11 +4,16 @@ import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/**
+ * 열릴 때 먼저 포커스를 받을 요소의 표. 없으면 첫 번째 포커스 가능한 요소.
+ * 되돌릴 수 없는 확인(처음부터 다시·회원 탈퇴)은 안전한 쪽(취소)에 단다 — 열자마자 Enter 한 번에 지워지지 않게.
+ */
+const INITIAL_FOCUS = '[data-autofocus]:not([disabled])';
 
 /**
  * 아래에서 올라오는 확인 시트. 가입 제안·"처음부터 다시"·회원 탈퇴·충돌 질문이 함께 쓴다.
  *
- * 열려 있는 동안 Tab 은 시트 안에서만 돈다. Esc 와 어두운 바깥을 누르면 onClose.
+ * 열리면 data-autofocus 가 붙은 요소(없으면 첫 버튼)에 포커스. 열려 있는 동안 Tab 은 시트 안에서만 돈다. Esc 와 어두운 바깥을 누르면 onClose.
  * 닫히면(이 컴포넌트가 사라지면) 시트를 연 요소로 포커스를 돌려준다 — 닫은 뒤 키보드 사용자가
  * 문서 맨 처음으로 튕기지 않게. 생김새는 신청 준비 화면의 외부 이동 안내와 같다.
  *
@@ -41,7 +46,7 @@ export function Sheet({
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = dialogRef.current;
-    dialog?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    (dialog?.querySelector<HTMLElement>(INITIAL_FOCUS) ?? dialog?.querySelector<HTMLElement>(FOCUSABLE))?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 

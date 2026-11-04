@@ -18,6 +18,8 @@ export const RESET_TARGET = "/find?q=birth";
  * 첫 화면이면 그 표도 옮긴다(replaceKeepingEntry). 로그인 전·후 똑같이 동작하고, 로그인 상태면
  * lib/sync.ts 가 비운 데이터를 바로 올린다.
  *
+ * 확인 창은 '취소' 에 먼저 포커스를 준다 — 열자마자 Enter 한 번에 모두 지워지지 않게.
+ *
  * onReset: 같은 화면(/find)에 머무는 경우 그 화면의 상태도 비우라고 부른다.
  */
 export function ResetAnswersButton({ onReset }: { onReset?: () => void }) {
@@ -45,7 +47,7 @@ export function ResetAnswersButton({ onReset }: { onReset?: () => void }) {
           <Button size="screen" onClick={reset}>
             다시 하기
           </Button>
-          <Button size="screen" variant="text" onClick={() => setConfirming(false)}>
+          <Button size="screen" variant="text" data-autofocus onClick={() => setConfirming(false)}>
             취소
           </Button>
         </Sheet>
