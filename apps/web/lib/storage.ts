@@ -412,3 +412,26 @@ export function resetAllAnswers(): void {
   quietly(clearLocalContent);
   notifyLocalChange(true);
 }
+
+// ── 가입 제안 시트 (app/find/result/SignupSheet.tsx) ──
+
+/** 닫으면 그 기기에서는 다시 띄우지 않는다. '처음부터 다시'·로그아웃으로도 지우지 않는다(답이 아니다). */
+export const SIGNUP_DISMISSED_KEY = "perky.signup-dismissed";
+
+export function hasDismissedSignup(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(SIGNUP_DISMISSED_KEY) === "1";
+  } catch {
+    // 읽기가 막혀 있으면 닫은 것으로 본다. 매번 시트에 막히는 것보다 낫다.
+    return true;
+  }
+}
+
+export function dismissSignup(): void {
+  try {
+    window.localStorage.setItem(SIGNUP_DISMISSED_KEY, "1");
+  } catch {
+    // 못 적으면 다음에 한 번 더 보인다.
+  }
+}

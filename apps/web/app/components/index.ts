@@ -21,6 +21,7 @@ export { Disclosure } from "./Disclosure";
 export { EmptyState } from "./EmptyState";
 export { Field, FieldError, FieldGroup, MoneyInput, NumberInput } from "./Input";
 export { IconButton, IconLink } from "./IconButton";
+export { KakaoButton } from "./KakaoButton";
 export { default as PerkyCharacter, PERKY_STATES } from "./PerkyCharacter";
 export type { PerkyState } from "./PerkyCharacter";
 export { ResultSummary } from "./ResultSummary";

@@ -434,8 +434,18 @@ export async function resolveConflict(choice: "local" | "remote"): Promise<void>
   await flushNow();
 }
 
+/**
+ * 지금 로그아웃하면 잃을 변경이 있는가 — 올리지 못한 변경(dirty)이나 고르지 않은 충돌.
+ * 계정 화면이 로그아웃 전에 묻는다. logout() 의 discardedUnsynced 와 같은 기준이다
+ * (logout 은 Cognito 로 떠나므로 그 결과를 화면에 보일 틈이 없다).
+ */
+export function hasUnsyncedChanges(): boolean {
+  if (typeof window === "undefined") return false;
+  return state.status === "conflict" || anyMetaDirty();
+}
+
 export interface LogoutResult {
-  /** 올리지 못한(또는 충돌로 멈춘) 변경을 지운 채 로그아웃했다. 계정 화면이 "저장 안 된 변경이 있어요"를 보인다. */
+  /** 올리지 못한(또는 충돌로 멈춘) 변경을 지운 채 로그아웃했다. 계정 화면은 그 전에 hasUnsyncedChanges 로 묻는다. */
   discardedUnsynced: boolean;
 }
 
@@ -443,7 +453,8 @@ export interface LogoutResult {
  * 로그아웃. 지금 문구에 동의한 상태면 남은 쓰기를 올려 본다(요청마다 REMOTE_TIMEOUT_MS 상한 — 실패·충돌이어도
  * 로그아웃은 한다). 그다음, 이 기기가 서버와 맞춘 적이 있거나(perky.sync) 이 사람이 동의한 적이 있으면
  * (버전 무관 — 문구가 바뀌어 지금은 동기화가 꺼져 있어도 사본은 서버에서 온 답이다) 이 기기의 사본을 지운다(공용 PC).
- * 동의하지 않은 채 로그아웃하는 길(/auth/consent)은 이 함수가 아니라 signOut 을 바로 부른다.
+ * 동의 화면의 [동의하지 않음]도 이 함수를 쓴다 — 서버에 간 적 없는 로그인 전 답(메타도 동의 기록도 없음)은 남고,
+ * 예전 문구에 동의해 서버와 맞췄던 사람이 새 문구를 거절하면 서버에서 온 사본은 지운다.
  */
 export async function logout(): Promise<LogoutResult> {
   const sub = storedSub();
