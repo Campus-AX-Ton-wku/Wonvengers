@@ -5,7 +5,7 @@ import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import ConsultCenters, { centersFor } from "@/app/find/ConsultCenters";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, TopBar } from "@/app/components";
+import { AppShell, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
@@ -94,15 +94,20 @@ export default function FindPoliciesPage() {
 
           {/* 무슨 답변으로 나온 결과인지 한 줄로 말하고, 바로 고치러 갈 수 있게 한다.
               소득 구간은 여기 두지 않는다 — 조건 수정 화면에 그대로 있다. */}
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-sm text-ink-500">{answerLine(resolved)}</p>
-            <Link
-              href="/find"
-              className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
-            >
-              조건 수정
-              <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
-            </Link>
+          {/* 390px 아래에서는 답 줄이 한 줄을 다 쓰고 두 버튼이 그 아래 오른쪽에 선다 — 한 줄에 두면
+              320px 에서 답 줄이 "24세 · 익산시 · …" 로 잘린다. */}
+          <div className="mt-2 flex flex-col gap-1 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between min-[390px]:gap-3">
+            <p className="text-sm text-ink-500 min-[390px]:min-w-0 min-[390px]:truncate">{answerLine(resolved)}</p>
+            <div className="flex shrink-0 items-center self-end min-[390px]:self-auto">
+              <ResetAnswersButton />
+              <Link
+                href="/find"
+                className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
+              >
+                조건 수정
+                <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
+              </Link>
+            </div>
           </div>
 
           {resolved.region && (

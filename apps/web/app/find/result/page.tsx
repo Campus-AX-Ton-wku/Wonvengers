@@ -6,6 +6,7 @@ import {
   AppShell,
   LinkButton,
   PerkyCharacter,
+  ResetAnswersButton,
   StickyBottomAction,
   TopBar,
 } from "@/app/components";
@@ -13,8 +14,10 @@ import { resolveAnswers } from "@/lib/age";
 import { largestTotalCeiling } from "@/lib/benefit";
 import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
-import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
+import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
+import { EMPTY_ANSWERS, hasDismissedSignup, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+import SignupSheet from "./SignupSheet";
 
 /**
  * 1층 · 발견 — 결과 요약.
@@ -42,6 +45,7 @@ export default function FindResultPage() {
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
+  const [signupOpen, setSignupOpen] = useState(false);
 
   useEffect(() => {
     setAnswers(loadAnswers());
@@ -127,14 +131,30 @@ export default function FindResultPage() {
           </main>
 
           <StickyBottomAction>
-            <LinkButton href="/find/policies">
+            <LinkButton
+              href="/find/policies"
+              onClick={(event) => {
+                // 찾은 경우의 CTA("지원금 N건 자세히 보기")를 처음 누를 때만. 로그인 상태·닫은 기기·로그인을 쓸 수 없는 빌드에서는 그냥 간다.
+                if (찾음 && isLoginAvailable() && !hasStoredLogin() && !hasDismissedSignup()) {
+                  event.preventDefault();
+                  setSignupOpen(true);
+                }
+              }}
+            >
               {찾음
                 ? `지원금 ${신청가능.length}건 자세히 보기`
                 : count > 0
                   ? "어떤 지원금이었는지 보기"
                   : "왜 해당되지 않는지 보기"}
             </LinkButton>
+            {/* 이 화면에는 '조건 수정'이 없다. CTA 를 누르기 전에 처음부터 다시 고를 수 있게 그 아래에 둔다. */}
+            {Object.values(answers).some((v) => v !== null) && (
+              <div className="mt-1 flex justify-center">
+                <ResetAnswersButton />
+              </div>
+            )}
           </StickyBottomAction>
+          {signupOpen && <SignupSheet onClose={() => setSignupOpen(false)} />}
         </>
       )}
     </AppShell>

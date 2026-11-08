@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ENTRY_SCRIPT } from "@/lib/entry";
+import { contentSecurityPolicy } from "@/lib/csp";
 
 /*
  * ── 이 앱의 디자인 계약 (2026-09-02 전면 리디자인) ─────────────────────────
@@ -115,6 +116,10 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable}>
       <head>
+        {/* 배포 빌드에서만. dev 서버는 HMR 이 eval 을 써서 이 정책으로는 돌지 않는다. 스크립트보다 먼저 둔다. */}
+        {process.env.NODE_ENV === "production" && (
+          <meta httpEquiv="Content-Security-Policy" content={contentSecurityPolicy()} />
+        )}
         <script dangerouslySetInnerHTML={{ __html: `${ONBOARDING_REDIRECT};${ENTRY_SCRIPT}` }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>

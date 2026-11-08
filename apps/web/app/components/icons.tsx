@@ -37,6 +37,7 @@ export {
   Search,
   ShieldCheck,
   TriangleAlert,
+  UserRound,
   Wallet,
   X,
 } from "lucide-react";

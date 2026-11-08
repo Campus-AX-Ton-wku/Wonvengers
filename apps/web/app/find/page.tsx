@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
@@ -35,6 +35,7 @@ import {
 import {
   AnswerSummaryBar,
   AppShell,
+  ResetAnswersButton,
   Button,
   ChoiceCard,
   StepHeader,
@@ -128,6 +129,11 @@ function FindSteps() {
    * (lib/storage.ts의 loadAnsweredKeys 주석 참고).
    */
   const [answered, setAnswered] = useState<AnsweredKey[]>([]);
+  /** '처음부터 다시' 를 할 때마다 올린다. 본문을 새로 그려 휠 같은 안쪽 상태도 비운다. */
+  const [round, setRound] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+  /** '처음부터 다시' 뒤 첫 질문 제목으로 포커스를 옮길 차례인가. */
+  const focusHeadingAfterReset = useRef(false);
 
   // 서버 렌더링 후 브라우저에서 저장된 답변을 불러온다.
   useEffect(() => {
@@ -161,6 +167,18 @@ function FindSteps() {
       QUESTIONS.slice(0, STEP_KEYS.indexOf(k)).every((q) => answered.includes(q.key)),
   });
   const step = STEP_KEYS.indexOf(stepKey);
+
+  // '처음부터 다시' 를 연 버튼은 요약 줄과 함께 사라진다. 포커스가 body 로 떨어지지 않게 첫 질문 제목으로 옮긴다.
+  // replace 로 주소가 바뀌는 것은 상태 비우기보다 늦게 그려질 수 있어서, 첫 질문이 그려진 뒤에 옮긴다.
+  useEffect(() => {
+    if (!focusHeadingAfterReset.current || step !== 0) return;
+    const heading = mainRef.current?.querySelector<HTMLElement>("h1");
+    if (!heading) return;
+    focusHeadingAfterReset.current = false;
+    heading.tabIndex = -1;
+    heading.classList.add("outline-none");
+    heading.focus();
+  }, [round, step]);
   /** 지역 질문 안에서 먼저 고른 시·도. 주소(p)에 있어서 뒤로가기가 시·도 목록으로 돌아온다. */
   const province =
     step === 1 ? (REGION_HIERARCHY.find((item) => item.name === query("p")) ?? null) : null;
@@ -230,9 +248,23 @@ function FindSteps() {
   return (
     <AppShell>
       <TopBar backHref="/" />
-      <AnswerSummaryBar items={summary} />
+      <AnswerSummaryBar
+        items={summary}
+        trailing={
+          answered.length > 0 ? (
+            <ResetAnswersButton
+              onReset={() => {
+                setAnswers(EMPTY_ANSWERS);
+                setAnswered([]);
+                setRound((r) => r + 1);
+                focusHeadingAfterReset.current = true;
+              }}
+            />
+          ) : undefined
+        }
+      />
 
-      <main key={`${stepKey}-${province?.name ?? ""}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
+      <main ref={mainRef} key={`${stepKey}-${province?.name ?? ""}-${round}`} className="step-in flex flex-1 flex-col gap-7 pb-8 pt-7">
         <StepHeader title={heading} />
 
         {step === 0 && (
