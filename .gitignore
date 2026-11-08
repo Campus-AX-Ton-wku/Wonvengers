@@ -25,3 +25,6 @@ docs/디자인/reference/
 # (develop·main 은 PR 필수라 워크플로가 직접 푸시할 수 없다)
 apps/web/freshness-report.md
 apps/web/scripts/freshness/freshness-snapshot.json
+# CDK 산출물 — 배포 출력(풀 ID·API 주소)은 apps/web/.env.local 과 배포 체크리스트로 옮긴다
+infra/cdk.out/
+infra/cdk-outputs.json
