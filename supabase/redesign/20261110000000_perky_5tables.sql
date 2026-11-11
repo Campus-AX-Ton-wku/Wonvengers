@@ -1,19 +1,22 @@
 -- ════════════════════════════════════════════════════════════════════════
--- Perky DB 재설계 — 핵심 5테이블 (초안, 2026-11-09)
+-- Perky DB — 익산 원문·검수용 4테이블 (2026-11-11 확정 방식)
 --
---   ① user_conditions  사용자 조건        (멘토: 사용자 테이블)
 --   ② policy_raw       정책 원문          (멘토: 정책 원문 테이블)
 --   ③ policies         가공 정책          (멘토: 가공된 정책 테이블)
 --   ④ agencies         시행처·연락처      (멘토: 기타 정보 테이블)
 --   ⑤ policy_checks    확인 기록          (정책 확인일·검수·전화 문의)
 --
--- 바탕: Perky_DB_summary.docx 의 표 22개를 멘토 조언("필수 4개, 5개 이하,
--- 과도한 조인 금지")에 맞춰 합쳤다. 어떤 표가 어디로 갔는지는
--- docs/기획/2026-11-09-DB-재설계-5테이블.md 참고.
+--   ① 사용자(멘토: 사용자 테이블)는 Supabase 에 두지 않는다. 로그인 사용자의 답은
+--      AWS(infra/ 의 DynamoDB UserData 표, 카카오 로그인)가 이미 맡고 있다.
 --
--- ⚠️ 아직 supabase/migrations 에 넣지 않았다. 옛 설계(migrations/ 3개 파일)와
---    같이 적용하면 안 된다. 팀이 확정하면 이 파일을 migrations/ 로 옮기고
---    옛 파일은 지운다.
+-- 확정 방식 (docs/기획/2026-11-11-DB-익산-원문검수-계획.md)
+--   - 앱은 지금처럼 apps/web/data 의 정책 JSON 을 읽는다. 이 DB 를 읽지 않는다.
+--   - 이 DB 에는 익산 사용자에게 보이는 14건 + 새 후보 2건의 원문과 검수 기록만 넣는다.
+--   - DB 값을 JSON 에 덮어쓰지 않는다. 틀린 값은 JSON 을 PR 로 고치고, DB 에도 같은 값을 남긴다.
+--   - 그래서 익명(anon) 접근은 하나도 열지 않는다. 로그인한 팀원만 읽고 쓴다.
+--
+-- 바탕: Perky_DB_summary.docx 의 표 22개를 멘토 조언("필수 4개, 5개 이하,
+-- 과도한 조인 금지")에 맞춰 합쳤다 → docs/기획/2026-11-09-DB-재설계-5테이블.md
 --
 -- 이름 규칙
 --   - 정해진 값만 받는 칸은 선택지 타입(opt_)이라 Table Editor 에서 드롭다운으로 고른다.
@@ -30,7 +33,7 @@ create type public.opt_kind          as enum ('현금', '대출', '보증료', '
 create type public.opt_purpose       as enum ('주거비 경감', '보증금 안전', '이주·정착', '자산 형성', '주택 공급');
 create type public.opt_policy_status as enum ('예정', '운영', '종료', '보류');
 create type public.opt_benefit_type  as enum ('rent_capped_monthly', 'flat_monthly', 'lump_sum');
-create type public.opt_raw_kind      as enum ('공고문', '온통청년API', '보조금24API', '복지로API', 'LH공고API', '기사', '전화');
+create type public.opt_raw_kind      as enum ('공고문', '온통청년API', '보조금24API', '복지로지자체API', '복지로중앙부처API', 'LH공고API', '기사', '전화');
 create type public.opt_agency_level  as enum ('중앙부처', '시도', '시군구', '공공기관');
 create type public.opt_contact_kind  as enum ('담당부서', '청년센터', '콜센터', '주민센터', '기타');
 create type public.opt_check_method  as enum ('원문대조', '전화문의', 'AI교차', '자동확인');
@@ -56,38 +59,6 @@ comment on type public.opt_trust_level   is '화면에 보여줄 신뢰도 등�
 create function public.is_region_code(code text) returns boolean
 language sql immutable as $$ select code ~ '^(00|[0-9]{2}|[0-9]{5})$' $$;
 comment on function public.is_region_code(text) is '지역 코드 형식: 00(전국) · 2자리(시도) · 5자리(시군구)';
-
-
--- ════════════════════════════════════════════════════════════════════════
--- ① 사용자 조건 — 사용자가 1층에서 답한 조건 한 벌. 이름·연락처·IP 는 없다.
--- ════════════════════════════════════════════════════════════════════════
-create table public.user_conditions (
-  id               uuid primary key default gen_random_uuid(),
-  created_at       timestamptz not null default now(),
-  channel          text not null default 'web',
-  age              smallint,
-  military_service boolean,
-  region_code      text,
-  status           public.opt_status,
-  income_bracket   smallint,
-  income_basis     public.opt_income_basis,
-  housing_type     public.opt_housing,
-  constraint 사용자_경로 check (channel in ('web', 'demo', 'test')),
-  constraint 사용자_나이 check (age between 0 and 120),
-  constraint 사용자_지역코드 check (region_code is null or public.is_region_code(region_code)),
-  constraint 사용자_소득구간 check (income_bracket between 1 and 5)
-);
-comment on table  public.user_conditions is '① 사용자 조건 — 한 행 = 사용자 한 명이 답한 조건 한 벌. 개인을 알아볼 칸은 두지 않는다. 행 수 = 누적 이용자 수';
-comment on column public.user_conditions.id               is '[식별] 무작위 번호';
-comment on column public.user_conditions.created_at       is '[식별] 답한 시각';
-comment on column public.user_conditions.channel          is '[식별] web = 실제 사용 / demo = 시연 / test = 팀 테스트. 누적 이용자 수는 web 만 센다';
-comment on column public.user_conditions.age              is '만 나이. null = 답하지 않음';
-comment on column public.user_conditions.military_service is '군 복무를 마쳤나. 청년 나이 상한을 늘려 주는 정책 판정에 쓴다. null = 답하지 않음';
-comment on column public.user_conditions.region_code      is '사는 곳 지역 코드 (예: 52140 익산시). 2자리면 시도까지만 고른 것';
-comment on column public.user_conditions.status           is '현재 상태';
-comment on column public.user_conditions.income_bracket   is '월 소득 구간 1~5 (1: 100만 이하 · 2: 100~150 · 3: 150~200 · 4: 200~250 · 5: 250 초과)';
-comment on column public.user_conditions.income_basis     is '사용자가 답한 금액이 세전인지 세후인지';
-comment on column public.user_conditions.housing_type     is '계약 형태';
 
 
 -- ════════════════════════════════════════════════════════════════════════
@@ -584,36 +555,32 @@ $$;
 comment on function public.match_policies(int, text, public.opt_status, int, public.opt_housing, boolean, date)
   is '사용자 조건으로 정책을 고른다. 결과의 apply_state 가 마감이면 화면에서 "이미 끝난 지원금"으로 따로 보여준다';
 
--- 저장된 사용자 조건 한 벌로 고르기 (팀원용 예시)
---   select m.* from public.user_conditions u,
---     lateral public.match_policies(u.age, u.region_code, u.status, u.income_bracket,
---                                   u.housing_type, u.military_service) m
---   where u.id = '<사용자 조건 id>';
 
 
 -- ════════════════════════════════════════════════════════════════════════
--- 권한 (RLS) — 앱에 로그인 기능이 없으므로 "로그인한 사람 = 팀원" 이다
+-- 권한 (RLS) — 앱에 로그인 기능이 없으므로 "Supabase 에 로그인한 사람 = 팀원" 이다.
+-- 익명(anon) 정책은 하나도 만들지 않는다 → 익명은 아무것도 읽거나 쓸 수 없다.
+-- (앱이 이 DB 를 읽지 않고, notes 같은 내부 메모가 밖으로 나가면 안 되기 때문)
 -- ════════════════════════════════════════════════════════════════════════
-alter table public.user_conditions enable row level security;
-alter table public.policy_raw      enable row level security;
-alter table public.agencies        enable row level security;
-alter table public.policies        enable row level security;
-alter table public.policy_checks   enable row level security;
+alter table public.policy_raw    enable row level security;
+alter table public.agencies      enable row level security;
+alter table public.policies      enable row level security;
+alter table public.policy_checks enable row level security;
 
--- 사용자 조건: 누구나 넣을 수만 있고, 읽는 건 팀원만
-create policy "추가: 누구나" on public.user_conditions for insert to anon, authenticated with check (channel in ('web', 'demo'));
-create policy "읽기: 팀원"   on public.user_conditions for select to authenticated using (true);
+-- 정책·연락처: 팀원이 읽고 넣고 고친다 (지우기는 트리거·권한 모두 없음)
+create policy "읽기: 팀원" on public.policies for select to authenticated using (true);
+create policy "추가: 팀원" on public.policies for insert to authenticated with check (true);
+create policy "수정: 팀원" on public.policies for update to authenticated using (true) with check (true);
+create policy "읽기: 팀원" on public.agencies for select to authenticated using (true);
+create policy "추가: 팀원" on public.agencies for insert to authenticated with check (true);
+create policy "수정: 팀원" on public.agencies for update to authenticated using (true) with check (true);
 
--- 정책·연락처: 공개 정보라 누구나 읽고, 고치는 건 팀원만
-create policy "읽기: 누구나" on public.policies for select to anon, authenticated using (true);
-create policy "추가: 팀원"   on public.policies for insert to authenticated with check (true);
-create policy "수정: 팀원"   on public.policies for update to authenticated using (true) with check (true);
-create policy "읽기: 누구나" on public.agencies for select to anon, authenticated using (true);
-create policy "추가: 팀원"   on public.agencies for insert to authenticated with check (true);
-create policy "수정: 팀원"   on public.agencies for update to authenticated using (true) with check (true);
-
--- 원문·확인 기록: 팀원만 읽고 넣는다 (수정·삭제는 트리거가 막는다)
+-- 원문·확인 기록: 팀원이 읽고 넣는다 (수정·삭제는 트리거가 막는다)
 create policy "읽기: 팀원" on public.policy_raw    for select to authenticated using (true);
 create policy "추가: 팀원" on public.policy_raw    for insert to authenticated with check (true);
 create policy "읽기: 팀원" on public.policy_checks for select to authenticated using (true);
 create policy "추가: 팀원" on public.policy_checks for insert to authenticated with check (true);
+
+-- 정책 고르기 함수도 팀원만 (멘토 점검 시연은 팀원 계정으로 SQL Editor 에서 돌린다)
+revoke execute on function public.match_policies(int, text, public.opt_status, int, public.opt_housing, boolean, date) from public, anon;
+grant  execute on function public.match_policies(int, text, public.opt_status, int, public.opt_housing, boolean, date) to authenticated;

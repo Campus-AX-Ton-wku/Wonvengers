@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// 재설계 5테이블 초안(supabase/redesign/)을 PGlite 에 적용해서
+// 익산 원문·검수용 4테이블(supabase/redesign/)을 PGlite 에 적용해서
 //   ① 지금 앱 데이터 중 전국·전북·익산 정책이 들어가는지
 //   ② 멘토가 말한 "사용자 조건 → Select" 가 앱과 같은 답을 내는지
 //   ③ 원문 보존·작성자≠검수자·정책 확인일 같은 규칙이 지켜지는지
@@ -48,7 +48,7 @@ console.log("\n[0] 적용");
 await db.exec(readFileSync(join(repo, "supabase", "redesign", "20261110000000_perky_5tables.sql"), "utf8"));
 const tables = (await q(`select table_name from information_schema.tables
   where table_schema = 'public' and table_type = 'BASE TABLE' order by 1`)).map((r) => r.table_name);
-ok(`표는 5개 (${tables.join(", ")})`, tables.length === 5);
+ok(`표는 4개 — 사용자 표는 AWS 담당 (${tables.join(", ")})`, tables.length === 4 && !tables.includes("user_conditions"));
 const noComment = await q(`
   select c.table_name || '.' || c.column_name as col
   from information_schema.columns c
@@ -232,18 +232,17 @@ await q(`update policies set apply_end = '2027-09-30', edited_by = '노찬영', 
 const L2 = await level();
 ok("내용을 고치면 옛 확인은 무효 → 미검수 (확인일은 남는다)", L2.version === 2 && L2.trust_level === "미검수" && L2.checked_at !== null);
 
-console.log("\n[7] 권한");
+console.log("\n[7] 권한 — 익명은 아무것도 못 하고, 팀원만 읽고 쓴다");
 await as("anon");
-await q(`insert into user_conditions (age, region_code, status, income_bracket, income_basis, housing_type)
-  values (22, '52140', '대학생', 2, '세후', '월세')`);
-ok("익명 사용자는 조건을 넣을 수 있다", true);
-ok("익명 사용자는 남의 조건을 못 본다", (await q(`select * from user_conditions`)).length === 0);
-await expectError("익명은 test 경로로 못 넣는다", () => q(`insert into user_conditions (channel) values ('test')`), /row-level security/);
-ok("익명도 정책은 읽는다 (공개 정보)", (await q(`select count(*)::int n from policies`))[0].n === n);
+ok("익명은 정책을 못 본다 (앱이 이 DB 를 읽지 않는다)", (await q(`select * from policies`)).length === 0);
+ok("익명은 연락처를 못 본다", (await q(`select * from agencies`)).length === 0);
 ok("익명은 원문 표를 못 본다", (await q(`select * from policy_raw`)).length === 0);
-await expectError("익명은 정책을 못 고친다", () => q(`${base}) values ('t-g', 2026, ${a1}, 'https://x.kr', 't', '대출', '자산 형성', 't', '{52140}', 't', 'a', 'b')`), /row-level security/);
+ok("익명은 확인 기록을 못 본다", (await q(`select * from policy_checks`)).length === 0);
+await expectError("익명은 정책을 못 넣는다", () => q(`${base}) values ('t-g', 2026, ${a1}, 'https://x.kr', 't', '대출', '자산 형성', 't', '{52140}', 't', 'a', 'b')`), /row-level security/);
+await expectError("익명은 정책 고르기 함수를 못 쓴다", () => match(22, "52140", "대학생", 2, "월세"), /permission denied/);
 await as("authenticated");
-ok("팀원은 조건을 본다 = 누적 이용자 수", (await q(`select count(*)::int n from user_conditions where channel = 'web'`))[0].n === 1);
+ok("팀원은 정책을 본다", (await q(`select count(*)::int n from policies`))[0].n === n);
+ok("팀원은 정책 고르기 함수를 쓴다", (await match(22, "52140", "대학생", 2, "월세")).length === n);
 await as("postgres");
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
