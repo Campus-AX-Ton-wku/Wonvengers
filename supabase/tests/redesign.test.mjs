@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// 익산 원문·검수용 4테이블(supabase/redesign/)을 PGlite 에 적용해서
+// 익산 원문·검수용 4테이블(supabase/migrations/)을 PGlite 에 적용해서
 //   ① 지금 앱 데이터 중 전국·전북·익산 정책이 들어가는지
 //   ② 멘토가 말한 "사용자 조건 → Select" 가 앱과 같은 답을 내는지
 //   ③ 원문 보존·작성자≠검수자·정책 확인일 같은 규칙이 지켜지는지
@@ -45,7 +45,7 @@ await db.exec(`
 `);
 
 console.log("\n[0] 적용");
-await db.exec(readFileSync(join(repo, "supabase", "redesign", "20261110000000_perky_5tables.sql"), "utf8"));
+await db.exec(readFileSync(join(repo, "supabase", "migrations", "20261110000000_perky_5tables.sql"), "utf8"));
 const tables = (await q(`select table_name from information_schema.tables
   where table_schema = 'public' and table_type = 'BASE TABLE' order by 1`)).map((r) => r.table_name);
 ok(`표는 4개 — 사용자 표는 AWS 담당 (${tables.join(", ")})`, tables.length === 4 && !tables.includes("user_conditions"));
