@@ -23,6 +23,9 @@
 | `seed/build-seed.mjs` | `seed.sql` 을 JSON·원문에서 만드는 스크립트. `seed.sql` 은 손으로 고치지 않는다 |
 | `seed/raw/gov24-*.json` | 새 후보 2건의 보조금24 API 응답 원문 (11/12 조회, 키 없음) |
 | `tests/seed.test.mjs` | `seed.sql` 을 PGlite 에 넣어 보는 검사 35개 — JSON 과 값이 같은지, 두 번 넣으면 멈추는지 등 |
+| `raw/2026-11-12/*.json` | 할 일 7번 — 14건 중 API 번호가 있는 것의 응답 원문 8개 (보조금24 3 · 온통청년 5, 키 없음) |
+| `raw/build-raw-sql.mjs` · `raw/2026-11-12.sql` | 위 응답을 원문 표에 넣는 SQL 과 그 생성 스크립트. 한 번만 실행 |
+| `tests/raw.test.mjs` | `raw/2026-11-12.sql` 을 seed 다음에 넣어 보는 검사 14개 |
 
 표 설명: [`docs/기획/2026-11-09-DB-재설계-5테이블.md`](../docs/기획/2026-11-09-DB-재설계-5테이블.md)
 (설계 당시 5테이블 안. 그중 ① 사용자 조건은 11/11 에 AWS 담당으로 빠졌다)
@@ -67,4 +70,12 @@ cd supabase/tests && node seed.test.mjs     # 결과: 35 통과 / 0 실패
      단 정책 notes 의 줄바꿈이 붙여 넣기 과정에서 Windows 식(CRLF)으로 들어갔다 — 보이는 내용은 같아서 그대로 둔다
      (고치려면 정책 15건의 버전이 오르고 edit_note 를 새로 써야 해서 오히려 기록이 흐려진다).
    - 다시 실행하지 않는다. 실행하면 `이미_적재됨` 으로 멈춘다.
-3. API 원문 수집: 보조금24 · 온통청년 · 복지로 응답을 원문 표에 그대로 (새 후보 2건의 보조금24 원문은 seed 에 들어 있다)
+3. API 원문 수집: 보조금24 · 온통청년 응답을 원문 표에 그대로 — ✅ 11/12 Supabase 적용 완료 (`raw/2026-11-12.sql`, 8건, 노찬영 PC 키로 조회)
+   - 넣은 뒤 대조: 원문 표 2 → 10행, PGlite 결과와 같다. 정책·기관 표는 바뀌지 않았다.
+   - 14건 중 API 번호(`gov24ServiceId` · `youthPolicyNo`)가 있는 것은 5개 정책 · 8개 번호뿐이다.
+     나머지 9건(대출 6(공공임대 보증금 포함) · 저축 1 · 공급 1 · 익산 이사비 1)은 API 번호가 없어서 공고문 원문을 Storage 에 올리고
+     원문 표에 '공고문'으로 남긴다 (원문 대조 방법 2번).
+   - 복지로 API 는 앱 JSON 에 복지로 번호를 저장하지 않아서 이번에 넣지 않았다.
+   - 원문 행은 정책 행을 직접 가리키지 않는다. 이어 보기:
+     `select p.policy_no, r.kind, r.external_id from policy_raw r join policies p on p.policy_no = r.payload->>'policyId';`
+   - 같은 원문을 다시 받아 넣고 싶으면 날짜 폴더를 새로 만든다 (`raw/<날짜>/` → `build-raw-sql.mjs <날짜>`).
