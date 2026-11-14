@@ -1,7 +1,12 @@
 // supabase/seed.sql 을 만든다 — 손으로 고치지 말고 이 스크립트를 다시 돌린다.
 //
 //   node supabase/seed/build-seed.mjs          # seed.sql 다시 쓰기
-//   node supabase/seed/build-seed.mjs --check  # seed.sql 이 지금 JSON 과 같은지만 확인
+//   node supabase/seed/build-seed.mjs --check  # seed.sql 이 보관한 JSON 으로 만든 결과와 같은지만 확인
+//
+// ⚠️ 2026-11-15 부터 apps/web/data 가 아니라 supabase/seed/app-data-2026-11-12/ 를 읽는다.
+//   seed.sql 은 2026-11-12 에 Supabase 에 한 번 넣은 기록이다. 그 뒤 앱 데이터가 바뀌어도(익산시만 남기기 ·
+//   주택 공급 삭제 · 새 혜택 2건) 이 기록은 그대로여야 해서, 그때 읽은 앱 JSON 4개(데이터 커밋 6891fb9)를
+//   그대로 보관해 두고 거기서 다시 만든다. 지금 앱 값과 DB 를 견주는 일은 apps/web/data/verification.json 이 한다.
 //
 // 넣는 것 (2026-11-11 확정 방식, docs/기획/2026-11-11-DB-익산-원문검수-계획.md)
 //   - 정책 16건 = 익산 사용자에게 보이는 14건(apps/web/data) + 새 후보 2건(보조금24 원문, 상태 '보류')
@@ -16,14 +21,15 @@
 //   - 14건은 JSON 값을 그대로 옮긴다. 이 스크립트가 값을 새로 정하지 않는다 (F0-5 추정 금지).
 //   - 사람이 정한 분류(지원 목적 PURPOSE, 기관 단계 AGENCY)는 아래 표에 적어 두고, 표에 없는 값이 나오면 멈춘다.
 
-import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
-const dataDir = join(repo, "apps", "web", "data");
+/** 2026-11-12 seed 를 만들 때 읽은 앱 JSON 보관본 (apps/web/data @ 6891fb9) */
+const dataDir = join(here, "app-data-2026-11-12");
+const DATA_COMMIT = "6891fb9";
 const json = (f) => JSON.parse(readFileSync(join(dataDir, f), "utf8"));
 const OUT = join(repo, "supabase", "seed.sql");
 
@@ -126,10 +132,8 @@ const sources = [
   ["loan-products.json", (x) => need(LOAN_KIND, x.productType, "대출 종류")],
   ["housing-supply.json", () => "임대"],
 ];
-const dataCommit = (() => {
-  try { return execSync("git log -1 --format=%h -- apps/web/data", { cwd: repo }).toString().trim(); }
-  catch { return "?"; }
-})();
+// seed.sql 의 edit_note 에 남는 데이터 커밋. 보관본이 이 커밋의 apps/web/data 와 같다.
+const dataCommit = DATA_COMMIT;
 
 const policies = [];
 for (const [file, kindOf] of sources) {

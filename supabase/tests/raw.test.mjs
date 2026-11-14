@@ -16,7 +16,8 @@ const read = (...p) => readFileSync(join(repo, ...p), "utf8");
 const rawSql = read("supabase", "raw", `${DAY}.sql`);
 const files = readdirSync(join(repo, "supabase", "raw", DAY)).filter((f) => f.endsWith(".json"));
 const R = { "전국": 1, "전북특별자치도": 1, "전북특별자치도 익산시": 1 };
-const json = (f) => JSON.parse(read("apps", "web", "data", f));
+// raw/2026-11-12 는 그날 앱 JSON(14건)에서 API 번호가 있는 것을 받았다 — 그때 보관본으로 견준다 (지금 앱 데이터가 아니다)
+const json = (f) => JSON.parse(read("supabase", "seed", "app-data-2026-11-12", f));
 const scope = ["policies.json", "loan-products.json", "housing-supply.json"].flatMap(json).filter((x) => x.regionScope in R);
 
 let pass = 0, fail = 0;

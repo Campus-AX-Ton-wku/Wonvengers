@@ -13,7 +13,8 @@ import { fileURLToPath } from "node:url";
 //   cd supabase/tests && node seed.test.mjs
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const data = join(repo, "apps", "web", "data");
+// 2026-11-12 seed 를 만들 때 읽은 앱 JSON 보관본 — 지금 앱 데이터가 아니다 (supabase/seed/build-seed.mjs 머리말 참고)
+const data = join(repo, "supabase", "seed", "app-data-2026-11-12");
 const json = (f) => JSON.parse(readFileSync(join(data, f), "utf8"));
 const seedSql = readFileSync(join(repo, "supabase", "seed.sql"), "utf8");
 

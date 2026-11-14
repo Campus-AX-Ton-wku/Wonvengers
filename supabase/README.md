@@ -22,6 +22,7 @@
 | `tests/redesign.test.mjs` | 위 SQL 을 PGlite(설치 없이 도는 Postgres)에 적용해 확인하는 검사 51개 |
 | `seed.sql` | **11/12 새로 만든** 처음 데이터 — 정책 16건(JSON 14 + 새 후보 2 '보류') · 기관·창구 23행 · 원문 2행. 한 번만 실행 |
 | `seed/build-seed.mjs` | `seed.sql` 을 JSON·원문에서 만드는 스크립트. `seed.sql` 은 손으로 고치지 않는다 |
+| `seed/app-data-2026-11-12/*.json` | seed 를 만들 때 읽은 앱 JSON 4개의 보관본(데이터 커밋 6891fb9). 11/15 앱을 익산시로 정리한 뒤에도 seed · 원문 검사가 그날 기준으로 돌게 한다 — 지금 앱 데이터와 DB 를 견주는 일은 `apps/web/data/verification.json` 이 맡는다 |
 | `seed/raw/gov24-*.json` | 새 후보 2건의 보조금24 API 응답 원문 (11/12 조회, 키 없음) |
 | `tests/seed.test.mjs` | `seed.sql` 을 PGlite 에 넣어 보는 검사 35개 — JSON 과 값이 같은지, 두 번 넣으면 멈추는지 등 |
 | `raw/2026-11-12/*.json` | 할 일 7번 — 14건 중 API 번호가 있는 것의 응답 원문 8개 (보조금24 3 · 온통청년 5, 키 없음) |
