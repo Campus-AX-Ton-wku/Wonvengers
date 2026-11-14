@@ -238,10 +238,10 @@ const youthHousingBenefitSplit: RuleFn = (p, asOf) => {
     ageCheck(p.birthDate, asOf, 19, 29),
     boolCheck(
       "livesApartFromParents",
-      "부모와 다른 시·군·구에 거주 (별도 거주로 근사 판정)",
+      "부모와 주민등록상 다른 시·군에 거주 (별도 거주로 근사 판정)",
       p.livesApartFromParents,
       true,
-      "부모님 주민등록상 주소지와 본인 주소지가 서로 다른 시·군·구인지 확인하세요."
+      "부모님 주민등록상 주소지와 본인 주소지가 서로 다른 시·군인지 확인하세요. 같은 시 안의 다른 구는 해당하지 않아요."
     ),
     maxCeilingCheck(
       "originHouseholdIncome",

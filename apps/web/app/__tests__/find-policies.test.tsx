@@ -90,6 +90,22 @@ describe("/find/policies", () => {
     expect(screen.getByText("신청할 수 없는 지원금 5개")).toBeTruthy();
   });
 
+  /*
+   * 팀 검수 배지(data/verification.json — Supabase 검수 결과). 검수를 마쳤고 화면 값이
+   * 검수한 값과 같을 때만 붙는다. 익산 전입 지원 2건은 앱에 넣으면서 값을 채워 DB 와 아직
+   * 다르다 — DB 를 맞추고 다시 검수하기 전까지 배지가 없어야 한다.
+   */
+  it("팀이 원문과 대조해 확인한 카드에만 '원문 확인' 배지가 붙는다", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    const 분리지급 = screen.getByRole("link", { name: /청년 주거급여 분리지급/ });
+    expect(within(분리지급).getByText("원문 확인")).toBeTruthy();
+    const 전입장려금 = screen.getByRole("link", { name: /전입세대 전입장려금/ });
+    expect(within(전입장려금).queryByText(/원문 확인/)).toBeNull();
+  });
+
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
