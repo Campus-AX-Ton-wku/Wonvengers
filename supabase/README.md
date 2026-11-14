@@ -122,7 +122,9 @@ cd supabase/tests && node seed.test.mjs     # 결과: 35 통과 / 0 실패
      DB 의 `match_policies` 는 이 두 칸을 쓰지 않아서 판정 결과는 바뀌지 않는다. 앱 JSON 에 같은 상한이 있는지는 ggue 와 확인한다.
    - 공고문 원문 5행(`raw/notice-2026-11-14.sql`, 10 · 11 · 13 · 15 · 16번) — ✅ 11/15 노찬영이 SQL Editor 로 적용.
      원문 표 10 → 15행(원문 id 11~15), 정책 표 버전 · 신뢰도는 그대로인 것을 확인했다.
-     원본 4개는 각 행의 `archive_path` 와 같은 이름으로 `멋쟁이사자\Storage_업로드\source-files\` 에 복사해 두었다 → 노찬영이 Storage 에 올린다.
+     원본 4개는 각 행의 `archive_path` 와 같은 이름으로 `멋쟁이사자\Storage_업로드\source-files\` 에 복사해 두었다 → ✅ 11/15 노찬영이 Storage 에 올렸다.
+     `storage.objects` 의 경로 · 크기가 원문 행의 `archive_path` · `payload.file.bytes` 와 4개 모두 같다
+     (Storage 의 eTag 는 나눠 올리기 방식이라 md5 와 직접 비교되지 않는다).
      정책 표(`raw_id`)는 건드리지 않는다(버전이 올라 검수가 무효가 된다). `payload.policyId` 로 잇는다.
    - 저장 쿼리: Supabase 노트북 **'Perky 검수 현황'** — 정책별 신뢰도 · 검수할 사람, 신뢰도별 개수, 검수 기록, 원문 표, 정책 고르기(22세 · 익산 · 대학생 · 소득 2구간 · 월세).
    - 보안 경고: 함수 8개 search_path 고정(`migrations/20261114150805_function_search_path.sql`) → 경고 0건. PGlite 에서 규칙 9개가 그대로 동작함을 먼저 확인했다.
