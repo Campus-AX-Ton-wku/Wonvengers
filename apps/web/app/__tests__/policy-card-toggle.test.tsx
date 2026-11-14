@@ -6,7 +6,6 @@ import { saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import policies from "@/data/policies.json";
 import loanProducts from "@/data/loan-products.json";
-import housingSupply from "@/data/housing-supply.json";
 
 vi.mock("next/navigation", () => {
   const router = { push: vi.fn(), replace: vi.fn() };
@@ -75,10 +74,10 @@ describe("2층 정책 카드", () => {
     expect(within(details).getByText("검수 상태")).toBeTruthy();
   });
 
-  it("내부 검수 메모(notes)는 정책·대출·주택 공급 어디에도 그리지 않는다", async () => {
+  it("내부 검수 메모(notes)는 정책·대출 어디에도 그리지 않는다", async () => {
     await renderResult();
     const text = document.body.textContent ?? "";
-    const items = [...policies, ...loanProducts, ...housingSupply] as { id: string; notes: string }[];
+    const items = [...policies, ...loanProducts] as { id: string; notes: string }[];
     for (const item of items) {
       if (!item.notes) continue;
       expect(text.includes(item.notes), `${item.id} 의 notes 가 화면에 노출됐다`).toBe(false);
@@ -86,14 +85,14 @@ describe("2층 정책 카드", () => {
     expect(screen.queryByText("검수 상태 · 참고사항")).toBeNull();
   });
 
-  it("대출·주택 공급 카드의 확인 날짜는 정책 카드와 같은 점 표기다", async () => {
-    // 부산 머물자리론(2026-09-03 대조)으로 본다 — 이 테스트를 쓸 때는 익산 대출·주택에 확인 날짜가 없었다(2026-11-03 재대조로 채움).
-    saveListing(makeListing({ region: "부산광역시", contractType: "월세", rentOrYearlyAmount: 350000 }));
+  it("대출 카드의 확인 날짜는 정책 카드와 같은 점 표기다", async () => {
+    // 익산 청년 전세자금 대출이자 지원(2026-11-03 원문 재대조)으로 본다.
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "월세", rentOrYearlyAmount: 350000 }));
     saveProfile(makeProfile());
     render(<ResultPage />);
     await screen.findByRole("heading", { level: 1 });
-    const loan = screen.getByText("청년 임차보증금 대출 및 대출이자 지원(머물자리론)", { selector: "p" }).parentElement!;
-    expect(within(loan).getByText(/2026\.09\.03 확인/)).toBeTruthy();
+    const loan = screen.getByText("청년 전세자금 대출이자 지원사업", { selector: "p" }).parentElement!;
+    expect(within(loan).getByText(/2026\.11\.03 확인/)).toBeTruthy();
     expect(screen.queryByText(/\d{4}-\d{2}-\d{2} 확인/)).toBeNull();
   });
 

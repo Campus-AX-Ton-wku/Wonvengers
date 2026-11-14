@@ -54,9 +54,9 @@ describe("지역 필터", () => {
     expect(jeonju).not.toContain("iksan-youth-rent-support");
   });
 
-  it("서울 사용자에게 전북 지역 정책이 섞이지 않는다", () => {
+  it("목표 지역 밖 사용자에게 전북 지역 정책이 섞이지 않는다 — 전국 정책만 받는다", () => {
     const seoul = policiesForRegion(policies, "서울특별시 종로구");
     expect(seoul.some((policy) => policy.regionScope.startsWith("전북특별자치도"))).toBe(false);
-    expect(seoul.some((policy) => policy.regionScope === "서울특별시")).toBe(true);
+    expect(seoul.every((policy) => policy.regionScope === "전국")).toBe(true);
   });
 });

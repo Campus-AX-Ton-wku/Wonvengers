@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import policies from "@/data/policies.json";
 import loanProducts from "@/data/loan-products.json";
-import housingSupply from "@/data/housing-supply.json";
 import consultCenters from "@/data/consult-centers.json";
 
 const PHONE = /^(0\d{1,2}-\d{3,4}-\d{4}|1\d{3}-\d{4})$/;
@@ -10,7 +9,6 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const items = [
   ...policies.map((x) => ({ file: "policies", ...x })),
   ...loanProducts.map((x) => ({ file: "loan-products", ...x })),
-  ...housingSupply.map((x) => ({ file: "housing-supply", ...x })),
 ] as { file: string; id: string; contact?: unknown; nextRound?: unknown }[];
 
 describe("연락처·다음 회차 필드", () => {

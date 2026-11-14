@@ -88,7 +88,7 @@ describe("로그인을 쓸 수 없을 때(환경변수 없음) — 오늘과 똑
   it("/find/result: 시트 없이 바로 목록으로", async () => {
     saveAnswers(익산_대학생);
     render(<FindResultPage />);
-    await userEvent.setup().click(await screen.findByRole("link", { name: /지원금 2건 자세히 보기/ }));
+    await userEvent.setup().click(await screen.findByRole("link", { name: /지원금 4건 자세히 보기/ }));
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(routerMock.push).toHaveBeenCalledWith("/find/policies");
