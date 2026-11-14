@@ -10,8 +10,12 @@ const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
   lump_sum: "일시금 지원 · 실비",
 };
 
-/** 지원 형태를 사람이 읽는 말로. 화면에 benefitType 을 그대로 찍으면 영문 코드가 노출된다. */
-export function benefitTypeLabel(type: BenefitType): string {
+/**
+ * 지원 형태를 사람이 읽는 말로. 화면에 benefitType 을 그대로 찍으면 영문 코드가 노출된다.
+ * 정액 일시금(lumpSumBasis "fixedGrant")은 실비가 아니므로 따로 적는다.
+ */
+export function benefitTypeLabel(type: BenefitType, basis?: PolicyMeta["lumpSumBasis"]): string {
+  if (type === "lump_sum" && basis === "fixedGrant") return "일시금 지원 · 정액";
   return BENEFIT_TYPE_LABEL[type];
 }
 
@@ -58,6 +62,9 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput): strin
     return `월 ${won(policy.monthlyCap ?? 0)} × ${months}개월 = ${won(total)}`;
   }
 
+  if (policy.lumpSumBasis === "fixedGrant") {
+    return `계약 조건과 무관하게 공고가 정한 금액을 주는 지원이라 예상액에 넣지 않습니다 (공고 금액 최대 ${won(policy.lumpSumCap ?? 0)})`;
+  }
   if (policy.lumpSumBasis !== "oneTimeMoveCost") {
     return `이 화면은 이 지원금이 보는 지출을 입력받지 않아 예상액을 계산하지 않습니다 (공고 상한 ${won(policy.lumpSumCap ?? 0)})`;
   }
@@ -66,7 +73,7 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput): strin
 
 /** 언제 받는 돈인지 (F4-3). 계약 당일 목돈과 헷갈리지 않게 결과 카드에 함께 적는다. */
 export function payoutTiming(policy: PolicyMeta): string {
-  if (policy.benefitType === "lump_sum") return "1회 지급";
+  if (policy.benefitType === "lump_sum") return policy.payoutNote ?? "1회 지급";
   return policy.maxMonths ? `매월 지급 · 최대 ${policy.maxMonths}개월` : "매월 지급 · 거주 기간 동안";
 }
 

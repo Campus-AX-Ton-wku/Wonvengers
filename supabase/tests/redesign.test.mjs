@@ -120,12 +120,12 @@ async function addPolicy(x, kind) {
   return true;
 }
 const inScope = (x) => x.regionScope in REGION;
-let nP = 0, nL = 0, nH = 0;
+// 2026-11-15: 앱 데이터를 목표 지역 익산시로 정리했다 — 현금 8(익산 전입 지원 2건 추가) · 대출 7, 주택 공급 파일은 없앴다.
+let nP = 0, nL = 0;
 for (const x of json("policies.json").filter(inScope)) if (await addPolicy(x, "현금")) nP++;
 for (const x of json("loan-products.json").filter(inScope)) if (await addPolicy(x, KIND[x.productType])) nL++;
-for (const x of json("housing-supply.json").filter(inScope)) if (await addPolicy(x, "임대")) nH++;
 const [{ n }] = await q(`select count(*)::int n from policies`);
-ok(`현금 ${nP} · 대출등 ${nL} · 공급 ${nH} = ${n}건 들어감`, n === nP + nL + nH && nP === 6);
+ok(`현금 ${nP} · 대출등 ${nL} = ${n}건 들어감`, n === nP + nL && nP === 8 && nL === 7);
 ok("전세보증료 중복은 한 행으로", (await q(`select count(*)::int n from policies where policy_no = 'jeonse-return-guarantee-fee-subsidy'`))[0].n === 1);
 ok("온통청년·보조금24 번호는 원문 표로", (await q(`select count(*)::int n from policy_raw where external_id is not null`))[0].n > 0);
 ok("처음엔 모두 미검수", (await q(`select count(*)::int n from policies where trust_level <> '미검수'`))[0].n === 0);

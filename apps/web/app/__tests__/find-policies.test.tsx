@@ -44,13 +44,13 @@ describe("/find/policies", () => {
 
     // localStorage 를 읽기 전에는 자리만 잡는다
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
-    // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 시도 한정 정책도 다 후보에
-    // 남는다 — 34건 중 마감이 아닌 15건(대전 청년 월세 지원사업이 2026.9.10까지
-    // 접수 중이라 포함된다. 익산 이사비·중개보수는 2026-05-14 예산 소진 마감이라
-    // 빠진다 — 2026-11-03 원문 재대조). 제목은 지금 신청할 수 있는 것만 센다.
+    // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 익산 한정 정책도 다 후보에
+    // 남는다 — 8건 중 마감이 아닌 5건(익산형 청년월세 9/30까지, 상시인 주거급여 분리지급 ·
+    // 보증료 지원 · 익산 전입 지원 2건). 국토부 청년월세 · 전북 지역정착 · 익산 이사비는 마감.
+    // (2026-11-15 목표 지역 익산시로 정리) 제목은 지금 신청할 수 있는 것만 센다.
     // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 15개"
+      "받을 수 있는 주거 혜택 5개"
     );
   });
 
@@ -77,18 +77,17 @@ describe("/find/policies", () => {
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });
-    // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 3건(그중 국토부 청년월세와
-    // 익산 이사비·중개보수 2건은 마감 — 이사비는 2026-05-14 예산 소진), 해당 없음 32건(전세 전용인 보증료 지원·서울·울산·인천(시·구)·제주·
-    // 부산·세종·광주 서구·경기(평택시·용인시)·충북(음성군·괴산군)·경북(고령군·구미시·
-    // 울릉군)·경남(하동군·산청군·합천군·통영시·창원시·남해군)·대전·전남 강진군 전용
-    // 정책 포함)
+    // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 5건(그중 국토부 청년월세와 익산 이사비·중개보수
+    // 2건은 마감 — 이사비는 2026-05-14 예산 소진), 신청 가능 3건(주거급여 분리지급 · 익산 전입 지원 2건),
+    // 해당 없음 3건(익산형 청년월세 — 소득 하한, 전북 지역정착 — 재직자, 보증료 지원 — 전세 전용).
+    // (2026-11-15 목표 지역 익산시로 정리하면서 다른 지역 29건이 빠졌다)
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "받을 수 있는 주거 혜택 1개"
+      "받을 수 있는 주거 혜택 3개"
     );
 
-    const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 1개" });
-    expect(within(신청가능영역).getAllByRole("link")).toHaveLength(1);
-    expect(screen.getByText("신청할 수 없는 지원금 34개")).toBeTruthy();
+    const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 3개" });
+    expect(within(신청가능영역).getAllByRole("link")).toHaveLength(3);
+    expect(screen.getByText("신청할 수 없는 지원금 5개")).toBeTruthy();
   });
 
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
@@ -149,7 +148,13 @@ describe("/find/policies", () => {
   });
 
   it("후보가 없으면 이유를 안내하고 2층 CTA 를 숨긴다", async () => {
-    saveAnswers({ ...익산_대학생, birthDate: birthDateForAge(55), housingType: "그 외" as const });
+    // 익산 전입장려금은 나이 · 상태 조건이 없어 익산 사용자는 늘 후보가 있다 — 목표 지역 밖(전주)으로 만든다.
+    saveAnswers({
+      ...익산_대학생,
+      region: "전북특별자치도 전주시" as const,
+      birthDate: birthDateForAge(55),
+      housingType: "그 외" as const,
+    });
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });

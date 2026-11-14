@@ -62,7 +62,7 @@ const 익산_대학생 = {
 };
 const 시트 = { name: "이 결과를 저장해 둘까요?" };
 
-// find-result.test.tsx 와 같은 날: 이사비·주거급여 분리지급 2건이 접수 중이라 "지원금 2건 자세히 보기" 가 뜬다.
+// find-result.test.tsx 와 같은 날: 이사비·주거급여 분리지급·익산 전입 지원 2건, 모두 4건이 접수 중이라 "지원금 4건 자세히 보기" 가 뜬다.
 beforeAll(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-02-02T12:00:00+09:00"));
@@ -77,7 +77,7 @@ afterEach(() => vi.unstubAllEnvs());
 async function 결과열기() {
   saveAnswers(익산_대학생);
   render(<FindResultPage />);
-  return screen.findByRole("link", { name: /지원금 2건 자세히 보기/ });
+  return screen.findByRole("link", { name: /지원금 4건 자세히 보기/ });
 }
 
 describe("가입 제안 시트 (설계 '화면' 1)", () => {

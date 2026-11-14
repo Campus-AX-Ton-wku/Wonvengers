@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import loanJson from "@/data/loan-products.json";
-import housingJson from "@/data/housing-supply.json";
-import { housingSupplyForRegion, loanProductsForRegion, policiesForRegion } from "@/lib/region";
-import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "@/lib/types";
+import { loanProductsForRegion, policiesForRegion } from "@/lib/region";
+import type { LoanProductMeta, PolicyMeta } from "@/lib/types";
 
 /**
  * 익산의 신뢰 기준. 익산 사용자에게 보이는 모든 항목은
@@ -15,7 +14,6 @@ const IKSAN = "전북특별자치도 익산시";
 const items = [
   ...policiesForRegion(policiesJson as PolicyMeta[], IKSAN),
   ...loanProductsForRegion(loanJson as LoanProductMeta[], IKSAN),
-  ...housingSupplyForRegion(housingJson as HousingSupplyMeta[], IKSAN),
 ];
 
 describe("익산 신뢰 기준", () => {
@@ -40,7 +38,6 @@ describe("익산 신뢰 기준", () => {
     const ids = [
       ...(policiesJson as PolicyMeta[]).map((x) => x.id),
       ...(loanJson as LoanProductMeta[]).map((x) => x.id),
-      ...(housingJson as HousingSupplyMeta[]).map((x) => x.id),
     ];
     const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
     expect(dup).toEqual([]);

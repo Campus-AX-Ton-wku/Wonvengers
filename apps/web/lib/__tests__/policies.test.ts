@@ -132,7 +132,7 @@ describe("policies.json 의 1층 discovery 블록", () => {
   it("lump_sum 정책은 lumpSumBasis 를 갖는다", () => {
     for (const p of policies.filter((x) => x.benefitType === "lump_sum")) {
       expect(
-        ["oneTimeMoveCost", "notCalculable"],
+        ["oneTimeMoveCost", "notCalculable", "fixedGrant"],
         `${p.id}: lumpSumBasis 없음`
       ).toContain(p.lumpSumBasis);
     }

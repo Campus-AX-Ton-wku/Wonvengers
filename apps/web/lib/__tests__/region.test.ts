@@ -4,7 +4,6 @@ import {
   REGION_HIERARCHY,
   REGION_OPTIONS,
   consultCentersForRegion,
-  housingSupplyForRegion,
   isRegionValue,
   loanProductsForRegion,
   policiesForRegion,
@@ -13,13 +12,15 @@ import {
   regionDisplayName,
 } from "@/lib/region";
 import policiesData from "@/data/policies.json";
-import type { HousingSupplyMeta, LoanProductMeta, PolicyMeta } from "@/lib/types";
+import type { LoanProductMeta, PolicyMeta } from "@/lib/types";
 
 const policies = policiesData as PolicyMeta[];
 
-describe("전국 시도·시군구 계층", () => {
-  it("17개 시도를 먼저 제공하고 모든 시도에 하위 선택지가 있다", () => {
-    expect(REGION_HIERARCHY).toHaveLength(17);
+describe("시도·시군구 계층 — 목표 지역 익산시", () => {
+  // 2026-11-15 목표 지역을 전북특별자치도 익산시 하나로 정했다. 다른 지역은 선택지에 없다.
+  it("전북특별자치도 → 익산시 하나만 제공한다", () => {
+    expect(REGION_HIERARCHY.map((p) => p.name)).toEqual(["전북특별자치도"]);
+    expect(REGION_OPTIONS.map((o) => o.value)).toEqual(["전북특별자치도 익산시"]);
     for (const province of REGION_HIERARCHY) {
       expect(province.districts.length, province.name).toBeGreaterThan(0);
     }
@@ -34,19 +35,12 @@ describe("전국 시도·시군구 계층", () => {
     }
   });
 
-  it("익산시와 세종시 전체 값을 지원한다", () => {
+  it("익산시 값을 지원하고, 목표 지역 밖 값은 받지 않는다", () => {
     expect(isRegionValue("전북특별자치도 익산시")).toBe(true);
-    expect(isRegionValue("세종특별자치시")).toBe(true);
     expect(provinceForRegion("전북특별자치도 익산시")?.name).toBe("전북특별자치도");
-  });
-
-  it("2026년 7월 개편 전 인천 구명은 빼고 새 구명을 제공한다", () => {
-    for (const district of ["제물포구", "영종구", "서해구", "검단구"]) {
-      expect(isRegionValue(`인천광역시 ${district}`)).toBe(true);
-    }
-    for (const district of ["중구", "동구", "서구"]) {
-      expect(isRegionValue(`인천광역시 ${district}`)).toBe(false);
-    }
+    // 예전에 다른 지역을 저장해 둔 사용자는 이 검사로 걸러져 지역 질문을 다시 받는다.
+    expect(isRegionValue("전북특별자치도 전주시")).toBe(false);
+    expect(isRegionValue("서울특별시 강서구")).toBe(false);
   });
 });
 
@@ -93,35 +87,6 @@ describe("안내 상품 지역 매칭", () => {
     ]);
   });
 
-  it("저가 주택 공급도 같은 지역 규칙으로 거른다", () => {
-    const housing = (id: string, regionScope: string): HousingSupplyMeta => ({
-      id,
-      name: id,
-      agency: "테스트기관",
-      regionScope,
-      location: "테스트 위치",
-      monthlyRentMin: 10000,
-      monthlyRentMax: 20000,
-      deposit: 500000,
-      capacityLabel: "10호",
-      applicationStart: null,
-      applicationEnd: null,
-      applicationPeriodNote: null,
-      summary: "테스트",
-      sourceUrl: "https://example.com",
-      applyUrl: "https://example.com",
-      verifiedAt: null,
-      effectiveYear: 2026,
-      notes: "테스트",
-      contact: null,
-      nextRound: null,
-    });
-    const items = [housing("national", "전국"), housing("jeonju", "전북특별자치도 전주시")];
-    expect(housingSupplyForRegion(items, "전북특별자치도 전주시").map((item) => item.id)).toEqual([
-      "national",
-      "jeonju",
-    ]);
-  });
 });
 
 describe("consultCentersForRegion", () => {
@@ -140,23 +105,12 @@ describe("consultCentersForRegion", () => {
 });
 
 describe("regionDisplayName", () => {
-  it("여러 시·도에 같은 이름이 있는 시·군·구를 REGION_HIERARCHY 에서 센다", () => {
-    expect([...DUPLICATE_DISTRICT_NAMES].sort()).toEqual(
-      ["강서구", "고성군", "남구", "동구", "북구", "서구", "중구"].sort()
-    );
+  it("선택지가 익산시 하나라 이름이 겹치는 시·군·구가 없다", () => {
+    expect([...DUPLICATE_DISTRICT_NAMES]).toEqual([]);
   });
 
-  it("겹치는 이름에는 시·도 약칭을 붙인다", () => {
-    expect(regionDisplayName("부산광역시 중구")).toBe("부산 중구");
-    expect(regionDisplayName("서울특별시 강서구")).toBe("서울 강서구");
-    expect(regionDisplayName("강원특별자치도 고성군")).toBe("강원 고성군");
-    expect(regionDisplayName("경상남도 고성군")).toBe("경남 고성군");
-  });
-
-  it("겹치지 않으면 시·군·구 이름만", () => {
+  it("시·군·구 이름만 쓴다", () => {
     expect(regionDisplayName("전북특별자치도 익산시")).toBe("익산시");
-    expect(regionDisplayName("경기도 광주시")).toBe("광주시");
-    expect(regionDisplayName("세종특별자치시")).toBe("세종");
   });
 
   it("모르는 값은 그대로 돌려준다 — 지어내지 않는다", () => {

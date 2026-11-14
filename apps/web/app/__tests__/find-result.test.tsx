@@ -50,9 +50,10 @@ describe("/find/result", () => {
     it("가장 큰 금액과 건수를 말한다", async () => {
       await render요약(익산_대학생);
 
+      // 2026-11-15 에 넣은 익산 전입 지원 2건(상시)도 열려 있다 — 가장 큰 상한은 주소전입 학생 지원 최대 100만원.
       expect(screen.getByText("지금 신청할 수 있는")).toBeTruthy();
-      expect(screen.getByText("최대 50만원")).toBeTruthy();
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 2건이 있어요");
+      expect(screen.getByText("최대 100만원")).toBeTruthy();
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금 4건이 있어요");
     });
 
     /*
@@ -75,7 +76,7 @@ describe("/find/result", () => {
       await render요약(익산_대학생);
 
       expect(
-        screen.getByRole("link", { name: /지원금 2건 자세히 보기/ }).getAttribute("href")
+        screen.getByRole("link", { name: /지원금 4건 자세히 보기/ }).getAttribute("href")
       ).toBe("/find/policies");
     });
   });
@@ -101,7 +102,13 @@ describe("/find/result", () => {
   });
 
   it("후보가 아예 없으면 그렇게 말한다", async () => {
-    await render요약({ ...익산_대학생, birthDate: birthDateForAge(55), housingType: "그 외" as const });
+    // 익산 전입장려금은 나이 · 상태 조건이 없어 익산 사용자는 늘 후보가 있다 — 목표 지역 밖(전주)으로 만든다.
+    await render요약({
+      ...익산_대학생,
+      region: "전북특별자치도 전주시",
+      birthDate: birthDateForAge(55),
+      housingType: "그 외" as const,
+    });
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("아쉽게도 해당되는 지원금이 없어요");
     expect(screen.getByRole("link", { name: /왜 해당되지 않는지 보기/ })).toBeTruthy();
