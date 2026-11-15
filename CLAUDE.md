@@ -31,8 +31,19 @@
 
 ## 정책 1건 추가할 때 손대는 곳
 
-1. `data/policies.json` — 엔트리 추가
+**2026-11-16 부터 정책의 원본은 Supabase 다** (`docs/기획/2026-11-16-정책-Supabase-읽기-설계.md`).
+`data/policies.json` · `loan-products.json` · `verification.json` 은 빌드 때 `scripts/fetch-app-data.mjs` 가
+DB(`public.app_policies()`)에서 다시 만드는 **생성물**이다 — 손으로 고치지 않는다. 커밋된 파일은 키가 없는
+로컬·PR 검사·테스트가 쓰는 마지막 스냅숏이고, `npm run fetch:app-data`(키 필요)로 다시 뽑는다.
+
+1. **Supabase `policies` 표에 행 추가** (Table Editor, `edited_by`·`edit_note` 필수)
+   - 앱에 나오려면 `is_current = true` · `status` 가 '운영' 또는 '예정'
+   - 금액 계산 정책(`policies.json`)이면 `benefit_type` 필수, 안내 상품(`loan-products.json`)이면 비운다
+   - `apply_start` 필수(상시 접수면 사업 연도 1월 1일), `apply_url` 필수
+   - 지역은 `region_codes` 하나 + `region_label` — `scripts/app-data/from-db.mjs` 의 `REGION_BY_CODE` 대로
+   - 검사에 걸리면 빌드가 멈추고 정식 앱은 직전 배포 그대로 남는다(오류 문구가 고칠 칸을 알려 준다)
 2. `lib/policy-rules.ts` — `RuleFn` 작성 후 `POLICY_RULES` 맵에 등록
+   - **없어도 앱은 돈다** — 2층에서 '조건충족시가능' + "공고 원문의 지원 대상 확인"으로 나온다. 정밀 판정이 필요할 때 쓴다
    - 헬퍼: `ageCheck` / `boolCheck` / `maxCeilingCheck` / `rangeCheck`
    - 소득 **구간**(하한 초과~상한 이하)은 `maxCeilingCheck`가 아니라 `rangeCheck`
    - 앱이 아예 묻지 않는 조건은 `{ key, label, result: "unknown", howToConfirm }` 리터럴로
