@@ -1,5 +1,8 @@
 -- Perky — DB 검수 결과 → 앱이 읽는 파일(apps/web/data/verification.json) 만들기
 --
+-- ⚠️ 2026-11-16 부터 쓰지 않는다. verification.json 은 빌드 때 scripts/fetch-app-data.mjs 가 정책 JSON 과 함께 만든다
+--    (public.app_policies() — 같은 집계 기준). 기록으로만 남겨 둔다.
+--
 -- 앱은 Supabase 를 직접 읽지 않는다. 이 쿼리 결과를 파일로 저장해 커밋하면, 앱은 그 파일만 읽는다.
 -- (Supabase 가 멈추거나 무료 플랜이 일시 정지돼도 앱 · 배포는 영향이 없다)
 --
