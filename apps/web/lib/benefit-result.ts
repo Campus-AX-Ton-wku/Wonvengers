@@ -99,7 +99,7 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
       },
       {
         label: "지원 형태",
-        value: benefitTypeLabel(policy.benefitType),
+        value: benefitTypeLabel(policy.benefitType, policy.lumpSumBasis),
         tone: "neutral",
       },
       {

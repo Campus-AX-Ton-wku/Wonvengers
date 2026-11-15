@@ -123,8 +123,7 @@ async function answer(page, stopAt) {
   await press(page, "확인");
   await press(page, "다음"); // ?q=region
   await press(page, "전북특별자치도"); // ?q=region&p=전북특별자치도
-  await press(page, "익산시");
-  await press(page, "다음"); // ?q=status
+  await press(page, "익산시"); // 시·도처럼 누르면 바로 ?q=status (2026-11-15)
   if (stopAt === "status") return;
   await press(page, "대학생");
   await press(page, "다음"); // ?q=income

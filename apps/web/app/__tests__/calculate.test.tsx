@@ -77,11 +77,12 @@ describe("/calculate 1층 답변 이어받기", () => {
     expect(screen.getByText(/앞에서 고른 지역으로 채웠어요/)).toBeTruthy();
   });
 
-  it("기존 계산 입력이 있어도 Find에서 새로 고른 시·군·구를 우선한다", () => {
-    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+  it("예전 계산 입력의 지역이 지금 선택지에 없으면 Find 답(익산시)으로 채운다", () => {
+    // 2026-11-15 목표 지역을 익산시 하나로 줄였다. 그 전에 저장된 다른 지역 값은 쓰지 않는다.
+    saveListing(makeListing({ region: "서울특별시 광진구" }));
     saveAnswers({
       birthDate: birthDateForAge(23),
-      region: "서울특별시 광진구",
+      region: "전북특별자치도 익산시",
       status: "재직",
       incomeBracket: 2,
       housingType: null,
@@ -90,13 +91,11 @@ describe("/calculate 1층 답변 이어받기", () => {
     render(<CalculatePage />);
 
     const region = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(region.value).toBe("서울특별시 광진구");
+    expect(region.value).toBe("전북특별자치도 익산시");
     expect(screen.getByText(/앞에서 고른 지역으로 채웠어요/)).toBeTruthy();
   });
 
-  it("Calculate에서 다시 바꾼 지역은 새로고침 후에도 유지한다", async () => {
-    const user = userEvent.setup();
-    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+  it("Find 답이 지금 선택지에 없는 지역이면 채우지 않는다 — 지어내지 않는다", () => {
     saveAnswers({
       birthDate: birthDateForAge(23),
       region: "서울특별시 광진구",
@@ -104,16 +103,15 @@ describe("/calculate 1층 답변 이어받기", () => {
       incomeBracket: 2,
       housingType: null,
     });
-    const first = render(<CalculatePage />);
 
-    await user.selectOptions(screen.getByRole("combobox"), "서울특별시 종로구");
-    first.unmount();
     render(<CalculatePage />);
 
-    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe(
-      "서울특별시 종로구",
-    );
+    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
+    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
   });
+
+  // 'Calculate 에서 다른 지역으로 바꾼 값이 새로고침 후에도 남는다' 경우는 2026-11-15 에 뺐다 —
+  // 고를 수 있는 지역이 익산시 하나라 다른 지역으로 바꿀 수 없다.
 
   it("사용자가 지역을 직접 바꾸면 안내 문구를 거둔다", async () => {
     const user = userEvent.setup();
@@ -126,7 +124,7 @@ describe("/calculate 1층 답변 이어받기", () => {
     });
     render(<CalculatePage />);
 
-    await user.selectOptions(screen.getByRole("combobox"), "서울특별시 종로구");
+    await user.selectOptions(screen.getByRole("combobox"), "선택해주세요");
     expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
   });
 
@@ -293,19 +291,8 @@ describe("/calculate 이사비 질문", () => {
     expect(screen.getByText(/최대 50만원까지 지원해요/)).toBeTruthy();
   });
 
-  it("지원 정책이 없는 지역에는 아예 묻지 않고, 남아 있던 값도 지운다", async () => {
-    const user = userEvent.setup();
-    await 스텝2로(user, "전북특별자치도 익산시");
-
-    await user.type(screen.getByLabelText(/이사비·중개보수로 얼마를/), "60");
-    await user.click(screen.getByRole("button", { name: "이전 단계로" }));
-    await screen.findByRole("combobox");
-    await user.selectOptions(screen.getByRole("combobox"), "전북특별자치도 전주시");
-    await user.click(screen.getByRole("button", { name: "다음" }));
-
-    expect(screen.queryByLabelText(/이사비·중개보수로 얼마를/)).toBeNull();
-    expect(loadListing()?.oneTimeMoveCost).toBe(0);
-  });
+  // '지원 정책이 없는 지역에는 묻지 않는다' 경우는 2026-11-15 에 뺐다 — 고를 수 있는 지역이
+  // 익산시 하나뿐이고 익산에는 이사비 지원이 있어, 화면에서 그 경우를 만들 수 없다.
 });
 
 describe("/calculate 단계 주소", () => {

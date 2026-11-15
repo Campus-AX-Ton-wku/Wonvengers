@@ -311,7 +311,12 @@ function FindSteps() {
                   <ChoiceCard
                     key={district.value}
                     active={answers.region === district.value}
-                    onClick={() => update("region", { region: district.value })}
+                    onClick={() => {
+                      update("region", { region: district.value });
+                      // 시·도를 누르면 바로 시·군·구 목록으로 가는 것처럼, 시·군·구도 누르면 바로
+                      // 다음 질문으로 간다 — 두 단계가 같은 방식으로 움직이게 맞췄다(2026-11-15).
+                      go(QUESTIONS[step + 1].step);
+                    }}
                   >
                     {district.label === province.name
                       ? district.label

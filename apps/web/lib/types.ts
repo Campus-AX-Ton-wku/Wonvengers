@@ -166,8 +166,17 @@ export interface PolicyMeta {
    * 두면 이사비 30만원을 넣은 사람에게 보증료 지원 30만원이 붙어 최대 지원
    * 가능액이 부풀려진다. 값이 없으면 계산하지 않는다 — 금액을 넘겨 말하지
    * 않는 쪽이 안전하다.
+   *
+   * "fixedGrant"     — 실비가 아니라 공고가 정한 정액(1명당 얼마)을 준다. 지급 여부가
+   *                    계약 조건이 아니라 전입·재학 같은 사실로 정해져 2층 예상액은 0 으로
+   *                    두고, 화면에는 '정액'으로 적는다. 익산 전입장려금·주소전입 학생 지원.
    */
-  lumpSumBasis?: "oneTimeMoveCost" | "notCalculable";
+  lumpSumBasis?: "oneTimeMoveCost" | "notCalculable" | "fixedGrant";
+  /**
+   * lump_sum 의 지급 방식이 '1회 지급'이 아닐 때 화면에 대신 적는 한 줄.
+   * 예) 학기마다 나눠 지급. 없으면 '1회 지급'이다.
+   */
+  payoutNote?: string;
   requiredInputs: RequiredInputKey[];
   exclusiveGroup: string[]; // 동시 합산 불가 그룹 id들
   sourceUrl: string;
@@ -227,47 +236,6 @@ export interface LoanProductMeta {
   // savings_account: 청약저축 등 — 대출도 보증료 지원도 아니지만 "현금 지원금"이
   // 아니라는 점(계산 안 함)은 같아서 이 타입을 그대로 쓴다.
   productType: "loan_interest_subsidy" | "guarantee_fee_subsidy" | "savings_account";
-  summary: string;
-  sourceUrl: string;
-  applyUrl: string;
-  verifiedAt: string | null;
-  effectiveYear: number;
-  notes: string;
-  /** 담당 연락처. null = 아직 원문·전화로 확인하지 못함 (F0-5 — 지어내지 않는다). */
-  contact: ContactInfo | null;
-  /** 마감된 회차의 다음 일정. 공고나 팀 전화로 확인한 경우에만 채운다. */
-  nextRound: NextRound | null;
-}
-
-/**
- * 저가 주택 실물 공급형 정책 — 매입임대주택·기숙사 등, 이미 고정된 싼 임대료로
- * 특정 주택 자체를 배정받는 정책이다. "지원금을 준다"가 아니므로 policies.json
- * 의 benefitType(월 상한·정액·일시금, 전부 "지급액 계산" 모델)에 안 맞고,
- * LoanProductMeta(대출·보증료·저축 상품)에도 안 맞는다 — 이 정책에 당첨되면
- * 그 배정된 주택이 곧 사용자의 계약 조건이 되므로, "실제 계약 조건에 지원금을
- * 더한다"는 이 앱의 계산 모델 자체가 애초에 적용되지 않는다.
- *
- * loan-products.json 과 같은 이유로 계산하지 않고 1층·2층 판정 파이프라인도
- * 타지 않는다 — /result 에 안내 전용으로만 노출한다.
- */
-export interface HousingSupplyMeta {
-  id: string;
-  name: string;
-  agency: string;
-  regionScope: string;
-  /** 공급 위치(주소). 특정 건물 하나인 경우가 많다. */
-  location: string;
-  /** 월 임대료(원). 방수 등에 따라 범위가 있으면 min~max, 단일 금액이면 둘이 같다. */
-  monthlyRentMin: number;
-  monthlyRentMax: number;
-  deposit: number;
-  /** 모집호수·정원 등 원문 표현을 그대로 적는다(단위가 "호"·"명"으로 갈려 숫자 하나로 통일하지 않는다). */
-  capacityLabel: string;
-  /** 한 회차의 신청기간. 여러 회차가 반복되는 모집이면 null 로 두고 applicationPeriodNote 를 쓴다. */
-  applicationStart: string | null;
-  applicationEnd: string | null;
-  /** 반복 모집 주기 등, 단일 기간(YYYY-MM-DD ~ YYYY-MM-DD)으로 표현할 수 없는 경우의 설명. */
-  applicationPeriodNote: string | null;
   summary: string;
   sourceUrl: string;
   applyUrl: string;

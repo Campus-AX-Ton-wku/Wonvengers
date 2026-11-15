@@ -24,6 +24,7 @@ import { getRequiredQuestions } from "@/lib/questions";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
+import { verificationBadge } from "@/lib/verification";
 import type { DiscoveryAnswers, IncomeBracket, NextRound, PolicyMeta, TagResult } from "@/lib/types";
 
 /**
@@ -132,6 +133,8 @@ export default function PolicyDetail({ id }: { id: string }) {
   const 조건수정링크 = detailed ? "/eligibility" : "/find";
   const status = asOf ? cardStatus(policy, result, asOf) : null;
   const ceiling = benefitCeiling(policy);
+  // 팀 검수 결과(Supabase → data/verification.json). 화면 값과 검수 값이 같을 때만 있다.
+  const verified = verificationBadge(policy);
   const applicationPeriod = `${formatDotDate(policy.applicationStart)} ~ ${
     policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
   }`;
@@ -159,6 +162,16 @@ export default function PolicyDetail({ id }: { id: string }) {
           <p className="mt-1 text-xs leading-[18px] text-ink-500">
             운영 기관 · <span>{policy.agency}</span>
           </p>
+          {verified && (
+            <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs leading-[18px] text-ink-600">
+              <StatusBadge tone="info" icon={ShieldCheck}>
+                {verified.label}
+              </StatusBadge>
+              <span>
+                팀원 {verified.confirmers}명이 {formatDotDate(verified.lastConfirmedAt)}에 원문과 맞는지 확인했어요
+              </span>
+            </p>
+          )}
         </header>
 
         <section className="mt-2 rounded-control bg-accent-50 p-4" aria-label="지원 요약">

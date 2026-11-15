@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
-import type { PolicyMeta } from "../types";
+import type { EligibilityProfile, PolicyMeta } from "../types";
 import { evaluatePolicy } from "../eligibility";
 import { makeListing, makeProfile, OPEN_PERIOD_DAY, TODAY } from "./fixtures";
 
@@ -10,7 +10,8 @@ const iksan = policies.find((p) => p.id === "iksan-youth-rent-support")!;
 const jeonbuk = policies.find((p) => p.id === "jeonbuk-youth-settlement-support")!;
 const iksanMoving = policies.find((p) => p.id === "iksan-newcomer-moving-cost-support")!;
 const housingBenefitSplit = policies.find((p) => p.id === "youth-housing-benefit-split-payment")!;
-const seoulMoving = policies.find((p) => p.id === "seoul-youth-moving-cost-support")!;
+const moveInHousehold = policies.find((p) => p.id === "iksan-move-in-household-incentive")!;
+const moveInStudent = policies.find((p) => p.id === "iksan-move-in-student-support")!;
 
 describe("국토부 청년월세 지원", () => {
   it("모든 조건을 충족하면 예상 적용이고, 월 상한×연세 환산월세 중 작은 값 × 개월수로 계산한다", () => {
@@ -208,74 +209,51 @@ describe("청년 주거급여 분리지급", () => {
   });
 });
 
-describe("서울 청년 부동산 중개보수 및 이사비 지원사업 (전국화 Phase 2, 광역 1건째)", () => {
-  it("19~39세·무주택·소득기준 충족이면 조건충족시가능이다 — 전입일자·거래금액은 판정하지 않아 확인 필요로 남는다", () => {
-    const result = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "2000-01-01" }),
-      makeListing({ oneTimeMoveCost: 300000 }),
-      OPEN_PERIOD_DAY
-    );
-    expect(result.status).toBe("조건충족시가능"); // movedInAfter2024·dealAmountUnder200M 가 unknown 이라
+/**
+ * 익산 전입 지원 두 가지 (2026-11-15 추가) — 「익산시 인구증가시책 지원 조례」 [별표] 1 · 3호.
+ * 공고가 정한 정액(1명당 10만원 · 최대 100만원)이라 계약 조건으로 계산하지 않는다(예상액 0원).
+ * 전입 이력 · 예전 수혜 · 재학은 앱 질문에 없어 결과 화면에서 직접 답한다.
+ */
+describe("익산 전입 지원 (전입장려금 · 주소전입 학생 지원)", () => {
+  const 다_예: EligibilityProfile["selfDeclared"] = {
+    livedOutsideIksan1YearBeforeMoveIn: true,
+    receivedIksanMoveInSupportBefore: false,
+    attendsIksanUniversity: true,
+  };
+
+  it("결과 화면에서 답하기 전에는 조건충족시가능이고, 예상액은 계산하지 않는다", () => {
+    const result = evaluatePolicy(moveInHousehold, makeProfile(), makeListing(), TODAY);
+    expect(result.status).toBe("조건충족시가능");
+    expect(result.unknownLabels.some((l) => l.startsWith("전입 전 1년 이상 다른 시·군·구에 주민등록"))).toBe(true);
+    expect(result.estimatedAmount).toBe(0);
+  });
+
+  it("전입장려금 — 전입 이력이 맞고 예전에 받은 적이 없으면 예상적용이다", () => {
+    const result = evaluatePolicy(moveInHousehold, makeProfile({ selfDeclared: 다_예 }), makeListing(), TODAY);
+    expect(result.status).toBe("예상적용");
     expect(result.failedLabels).toHaveLength(0);
-    expect(result.unknownLabels.length).toBeGreaterThanOrEqual(2);
-    expect(result.estimatedAmount).toBe(300000); // 실비(30만) < 상한(40만)
   });
 
-  it("이사비·중개보수 실비 합이 상한(40만원)을 넘으면 상한으로 캡핑한다", () => {
-    const result = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "2000-01-01" }),
-      makeListing({ oneTimeMoveCost: 600000 }),
-      OPEN_PERIOD_DAY
-    );
-    expect(result.estimatedAmount).toBe(400000);
+  it("예전에 익산시 전입 지원을 받았으면 대상아님이다", () => {
+    const profile = makeProfile({ selfDeclared: { ...다_예, receivedIksanMoveInSupportBefore: true } });
+    expect(evaluatePolicy(moveInHousehold, profile, makeListing(), TODAY).status).toBe("대상아님");
+    expect(evaluatePolicy(moveInStudent, profile, makeListing(), TODAY).status).toBe("대상아님");
   });
 
-  it("나이 경계값 만 39세는 통과, 만 40세는 대상아님이다", () => {
-    const pass = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "1986-04-02" }), // OPEN_PERIOD_DAY(2026-04-01) 기준 생일 하루 전 → 아직 39세
-      makeListing({ oneTimeMoveCost: 100000 }),
-      OPEN_PERIOD_DAY
-    );
-    const fail = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "1986-04-01" }), // 생일 당일이라 이미 만 40세
-      makeListing({ oneTimeMoveCost: 100000 }),
-      OPEN_PERIOD_DAY
-    );
-    expect(pass.status).not.toBe("대상아님");
-    expect(fail.status).toBe("대상아님");
+  it("익산시 주소로 전입신고를 못 하면 대상아님이다", () => {
+    const profile = makeProfile({ canRegisterResidence: false, selfDeclared: 다_예 });
+    expect(evaluatePolicy(moveInHousehold, profile, makeListing(), TODAY).status).toBe("대상아님");
   });
 
-  it("가구 소득이 중위 150%(1인 기준 약 384만 7천원)를 초과하면 대상아님이다", () => {
-    const result = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "2000-01-01", ownHouseholdMonthlyIncome: 5000000 }),
-      makeListing({ oneTimeMoveCost: 100000 }),
-      OPEN_PERIOD_DAY
-    );
-    expect(result.status).toBe("대상아님");
+  it("주소전입 학생 지원 — 익산시 소재 대학교 · 대학원에 다니지 않으면 대상아님이다", () => {
+    const 재학생 = makeProfile({ selfDeclared: 다_예 });
+    const 비재학 = makeProfile({ selfDeclared: { ...다_예, attendsIksanUniversity: false } });
+    expect(evaluatePolicy(moveInStudent, 재학생, makeListing(), TODAY).status).toBe("예상적용");
+    expect(evaluatePolicy(moveInStudent, 비재학, makeListing(), TODAY).status).toBe("대상아님");
   });
 
-  it("무주택이 아니면 대상아님이다", () => {
-    const result = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "2000-01-01", hasNoHouse: false }),
-      makeListing({ oneTimeMoveCost: 100000 }),
-      OPEN_PERIOD_DAY
-    );
-    expect(result.status).toBe("대상아님");
-  });
-
-  it("등록된 상반기 신청기간(2026-04-01~04-14) 밖이면 조건을 다 갖춰도 신청불가다 — 하반기 모집이 실제로 있어도 이 앱은 아직 반영하지 못한다", () => {
-    const result = evaluatePolicy(
-      seoulMoving,
-      makeProfile({ birthDate: "2000-01-01" }),
-      makeListing({ oneTimeMoveCost: 100000 }),
-      TODAY // 2026-08-12, 상반기 종료 후
-    );
-    expect(result.status).toBe("신청불가");
+  it("두 지원은 같이 받을 수 없다 — 같은 중복 수급 그룹이다", () => {
+    expect(moveInHousehold.exclusiveGroup).toEqual(moveInStudent.exclusiveGroup);
+    expect(moveInHousehold.exclusiveGroup.length).toBeGreaterThan(0);
   });
 });

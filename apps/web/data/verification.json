@@ -1,0 +1,422 @@
+{
+  "generatedAt": "2026-11-15T02:26:30+09:00",
+  "source": "Supabase perky — policies · policy_checks (is_current 인 정책만)",
+  "policies": {
+    "youth-btm-jeonse-loan": {
+      "values": {
+        "ageMax": 34,
+        "ageMin": 19,
+        "summary": "만 19~34세 무주택 세대주(예비세대주 포함), 부부합산 연소득 5천만원 이하·순자산 3.45억원 이하 대상. 연 2.2~3.3%(부부합산 연소득별, 대출대상주택이 지방 소재면 0.2%p 인하)로 임차보증금 3억원 이하·전용 85㎡ 이하 주택 전세금의 80% 이내, 최대 1.5억원(만 25세 미만 단독세대주 1.2억원)까지 대출.",
+        "applyEnd": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": [
+          "전세"
+        ],
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020301.jsp",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "iksan-youth-rent-support": {
+      "values": {
+        "ageMax": 34,
+        "ageMin": 19,
+        "summary": "실제 납부 월세 범위 내 월 최대 20만원 × 최대 12개월 (총 최대 240만원), 2026년 신규 230여 명 (선착순 아님)",
+        "applyEnd": "2026-09-30",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": 12,
+        "applyStart": "2026-04-15",
+        "lumpSumCap": null,
+        "monthlyCap": 200000,
+        "housingTypes": [
+          "월세",
+          "연세"
+        ],
+        "incomeBracketMax": 5,
+        "incomeBracketMin": 3
+      },
+      "methods": [],
+      "version": 2,
+      "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119d0a838c019d2421dd8e1a76",
+      "confirmers": 0,
+      "trustLevel": "미검수",
+      "lastConfirmedAt": null
+    },
+    "moland-youth-rent-support": {
+      "values": {
+        "ageMax": 34,
+        "ageMin": 19,
+        "summary": "실제 납부 월세 범위 내 월 최대 20만원, 생애 1회 최대 24개월 (총 최대 480만원)",
+        "applyEnd": "2026-05-29",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": 24,
+        "applyStart": "2026-03-30",
+        "lumpSumCap": null,
+        "monthlyCap": 200000,
+        "housingTypes": [
+          "월세",
+          "연세"
+        ],
+        "incomeBracketMax": 3,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 3,
+      "sourceUrl": "https://m.bokjiro.go.kr/ssis-tem/cms/mob/customer/notice/1309500_1155.html",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-15"
+    },
+    "youth-dream-didimdol-loan": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": null,
+        "summary": "'청년 주택드림 청약통장'으로 청약 당첨(당첨 시 만 39세 이하)된 무주택 세대주가 통장과 연계해 신청하는 주택구입자금 대출. 대출금리 2.4~4.15%(소득·상환기간별 차등), 대출한도 미혼 3억원·신혼 4억원(LTV 70~80%, DTI 60%), 대상주택 전용 85㎡ 이하·평가액 6억원 이하.",
+        "applyEnd": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030901.jsp",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "youth-btm-monthly-rent-loan": {
+      "values": {
+        "ageMax": 34,
+        "ageMin": 19,
+        "summary": "만 19~34세 무주택 단독세대주(예비세대주 포함), 부부합산 연소득 5천만원 이하·순자산 3.45억원 이하 대상. 전용 60㎡ 이하(주거용 오피스텔 포함)·보증금 6.5천만원·월세 70만원 이하 주택의 보증금을 연 1.3%로 최대 4,500만원, 월세를 최대 1,200만원(24개월 기준 월 50만원 이내, 연 0%(20만원 한도)·1.0%(20만원 초과))까지 대출. 25개월 만기 일시상환(최장 10년 5개월).",
+        "applyEnd": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": [
+          "월세"
+        ],
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020701.jsp",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "youth-dream-savings-account": {
+      "values": {
+        "ageMax": 34,
+        "ageMin": 19,
+        "summary": "만 19~34세(병역 이행기간 최대 6년 추가 인정) 무주택자, 연소득 5,000만원 이하 청년 대상 주택청약 저축상품. 가입기간 2년 이상~10년 이내 이자율 연 4.5%(그 외 구간은 2.3~3.1%), 청약 당첨 시 청년 주택드림 디딤돌 대출과 연계. 소득공제·비과세 혜택 있음.",
+        "applyEnd": null,
+        "statuses": null,
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://nhuf.molit.go.kr/FP/FP07/FP0701/FP07010301.jsp",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "iksan-move-in-student-support": {
+      "values": {
+        "ageMax": null,
+        "ageMin": null,
+        "summary": "최초학기 30만원, 이후 학기별 10만원 지급",
+        "applyEnd": null,
+        "statuses": [
+          "대학생"
+        ],
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://plus.gov.kr/portal/benefitV2/benefitTotalSrvcList/benefitSrvcDtl?svcSeq=2167917&bnefType=all&svcId=468100000005",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "iksan-youth-jeonse-loan-interest": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": 18,
+        "summary": "익산시에 주민등록을 두고 민간주택(전용 85㎡ 이하·전세보증금 3억원 이하)에 전세로 사는 18~39세 무주택 미혼 청년에게 본인 명의 전세자금 대출이자를 연 최대 150만원(최대 연 3%) 지원. 소득 기준중위소득 180% 이하(건강보험료 본인부담금 기준). 매년 신규 신청, 요건 충족 시 최대 2년. 2026년 하반기 신청 2026-12-01 ~ 12-11(익산시청 주택과 방문 접수).",
+        "applyEnd": "2026-12-11",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-12-01",
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": [
+          "전세"
+        ],
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6109d298170019d422a39a82c29",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "jeonbuk-youth-settlement-support": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": 18,
+        "summary": "월 30만원 × 최대 12개월 (총 최대 360만원). 포인트 30% + 익산사랑상품권 70%로 지급 (전액 현금 아님)",
+        "applyEnd": "2026-04-10",
+        "statuses": [
+          "재직"
+        ],
+        "maxMonths": 12,
+        "applyStart": "2026-03-06",
+        "lumpSumCap": null,
+        "monthlyCap": 300000,
+        "housingTypes": null,
+        "incomeBracketMax": 5,
+        "incomeBracketMin": null
+      },
+      "methods": [],
+      "version": 2,
+      "sourceUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=46029",
+      "confirmers": 0,
+      "trustLevel": "미검수",
+      "lastConfirmedAt": null
+    },
+    "iksan-move-in-household-incentive": {
+      "values": {
+        "ageMax": null,
+        "ageMin": null,
+        "summary": "전입 6개월 이상 경과 시 1명당 10만원 시 지역화폐 다이로움 지급",
+        "applyEnd": null,
+        "statuses": null,
+        "maxMonths": null,
+        "applyStart": null,
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 1,
+      "sourceUrl": "https://plus.gov.kr/portal/benefitV2/benefitTotalSrvcList/benefitSrvcDtl?svcSeq=2128388&bnefType=all&svcId=468100000001",
+      "confirmers": 2,
+      "trustLevel": "교차검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "iksan-newcomer-moving-cost-support": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": 18,
+        "summary": "이사비(최대 30만원) + 부동산 중개보수(최대 20만원) 실비를 1인당 최대 50만원까지 생애 1회 지원",
+        "applyEnd": "2026-05-14",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-01-02",
+        "lumpSumCap": 500000,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": 5,
+        "incomeBracketMin": null
+      },
+      "methods": [],
+      "version": 2,
+      "sourceUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=44273",
+      "confirmers": 0,
+      "trustLevel": "미검수",
+      "lastConfirmedAt": null
+    },
+    "iksan-public-rental-deposit-support": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": 18,
+        "summary": "LH·전북개발공사가 공급하는 익산시 내 공공임대주택(영구·국민·행복·통합·10년 공공임대, 매입임대 등)에 2026-01-01 이후 계약해 입주했거나 입주 예정인 18~39세 무주택 미혼 청년에게 임대보증금을 무이자로 융자(청년 최대 3천만원, 계약금 10% 이내는 본인 부담). 1회 2년, 청년은 2회 연장해 최장 6년. 연중 선착순 방문 접수(예산 소진 시 종료, 약 44호).",
+        "applyEnd": "2026-12-31",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-02-23",
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6109c55fc84019c87cf06140511",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "jeonse-return-guarantee-fee-subsidy": {
+      "values": {
+        "ageMax": null,
+        "ageMin": null,
+        "summary": "이미 낸 전세보증금반환보증(HUG·HF·SGI) 보증료를 최대 40만원까지 1회 지원 (2025-03-30 이전 가입건은 최대 30만원)",
+        "applyEnd": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-01-01",
+        "lumpSumCap": 400000,
+        "monthlyCap": null,
+        "housingTypes": [
+          "전세"
+        ],
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://www.gov.kr/portal/rcvfvrSvc/dtlEx/161300000103",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "youth-housing-benefit-split-payment": {
+      "values": {
+        "ageMax": 29,
+        "ageMin": 19,
+        "summary": "부모와 주민등록상 시·군을 달리해 사는 미혼 청년에게, 지역 급지별 기준임대료 한도 내 실제 월세만큼 매월 지급 (익산시는 4급지 — 1인 가구 월 최대 21만 2천원)",
+        "applyEnd": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-01-01",
+        "lumpSumCap": null,
+        "monthlyCap": 212000,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://www.myhome.go.kr/hws/portal/cont/selectHousingBenefitView.do",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    },
+    "iksan-youth-home-purchase-loan-interest": {
+      "values": {
+        "ageMax": 39,
+        "ageMin": 19,
+        "summary": "익산시에 주소를 두고 2024-07-01 이후 주택(전용 85㎡ 이하·주택가액 6억원 이하, 1가구 1주택)을 구입한 19~39세 청년의 주택구입 대출잔액 3.0% 이내 이자를 지원(기본 대출잔액 1억원 한도·연 최대 300만원, 전입자·혼인가구 2억원 한도·연 최대 600만원). 소득기준 미혼 본인 연 6천만원·기혼 부부합산 연 1억원 이하. 지원기간 최대 5년(기본 3년, 자녀 수 증가 시 최대 5년).",
+        "applyEnd": "2026-12-31",
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "maxMonths": null,
+        "applyStart": "2026-03-03",
+        "lumpSumCap": null,
+        "monthlyCap": null,
+        "housingTypes": null,
+        "incomeBracketMax": null,
+        "incomeBracketMin": null
+      },
+      "methods": [
+        "원문대조"
+      ],
+      "version": 2,
+      "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6109bff42e5019c085e293a54be",
+      "confirmers": 1,
+      "trustLevel": "검수",
+      "lastConfirmedAt": "2026-11-14"
+    }
+  }
+}
