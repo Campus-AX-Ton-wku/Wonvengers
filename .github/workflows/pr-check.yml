@@ -68,3 +68,7 @@ jobs:
         run: node raw.test.mjs
       - name: 공고문 원문 (11/14)
         run: node notice.test.mjs
+      - name: 앱 공개 정책 함수 (11/16)
+        run: node app-policies.test.mjs
+      - name: 앱 JSON → DB 이관 (11/16)
+        run: node app-fields.test.mjs
