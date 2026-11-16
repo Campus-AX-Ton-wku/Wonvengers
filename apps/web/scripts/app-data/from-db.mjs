@@ -58,6 +58,7 @@ function toPolicy(row) {
   if (row.lump_sum_cap != null) out.lumpSumCap = row.lump_sum_cap;
   if (row.lump_sum_basis != null) out.lumpSumBasis = row.lump_sum_basis;
   if (row.payout_note != null) out.payoutNote = row.payout_note;
+  if (row.documents != null) out.documents = row.documents.map((d) => (d.note ? { name: d.name, note: d.note } : { name: d.name }));
   Object.assign(out, {
     requiredInputs: row.required_inputs ?? [],
     exclusiveGroup: row.exclusive_groups ?? [],
@@ -162,6 +163,15 @@ export function validateRows(rows) {
     need(label !== undefined, `앱이 모르는 지역 코드 ${r.region_codes?.[0]} — 앱 지역 목록(lib/region.ts)과 변환표(REGION_BY_CODE)에 먼저 넣는다`);
     need(label === undefined || r.region_label === label, `지역 이름(region_label)이 코드와 다르다 — '${label}' 로 적는다`);
     need(Number.isInteger(r.year), "사업 연도(year)가 없다");
+    if (r.documents != null) {
+      const docs = r.documents;
+      const good =
+        Array.isArray(docs) && docs.length >= 1 && docs.length <= 15 &&
+        new Set(docs.map((d) => d?.name)).size === docs.length &&
+        docs.every((d) => d && typeof d === "object" && typeof d.name === "string" && d.name.length >= 1 && d.name.length <= 60 &&
+          (d.note === undefined || d.note === null || (typeof d.note === "string" && d.note.length <= 80)));
+      need(good, "서류 목록(documents) 모양이 틀렸다 — [{name 1~60자, note 80자 이하}] 1~15개, 이름 중복 없이");
+    }
     for (const k of ["apply_start", "apply_end", "verified_at"]) {
       need(r[k] == null || DATE.test(r[k]), `${k} 가 YYYY-MM-DD 가 아니다`);
     }
