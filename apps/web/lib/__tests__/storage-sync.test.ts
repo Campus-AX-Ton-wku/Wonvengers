@@ -103,16 +103,16 @@ describe("이 기기의 사본 — 일곱 갈래 키를 한 묶음으로", () =>
     expect(readLocalContent().answers.answeredKeys).toEqual(["birthDate"]);
   });
 
-  it("비우기는 일곱 갈래만 지우고 온보딩·로그인·동의·가입 시트 기록은 남긴다", () => {
+  it("비우기는 일곱 갈래만 지우고 온보딩·로그인·동의 기록은 남긴다", () => {
     전부저장();
-    for (const key of ["perky.onboarded", "perky.auth", "perky.consent", "perky.signup-dismissed"]) {
+    for (const key of ["perky.onboarded", "perky.auth", "perky.consent"]) {
       window.localStorage.setItem(key, "1");
     }
     clearLocalContent();
     expect(readLocalContent()).toEqual(emptyContent());
     const left: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) left.push(window.localStorage.key(i)!);
-    expect(left.sort()).toEqual(["perky.auth", "perky.consent", "perky.onboarded", "perky.signup-dismissed"]);
+    expect(left.sort()).toEqual(["perky.auth", "perky.consent", "perky.onboarded"]);
   });
 
   it("체크리스트는 정책마다 perky.application-checklist:<id> 에 있다", () => {

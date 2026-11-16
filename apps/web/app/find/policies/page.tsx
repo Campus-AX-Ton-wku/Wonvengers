@@ -8,11 +8,13 @@ import PolicyCard from "@/app/find/PolicyCard";
 import { AppShell, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
+import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
+import LoginSheet from "./LoginSheet";
 
 /**
  * 1층 · 발견 — 질문 결과 목록.
@@ -47,6 +49,7 @@ export default function FindPoliciesPage() {
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     setAnswers(loadAnswers());
@@ -160,6 +163,13 @@ export default function FindPoliciesPage() {
             ) : (
               <Link
                 href="/calculate"
+                onClick={(event) => {
+                  // 월세 계산은 로그인하고 한다(11/17). 로그인 상태 · 로그인을 쓸 수 없는 빌드에서는 그냥 간다.
+                  if (isLoginAvailable() && !hasStoredLogin()) {
+                    event.preventDefault();
+                    setLoginOpen(true);
+                  }
+                }}
                 className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
               >
                 <span className="text-balance text-left text-lg font-bold leading-snug text-white">
@@ -186,6 +196,7 @@ export default function FindPoliciesPage() {
         </>
       )}
       </main>
+      {loginOpen && <LoginSheet onClose={() => setLoginOpen(false)} />}
     </AppShell>
   );
 }
