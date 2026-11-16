@@ -99,4 +99,21 @@ describe("서류 목록이 있는 정책 (11/17)", () => {
     expect(JSON.parse(window.localStorage.getItem(`perky.document-checks:${id}`)!)).toEqual(["주민등록등본"]);
     expect(screen.getByRole("status").textContent).toBe("1 / 4 확인");
   });
+
+  it("옛 서류 이름은 체크할 때 버리고, 남은 이름은 서류 목록 순서로 저장한다", async () => {
+    window.localStorage.setItem(`perky.document-checks:${id}`, JSON.stringify(["옛 서류", "주민등록등본"]));
+    const user = userEvent.setup();
+    render(<ApplicationPreparation policy={withDocs} />);
+    await user.click(await screen.findByRole("checkbox", { name: /임대차계약서 사본/ }));
+    expect(JSON.parse(window.localStorage.getItem(`perky.document-checks:${id}`)!)).toEqual([
+      "임대차계약서 사본",
+      "주민등록등본",
+    ]);
+  });
+
+  it("note 가 없는 서류에는 설명 줄을 만들어 내지 않는다", async () => {
+    render(<ApplicationPreparation policy={withDocs} />);
+    await screen.findByText("주민등록등본");
+    expect(screen.queryByText("공고 원문 기준")).toBeNull();
+  });
 });

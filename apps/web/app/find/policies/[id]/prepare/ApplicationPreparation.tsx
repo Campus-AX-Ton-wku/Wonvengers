@@ -90,7 +90,10 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
   };
 
   const toggleDoc = (name: string, on: boolean) => {
-    const next = on ? [...checkedDocs.filter((n) => n !== name), name] : checkedDocs.filter((n) => n !== name);
+    // 지금 서류 목록의 이름만, 목록 순서대로 남긴다. 팀이 서류 이름을 바꿔도 옛 이름이 쌓이지 않는다.
+    const next = (policy.documents ?? [])
+      .map((d) => d.name)
+      .filter((n) => (n === name ? on : checkedDocs.includes(n)));
     setCheckedDocs(next);
     saveDocumentChecks(policy.id, next);
   };
@@ -142,7 +145,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
                 key={d.name}
                 checked={checkedDocs.includes(d.name)}
                 label={d.name}
-                support={d.note ?? "공고 원문 기준"}
+                support={d.note}
                 onChange={(checked) => toggleDoc(d.name, checked)}
               />
             ))
@@ -198,7 +201,7 @@ function ChecklistRow({
 }: {
   checked: boolean;
   label: string;
-  support: string;
+  support?: string;
   onChange: (checked: boolean) => void;
 }) {
   return (
@@ -211,7 +214,7 @@ function ChecklistRow({
       />
       <span className="min-w-0">
         <span className="block text-sm font-bold leading-[22px] text-ink-900">{label}</span>
-        <span className="mt-0.5 block text-[11px] leading-4 text-ink-500">{support}</span>
+        {support && <span className="mt-0.5 block text-[11px] leading-4 text-ink-500">{support}</span>}
       </span>
       <span
         className={`inline-flex shrink-0 items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-medium ${

@@ -82,17 +82,6 @@ export const metadata: Metadata = {
   description: "계약 조건을 입력하면 청년 주거지원 정책을 판정하고 최종 예상 주거비를 계산합니다.",
 };
 
-/**
- * 첫 화면 스크립트(루트 리다이렉트 + 첫 화면 표). React 가 뜨기 전에 실행된다.
- *
- * 루트 리다이렉트는 lib/start-redirect.ts (Next 는 layout.tsx 에서 정해진 것 말고는 export 를 막는다).
- *
- * 같은 스크립트가 이 탭의 첫 화면 기록 칸에 표도 단다(lib/entry.ts — history.state 의 표,
- * 그 값은 sessionStorage). 왼쪽 위 화살표가 그 표로 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지
- * 정한다. React 가 뜨기 전에 달아야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도
- * 놓치지 않는다.
- */
-
 /* viewport-fit=cover 로 노치·홈 인디케이터 영역까지 지면을 넓히고,
    safe-area-inset 여백은 각 컴포넌트에서 준다. 확대는 접근성상 막지 않는다. */
 export const viewport: Viewport = {
@@ -113,6 +102,9 @@ export default function RootLayout({
         {process.env.NODE_ENV === "production" && (
           <meta httpEquiv="Content-Security-Policy" content={contentSecurityPolicy()} />
         )}
+        {/* 루트 리다이렉트는 lib/start-redirect.ts. 같은 스크립트가 이 탭의 첫 화면 기록 칸에 표도 단다
+            (lib/entry.ts). 왼쪽 위 화살표가 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지 정하는 표이고,
+            React 가 뜨기 전에 달아야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도 놓치지 않는다. */}
         <script dangerouslySetInnerHTML={{ __html: `${START_REDIRECT};${ENTRY_SCRIPT}` }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>

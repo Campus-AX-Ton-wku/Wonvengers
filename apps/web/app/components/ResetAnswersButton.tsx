@@ -43,7 +43,11 @@ export function ResetAnswersButton({ onReset }: { onReset?: () => void }) {
         처음부터 다시
       </button>
       {confirming && (
-        <Sheet title="고른 답을 모두 지우고 첫 질문부터 다시 할까요?" onClose={() => setConfirming(false)}>
+        <Sheet
+          title="고른 답을 모두 지우고 첫 질문부터 다시 할까요?"
+          description="찜한 지원금과 서류 준비 체크도 함께 지워져요."
+          onClose={() => setConfirming(false)}
+        >
           <Button size="screen" onClick={reset}>
             다시 하기
           </Button>
