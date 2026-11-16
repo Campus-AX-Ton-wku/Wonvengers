@@ -61,6 +61,20 @@ describe("상단바 오른쪽 자리 (설계 '화면' 4)", () => {
     expect(link.getAttribute("href")).toBe("/account");
   });
 
+  it("로그인했으면 [홈]이 /home 으로 간다 (로그인 전에는 없다)", async () => {
+    enableLogin();
+    const { unmount } = render(<TopBar />);
+    expect(screen.queryByRole("link", { name: "홈" })).toBeNull();
+    unmount();
+
+    signInAs();
+    seedSyncMeta();
+    load.mockResolvedValue(remoteItem());
+    render(<TopBar />);
+    const link = await screen.findByRole("link", { name: "홈" });
+    expect(link.getAttribute("href")).toBe("/home");
+  });
+
   it("저장에 실패하면 '저장 안 됨 · 다시 시도', 누르면 다시 시도한다", async () => {
     enableLogin();
     signInAs();
