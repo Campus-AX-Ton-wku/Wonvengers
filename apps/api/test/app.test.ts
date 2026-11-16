@@ -114,6 +114,18 @@ describe("GET·PUT /me/data", () => {
     expect(JSON.parse(read.body!)).toEqual({ data: validPayload(), updatedAt });
   });
 
+  it("찜 필드(saved · documentChecks)가 없는 옛 형식도 200 이고 빈 값으로 저장한다", async () => {
+    const { deps, store } = setup();
+    const data: Record<string, unknown> = { ...validPayload() };
+    delete data.saved;
+    delete data.documentChecks;
+    const res = await route(put(A, { data, baseUpdatedAt: null }), deps);
+    expect(res.statusCode).toBe(200);
+    const stored = store.items.get(A.sub)!.data;
+    expect(stored.saved).toEqual([]);
+    expect(stored.documentChecks).toEqual({});
+  });
+
   it("authorizer 를 거친 sub 가 없으면 401 이고 저장소를 건드리지 않는다", async () => {
     const { deps, store } = setup();
     const res = await route(put(null, { data: validPayload(), baseUpdatedAt: null }), deps);
