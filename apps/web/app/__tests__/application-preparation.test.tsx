@@ -74,3 +74,29 @@ describe("이동 모달의 문의처", () => {
     expect(within(screen.getByRole("dialog")).queryByText(/^문의/)).toBeNull();
   });
 });
+
+describe("서류 목록이 있는 정책 (11/17)", () => {
+  const id = "youth-housing-benefit-split-payment";
+  const withDocs = {
+    ...(policiesJson as PolicyMeta[]).find((p) => p.id === id)!,
+    documents: [{ name: "임대차계약서 사본", note: "확정일자 포함" }, { name: "주민등록등본" }],
+  } as PolicyMeta;
+
+  beforeEach(() => window.localStorage.clear());
+
+  it("자격 · 기간 + 서류 하나하나, '준비 서류 확인' 줄은 없다", async () => {
+    render(<ApplicationPreparation policy={withDocs} />);
+    expect(await screen.findByText("임대차계약서 사본")).toBeTruthy();
+    expect(screen.getByText("확정일자 포함")).toBeTruthy();
+    expect(screen.queryByText("준비 서류 확인")).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("0 / 4 확인");
+  });
+
+  it("서류를 체크하면 perky.document-checks:<id> 에 저장되고 진행률이 오른다", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationPreparation policy={withDocs} />);
+    await user.click(await screen.findByRole("checkbox", { name: /주민등록등본/ }));
+    expect(JSON.parse(window.localStorage.getItem(`perky.document-checks:${id}`)!)).toEqual(["주민등록등본"]);
+    expect(screen.getByRole("status").textContent).toBe("1 / 4 확인");
+  });
+});

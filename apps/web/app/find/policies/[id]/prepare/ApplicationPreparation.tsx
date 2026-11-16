@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   AppShell,
   Button,
+  SaveButton,
   ContactInfo,
   StickyBottomAction,
   TopBar,
@@ -11,7 +12,14 @@ import {
 } from "@/app/components";
 import { Check, ICON_SM, ShieldCheck } from "@/app/components/icons";
 import { formatDotDate } from "@/lib/date";
-import { EMPTY_CHECKLIST, loadChecklist, saveChecklist } from "@/lib/storage";
+import { pageProgress } from "@/lib/preparation";
+import {
+  EMPTY_CHECKLIST,
+  loadChecklist,
+  loadDocumentChecks,
+  saveChecklist,
+  saveDocumentChecks,
+} from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
 import type { ChecklistState } from "@/lib/user-data";
 
@@ -19,6 +27,7 @@ type ChecklistKey = keyof ChecklistState;
 
 export default function ApplicationPreparation({ policy }: { policy: PolicyMeta }) {
   const [checklist, setChecklist] = useState<ChecklistState>(EMPTY_CHECKLIST);
+  const [checkedDocs, setCheckedDocs] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const confirmLinkRef = useRef<HTMLAnchorElement>(null);
@@ -32,6 +41,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
 
   useEffect(() => {
     setChecklist(loadChecklist(policy.id));
+    setCheckedDocs(loadDocumentChecks(policy.id));
     setHydrated(true);
   }, [policy.id]);
 
@@ -79,25 +89,37 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
     saveChecklist(policy.id, next);
   };
 
+  const toggleDoc = (name: string, on: boolean) => {
+    const next = on ? [...checkedDocs.filter((n) => n !== name), name] : checkedDocs.filter((n) => n !== name);
+    setCheckedDocs(next);
+    saveDocumentChecks(policy.id, next);
+  };
+
+  const docs = policy.documents ?? [];
   const applicationPeriod = `${formatDotDate(policy.applicationStart)} ~ ${
     policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
   }`;
-  const completedCount = Object.values(checklist).filter(Boolean).length;
+  const progress = pageProgress(policy, checklist, checkedDocs);
 
   return (
     <AppShell className="step-in">
       <TopBar backHref={`/find/policies/${policy.id}`} />
       <main className="flex flex-1 flex-col pb-6 pt-1">
         <header>
-          <p className="text-[11px] font-bold leading-4 text-ink-500">신청 준비</p>
-          <h1 className="mt-1 text-2xl font-extrabold leading-[34px] text-ink-900">
-            필수 확인 사항을 점검해요
-          </h1>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold leading-4 text-ink-500">신청 준비</p>
+              <h1 className="mt-1 text-2xl font-extrabold leading-[34px] text-ink-900">
+                필수 확인 사항을 점검해요
+              </h1>
+            </div>
+            <SaveButton policyId={policy.id} policyName={policy.name} />
+          </div>
           <p className="mt-1 text-sm leading-[22px] text-ink-500">
             확인한 항목은 이 기기에 저장되어 언제든 이어서 볼 수 있어요.
           </p>
           <p className="mt-2 text-xs font-medium text-brand-700" role="status" aria-live="polite">
-            {hydrated ? `${completedCount} / 3 확인` : "저장된 확인 상태 불러오는 중"}
+            {hydrated ? `${progress.done} / ${progress.total} 확인` : "저장된 확인 상태 불러오는 중"}
           </p>
         </header>
 
@@ -114,12 +136,24 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             support={applicationPeriod}
             onChange={(checked) => setChecked("period", checked)}
           />
-          <ChecklistRow
-            checked={checklist.documents}
-            label="준비 서류 확인"
-            support="서류 종류와 발급일은 공식 공고에서 확인해요"
-            onChange={(checked) => setChecked("documents", checked)}
-          />
+          {docs.length > 0 ? (
+            docs.map((d) => (
+              <ChecklistRow
+                key={d.name}
+                checked={checkedDocs.includes(d.name)}
+                label={d.name}
+                support={d.note ?? "공고 원문 기준"}
+                onChange={(checked) => toggleDoc(d.name, checked)}
+              />
+            ))
+          ) : (
+            <ChecklistRow
+              checked={checklist.documents}
+              label="준비 서류 확인"
+              support="서류 종류와 발급일은 공식 공고에서 확인해요"
+              onChange={(checked) => setChecked("documents", checked)}
+            />
+          )}
         </section>
 
         <section className="mt-5 rounded-control bg-accent-50 px-4 py-3.5" aria-labelledby="official-notice-title">
@@ -127,7 +161,9 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             제출 전 다시 확인해 주세요
           </h2>
           <p className="mt-1 text-[11px] leading-4 text-ink-500">
-            현재 정책 데이터에는 준비 서류 목록이 제공되지 않습니다. 필요 서류와 발급일 기준은 공식 공고에서 확인해 주세요.
+            {docs.length > 0
+              ? "서류 발급일 기준은 공식 공고에서 다시 확인해 주세요."
+              : "현재 정책 데이터에는 준비 서류 목록이 제공되지 않습니다. 필요 서류와 발급일 기준은 공식 공고에서 확인해 주세요."}
           </p>
         </section>
 
