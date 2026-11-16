@@ -24,6 +24,14 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         ],
       },
     },
+    "GithubDeployRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "GithubDeployRoleB0CF66A5",
+          "Arn",
+        ],
+      },
+    },
     "KakaoRedirectUri": {
       "Value": {
         "Fn::Join": [
@@ -36,6 +44,11 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
             ".auth.ap-northeast-2.amazoncognito.com/oauth2/idpresponse",
           ],
         ],
+      },
+    },
+    "NotifierFunctionName": {
+      "Value": {
+        "Ref": "NotifierFunctionEB33F81B",
       },
     },
     "UserPoolClientId": {
@@ -154,6 +167,59 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Lambda::Permission",
     },
+    "ApiDELETEmepush2EC465BD": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "ApiCognito2A5FE4F0",
+        },
+        "RouteKey": "DELETE /me/push",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
+    "ApiDELETEmepushApiIntegrationPermission437754CD": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/me/push",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
     "ApiF70053CD": {
       "Properties": {
         "CorsConfiguration": {
@@ -193,6 +259,9 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         "Environment": {
           "Variables": {
             "KAKAO_ADMIN_KEY_PARAM": "/perky/kakao/admin-key",
+            "PUSH_TABLE_NAME": {
+              "Ref": "PushSubscriptions65464CC8",
+            },
             "TABLE_NAME": {
               "Ref": "UserData6A2E227B",
             },
@@ -265,6 +334,22 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
                 {
                   "Fn::GetAtt": [
                     "UserData6A2E227B",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:UpdateItem",
+                "dynamodb:Query",
+                "dynamodb:DeleteItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "PushSubscriptions65464CC8",
                     "Arn",
                   ],
                 },
@@ -441,6 +526,59 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Lambda::Permission",
     },
+    "ApiPUTmepushApiIntegrationPermissionC057A09F": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/me/push",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ApiPUTmepushE08BBA51": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "ApiCognito2A5FE4F0",
+        },
+        "RouteKey": "PUT /me/push",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
     "DefaultStageEE28A986": {
       "Properties": {
         "ApiId": {
@@ -454,6 +592,75 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         "StageName": "$default",
       },
       "Type": "AWS::ApiGatewayV2::Stage",
+    },
+    "GithubDeployRoleB0CF66A5": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:Campus-AX-Ton-wku/Wonvengers:environment:aws-production",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "GithubOidc86785739",
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "GitHub Actions deploy (environment aws-production only) - may only assume CDK bootstrap roles",
+        "MaxSessionDuration": 3600,
+        "RoleName": "perky-github-deploy",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "GithubDeployRoleDefaultPolicyE8F540D1": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":iam::448842988711:role/cdk-hnb659fds-*-448842988711-ap-northeast-2",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "GithubDeployRoleDefaultPolicyE8F540D1",
+        "Roles": [
+          {
+            "Ref": "GithubDeployRoleB0CF66A5",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "GithubOidc86785739": {
+      "Properties": {
+        "ClientIdList": [
+          "sts.amazonaws.com",
+        ],
+        "Url": "https://token.actions.githubusercontent.com",
+      },
+      "Type": "AWS::IAM::OIDCProvider",
     },
     "Kakao6616601F": {
       "Properties": {
@@ -530,6 +737,248 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         ],
       },
       "Type": "AWS::Budgets::Budget",
+    },
+    "NotifierFunctionEB33F81B": {
+      "DependsOn": [
+        "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E",
+        "NotifierFunctionServiceRole124F1226",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-448842988711-ap-northeast-2",
+          "S3Key": "ASSET_HASH",
+        },
+        "Environment": {
+          "Variables": {
+            "POLICIES_URL": "https://wonvengers.vercel.app/policies.json",
+            "PUSH_TABLE_NAME": {
+              "Ref": "PushSubscriptions65464CC8",
+            },
+            "TABLE_NAME": {
+              "Ref": "UserData6A2E227B",
+            },
+            "VAPID_PRIVATE_KEY_PARAM": "/perky/push/vapid-private-key",
+            "VAPID_PUBLIC_KEY_PARAM": "/perky/push/vapid-public-key",
+            "VAPID_SUBJECT": "https://wonvengers.vercel.app",
+          },
+        },
+        "Handler": "index.handler",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "NotifierLogs49177D36",
+          },
+        },
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "NotifierFunctionServiceRole124F1226",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 60,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "NotifierFunctionEventInvokeConfigF939B64E": {
+      "Properties": {
+        "FunctionName": {
+          "Ref": "NotifierFunctionEB33F81B",
+        },
+        "MaximumRetryAttempts": 0,
+        "Qualifier": "$LATEST",
+      },
+      "Type": "AWS::Lambda::EventInvokeConfig",
+    },
+    "NotifierFunctionServiceRole124F1226": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:Scan",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "PushSubscriptions65464CC8",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "UserData6A2E227B",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "ssm:GetParameter",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":ssm:ap-northeast-2:448842988711:parameter/perky/push/vapid-public-key",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":ssm:ap-northeast-2:448842988711:parameter/perky/push/vapid-private-key",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "NotifierFunctionServiceRoleDefaultPolicyDFAFB18E",
+        "Roles": [
+          {
+            "Ref": "NotifierFunctionServiceRole124F1226",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "NotifierLogs49177D36": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "RetentionInDays": 30,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "NotifyScheduleAllowEventRulePerkyStackNotifierFunctionF49FC1FA2ABE0F05": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "NotifierFunctionEB33F81B",
+            "Arn",
+          ],
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "NotifyScheduleF7CF7327",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "NotifyScheduleF7CF7327": {
+      "Properties": {
+        "ScheduleExpression": "cron(0 0-12 * * ? *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "NotifierFunctionEB33F81B",
+                "Arn",
+              ],
+            },
+            "Id": "Target0",
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "PushSubscriptions65464CC8": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "userId",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "deviceId",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "userId",
+            "KeyType": "HASH",
+          },
+          {
+            "AttributeName": "deviceId",
+            "KeyType": "RANGE",
+          },
+        ],
+        "SSESpecification": {
+          "SSEEnabled": false,
+        },
+        "TableName": "perky-push",
+        "TimeToLiveSpecification": {
+          "AttributeName": "expiresAt",
+          "Enabled": true,
+        },
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
     },
     "UserData6A2E227B": {
       "DeletionPolicy": "Retain",

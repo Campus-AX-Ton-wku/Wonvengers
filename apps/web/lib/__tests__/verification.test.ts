@@ -40,11 +40,9 @@ describe("검수 결과 파일", () => {
       .map((x) => ({ id: x.id, diff: verificationMismatches(x) ?? [] }))
       .filter((r) => r.diff.length > 0);
     for (const r of report) expect(verificationBadge(items.find((x) => x.id === r.id)!)).toBeNull();
-    // 2026-11-15: 익산 전입 지원 2건은 앱에 넣으면서 요약 · 금액 · 신청 시작일 · 상태 · 소득 칸을 채웠는데
-    // DB 는 아직 예전 값이다. DB 를 맞추고 다시 검수하면 이 목록이 비고 배지가 붙는다.
-    expect(report.map((r) => r.id).sort()).toEqual(
-      ["iksan-move-in-household-incentive", "iksan-move-in-student-support"].sort()
-    );
+    // 2026-11-16 부터 정책 JSON 과 이 파일을 같은 DB 응답에서 함께 만든다(scripts/fetch-app-data.mjs)
+    // → 화면 값과 검수 값이 다를 수 없다. 여기 뭔가 뜨면 두 파일을 따로 고친 것이다.
+    expect(report.map((r) => r.id)).toEqual([]);
   });
 });
 

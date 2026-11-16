@@ -1,4 +1,5 @@
 import { authConfig, getSession } from "./auth";
+import type { PushSubscriptionBody } from "./push-subscription";
 import { validateUserData, type GetResponseBody, type PutResponseBody, type UserDataPayload } from "./user-data";
 
 /**
@@ -81,6 +82,22 @@ export function saveRemote(data: UserDataPayload, baseUpdatedAt: string | null):
 export function deleteAccountRemote(): Promise<void> {
   return withTimeout(async (signal) => {
     const res = await call(signal, "DELETE", "/me");
+    if (res.status !== 204) throw new RemoteError(res.status);
+  });
+}
+
+/** 알림 켜기 · 갱신 (설계 "API"). 사용자 ID 는 보내지 않는다. */
+export function putPushRemote(sub: PushSubscriptionBody): Promise<void> {
+  return withTimeout(async (signal) => {
+    const res = await call(signal, "PUT", "/me/push", sub);
+    if (res.status !== 204) throw new RemoteError(res.status);
+  });
+}
+
+/** 알림 끄기 — 이 기기 하나. */
+export function deletePushRemote(endpoint: string): Promise<void> {
+  return withTimeout(async (signal) => {
+    const res = await call(signal, "DELETE", "/me/push", { endpoint });
     if (res.status !== 204) throw new RemoteError(res.status);
   });
 }

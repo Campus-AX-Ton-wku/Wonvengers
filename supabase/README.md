@@ -9,7 +9,10 @@
 
 ## 이 DB 가 하는 일 (11/11 확정)
 
-- **앱은 이 DB 를 읽지 않는다.** 앱은 지금처럼 `apps/web/data` 의 정책 JSON 을 읽는다.
+- **2026-11-16 부터 이 DB 가 정책의 원본이다.** 앱 빌드가 `public.app_policies()`(공개 칸만 돌려주는 함수)를
+  공개 키로 불러 `apps/web/data` 의 정책 JSON 을 다시 만든다(`apps/web/scripts/fetch-app-data.mjs`).
+  정책 값은 DB 에서만 고친다. 표는 여전히 익명에게 닫혀 있다.
+  ~~앱은 이 DB 를 읽지 않는다~~ (11/11 방식, 폐기)
 - 이 DB 에는 **익산 사용자에게 보이는 14건 + 새 후보 2건**의 원문과 검수 기록을 남긴다.
   (11/15 에 14번 연합생활관(고양)을 대상에서 뺐다 → 지금 대상은 13건 + 새 후보 2건. 아래 9번)
   11/17 멘토 점검에서 "원문을 그대로 보관하고, 누가 언제 확인했는지 남긴다"를 보여주기 위해서다.
@@ -34,6 +37,10 @@
 | `raw/notice-2026-11-14/*.json` | 공고문 원본 4개(정책 5건: 10 · 11 · 13 · 15 · 16번)에서 뽑은 본문 글자 + 원본 파일 크기 · md5 + Storage 위치. 원본 hwp · pdf 는 git 에 넣지 않는다 |
 | `raw/build-notice-sql.mjs` · `raw/notice-2026-11-14.sql` | 위 공고문을 원문 표에 '공고문'으로 넣는 SQL 과 그 생성 스크립트. 한 번만 실행 |
 | `tests/notice.test.mjs` | `raw/notice-2026-11-14.sql` 을 API 원문 다음에 넣어 보는 검사 13개 |
+| `migrations/20261115172640_app_policies.sql` | **11/16** 공개용 함수 `app_policies()` — 앱 빌드가 읽는다. 익명은 이 함수만 실행 가능 |
+| `migrations/20261115233614_app_fields.sql` | **11/16** 앱이 쓰던 칸 7개 추가(확인일 · 외부 번호 · 다음 회차 · 지급 메모 · 문의처 이름/주소), '보증료'도 지원 형태 허용 |
+| `seed/build-app-fields-sql.mjs` · `seed/app-fields-2026-11-16.sql` · `seed/app-data-2026-11-16/` | **11/16** 앱 JSON → DB 이관(새 칸 채우기 13건 · 전입 지원 2건 앱 값 + '운영'). 한 번만 실행 — 적용 끝 |
+| `tests/app-policies.test.mjs` · `tests/app-fields.test.mjs` | 위 세 가지 검사 (31 · 17개) |
 | `migrations/20261114150805_function_search_path.sql` | 함수 8개의 search_path 고정 (Supabase 보안 경고 0011). 11/15 MCP `apply_migration` 으로 적용 — 마이그레이션 기록에 남은 첫 항목 |
 
 표 설명: [`docs/기획/2026-11-09-DB-재설계-5테이블.md`](../docs/기획/2026-11-09-DB-재설계-5테이블.md)

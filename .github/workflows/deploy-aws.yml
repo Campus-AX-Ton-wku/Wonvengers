@@ -1,0 +1,81 @@
+# AWS 배포 — main 에 머지되면 서울 PerkyStack(로그인 · 답 저장 · 알림 서버)을 cdk deploy 한다.
+#
+# 왜: 웹 화면은 Vercel 이 main 에서 자동 배포하지만, AWS 쪽(Lambda · DynamoDB · API · 매시 규칙)은
+#     예전에는 손으로 cdk deploy 했다. 알림 서버를 고칠 때마다 손으로 배포하면 빠뜨린다.
+#
+# 안전장치
+#   - 접근 키를 저장하지 않는다. GitHub 이 발급한 토큰으로 역할(perky-github-deploy)을 빌린다(OIDC).
+#   - 그 역할은 배포 환경 aws-production 에서 돈 작업만 빌릴 수 있다(infra/lib/perky-stack.ts).
+#     aws-production 은 ggue 승인 + main 브랜치만 — 승인 전에는 아무것도 바뀌지 않는다.
+#   - 역할이 할 수 있는 일은 cdk bootstrap 이 만든 CDK 역할을 빌리는 것 하나다.
+#   - 배포 전에 api · infra 검사를 다시 돌리고, 바뀌는 내용(cdk diff)을 기록에 남긴다.
+#
+# 비밀값(카카오 client secret · 예산 메일 · VAPID 키)은 SSM 과 지난 배포 값을 그대로 쓴다 — 여기서 넣지 않는다.
+# 설정: docs/기획/2026-11-16-새-정책-알림-구현계획.md Task 9
+
+name: AWS 배포
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "apps/api/**"
+      # API Lambda 가 함께 묶는 웹 파일 (apps/api 가 ../../web/lib 로 가져온다)
+      - "apps/web/lib/user-data.ts"
+      - "apps/web/lib/push-subscription.ts"
+      - "apps/web/lib/filter.ts"
+      - "apps/web/lib/age.ts"
+      - "apps/web/lib/region.ts"
+      - "apps/web/lib/date.ts"
+      - "apps/web/lib/types.ts"
+      - ".github/workflows/deploy-aws.yml"
+  workflow_dispatch: # 손으로도 돌릴 수 있게 (승인은 똑같이 필요)
+
+permissions:
+  id-token: write # OIDC 토큰
+  contents: read
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false # 배포 도중에 끊지 않는다
+
+jobs:
+  deploy:
+    name: PerkyStack 배포 (서울)
+    runs-on: ubuntu-latest
+    environment: aws-production
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            infra/package-lock.json
+      - name: 설치
+        run: |
+          (cd apps/api && npm ci)
+          (cd infra && npm ci)
+      - name: 검사 — api
+        working-directory: apps/api
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit
+          node node_modules/vitest/vitest.mjs run
+      - name: 검사 — infra
+        working-directory: infra
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit
+          node node_modules/vitest/vitest.mjs run
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-northeast-2
+          role-session-name: perky-github-deploy
+      - name: 바뀌는 내용 (cdk diff)
+        working-directory: infra
+        run: npx cdk diff PerkyStack
+      - name: 배포 (cdk deploy)
+        working-directory: infra
+        run: npx cdk deploy PerkyStack --require-approval never

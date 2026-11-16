@@ -8,6 +8,8 @@ import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations
 import * as budgets from "aws-cdk-lib/aws-budgets";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -17,12 +19,21 @@ import type { Construct } from "constructs";
 import {
   ALLOWED_ORIGINS,
   CALLBACK_URLS,
+  CDK_QUALIFIER,
+  DEPLOY_ENVIRONMENT,
+  DEPLOY_ROLE_NAME,
   DOMAIN_PREFIX,
+  GITHUB_OIDC,
+  GITHUB_REPO,
   KAKAO_OIDC,
   LOGOUT_URLS,
+  NOTIFY_CRON,
+  POLICIES_URL,
+  PUSH_TABLE_NAME,
   REGION,
   SSM_PARAMS,
   TABLE_NAME,
+  VAPID_SUBJECT,
 } from "./config";
 
 /** 저장소 루트. Lambda 가 apps/api 와 apps/web/lib/user-data.ts 를 함께 묶으므로 묶기 기준이 루트다. */
@@ -122,10 +133,31 @@ export class PerkyStack extends Stack {
       removalPolicy: RemovalPolicy.RETAIN,
     });
 
+    // 알림 구독(사용자 × 기기) + 알림 Lambda 의 '이미 알린 정책' 상태 항목 하나
+    const pushTable = new dynamodb.Table(this, "PushSubscriptions", {
+      tableName: PUSH_TABLE_NAME,
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "deviceId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      encryption: dynamodb.TableEncryption.DEFAULT,
+      timeToLiveAttribute: "expiresAt",
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     const logGroup = new logs.LogGroup(this, "ApiLogs", {
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: RemovalPolicy.DESTROY,
     });
+
+    const bundling = {
+      format: OutputFormat.CJS,
+      target: "node22",
+      minify: true,
+      sourceMap: false,
+      // SDK 도 함께 묶는다 — lockfile 에 고정한 버전이 그대로 올라간다.
+      externalModules: [],
+      environment: { npm_config_prefix: ESBUILD_PKG_DIR },
+    };
 
     const fn = new NodejsFunction(this, "ApiFunction", {
       entry: path.join(REPO_ROOT, "apps/api/src/handler.ts"),
@@ -139,22 +171,16 @@ export class PerkyStack extends Stack {
       logGroup,
       environment: {
         TABLE_NAME: table.tableName,
+        PUSH_TABLE_NAME: pushTable.tableName,
         USER_POOL_ID: userPool.userPoolId,
         KAKAO_ADMIN_KEY_PARAM: SSM_PARAMS.adminKey,
       },
-      bundling: {
-        format: OutputFormat.CJS,
-        target: "node22",
-        minify: true,
-        sourceMap: false,
-        // SDK 도 함께 묶는다 — lockfile 에 고정한 버전이 그대로 올라간다.
-        externalModules: [],
-        environment: { npm_config_prefix: ESBUILD_PKG_DIR },
-      },
+      bundling,
     });
 
     // 최소 권한 (설계 "보안"): 그 테이블의 세 동작, 그 풀의 두 동작, 그 파라미터 하나.
     table.grant(fn, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
+    pushTable.grant(fn, "dynamodb:UpdateItem", "dynamodb:Query", "dynamodb:DeleteItem");
     fn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["cognito-idp:AdminGetUser", "cognito-idp:AdminDeleteUser"],
@@ -196,6 +222,54 @@ export class PerkyStack extends Stack {
       authorizer,
     });
     api.addRoutes({ path: "/me", methods: [apigw.HttpMethod.DELETE], integration, authorizer });
+    api.addRoutes({
+      path: "/me/push",
+      methods: [apigw.HttpMethod.PUT, apigw.HttpMethod.DELETE],
+      integration,
+      authorizer,
+    });
+
+    // ── 새 정책 알림 (docs/기획/2026-11-16-새-정책-알림-설계.md) ──
+    const notifierLogs = new logs.LogGroup(this, "NotifierLogs", {
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    const notifier = new NodejsFunction(this, "NotifierFunction", {
+      entry: path.join(REPO_ROOT, "apps/api/src/notifier/handler.ts"),
+      handler: "handler",
+      projectRoot: REPO_ROOT,
+      depsLockFilePath: path.join(REPO_ROOT, "apps/api/package-lock.json"),
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(60),
+      // 실패한 회차는 다음 정시에 다시 본다 — Lambda 자동 재시도는 이미 보낸 알림을 또 보낸다.
+      retryAttempts: 0,
+      logGroup: notifierLogs,
+      environment: {
+        PUSH_TABLE_NAME: pushTable.tableName,
+        TABLE_NAME: table.tableName,
+        POLICIES_URL,
+        VAPID_SUBJECT,
+        VAPID_PUBLIC_KEY_PARAM: SSM_PARAMS.vapidPublicKey,
+        VAPID_PRIVATE_KEY_PARAM: SSM_PARAMS.vapidPrivateKey,
+      },
+      bundling,
+    });
+    pushTable.grant(notifier, "dynamodb:Scan", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem");
+    table.grant(notifier, "dynamodb:GetItem");
+    notifier.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [SSM_PARAMS.vapidPublicKey, SSM_PARAMS.vapidPrivateKey].map((name) =>
+          this.formatArn({ service: "ssm", resource: "parameter", resourceName: name.slice(1) })
+        ),
+      })
+    );
+    new events.Rule(this, "NotifySchedule", {
+      schedule: events.Schedule.expression(NOTIFY_CRON),
+      targets: [new targets.LambdaFunction(notifier)],
+    });
 
     new budgets.CfnBudget(this, "MonthlyBudget", {
       budget: {
@@ -226,10 +300,45 @@ export class PerkyStack extends Stack {
       ],
     });
 
+    // ── GitHub Actions 자동 배포 (.github/workflows/deploy-aws.yml) ──
+    // 접근 키 대신 GitHub 이 발급한 토큰으로 역할을 빌린다. 이 저장소의 배포 환경(ggue 승인 필요)에서 돈 작업만 빌릴 수 있고,
+    // 이 역할이 할 수 있는 일은 cdk bootstrap 이 만든 CDK 역할을 빌리는 것 하나다(실제 변경은 CloudFormation 이 한다).
+    const githubOidc = new iam.OidcProviderNative(this, "GithubOidc", {
+      url: GITHUB_OIDC.issuer,
+      clientIds: [GITHUB_OIDC.audience],
+    });
+    const deployRole = new iam.Role(this, "GithubDeployRole", {
+      roleName: DEPLOY_ROLE_NAME,
+      // IAM 설명은 라틴 문자만 받는다(한글이면 배포가 실패한다)
+      description: "GitHub Actions deploy (environment aws-production only) - may only assume CDK bootstrap roles",
+      maxSessionDuration: Duration.hours(1),
+      assumedBy: new iam.WebIdentityPrincipal(githubOidc.oidcProviderArn, {
+        StringEquals: {
+          "token.actions.githubusercontent.com:aud": GITHUB_OIDC.audience,
+          "token.actions.githubusercontent.com:sub": `repo:${GITHUB_REPO}:environment:${DEPLOY_ENVIRONMENT}`,
+        },
+      }),
+    });
+    deployRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sts:AssumeRole"],
+        resources: [
+          this.formatArn({
+            service: "iam",
+            region: "",
+            resource: "role",
+            resourceName: `cdk-${CDK_QUALIFIER}-*-${this.account}-${this.region}`,
+          }),
+        ],
+      })
+    );
+
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: client.userPoolClientId });
     new CfnOutput(this, "CognitoDomain", { value: `${domain.domainName}.auth.${REGION}.amazoncognito.com` });
     new CfnOutput(this, "ApiUrl", { value: api.apiEndpoint });
     new CfnOutput(this, "KakaoRedirectUri", { value: `${domain.baseUrl()}/oauth2/idpresponse` });
+    new CfnOutput(this, "NotifierFunctionName", { value: notifier.functionName });
+    new CfnOutput(this, "GithubDeployRoleArn", { value: deployRole.roleArn });
   }
 }

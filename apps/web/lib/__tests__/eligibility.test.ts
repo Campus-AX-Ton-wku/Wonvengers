@@ -257,3 +257,26 @@ describe("익산 전입 지원 (전입장려금 · 주소전입 학생 지원)",
     expect(moveInHousehold.exclusiveGroup.length).toBeGreaterThan(0);
   });
 });
+
+describe("2층 규칙이 없는 정책 (DB 에만 등록한 새 정책)", () => {
+  // 2026-11-16 부터 정책을 Supabase 에서 등록한다. 2층 규칙(lib/policy-rules.ts)은 코드라 새 정책에는 아직 없다.
+  // 확인 항목이 0개라고 '예상적용'(모두 통과)으로 판정하면 거짓말이다 — 원문에서 확인하라고 남긴다.
+  const newcomer: PolicyMeta = { ...moland, id: "new-policy-without-rules" };
+
+  it("'조건충족시가능'이고, 원문에서 확인하라는 항목 하나가 남는다", () => {
+    const result = evaluatePolicy(newcomer, makeProfile(), makeListing(), OPEN_PERIOD_DAY);
+    expect(result.status).toBe("조건충족시가능");
+    expect(result.checks).toHaveLength(1);
+    expect(result.checks[0].result).toBe("unknown");
+    expect(result.unknownLabels[0]).toContain("공고 원문");
+  });
+
+  it("예상액은 그대로 계산한다 — 금액 규칙은 DB 칸(상한 · 개월)만 본다", () => {
+    const result = evaluatePolicy(newcomer, makeProfile(), makeListing({ contractType: "월세", rentOrYearlyAmount: 150000, months: 12 }), OPEN_PERIOD_DAY);
+    expect(result.estimatedAmount).toBe(150000 * 12);
+  });
+
+  it("규칙이 있는 정책은 그대로다", () => {
+    expect(evaluatePolicy(moland, makeProfile(), makeListing(), OPEN_PERIOD_DAY).status).toBe("예상적용");
+  });
+});

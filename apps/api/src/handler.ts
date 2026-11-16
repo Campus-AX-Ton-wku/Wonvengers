@@ -6,6 +6,7 @@ import { CognitoAccounts } from "./cognito";
 import type { ApiEvent, ApiResult } from "./http";
 import { createKakaoUnlinker, ssmAdminKeyLoader } from "./kakao";
 import { logResult } from "./log";
+import { DynamoPushStore } from "./push-store";
 import { DynamoUserDataStore } from "./store";
 
 /** Lambda 진입점. 환경변수는 infra/lib/perky-stack.ts 가 넣는다. 리전은 Lambda 의 AWS_REGION. */
@@ -18,8 +19,10 @@ function required(name: string): string {
 let deps: Deps | null = null;
 
 function liveDeps(): Deps {
+  const dynamo = new DynamoDBClient({});
   return {
-    store: new DynamoUserDataStore(new DynamoDBClient({}), required("TABLE_NAME")),
+    store: new DynamoUserDataStore(dynamo, required("TABLE_NAME")),
+    push: new DynamoPushStore(dynamo, required("PUSH_TABLE_NAME")),
     accounts: new CognitoAccounts(new CognitoIdentityProviderClient({}), required("USER_POOL_ID")),
     kakao: createKakaoUnlinker(ssmAdminKeyLoader(new SSMClient({}), required("KAKAO_ADMIN_KEY_PARAM"))),
     now: () => new Date(),

@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/fetch-app-data.mjs",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
     "test:lib": "vitest run lib",
     "test:ui": "vitest run app",
     "fetch:youth": "node scripts/fetch-youth-policies.mjs",
-    "check:freshness": "node scripts/check-policy-freshness.mjs"
+    "check:freshness": "node scripts/check-policy-freshness.mjs",
+    "fetch:app-data": "node scripts/fetch-app-data.mjs",
+    "check:app-data": "node scripts/fetch-app-data.mjs --check"
   },
   "dependencies": {
     "lucide-react": "^1.39.0",

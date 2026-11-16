@@ -1,7 +1,18 @@
-import type { EligibilityProfile, ListingInput, PolicyMeta, PolicyResult, PolicyStatus } from "./types";
+import type { CheckOutcome, EligibilityProfile, ListingInput, PolicyMeta, PolicyResult, PolicyStatus } from "./types";
 import { POLICY_RULES } from "./policy-rules";
 import { isWithinWindow } from "./date";
 import { estimatePolicyAmount } from "./benefit";
+
+/**
+ * 2층 규칙(lib/policy-rules.ts)이 아직 없는 정책 — Supabase 에만 등록한 새 정책 (2026-11-16 부터).
+ * 확인 항목 0개를 '모두 통과'로 읽으면 '예상적용'이라는 거짓말이 된다. 확인할 것이 남았다고 말한다.
+ */
+const NO_RULES_CHECK: CheckOutcome = {
+  key: "noRules",
+  label: "세부 자격 조건",
+  result: "unknown",
+  howToConfirm: "공고 원문의 지원 대상 · 제외 대상을 확인하세요",
+};
 
 /** 정책 하나를 판정한다. 판정과 금액 계산은 모두 결정론적 규칙으로만 수행한다 (F3-1, F3-2). */
 export function evaluatePolicy(
@@ -27,7 +38,7 @@ export function evaluatePolicy(
   }
 
   const ruleFn = POLICY_RULES[policy.id];
-  const checks = ruleFn ? ruleFn(profile, asOfISO) : [];
+  const checks = ruleFn ? ruleFn(profile, asOfISO) : [NO_RULES_CHECK];
 
   const failed = checks.filter((c) => c.result === "fail");
   const unknown = checks.filter((c) => c.result === "unknown");
