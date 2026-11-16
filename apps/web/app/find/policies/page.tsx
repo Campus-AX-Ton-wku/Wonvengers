@@ -5,7 +5,7 @@ import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import ConsultCenters, { centersFor } from "@/app/find/ConsultCenters";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, ResetAnswersButton, TopBar } from "@/app/components";
+import { AppShell, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
@@ -14,7 +14,6 @@ import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
-import LoginSheet from "./LoginSheet";
 
 /**
  * 1층 · 발견 — 질문 결과 목록.
@@ -196,7 +195,14 @@ export default function FindPoliciesPage() {
         </>
       )}
       </main>
-      {loginOpen && <LoginSheet onClose={() => setLoginOpen(false)} />}
+      {loginOpen && (
+        <LoginSheet
+          title="로그인하고 계산해 볼까요?"
+          description="카카오로 3초 만에 로그인하면 지원받은 뒤 내 주거비를 계산하고, 다른 기기에서도 이어 볼 수 있어요."
+          next="/calculate"
+          onClose={() => setLoginOpen(false)}
+        />
+      )}
     </AppShell>
   );
 }

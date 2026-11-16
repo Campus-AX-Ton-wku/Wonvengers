@@ -10,6 +10,7 @@ import {
   ContactInfo,
   Disclosure,
   LinkButton,
+  SaveButton,
   StatusBadge,
   StickyBottomAction,
   TopBar,
@@ -152,6 +153,7 @@ export default function PolicyDetail({ id }: { id: string }) {
           <div className="mt-0.5 flex items-start justify-between gap-3">
             <h1 className="text-2xl font-extrabold leading-[34px] text-ink-900">{policy.name}</h1>
             <div className="flex min-h-6 shrink-0 items-center pt-1">
+              <SaveButton policyId={policy.id} policyName={policy.name} />
               {status && (
                 <StatusBadge tone={CARD_STATUS_BADGE[status].tone} icon={CARD_STATUS_BADGE[status].icon}>
                   {status}
