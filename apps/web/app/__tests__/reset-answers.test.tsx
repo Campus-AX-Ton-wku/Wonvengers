@@ -175,8 +175,11 @@ describe("로그인 상태", () => {
       profile: payload.profile,
       declared: payload.declared,
       checklists: payload.checklists,
-      saved: payload.saved,
-      documentChecks: payload.documentChecks,
+      // 비어 있는 찜 필드는 본문에서 빠진다 — 서버가 빈 값으로 읽는다
+      saved: payload.saved ?? [],
+      documentChecks: payload.documentChecks ?? {},
     }).toEqual(emptyContent());
+    expect(payload).not.toHaveProperty("saved");
+    expect(payload).not.toHaveProperty("documentChecks");
   });
 });

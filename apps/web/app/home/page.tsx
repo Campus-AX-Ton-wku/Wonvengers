@@ -7,7 +7,7 @@ import { AppShell, LinkButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_SM } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
-import { todayISO } from "@/lib/date";
+import { seoulTodayISO } from "@/lib/date";
 import { answerLine } from "@/lib/discovery";
 import { availableCount, savedCards } from "@/lib/home";
 import { formatKoreanMoney } from "@/lib/money";
@@ -36,7 +36,7 @@ export default function HomePage() {
       return;
     }
     const read = () => {
-      const t = todayISO();
+      const t = seoulTodayISO();
       setToday(t);
       setAnswers(loadAnswers());
       setSaved(loadSaved());
