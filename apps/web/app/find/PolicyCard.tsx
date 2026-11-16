@@ -4,7 +4,8 @@ import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate } from "@/lib/date";
 import { CARD_STATUS_BADGE, StatusBadge } from "@/app/components";
-import { ChevronRight, ICON_MD } from "@/app/components/icons";
+import { ChevronRight, ICON_MD, ShieldCheck } from "@/app/components/icons";
+import { verificationBadge } from "@/lib/verification";
 
 /**
  * 1층 정책 카드 — 목록의 한 줄.
@@ -62,6 +63,8 @@ export default function PolicyCard({
   const ceiling = benefitCeiling(policy);
   const note = statusNote(status, policy, result);
   const badge = CARD_STATUS_BADGE[status];
+  // 팀이 원문과 대조해 맞다고 확인한 값이면 배지를 하나 더 붙인다 (lib/verification.ts).
+  const verified = verificationBadge(policy);
 
   return (
     /*
@@ -76,9 +79,16 @@ export default function PolicyCard({
       className="focus-ring block rounded-card bg-surface px-5 py-5 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
     >
       {/* 색만으로 상태를 말하지 않는다 — 배지마다 아이콘이 하나씩 붙는다. */}
-      <StatusBadge tone={badge.tone} icon={badge.icon}>
-        {status}
-      </StatusBadge>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatusBadge tone={badge.tone} icon={badge.icon}>
+          {status}
+        </StatusBadge>
+        {verified && (
+          <StatusBadge tone="info" icon={ShieldCheck}>
+            {verified.label}
+          </StatusBadge>
+        )}
+      </div>
 
       <h3 className="mt-2.5 text-base font-bold leading-snug text-ink-900">{policy.name}</h3>
       <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>

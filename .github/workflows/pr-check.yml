@@ -1,0 +1,70 @@
+# PR 검사 — develop · main 으로 가는 PR 마다 앱과 Supabase 검사를 자동으로 돌린다.
+#
+# 왜: 2026-11-15 에 앱(익산시만 남기기 · 새 혜택 · 검수 배지)과 Supabase(원문 · 검수 기록) 작업을
+# 여러 PR 로 나눠 올렸다. 그 사이 develop 이 바뀌면 합친 결과가 깨질 수 있다. GitHub 은 PR 을
+# develop(또는 main) 에 '합친 상태'로 이 검사를 돌리므로, 겹쳐서 깨지면 합치기 전에 빨간불이 뜬다.
+# 자세한 순서와 주의: docs/기획/2026-11-15-합치기-순서와-주의.md
+#
+# 이 검사를 '통과해야 합칠 수 있게' 하려면 저장소 관리자가 Settings → Branches(또는 Rules) 에서
+# develop · main 의 필수 상태 검사(required status checks)로 아래 두 작업을 지정한다.
+
+name: PR 검사
+
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch: # 손으로도 돌릴 수 있게
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: 앱 — 타입 · 테스트 · 빌드
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" # 화면 캡처 스크립트용이라 검사에는 브라우저가 필요 없다
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - name: 타입 검사
+        run: node node_modules/typescript/bin/tsc --noEmit
+      - name: 테스트
+        run: node node_modules/vitest/vitest.mjs run
+      - name: 빌드
+        run: node node_modules/next/dist/bin/next build
+
+  supabase:
+    name: Supabase — 설계 · seed · 원문 검사
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/tests
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: supabase/tests/package-lock.json
+      - run: npm ci
+      - name: 표 설계 (현재 앱 데이터로 넣어 보기)
+        run: node redesign.test.mjs
+      - name: seed (11/12 보관본 기준)
+        run: node seed.test.mjs
+      - name: API 원문 (11/12)
+        run: node raw.test.mjs
+      - name: 공고문 원문 (11/14)
+        run: node notice.test.mjs

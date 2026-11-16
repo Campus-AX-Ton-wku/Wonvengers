@@ -23,6 +23,12 @@ const 익산_대학생: ResolvedAnswers = {
   housingType: "월세",
 };
 
+/**
+ * 모든 정책이 '해당 없음'인 답. 익산 전입장려금은 지역 말고는 조건이 없어서 익산 사람은
+ * 누구든 후보가 된다 — 그래서 목표 지역 밖(전주) 60세 대학생 월세로 만든다.
+ */
+const 전부_해당없음: ResolvedAnswers = { ...익산_대학생, age: 60, region: "전북특별자치도 전주시" };
+
 // 질문 화면과 목록 화면이 같은 분류를 써야 한다. 두 곳에서 따로 계산하면
 // CTA 의 건수와 목록의 건수가 어긋난다.
 describe("groupPolicies", () => {
@@ -33,9 +39,12 @@ describe("groupPolicies", () => {
 
   it("익산 23세 월세 거주 대학생·소득 1구간의 분류", () => {
     const g = groupPolicies(policies, 익산_대학생);
+    // 익산 전입 지원 2건(2026-11-15 추가)은 나이·소득 조건이 없어 대학생이면 가능성 있음이다.
     expect(g.가능.map((t) => t.policy.id)).toEqual([
       "moland-youth-rent-support",
       "iksan-newcomer-moving-cost-support",
+      "iksan-move-in-household-incentive",
+      "iksan-move-in-student-support",
     ]);
     expect(g.확인.map((t) => t.policy.id)).toEqual(["youth-housing-benefit-split-payment"]);
     // 보증료 지원은 전세 계약자만 받는다 — 월세 거주자에게는 해당 없음이다.
@@ -43,36 +52,13 @@ describe("groupPolicies", () => {
       "iksan-youth-rent-support",
       "jeonbuk-youth-settlement-support",
       "jeonse-return-guarantee-fee-subsidy",
-      "seoul-youth-moving-cost-support",
-      "ulsan-youth-household-housing-cost-support",
-      "incheon-youth-monthly-rent-support-35to39",
-      "incheon-brokerage-fee-1000won",
-      "jeju-youth-hope-charge-monthly-rent-35to39",
-      "jeju-brokerage-fee-support",
-      "jeju-youth-moving-cost-support",
-      "busan-youth-brokerage-moving-cost-support",
-      "sejong-youth-rent-support",
-      "incheon-junggu-moving-cost-support",
-      "incheon-donggu-welcome-pay",
-      "gwangju-seogu-brokerage-fee-1000won",
-      "incheon-yeongjonggu-moving-cost-support",
-      "pyeongtaek-youth-rent-support",
-      "eumseong-youth-rent-support",
-      "gumi-youth-rent-support",
-      "goryeong-youth-rent-support",
-      "incheon-jemulpogu-welcome-pay",
-      "goesan-youth-worker-farmer-housing-cost-support",
-      "hadong-youth-housing-cost-support",
-      "sancheong-youth-rent-support",
-      "hapcheon-youth-rent-support",
-      "tongyeong-youth-settlement-support",
-      "changwon-youth-rent-support",
-      "yongin-brokerage-moving-cost-support",
-      "namhae-youth-rent-support",
-      "daejeon-youth-rent-support",
-      "ulleung-youth-rent-support",
-      "gangjin-youth-worker-rent-support",
     ]);
+  });
+
+  it("주소전입 학생 지원은 대학생만 — 재직자에게는 해당 없음, 전입장려금은 그대로 가능성 있음", () => {
+    const g = groupPolicies(policies, { ...익산_대학생, status: "재직" });
+    expect(g.해당없음.map((t) => t.policy.id)).toContain("iksan-move-in-student-support");
+    expect(g.가능.map((t) => t.policy.id)).toContain("iksan-move-in-household-incentive");
   });
 
   it("아무것도 답하지 않으면 해당 없음이 하나도 없다", () => {
@@ -89,7 +75,7 @@ describe("candidateCount", () => {
   });
 
   it("해당 없음만 남으면 0건이다", () => {
-    const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
+    const g = groupPolicies(policies, 전부_해당없음);
     expect(candidateCount(g)).toBe(0);
   });
 });
@@ -114,9 +100,10 @@ describe("answerSummary", () => {
     ]);
   });
 
-  it("지역은 선택지와 같은 어휘의 짧은 이름을 쓴다", () => {
-    const 전주 = answerSummary({ ...익산_대학생, region: "전북특별자치도 전주시" }, brackets);
-    expect(전주[1]).toBe("전주시");
+  it("지역은 선택지와 같은 어휘의 짧은 이름을 쓰고, 선택지에 없는 지역은 모름으로 둔다", () => {
+    expect(answerSummary(익산_대학생, brackets)[1]).toBe("익산시");
+    // 목표 지역을 익산시로 줄였다(2026-11-15). 예전에 저장된 다른 지역은 지어내지 않는다.
+    expect(answerSummary({ ...익산_대학생, region: "전북특별자치도 전주시" }, brackets)[1]).toBe("지역 모름");
   });
 
   it("소득 구간 번호가 표에 없으면 '소득 모름'으로 둔다", () => {
@@ -157,7 +144,7 @@ describe("applicationOpenCount", () => {
   });
 
   it("'해당 없음' 은 접수 중이어도 세지 않는다", () => {
-    const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
+    const g = groupPolicies(policies, 전부_해당없음);
     expect(candidateCount(g)).toBe(0);
     expect(applicationOpenCount(g, "2026-04-01")).toBe(0);
   });
@@ -207,7 +194,7 @@ describe("splitByApplicationWindow", () => {
   });
 
   it("'해당 없음' 은 어느 쪽에도 넣지 않는다", () => {
-    const g = groupPolicies(policies, { ...익산_대학생, age: 60 });
+    const g = groupPolicies(policies, 전부_해당없음);
     const { 신청가능, 마감 } = splitByApplicationWindow(g, "2026-04-01");
 
     expect(신청가능).toHaveLength(0);
