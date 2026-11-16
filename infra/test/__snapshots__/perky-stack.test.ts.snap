@@ -706,6 +706,16 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Lambda::Function",
     },
+    "NotifierFunctionEventInvokeConfigF939B64E": {
+      "Properties": {
+        "FunctionName": {
+          "Ref": "NotifierFunctionEB33F81B",
+        },
+        "MaximumRetryAttempts": 0,
+        "Qualifier": "$LATEST",
+      },
+      "Type": "AWS::Lambda::EventInvokeConfig",
+    },
     "NotifierFunctionServiceRole124F1226": {
       "Properties": {
         "AssumeRolePolicyDocument": {

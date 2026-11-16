@@ -121,7 +121,7 @@ describe("HTTP API", () => {
     });
   });
 
-  it("세 경로 모두 JWT authorizer 뒤에 있다", () => {
+  it("다섯 경로 모두 JWT authorizer 뒤에 있다", () => {
     const routes = Object.values(template.findResources("AWS::ApiGatewayV2::Route")).map(
       (r) => r.Properties as { RouteKey: string; AuthorizationType: string }
     );
@@ -252,6 +252,13 @@ describe("새 정책 알림", () => {
 
   it("시연 때 손으로 부를 함수 이름을 내보낸다", () => {
     template.hasOutput("NotifierFunctionName", {});
+  });
+
+  it("알림 Lambda 는 자동 재시도를 하지 않는다 — 이미 보낸 알림이 또 가지 않게", () => {
+    template.hasResourceProperties("AWS::Lambda::EventInvokeConfig", {
+      MaximumRetryAttempts: 0,
+      FunctionName: { Ref: Match.stringLikeRegexp("^NotifierFunction") },
+    });
   });
 });
 

@@ -238,6 +238,8 @@ export class PerkyStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       memorySize: 256,
       timeout: Duration.seconds(60),
+      // 실패한 회차는 다음 정시에 다시 본다 — Lambda 자동 재시도는 이미 보낸 알림을 또 보낸다.
+      retryAttempts: 0,
       logGroup: notifierLogs,
       environment: {
         PUSH_TABLE_NAME: pushTable.tableName,
