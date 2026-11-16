@@ -87,15 +87,15 @@ export default function HomePage() {
             <>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-base font-bold text-ink-900">지금 받을 수 있는 지원금 {count}건</p>
-                <Link href="/find/policies" className="focus-ring min-h-11 text-sm font-bold text-brand-700">목록 보기</Link>
+                <Link href="/find/policies" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">목록 보기</Link>
               </div>
               {costs ? (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-ink-700">지원받으면 {formatKoreanMoney(costs.nominal)} → <strong className="text-accent-600">{formatKoreanMoney(costs.final)}</strong></p>
-                  <Link href="/result" className="focus-ring min-h-11 text-sm font-bold text-brand-700">결과 보기</Link>
+                  <Link href="/result" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">결과 보기</Link>
                 </div>
               ) : (
-                <Link href="/calculate" className="focus-ring min-h-11 text-sm font-bold text-brand-700">내 월세 계산하기</Link>
+                <Link href="/calculate" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">내 월세 계산하기</Link>
               )}
             </>
           )}
@@ -106,7 +106,7 @@ export default function HomePage() {
           {cards.length === 0 ? (
             <div className="flex flex-col gap-2 rounded-card bg-ink-50 p-5">
               <p className="text-sm text-ink-600">아직 찜한 지원금이 없어요</p>
-              <Link href="/find/policies" className="focus-ring min-h-11 text-sm font-bold text-brand-700">지원금 찾기</Link>
+              <Link href="/find/policies" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">지원금 찾기</Link>
             </div>
           ) : (
             <ul className="flex flex-col gap-3">

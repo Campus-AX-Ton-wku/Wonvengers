@@ -9,7 +9,14 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { resetAuthForTests } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveSavedList } from "@/lib/storage";
+import { saveAnswers, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
+import policiesJson from "@/data/policies.json";
+import { todayISO } from "@/lib/date";
+import { formatKoreanMoney } from "@/lib/money";
+import { policiesForRegion } from "@/lib/region";
+import { buildCalculationSummary } from "@/lib/summary";
+import type { PolicyMeta } from "@/lib/types";
+import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import { birthDateForAge } from "@/lib/__tests__/fixtures";
 import { enableLogin, signInAs } from "@/lib/__tests__/auth-fixtures";
 
@@ -68,5 +75,18 @@ describe("/home", () => {
     expect(card.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment/prepare");
     expect(within(card).getByText("상시")).toBeTruthy();
     expect(within(card).getByText("확인 0/3")).toBeTruthy();
+  });
+
+  it("계산이 끝났으면 지원 전후 월세와 결과 보기, 계산하기 링크는 숨긴다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    const listing = makeListing({ region: "전북특별자치도 익산시" });
+    const profile = makeProfile();
+    saveListing(listing); saveProfile(profile);
+    const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, todayISO());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    expect(summary.textContent).toContain(`지원받으면 ${formatKoreanMoney(s.nominalTotalCost)} → ${formatKoreanMoney(s.finalEstimatedHousingCost)}`);
+    expect(within(summary).getByRole("link", { name: "결과 보기" }).getAttribute("href")).toBe("/result");
+    expect(within(summary).queryByRole("link", { name: "내 월세 계산하기" })).toBeNull();
   });
 });
