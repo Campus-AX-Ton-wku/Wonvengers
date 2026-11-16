@@ -13,6 +13,28 @@ describe("validatePushSubscription — 웹과 API 가 같은 규칙", () => {
     expect(validatePushSubscription({ ...ok, endpoint: "https://" }).ok).toBe(false);
   });
 
+  it("푸시 서비스 호스트만 받는다 — 로컬·IP·다른 호스트·사용자 정보 포함은 거부", () => {
+    for (const endpoint of [
+      "https://fcm.googleapis.com/fcm/send/abc",
+      "https://web.push.apple.com/QAbc",
+      "https://updates.push.services.mozilla.com/wpush/v2/x",
+      "https://wns2-par02p.notify.windows.com/w/?token=x",
+    ]) {
+      expect(validatePushSubscription({ ...ok, endpoint }).ok).toBe(true);
+    }
+    for (const endpoint of [
+      "https://localhost/x",
+      "https://127.0.0.1/x",
+      "https://evil.example/x",
+      "https://fcm.googleapis.com.evil.com/x",
+      "https://evilfcm.googleapis.com/x",
+      "https://user:pw@fcm.googleapis.com/x",
+    ]) {
+      expect(validatePushSubscription({ ...ok, endpoint })).toEqual({ ok: false, error: "endpoint" });
+      expect(validatePushEndpoint({ endpoint })).toEqual({ ok: false, error: "endpoint" });
+    }
+  });
+
   it("주소 길이 상한", () => {
     const long = `https://push.example/${"a".repeat(MAX_ENDPOINT_LENGTH)}`;
     expect(validatePushSubscription({ ...ok, endpoint: long })).toEqual({ ok: false, error: "endpoint" });

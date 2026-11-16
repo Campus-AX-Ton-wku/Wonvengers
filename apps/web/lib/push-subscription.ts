@@ -13,6 +13,9 @@ export interface PushSubscriptionBody {
 export const MAX_PUSH_BODY_BYTES = 4096;
 export const MAX_ENDPOINT_LENGTH = 1000;
 
+/** 브라우저별 푸시 서비스: 크롬·안드로이드·엣지 일부=FCM, 사파리·아이폰=Apple, 엣지=WNS, 파이어폭스=Mozilla. 알림 서버가 이 주소로 POST 하므로 다른 호스트는 받지 않는다. */
+export const PUSH_SERVICE_HOSTS = ["fcm.googleapis.com", "push.apple.com", "notify.windows.com", "push.services.mozilla.com"] as const;
+
 const BASE64URL = /^[A-Za-z0-9_-]+={0,2}$/;
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
@@ -26,7 +29,10 @@ function unknownKey(obj: Record<string, unknown>, allowed: readonly string[], pr
 function isEndpoint(v: unknown): v is string {
   if (typeof v !== "string" || !v.startsWith("https://") || v.length > MAX_ENDPOINT_LENGTH) return false;
   try {
-    return new URL(v).hostname !== "";
+    const url = new URL(v);
+    if (url.username !== "" || url.password !== "") return false;
+    const host = url.hostname;
+    return PUSH_SERVICE_HOSTS.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
   } catch {
     return false;
   }
