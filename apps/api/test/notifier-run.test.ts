@@ -3,8 +3,7 @@ import { runNotifier, type NotifierDeps } from "../src/notifier/run";
 import type { PushMessage } from "../src/notifier/plan";
 import type { StoredDevice } from "../src/push-store";
 import type { StoredItem } from "../src/store";
-import { validPayload } from "./fixtures";
-import { policy } from "./fixtures";
+import { policy, validPayload } from "./fixtures";
 
 const DAY = new Date("2026-11-16T01:00:00Z"); // 서울 10시
 const NIGHT = new Date("2026-11-16T14:00:00Z"); // 서울 23시
@@ -124,19 +123,26 @@ describe("runNotifier — 보내기", () => {
     expect(t.announced()).toEqual(new Set(["fresh"]));
   });
 
-  it("저장된 답이 없거나 · 동의 버전이 없거나 · 지역이 없거나 · 해당 없으면 보내지 않는다", async () => {
-    const workersOnly = policy({ id: "w", discovery: { ...fresh.discovery, statuses: ["재직"] } });
+  it("저장된 답이 없거나 · 동의 버전이 없거나 · 지역이 없으면 보내지 않는다 — 조건이 맞는 정책이어도", async () => {
     const t = setup({
       announced: [],
-      published: [workersOnly],
-      devices: [device("none", 1), device("noconsent", 1), device("noregion", 1), device("student", 1)],
+      published: [fresh],
+      devices: [device("none", 1), device("noconsent", 1), device("noregion", 1), device("ok", 1)],
       users: {
         none: null,
         noconsent: userItem({ consentVersion: "" as never }),
         noregion: userItem({ answers: { values: { ...validPayload().answers.values, region: null }, answeredKeys: [] } }),
-        student: userItem(), // 대학생 → 재직 전용 정책은 해당 없음
+        ok: userItem(),
       },
     });
+    const summary = await runNotifier(t.deps);
+    expect(t.sent.map((s) => s.device)).toEqual(["ok-d1"]);
+    expect(summary.recipients).toBe(1);
+  });
+
+  it("해당 없음이면 보내지 않는다", async () => {
+    const workersOnly = policy({ id: "w", discovery: { ...fresh.discovery, statuses: ["재직"] } });
+    const t = setup({ announced: [], published: [workersOnly], devices: [device("student", 1)], users: { student: userItem() } });
     const summary = await runNotifier(t.deps);
     expect(t.sent).toEqual([]);
     expect(summary.recipients).toBe(0);

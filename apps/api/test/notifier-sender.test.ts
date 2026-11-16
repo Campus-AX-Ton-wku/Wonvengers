@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MESSAGE_TTL_SECONDS, createSender } from "../src/notifier/sender";
+import { MESSAGE_TTL_SECONDS, SEND_TIMEOUT_MS, createSender } from "../src/notifier/sender";
 import type { StoredDevice } from "../src/push-store";
 
 const device: StoredDevice = {
@@ -19,9 +19,10 @@ describe("createSender — web-push 감싸기", () => {
     expect(lib.sendNotification).toHaveBeenCalledWith(
       { endpoint: device.endpoint, keys: device.keys },
       JSON.stringify(message),
-      { TTL: MESSAGE_TTL_SECONDS, vapidDetails: vapid }
+      { TTL: MESSAGE_TTL_SECONDS, timeout: SEND_TIMEOUT_MS, vapidDetails: vapid }
     );
     expect(MESSAGE_TTL_SECONDS).toBe(43200);
+    expect(SEND_TIMEOUT_MS).toBe(10000);
   });
 
   it("404 · 410 은 끊긴 구독(gone), 그 밖의 오류는 failed — 던지지 않는다", async () => {
