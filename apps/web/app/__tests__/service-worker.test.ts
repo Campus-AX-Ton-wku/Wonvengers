@@ -44,8 +44,15 @@ describe("public/sw.js — 알림만 다루는 서비스 워커", () => {
 
   it("본문이 깨졌거나 주소가 사이트 밖이면 기본값 — 다른 사이트로 보내지 않는다", async () => {
     const { self, handlers } = loadWorker();
-    await dispatch(handlers.push, { data: { json: () => ({ title: "t", url: "https://evil.example/" }) } });
-    expect(self.registration.showNotification).toHaveBeenLastCalledWith("t", expect.objectContaining({ data: { url: "/" } }));
+    for (const bad of ["https://evil.example/", "//evil.example/x", "/\\evil.example/x", "/\t/evil.example/x"]) {
+      await dispatch(handlers.push, { data: { json: () => ({ title: "t", url: bad }) } });
+      expect(self.registration.showNotification).toHaveBeenLastCalledWith("t", expect.objectContaining({ data: { url: "/" } }));
+    }
+    await dispatch(handlers.push, { data: { json: () => ({ title: "t", url: "/find/policies/a?x=1#y" }) } });
+    expect(self.registration.showNotification).toHaveBeenLastCalledWith(
+      "t",
+      expect.objectContaining({ data: { url: "/find/policies/a?x=1#y" } })
+    );
     await dispatch(handlers.push, { data: { json: () => { throw new Error("bad"); } } });
     expect(self.registration.showNotification).toHaveBeenLastCalledWith("Perky", expect.objectContaining({ body: "" }));
   });
@@ -63,5 +70,9 @@ describe("public/sw.js — 알림만 다루는 서비스 워커", () => {
     expect(win.focus).toHaveBeenCalled();
     expect(win.navigate).toHaveBeenCalledWith("https://wonvengers.vercel.app/find/policies");
     expect(existing.self.clients.openWindow).not.toHaveBeenCalled();
+
+    const outside = loadWorker();
+    await dispatch(outside.handlers.notificationclick, { notification: { close, data: { url: "https://evil.example/" } } });
+    expect(outside.self.clients.openWindow).toHaveBeenCalledWith("https://wonvengers.vercel.app/");
   });
 });

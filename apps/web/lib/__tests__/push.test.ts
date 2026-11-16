@@ -162,10 +162,13 @@ describe("로그아웃 · 탈퇴용", () => {
     installPush({ permission: "granted", subscribed: true });
     vi.mocked(deletePushRemote).mockImplementationOnce(() => new Promise(() => {}));
     vi.useFakeTimers();
-    const done = disablePushQuietly(3000);
-    await vi.advanceTimersByTimeAsync(3000);
-    await expect(done).resolves.toBeUndefined();
-    vi.useRealTimers();
+    try {
+      const done = disablePushQuietly(3000);
+      await vi.advanceTimersByTimeAsync(3000);
+      await expect(done).resolves.toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("unsubscribeThisDevice — 서버는 부르지 않고 기기 구독만 끊는다", async () => {

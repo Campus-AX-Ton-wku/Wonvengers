@@ -20,8 +20,16 @@ self.addEventListener("push", (event) => {
     data = {};
   }
   const title = typeof data.title === "string" && data.title ? data.title : "Perky";
-  // 사이트 안 주소만 연다 — "/" 로 시작하고 "//" 가 아닌 것
-  const url = typeof data.url === "string" && data.url.startsWith("/") && !data.url.startsWith("//") ? data.url : "/";
+  // 사이트 안 주소만 연다 — 해석한 뒤 출처(origin)를 비교한다. "/\\evil" 같은 우회를 막는다
+  let url = "/";
+  if (typeof data.url === "string") {
+    try {
+      const resolved = new URL(data.url, self.location.origin);
+      if (resolved.origin === self.location.origin) url = resolved.pathname + resolved.search + resolved.hash;
+    } catch (_) {
+      url = "/";
+    }
+  }
   // iOS 는 푸시마다 알림을 띄워야 권한이 유지된다 — 항상 띄운다
   event.waitUntil(
     self.registration.showNotification(title, {
@@ -36,7 +44,8 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = (event.notification.data && event.notification.data.url) || "/";
-  const target = new URL(path, self.location.origin).href;
+  let target = new URL(path, self.location.origin).href;
+  if (new URL(target).origin !== self.location.origin) target = self.location.origin + "/";
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
