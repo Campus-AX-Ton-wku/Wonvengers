@@ -4,6 +4,8 @@ import type { AccountService } from "../src/cognito";
 import { KakaoUnlinkError, type KakaoUnlinker } from "../src/kakao";
 import type { LogEntry } from "../src/log";
 import type { PutOutcome, StoredItem, UserDataStore } from "../src/store";
+import type { PushStore, StoredDevice } from "../src/push-store";
+import type { PushSubscriptionBody } from "../../web/lib/push-subscription";
 import type { UserDataPayload } from "../../web/lib/user-data";
 import { A, B, apiEvent, validPayload } from "./fixtures";
 
@@ -27,10 +29,38 @@ class MemoryStore implements UserDataStore {
   }
 }
 
+/** 구독 저장소 대역 — 호출 순서를 calls 에 남긴다. */
+class MemoryPushStore implements PushStore {
+  readonly subs = new Map<string, PushSubscriptionBody[]>();
+  constructor(private readonly calls: string[]) {}
+  async put(userId: string, sub: PushSubscriptionBody) {
+    this.calls.push(`push.put:${userId}`);
+    const rest = (this.subs.get(userId) ?? []).filter((s) => s.endpoint !== sub.endpoint);
+    this.subs.set(userId, [...rest, sub]);
+  }
+  async delete(userId: string, endpoint: string) {
+    this.calls.push(`push.delete:${userId}`);
+    this.subs.set(userId, (this.subs.get(userId) ?? []).filter((s) => s.endpoint !== endpoint));
+  }
+  async deleteAll(userId: string) {
+    this.calls.push(`push.deleteAll:${userId}`);
+    this.subs.delete(userId);
+  }
+  async listDevices(): Promise<StoredDevice[]> {
+    return [];
+  }
+  async deleteDevice() {}
+  async getAnnounced() {
+    return null;
+  }
+  async saveAnnounced() {}
+}
+
 function setup(kakaoImpl?: KakaoUnlinker["unlink"]) {
   const calls: string[] = [];
   const logs: LogEntry[] = [];
   const store = new MemoryStore(calls);
+  const push = new MemoryPushStore(calls);
   const accounts: AccountService = {
     kakaoUserId: vi.fn(async (username: string) => {
       calls.push(`kakaoUserId:${username}`);
@@ -52,12 +82,13 @@ function setup(kakaoImpl?: KakaoUnlinker["unlink"]) {
   let second = 0;
   const deps: Deps = {
     store,
+    push,
     accounts,
     kakao,
     now: () => new Date(Date.UTC(2026, 10, 4, 9, 0, second++)),
     log: (entry) => logs.push(entry),
   };
-  return { deps, store, calls, logs, accounts, kakao };
+  return { deps, store, push, calls, logs, accounts, kakao };
 }
 
 const put = (claims: Record<string, string> | null, body: unknown, opts: { raw?: string; base64?: boolean } = {}) =>
@@ -184,7 +215,7 @@ describe("낙관적 동시성 — 409", () => {
 });
 
 describe("DELETE /me — 회원 탈퇴 순서", () => {
-  it("카카오 연결 끊기 → 내 항목 삭제 → Cognito 사용자 삭제", async () => {
+  it("카카오 연결 끊기 → 내 항목 삭제 → 내 알림 구독 삭제 → Cognito 사용자 삭제", async () => {
     const { deps, calls } = setup();
     await route(put(A, { data: validPayload(), baseUpdatedAt: null }), deps);
     const res = await route(apiEvent("DELETE /me", A), deps);
@@ -193,6 +224,7 @@ describe("DELETE /me — 회원 탈퇴 순서", () => {
       "kakaoUserId:kakao_1001",
       "unlink:1001",
       `store.delete:${A.sub}`,
+      `push.deleteAll:${A.sub}`,
       "deleteUser:kakao_1001",
     ]);
   });
@@ -223,6 +255,49 @@ describe("DELETE /me — 회원 탈퇴 순서", () => {
     const res = await route(apiEvent("DELETE /me", { sub: A.sub }), deps);
     expect(res.statusCode).toBe(401);
     expect(kakao.unlink).not.toHaveBeenCalled();
+  });
+});
+
+describe("PUT·DELETE /me/push — 알림 구독", () => {
+  const sub = { endpoint: "https://web.push.apple.com/QAbc", keys: { p256dh: "BPx", auth: "aB" } };
+
+  it("켜면 204 이고 토큰 sub 자리에 저장한다", async () => {
+    const { deps, push } = setup();
+    const res = await route(apiEvent("PUT /me/push", A, sub), deps);
+    expect(res.statusCode).toBe(204);
+    expect(push.subs.get(A.sub)).toEqual([sub]);
+    expect(push.subs.has(B.sub)).toBe(false);
+  });
+
+  it("끄면 204 이고 그 기기만 지운다", async () => {
+    const { deps, push } = setup();
+    await route(apiEvent("PUT /me/push", A, sub), deps);
+    await route(apiEvent("PUT /me/push", A, { ...sub, endpoint: "https://fcm.googleapis.com/x" }), deps);
+    const res = await route(apiEvent("DELETE /me/push", A, { endpoint: sub.endpoint }), deps);
+    expect(res.statusCode).toBe(204);
+    expect(push.subs.get(A.sub)?.map((s) => s.endpoint)).toEqual(["https://fcm.googleapis.com/x"]);
+  });
+
+  it("형식이 틀리면 400 과 경로 — 본문에 userId 를 넣어도 거부", async () => {
+    const { deps, push } = setup();
+    const res = await route(apiEvent("PUT /me/push", A, { ...sub, userId: B.sub }), deps);
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body!)).toEqual({ error: "invalid", path: "userId" });
+    expect(push.subs.size).toBe(0);
+  });
+
+  it("JSON 이 아니면 400 invalid_json, 4096바이트를 넘으면 413", async () => {
+    const { deps } = setup();
+    expect((await route(apiEvent("PUT /me/push", A, undefined, { raw: "{" }), deps)).statusCode).toBe(400);
+    const big = { ...sub, endpoint: `https://push.example/${"a".repeat(5000)}` };
+    expect((await route(apiEvent("PUT /me/push", A, big), deps)).statusCode).toBe(413);
+  });
+
+  it("토큰이 없으면 401 이고 저장소를 건드리지 않는다", async () => {
+    const { deps, calls } = setup();
+    expect((await route(apiEvent("PUT /me/push", null, sub), deps)).statusCode).toBe(401);
+    expect((await route(apiEvent("DELETE /me/push", null, { endpoint: sub.endpoint }), deps)).statusCode).toBe(401);
+    expect(calls).toEqual([]);
   });
 });
 

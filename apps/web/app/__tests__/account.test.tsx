@@ -144,3 +144,18 @@ describe("/account (설계 '화면' 5)", () => {
     expect(button.disabled).toBe(true);
   });
 });
+
+describe("알림 칸", () => {
+  it("공개 키가 없는 빌드에서는 그리지 않는다", async () => {
+    로그인한채로();
+    await screen.findByRole("heading", { level: 1, name: "내 계정" });
+    expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
+  });
+
+  it("공개 키가 있으면 알림 칸이 보인다", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
+    로그인한채로();
+    expect(await screen.findByRole("heading", { level: 2, name: "알림" })).toBeTruthy();
+  });
+});
+

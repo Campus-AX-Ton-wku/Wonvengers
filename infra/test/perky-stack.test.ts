@@ -1,7 +1,7 @@
 import { App } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
 import { describe, expect, it } from "vitest";
-import { ACCOUNT, KAKAO_OIDC, REGION, SSM_PARAMS, TABLE_NAME } from "../lib/config";
+import { ACCOUNT, KAKAO_OIDC, NOTIFY_CRON, POLICIES_URL, PUSH_TABLE_NAME, REGION, SSM_PARAMS, TABLE_NAME, VAPID_SUBJECT } from "../lib/config";
 import { PerkyStack } from "../lib/perky-stack";
 
 /** 묶기(esbuild)는 건너뛴다 — 이 테스트는 템플릿만 본다. 실제 묶기는 `cdk synth` 가 한다. */
@@ -15,6 +15,14 @@ function synth(region: string = REGION): Template {
 
 const template = synth();
 type Statement = { Action: string | string[]; Resource: unknown };
+
+/** 그 역할(논리 id 앞부분)에 붙은 정책 문장. 함수가 둘이라 역할별로 본다. */
+function statementsOf(rolePrefix: string): Statement[] {
+  return Object.values(template.findResources("AWS::IAM::Policy"))
+    .filter((p) => JSON.stringify(p.Properties.Roles).includes(rolePrefix))
+    .flatMap((p) => p.Properties.PolicyDocument.Statement as Statement[]);
+}
+const actionsOf = (rolePrefix: string) => [...new Set(statementsOf(rolePrefix).flatMap((s) => [s.Action].flat()))].sort();
 
 describe("리전 고정", () => {
   it("서울이 아니면 스택을 만들지 않는다", () => {
@@ -113,11 +121,17 @@ describe("HTTP API", () => {
     });
   });
 
-  it("세 경로 모두 JWT authorizer 뒤에 있다", () => {
+  it("다섯 경로 모두 JWT authorizer 뒤에 있다", () => {
     const routes = Object.values(template.findResources("AWS::ApiGatewayV2::Route")).map(
       (r) => r.Properties as { RouteKey: string; AuthorizationType: string }
     );
-    expect(routes.map((r) => r.RouteKey).sort()).toEqual(["DELETE /me", "GET /me/data", "PUT /me/data"]);
+    expect(routes.map((r) => r.RouteKey).sort()).toEqual([
+      "DELETE /me",
+      "DELETE /me/push",
+      "GET /me/data",
+      "PUT /me/data",
+      "PUT /me/push",
+    ]);
     for (const r of routes) expect(r.AuthorizationType).toBe("JWT");
   });
 
@@ -139,14 +153,14 @@ describe("HTTP API", () => {
 });
 
 describe("Lambda — 최소 권한", () => {
-  it("함수는 하나, Node 22 arm64, 환경변수에는 이름만(비밀값 없음)", () => {
-    template.resourceCountIs("AWS::Lambda::Function", 1);
+  it("API 함수 — Node 22 arm64, 환경변수에는 이름만(비밀값 없음)", () => {
     template.hasResourceProperties("AWS::Lambda::Function", {
       Runtime: "nodejs22.x",
       Architectures: ["arm64"],
       Environment: {
         Variables: {
           TABLE_NAME: Match.anyValue(),
+          PUSH_TABLE_NAME: Match.anyValue(),
           USER_POOL_ID: Match.anyValue(),
           KAKAO_ADMIN_KEY_PARAM: SSM_PARAMS.adminKey,
         },
@@ -154,26 +168,97 @@ describe("Lambda — 최소 권한", () => {
     });
   });
 
-  it("허용 동작은 정확히 여섯 개, 전부 특정 자원에만", () => {
-    const statements = Object.values(template.findResources("AWS::IAM::Policy")).flatMap(
-      (p) => p.Properties.PolicyDocument.Statement as Statement[]
-    );
-    const actions = statements.flatMap((s) => [s.Action].flat()).sort();
-    expect(actions).toEqual([
+  it("API 함수의 허용 동작 — 답 표 셋, 구독 표 셋(UpdateItem·Query·DeleteItem), Cognito 둘, SSM 하나", () => {
+    expect(actionsOf("ApiFunctionServiceRole")).toEqual([
       "cognito-idp:AdminDeleteUser",
       "cognito-idp:AdminGetUser",
       "dynamodb:DeleteItem",
       "dynamodb:GetItem",
       "dynamodb:PutItem",
+      "dynamodb:Query",
+      "dynamodb:UpdateItem",
       "ssm:GetParameter",
     ]);
+    const statements = statementsOf("ApiFunctionServiceRole");
     for (const s of statements) expect(JSON.stringify(s.Resource)).not.toContain('"*"');
+    const resourceOf = (action: string) =>
+      statements.filter((s) => [s.Action].flat().includes(action)).map((s) => JSON.stringify(s.Resource)).join(" ");
+    expect(resourceOf("dynamodb:GetItem")).toMatch(/UserData[0-9A-F]+.*Arn/);
+    expect(resourceOf("dynamodb:UpdateItem")).toMatch(/PushSubscriptions[0-9A-F]+.*Arn/);
+    expect(resourceOf("dynamodb:UpdateItem")).not.toMatch(/UserData/);
+    expect(resourceOf("cognito-idp:AdminGetUser")).toMatch(/UserPool[0-9A-F]+.*Arn/);
+    expect(resourceOf("ssm:GetParameter")).toContain(":parameter/perky/kakao/admin-key");
+  });
 
-    const resourceOf = (prefix: string) =>
-      JSON.stringify(statements.find((s) => [s.Action].flat().some((a) => a.startsWith(prefix)))?.Resource);
-    expect(resourceOf("dynamodb:")).toMatch(/UserData[0-9A-F]+.*Arn/);
-    expect(resourceOf("cognito-idp:")).toMatch(/UserPool[0-9A-F]+.*Arn/);
-    expect(resourceOf("ssm:")).toContain(":parameter/perky/kakao/admin-key");
+  it("알림 함수 — 60초, 환경변수에는 이름 · 주소만(비밀 키 없음)", () => {
+    template.resourceCountIs("AWS::Lambda::Function", 2);
+    template.hasResourceProperties("AWS::Lambda::Function", {
+      Runtime: "nodejs22.x",
+      Architectures: ["arm64"],
+      Timeout: 60,
+      Environment: {
+        Variables: {
+          PUSH_TABLE_NAME: Match.anyValue(),
+          TABLE_NAME: Match.anyValue(),
+          POLICIES_URL,
+          VAPID_SUBJECT,
+          VAPID_PUBLIC_KEY_PARAM: SSM_PARAMS.vapidPublicKey,
+          VAPID_PRIVATE_KEY_PARAM: SSM_PARAMS.vapidPrivateKey,
+        },
+      },
+    });
+  });
+
+  it("알림 함수의 허용 동작 — 구독 표 넷, 답 표는 읽기만, VAPID 파라미터 둘", () => {
+    expect(actionsOf("NotifierFunctionServiceRole")).toEqual([
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Scan",
+      "ssm:GetParameter",
+    ]);
+    const statements = statementsOf("NotifierFunctionServiceRole");
+    for (const s of statements) expect(JSON.stringify(s.Resource)).not.toContain('"*"');
+    const userTable = statements.filter((s) => JSON.stringify(s.Resource).includes("UserData"));
+    expect(userTable.flatMap((s) => [s.Action].flat())).toEqual(["dynamodb:GetItem"]);
+    const ssm = JSON.stringify(statements.filter((s) => [s.Action].flat().includes("ssm:GetParameter")).map((s) => s.Resource));
+    expect(ssm).toContain(":parameter/perky/push/vapid-public-key");
+    expect(ssm).toContain(":parameter/perky/push/vapid-private-key");
+    expect(ssm).not.toContain("kakao");
+  });
+});
+
+describe("새 정책 알림", () => {
+  it("구독 표 — userId + deviceId, 요청 단위 과금, TTL expiresAt", () => {
+    template.hasResourceProperties("AWS::DynamoDB::Table", {
+      TableName: PUSH_TABLE_NAME,
+      KeySchema: [
+        { AttributeName: "userId", KeyType: "HASH" },
+        { AttributeName: "deviceId", KeyType: "RANGE" },
+      ],
+      BillingMode: "PAY_PER_REQUEST",
+      TimeToLiveSpecification: { AttributeName: "expiresAt", Enabled: true },
+    });
+  });
+
+  it("매시 정각, 서울 9~21시(UTC 0~12시)에 알림 함수를 부른다", () => {
+    expect(NOTIFY_CRON).toBe("cron(0 0-12 * * ? *)");
+    template.hasResourceProperties("AWS::Events::Rule", {
+      ScheduleExpression: NOTIFY_CRON,
+      State: "ENABLED",
+      Targets: [Match.objectLike({ Arn: { "Fn::GetAtt": [Match.stringLikeRegexp("^NotifierFunction"), "Arn"] } })],
+    });
+  });
+
+  it("시연 때 손으로 부를 함수 이름을 내보낸다", () => {
+    template.hasOutput("NotifierFunctionName", {});
+  });
+
+  it("알림 Lambda 는 자동 재시도를 하지 않는다 — 이미 보낸 알림이 또 가지 않게", () => {
+    template.hasResourceProperties("AWS::Lambda::EventInvokeConfig", {
+      MaximumRetryAttempts: 0,
+      FunctionName: { Ref: Match.stringLikeRegexp("^NotifierFunction") },
+    });
   });
 });
 

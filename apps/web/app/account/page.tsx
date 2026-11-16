@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell, Button, KakaoButton, LinkButton, Sheet, TopBar } from "@/app/components";
 import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/auth";
+import { isPushConfigured } from "@/lib/push";
+import PushSettings from "./PushSettings";
 import { flushNow, hasUnsyncedChanges, logout, retrySync, useSyncState, withdraw } from "@/lib/sync";
 
 /** 2026.11.04 18:00 — 이 기기 시간대로. */
@@ -129,6 +131,7 @@ export default function AccountPage() {
                 </div>
               )}
             </section>
+            {isPushConfigured() && <PushSettings />}
             <div className="flex flex-col gap-2">
               <Button variant="quiet" size="screen" disabled={loggingOut} onClick={() => void requestLogout()}>
                 {loggingOut ? "로그아웃하는 중…" : "로그아웃"}
