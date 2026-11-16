@@ -1,7 +1,22 @@
 import { App } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
 import { describe, expect, it } from "vitest";
-import { ACCOUNT, KAKAO_OIDC, NOTIFY_CRON, POLICIES_URL, PUSH_TABLE_NAME, REGION, SSM_PARAMS, TABLE_NAME, VAPID_SUBJECT } from "../lib/config";
+import {
+  ACCOUNT,
+  CDK_QUALIFIER,
+  DEPLOY_ENVIRONMENT,
+  DEPLOY_ROLE_NAME,
+  GITHUB_OIDC,
+  GITHUB_REPO,
+  KAKAO_OIDC,
+  NOTIFY_CRON,
+  POLICIES_URL,
+  PUSH_TABLE_NAME,
+  REGION,
+  SSM_PARAMS,
+  TABLE_NAME,
+  VAPID_SUBJECT,
+} from "../lib/config";
 import { PerkyStack } from "../lib/perky-stack";
 
 /** 묶기(esbuild)는 건너뛴다 — 이 테스트는 템플릿만 본다. 실제 묶기는 `cdk synth` 가 한다. */
@@ -259,6 +274,48 @@ describe("새 정책 알림", () => {
       MaximumRetryAttempts: 0,
       FunctionName: { Ref: Match.stringLikeRegexp("^NotifierFunction") },
     });
+  });
+});
+
+describe("GitHub 자동 배포 (OIDC, docs/기획/2026-11-16-새-정책-알림-설계.md '자동 배포')", () => {
+  it("GitHub OIDC 공급자 — 발급자 주소와 audience 만 (접근 키를 GitHub 에 두지 않는다)", () => {
+    template.resourceCountIs("AWS::IAM::OIDCProvider", 1);
+    template.hasResourceProperties("AWS::IAM::OIDCProvider", {
+      Url: GITHUB_OIDC.issuer,
+      ClientIdList: [GITHUB_OIDC.audience],
+    });
+  });
+
+  it("배포 역할은 이 저장소의 배포 환경(승인 필요)에서 돈 작업만 빌릴 수 있다", () => {
+    const roles = Object.values(template.findResources("AWS::IAM::Role")).filter(
+      (r) => r.Properties.RoleName === DEPLOY_ROLE_NAME
+    );
+    expect(roles).toHaveLength(1);
+    const statements = roles[0].Properties.AssumeRolePolicyDocument.Statement as Record<string, unknown>[];
+    expect(statements).toHaveLength(1);
+    expect(statements[0]).toMatchObject({
+      Action: "sts:AssumeRoleWithWebIdentity",
+      Effect: "Allow",
+      Condition: {
+        StringEquals: {
+          "token.actions.githubusercontent.com:aud": GITHUB_OIDC.audience,
+          "token.actions.githubusercontent.com:sub": `repo:${GITHUB_REPO}:environment:${DEPLOY_ENVIRONMENT}`,
+        },
+      },
+    });
+    expect(JSON.stringify(statements[0].Principal)).toMatch(/OIDCProvider|GithubOidc/);
+    expect(roles[0].Properties.MaxSessionDuration).toBe(3600);
+  });
+
+  it("배포 역할이 할 수 있는 일은 이 계정·리전의 CDK 배포 역할 빌리기 하나", () => {
+    expect(actionsOf("GithubDeployRole")).toEqual(["sts:AssumeRole"]);
+    const resources = JSON.stringify(statementsOf("GithubDeployRole").map((s) => s.Resource));
+    expect(resources).toContain(`:role/cdk-${CDK_QUALIFIER}-*-${ACCOUNT}-${REGION}`);
+    expect(resources).not.toContain('"*"');
+  });
+
+  it("워크플로가 쓸 배포 역할 주소를 내보낸다", () => {
+    template.hasOutput("GithubDeployRoleArn", {});
   });
 });
 

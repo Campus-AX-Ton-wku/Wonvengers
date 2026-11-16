@@ -19,7 +19,12 @@ import type { Construct } from "constructs";
 import {
   ALLOWED_ORIGINS,
   CALLBACK_URLS,
+  CDK_QUALIFIER,
+  DEPLOY_ENVIRONMENT,
+  DEPLOY_ROLE_NAME,
   DOMAIN_PREFIX,
+  GITHUB_OIDC,
+  GITHUB_REPO,
   KAKAO_OIDC,
   LOGOUT_URLS,
   NOTIFY_CRON,
@@ -295,11 +300,44 @@ export class PerkyStack extends Stack {
       ],
     });
 
+    // ── GitHub Actions 자동 배포 (.github/workflows/deploy-aws.yml) ──
+    // 접근 키 대신 GitHub 이 발급한 토큰으로 역할을 빌린다. 이 저장소의 배포 환경(ggue 승인 필요)에서 돈 작업만 빌릴 수 있고,
+    // 이 역할이 할 수 있는 일은 cdk bootstrap 이 만든 CDK 역할을 빌리는 것 하나다(실제 변경은 CloudFormation 이 한다).
+    const githubOidc = new iam.OidcProviderNative(this, "GithubOidc", {
+      url: GITHUB_OIDC.issuer,
+      clientIds: [GITHUB_OIDC.audience],
+    });
+    const deployRole = new iam.Role(this, "GithubDeployRole", {
+      roleName: DEPLOY_ROLE_NAME,
+      description: "GitHub Actions 배포 환경에서만 — CDK 배포 역할 빌리기",
+      maxSessionDuration: Duration.hours(1),
+      assumedBy: new iam.WebIdentityPrincipal(githubOidc.oidcProviderArn, {
+        StringEquals: {
+          "token.actions.githubusercontent.com:aud": GITHUB_OIDC.audience,
+          "token.actions.githubusercontent.com:sub": `repo:${GITHUB_REPO}:environment:${DEPLOY_ENVIRONMENT}`,
+        },
+      }),
+    });
+    deployRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["sts:AssumeRole"],
+        resources: [
+          this.formatArn({
+            service: "iam",
+            region: "",
+            resource: "role",
+            resourceName: `cdk-${CDK_QUALIFIER}-*-${this.account}-${this.region}`,
+          }),
+        ],
+      })
+    );
+
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: client.userPoolClientId });
     new CfnOutput(this, "CognitoDomain", { value: `${domain.domainName}.auth.${REGION}.amazoncognito.com` });
     new CfnOutput(this, "ApiUrl", { value: api.apiEndpoint });
     new CfnOutput(this, "KakaoRedirectUri", { value: `${domain.baseUrl()}/oauth2/idpresponse` });
     new CfnOutput(this, "NotifierFunctionName", { value: notifier.functionName });
+    new CfnOutput(this, "GithubDeployRoleArn", { value: deployRole.roleArn });
   }
 }
