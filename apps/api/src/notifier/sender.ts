@@ -2,7 +2,12 @@ import type { StoredDevice } from "../push-store";
 import type { PushMessage } from "./plan";
 
 export type SendOutcome = "sent" | "gone" | "failed";
-export type Sender = (device: StoredDevice, message: PushMessage) => Promise<SendOutcome>;
+/** reason 은 실패 원인을 세는 용도 — 상태 코드 아니면 오류 이름만. 메시지 · 구독 주소는 담지 않는다. */
+export interface SendResult {
+  outcome: SendOutcome;
+  reason?: string;
+}
+export type Sender = (device: StoredDevice, message: PushMessage) => Promise<SendResult>;
 
 export interface VapidDetails {
   subject: string;
@@ -33,10 +38,12 @@ export function createSender(lib: WebPushLike, vapid: VapidDetails): Sender {
         timeout: SEND_TIMEOUT_MS,
         vapidDetails: vapid,
       });
-      return "sent";
+      return { outcome: "sent" };
     } catch (err) {
       const status = (err as { statusCode?: unknown }).statusCode;
-      return status === 404 || status === 410 ? "gone" : "failed";
+      if (status === 404 || status === 410) return { outcome: "gone" };
+      const reason = typeof status === "number" ? String(status) : err instanceof Error ? err.name : "unknown";
+      return { outcome: "failed", reason };
     }
   };
 }

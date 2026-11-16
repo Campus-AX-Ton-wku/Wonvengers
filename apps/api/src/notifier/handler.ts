@@ -20,7 +20,7 @@ function required(name: string): string {
 
 async function parameter(ssm: SSMClient, name: string): Promise<string> {
   const out = await ssm.send(new GetParameterCommand({ Name: name, WithDecryption: true }));
-  const value = out.Parameter?.Value;
+  const value = out.Parameter?.Value?.trim();
   if (!value) throw new Error(`SSM ${name} is empty`);
   return value;
 }

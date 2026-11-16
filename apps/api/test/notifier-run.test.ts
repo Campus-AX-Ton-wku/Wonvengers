@@ -27,6 +27,7 @@ function setup(opts: {
   devices?: StoredDevice[];
   users?: Record<string, StoredItem | null>;
   outcome?: (d: StoredDevice) => "sent" | "gone" | "failed";
+  reason?: string;
   fetchFails?: boolean;
   now?: Date;
 }) {
@@ -59,7 +60,7 @@ function setup(opts: {
     send: vi.fn(async (d: StoredDevice, message: PushMessage) => {
       order.push("send");
       sent.push({ device: d.deviceId, message });
-      return opts.outcome?.(d) ?? "sent";
+      return { outcome: opts.outcome?.(d) ?? "sent", ...(opts.reason ? { reason: opts.reason } : {}) };
     }),
     now: () => opts.now ?? DAY,
   };
@@ -82,7 +83,9 @@ describe("runNotifier — 시간 · 첫 실행 · 실패", () => {
 
   it("목록을 못 읽으면 그 회차는 건너뛰고 상태를 건드리지 않는다", async () => {
     const t = setup({ fetchFails: true, announced: [] });
-    expect((await runNotifier(t.deps)).outcome).toBe("fetch-failed");
+    const summary = await runNotifier(t.deps);
+    expect(summary.outcome).toBe("fetch-failed");
+    expect(summary.fetchError).toBe("Error: 503");
     expect(t.deps.push.saveAnnounced).not.toHaveBeenCalled();
   });
 
@@ -116,6 +119,7 @@ describe("runNotifier — 보내기", () => {
       devicesSent: 2,
       devicesFailed: 0,
       devicesRemoved: 0,
+      failures: {},
     });
     expect(t.sent.map((s) => s.device)).toEqual(["a-d1", "a-d2"]);
     expect(t.sent[0].message.url).toBe("/find/policies/fresh");
@@ -162,6 +166,20 @@ describe("runNotifier — 보내기", () => {
     expect(t.removed).toEqual(["a-d1"]);
   });
 
+  it("403 실패는 원인별로 센다", async () => {
+    const t = setup({
+      announced: [],
+      published: [fresh],
+      devices: [device("a", 1)],
+      users: { a: userItem() },
+      outcome: () => "failed",
+      reason: "403",
+    });
+    const summary = await runNotifier(t.deps);
+    expect(summary.devicesFailed).toBe(1);
+    expect(summary.failures).toEqual({ "403": 1 });
+  });
+
   it("한 사용자에서 오류가 나도 다른 사용자에게는 보낸다", async () => {
     const t = setup({
       announced: [],
@@ -172,6 +190,7 @@ describe("runNotifier — 보내기", () => {
     const summary = await runNotifier(t.deps);
     expect(t.sent.map((s) => s.device)).toEqual(["a-d1"]);
     expect(summary.devicesFailed).toBe(1);
+    expect(summary.failures).toEqual({ Error: 1 });
   });
 
   it("마감된 새 정책만 있으면 보내지 않고 '이미 알림'에만 적는다", async () => {

@@ -17,7 +17,7 @@ export interface Deps {
 }
 
 /**
- * 세 경로 (설계 "API"). JWT authorizer 가 발급자·audience 를 이미 검증했다.
+ * 다섯 경로 (설계 "API"). JWT authorizer 가 발급자·audience 를 이미 검증했다.
  * 사용자 ID 는 그 토큰의 sub 에서만 꺼낸다 — 본문·경로·쿼리는 보지 않는다.
  */
 export async function route(event: ApiEvent, deps: Deps): Promise<ApiResult> {
@@ -79,7 +79,8 @@ async function putData(sub: string, event: ApiEvent, deps: Deps): Promise<ApiRes
 
 /**
  * 회원 탈퇴. 순서가 중요하다 — DB·Cognito 를 먼저 지우면 다시 시도할 근거(카카오 회원번호)가
- * 사라진다. 카카오 끊기가 던지면 아래 두 줄은 실행되지 않고 500 이 된다.
+ * 사라진다. 카카오 끊기가 던지면 아래 세 호출(DB · 푸시 구독 · Cognito)은 실행되지 않고 500 이 된다.
+ * 푸시 구독(push.deleteAll)은 Cognito 보다 먼저 지운다 — 사용자를 먼저 지우면 구독 행이 주인 없이 남고 알림이 계속 간다.
  */
 async function deleteMe(sub: string, username: string, deps: Deps): Promise<ApiResult> {
   const kakaoUserId = await deps.accounts.kakaoUserId(username, sub);

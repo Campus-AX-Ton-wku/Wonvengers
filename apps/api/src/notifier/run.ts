@@ -20,6 +20,14 @@ export interface RunSummary {
   devicesSent: number;
   devicesFailed: number;
   devicesRemoved: number;
+  /** 실패한 발송을 원인(상태 코드 · 오류 이름)별로 센 것 */
+  failures: Record<string, number>;
+  /** 목록을 못 읽었을 때만 — 오류 이름과 메시지 앞 120자(목록 주소는 공개라 사용자 정보가 없다) */
+  fetchError?: string;
+}
+
+function countFailure(summary: RunSummary, reason: string): void {
+  summary.failures[reason] = (summary.failures[reason] ?? 0) + 1;
 }
 
 export async function runNotifier(deps: NotifierDeps, { force = false }: { force?: boolean } = {}): Promise<RunSummary> {
@@ -31,14 +39,16 @@ export async function runNotifier(deps: NotifierDeps, { force = false }: { force
     devicesSent: 0,
     devicesFailed: 0,
     devicesRemoved: 0,
+    failures: {},
   };
   if (!force && !isSendingHour(now)) return { ...summary, outcome: "skipped-hours" };
 
   let published: PolicyMeta[];
   try {
     published = await deps.fetchPolicies();
-  } catch {
-    return { ...summary, outcome: "fetch-failed" };
+  } catch (err) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    return { ...summary, outcome: "fetch-failed", fetchError: `${e.name}: ${e.message.slice(0, 120)}` };
   }
 
   const announced = await deps.push.getAnnounced();
@@ -66,16 +76,21 @@ export async function runNotifier(deps: NotifierDeps, { force = false }: { force
         summary.recipients += 1;
         const message = composeMessage(matches);
         for (const device of devices) {
-          const outcome = await deps.send(device, message);
+          const { outcome, reason } = await deps.send(device, message);
           if (outcome === "sent") summary.devicesSent += 1;
           else if (outcome === "gone") {
             await deps.push.deleteDevice(userId, device.deviceId);
             summary.devicesRemoved += 1;
-          } else summary.devicesFailed += 1;
+          } else {
+            summary.devicesFailed += 1;
+            countFailure(summary, reason ?? "unknown");
+          }
         }
-      } catch {
+      } catch (err) {
         // 이 사용자만 건너뛴다 — 나머지 사용자에게는 보낸다
         summary.devicesFailed += devices.length;
+        const name = err instanceof Error ? err.name : "unknown";
+        summary.failures[name] = (summary.failures[name] ?? 0) + devices.length;
       }
     }
   }
