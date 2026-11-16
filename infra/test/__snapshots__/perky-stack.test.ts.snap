@@ -24,6 +24,14 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         ],
       },
     },
+    "GithubDeployRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "GithubDeployRoleB0CF66A5",
+          "Arn",
+        ],
+      },
+    },
     "KakaoRedirectUri": {
       "Value": {
         "Fn::Join": [
@@ -584,6 +592,75 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         "StageName": "$default",
       },
       "Type": "AWS::ApiGatewayV2::Stage",
+    },
+    "GithubDeployRoleB0CF66A5": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:Campus-AX-Ton-wku/Wonvengers:environment:aws-production",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "GithubOidc86785739",
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "GitHub Actions deploy (environment aws-production only) - may only assume CDK bootstrap roles",
+        "MaxSessionDuration": 3600,
+        "RoleName": "perky-github-deploy",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "GithubDeployRoleDefaultPolicyE8F540D1": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":iam::448842988711:role/cdk-hnb659fds-*-448842988711-ap-northeast-2",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "GithubDeployRoleDefaultPolicyE8F540D1",
+        "Roles": [
+          {
+            "Ref": "GithubDeployRoleB0CF66A5",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "GithubOidc86785739": {
+      "Properties": {
+        "ClientIdList": [
+          "sts.amazonaws.com",
+        ],
+        "Url": "https://token.actions.githubusercontent.com",
+      },
+      "Type": "AWS::IAM::OIDCProvider",
     },
     "Kakao6616601F": {
       "Properties": {

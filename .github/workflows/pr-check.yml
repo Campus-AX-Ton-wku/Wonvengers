@@ -72,3 +72,31 @@ jobs:
         run: node app-policies.test.mjs
       - name: 앱 JSON → DB 이관 (11/16)
         run: node app-fields.test.mjs
+
+  api-infra:
+    name: AWS — api · infra 검사 · 묶기
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            infra/package-lock.json
+      - name: 설치
+        run: |
+          (cd apps/api && npm ci)
+          (cd infra && npm ci)
+      - name: api — 타입 · 테스트
+        working-directory: apps/api
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit
+          node node_modules/vitest/vitest.mjs run
+      - name: infra — 타입 · 테스트 · 묶기(cdk synth, AWS 연결 없음)
+        working-directory: infra
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit
+          node node_modules/vitest/vitest.mjs run
+          npx cdk synth --quiet
