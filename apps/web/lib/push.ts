@@ -1,5 +1,5 @@
 // apps/web/lib/push.ts
-import { authConfig } from "./auth";
+import { authConfig, storedSub } from "./auth";
 import type { PushSubscriptionBody } from "./push-subscription";
 import { deletePushRemote, putPushRemote } from "./remote";
 
@@ -40,6 +40,26 @@ export function pushSupport(win: Window = window): PushSupport {
 }
 
 export type PushState = "on" | "off" | "denied";
+
+const OWNER_KEY = "perky.push-owner";
+
+/** 이 기기의 알림 구독을 서버에 올린 계정(sub). 다른 계정이 로그인해 있으면 이 구독은 그 사람 것이 아니다. */
+export function pushOwner(): string | null {
+  try {
+    return window.localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setPushOwner(sub: string | null): void {
+  try {
+    if (sub) window.localStorage.setItem(OWNER_KEY, sub);
+    else window.localStorage.removeItem(OWNER_KEY);
+  } catch {
+    // 저장소를 못 쓰면 소유자 확인만 못 한다
+  }
+}
 
 async function currentSubscription(): Promise<PushSubscription | null> {
   if (typeof navigator === "undefined" || !navigator.serviceWorker) return null;
@@ -89,15 +109,21 @@ export async function enablePush(): Promise<PushState> {
     await sub.unsubscribe().catch(() => false);
     throw err;
   }
+  setPushOwner(storedSub());
   return "on";
 }
 
-/** [알림 끄기]. 서버에서 지우지 못해도 기기 구독은 끊는다(다음 발송 때 410 으로 서버에서도 지워진다). */
+/**
+ * [알림 끄기]. 기기 구독을 먼저 끊는다 — 로그아웃이 제한 시간 뒤 떠나도 이 기기에는 더 오지 않는다.
+ * 서버 행이 남으면 다음 발송의 410 으로 지워진다.
+ */
 export async function disablePush(): Promise<void> {
   const sub = await currentSubscription();
   if (!sub) return;
-  await deletePushRemote(sub.endpoint).catch(() => undefined);
+  const endpoint = sub.endpoint;
   await sub.unsubscribe().catch(() => false);
+  setPushOwner(null);
+  await deletePushRemote(endpoint).catch(() => undefined);
 }
 
 /** 계정 화면을 열 때 — 구독 중이면 서버에 다시 알려 보관 기간을 늘린다. 실패해도 조용히. */
@@ -124,4 +150,5 @@ export async function disablePushQuietly(timeoutMs = 3000): Promise<void> {
 export async function unsubscribeThisDevice(): Promise<void> {
   const sub = await currentSubscription().catch(() => null);
   await sub?.unsubscribe().catch(() => false);
+  setPushOwner(null);
 }

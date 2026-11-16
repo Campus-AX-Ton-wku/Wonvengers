@@ -36,7 +36,7 @@ describe("validatePushSubscription — 웹과 API 가 같은 규칙", () => {
   });
 
   it("주소 길이 상한", () => {
-    const long = `https://push.example/${"a".repeat(MAX_ENDPOINT_LENGTH)}`;
+    const long = `https://fcm.googleapis.com/${"a".repeat(MAX_ENDPOINT_LENGTH)}`;
     expect(validatePushSubscription({ ...ok, endpoint: long })).toEqual({ ok: false, error: "endpoint" });
   });
 

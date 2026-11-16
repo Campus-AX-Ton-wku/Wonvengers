@@ -10,12 +10,13 @@ import {
   disablePushQuietly,
   enablePush,
   isPushConfigured,
+  pushOwner,
   pushState,
   pushSupport,
   refreshPush,
   unsubscribeThisDevice,
 } from "@/lib/push";
-import { enableLogin } from "./auth-fixtures";
+import { enableLogin, signInAs } from "./auth-fixtures";
 
 const KEY = "BPublicKeyForTests";
 
@@ -57,6 +58,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  window.localStorage.clear();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(window.navigator, "serviceWorker");
@@ -146,6 +148,32 @@ describe("pushState · disablePush · refreshPush", () => {
     expect(sub.unsubscribe).toHaveBeenCalled();
   });
 
+  it("끄기는 기기 구독을 먼저 끊고 그 다음 서버를 부른다", async () => {
+    const fake = installPush({ permission: "granted", subscribed: true });
+    const sub = fake.current()!;
+    await disablePush();
+    expect(sub.unsubscribe.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(deletePushRemote).mock.invocationCallOrder[0]);
+  });
+
+  it("켜면 로그인한 계정을 소유자로 적고, 끄면 지운다", async () => {
+    enableLogin();
+    signInAs("sub-a");
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", KEY);
+    installPush();
+    expect(pushOwner()).toBeNull();
+    await enablePush();
+    expect(pushOwner()).toBe("sub-a");
+    await disablePush();
+    expect(pushOwner()).toBeNull();
+  });
+
+  it("unsubscribeThisDevice 도 소유자를 지운다", async () => {
+    window.localStorage.setItem("perky.push-owner", "sub-a");
+    installPush({ permission: "granted", subscribed: true });
+    await unsubscribeThisDevice();
+    expect(pushOwner()).toBeNull();
+  });
+
   it("갱신은 구독 중일 때만 서버에 다시 알린다", async () => {
     installPush({ permission: "granted" });
     await refreshPush();
@@ -159,13 +187,15 @@ describe("pushState · disablePush · refreshPush", () => {
 describe("로그아웃 · 탈퇴용", () => {
   it("disablePushQuietly — 서비스 워커가 없으면 바로 끝, 매달려도 제한 시간 뒤 끝", async () => {
     await expect(disablePushQuietly()).resolves.toBeUndefined();
-    installPush({ permission: "granted", subscribed: true });
+    const fake = installPush({ permission: "granted", subscribed: true });
+    const sub = fake.current()!;
     vi.mocked(deletePushRemote).mockImplementationOnce(() => new Promise(() => {}));
     vi.useFakeTimers();
     try {
       const done = disablePushQuietly(3000);
       await vi.advanceTimersByTimeAsync(3000);
       await expect(done).resolves.toBeUndefined();
+      expect(sub.unsubscribe).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

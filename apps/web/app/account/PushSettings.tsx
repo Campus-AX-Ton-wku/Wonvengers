@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components";
 import { hasConsent, storedSub } from "@/lib/auth";
-import { disablePush, enablePush, pushState, pushSupport, refreshPush } from "@/lib/push";
+import { disablePush, enablePush, pushOwner, pushState, pushSupport, refreshPush, unsubscribeThisDevice } from "@/lib/push";
 
 type View = "loading" | "unsupported" | "needs-home-screen" | "no-consent" | "denied" | "off" | "on";
 
@@ -33,6 +33,12 @@ export default function PushSettings() {
       if (!sub || !hasConsent(sub)) return setView("no-consent");
       const state = await pushState().catch(() => "off" as const);
       if (!alive) return;
+      if (state === "on" && pushOwner() !== sub) {
+        // 이 기기의 구독은 다른 계정이 올린 것 — 서버 행은 그쪽 것이라 건드리지 않고(410 으로 지워진다) 기기만 끊는다
+        await unsubscribeThisDevice().catch(() => undefined);
+        if (alive) setView("off");
+        return;
+      }
       setView(state);
       if (state === "on") void refreshPush();
     })();
@@ -58,6 +64,8 @@ export default function PushSettings() {
     setBusy(true);
     try {
       await disablePush();
+    } catch {
+      // 기기 구독은 끊겼을 수 있다 — 아래에서 꺼진 상태로 둔다
     } finally {
       setView("off");
       setBusy(false);

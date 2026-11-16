@@ -10,11 +10,13 @@ vi.mock("@/lib/push", () => ({
   enablePush: vi.fn(async () => "on"),
   disablePush: vi.fn(async () => {}),
   refreshPush: vi.fn(async () => {}),
+  pushOwner: vi.fn(() => "sub-a"),
+  unsubscribeThisDevice: vi.fn(async () => {}),
 }));
 
 import PushSettings from "@/app/account/PushSettings";
 import { resetAuthForTests } from "@/lib/auth";
-import { disablePush, enablePush, pushState, pushSupport, refreshPush } from "@/lib/push";
+import { disablePush, enablePush, pushOwner, pushState, pushSupport, refreshPush, unsubscribeThisDevice } from "@/lib/push";
 import { enableLogin, signInAs } from "@/lib/__tests__/auth-fixtures";
 
 beforeEach(() => {
@@ -26,6 +28,8 @@ beforeEach(() => {
   vi.mocked(enablePush).mockReset().mockResolvedValue("on");
   vi.mocked(disablePush).mockReset().mockResolvedValue(undefined);
   vi.mocked(refreshPush).mockReset().mockResolvedValue(undefined);
+  vi.mocked(pushOwner).mockReset().mockReturnValue("sub-a");
+  vi.mocked(unsubscribeThisDevice).mockReset().mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -50,6 +54,15 @@ describe("내 계정 — 알림 칸", () => {
     expect(disablePush).toHaveBeenCalledTimes(1);
     expect(refreshPush).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole("button", { name: "알림 켜기" })).toBeTruthy();
+  });
+
+  it("다른 계정이 켠 구독이면 기기만 끊고 꺼짐으로 보여 준다", async () => {
+    vi.mocked(pushState).mockResolvedValue("on");
+    vi.mocked(pushOwner).mockReturnValue("sub-b");
+    render(<PushSettings />);
+    expect(await screen.findByRole("button", { name: "알림 켜기" })).toBeTruthy();
+    expect(unsubscribeThisDevice).toHaveBeenCalledTimes(1);
+    expect(refreshPush).not.toHaveBeenCalled();
   });
 
   it("아이폰 사파리 탭이면 홈 화면 안내만", async () => {
