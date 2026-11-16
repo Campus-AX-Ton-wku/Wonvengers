@@ -76,3 +76,12 @@ describe("TopBar 뒤로가기", () => {
     expect(screen.getByRole("button", { name: "이전 단계로" }).className).toContain("h-11");
   });
 });
+
+describe("TopBar 줄 구조", () => {
+  it("양옆 칸이 같은 폭인 3칸 그리드고, 왼쪽은 시작·오른쪽은 끝에 붙는다", () => {
+    render(<TopBar />);
+    expect(screen.getByTestId("top-bar-row").className).toContain("grid-cols-[1fr_auto_1fr]");
+    expect(screen.getByTestId("top-bar-left").className).toContain("justify-self-start");
+    expect(screen.getByTestId("top-bar-right").className).toContain("justify-self-end");
+  });
+});
