@@ -4,10 +4,10 @@ import type { LoanProductMeta, PolicyMeta } from "./types";
 /**
  * 팀 검수 결과(Supabase)를 화면에 붙인다.
  *
- * 앱은 Supabase 를 직접 부르지 않는다. scripts/verification-snapshot.sql 로 뽑은 결과를
- * data/verification.json 에 저장해 두고 그 파일만 읽는다 — Supabase 가 멈추거나 무료 플랜이
- * 일시 정지돼도 화면 · 배포는 그대로다. 정책 값(금액 · 나이 · 기간)은 지금처럼 정책 JSON 에서
- * 읽고, 여기서는 '누가 원문과 대조해 맞다고 확인했는가'만 가져온다.
+ * 화면은 Supabase 를 직접 부르지 않는다. 빌드 때 scripts/fetch-app-data.mjs 가 정책 JSON 과
+ * data/verification.json 을 같은 DB 응답에서 함께 만들고(2026-11-16 부터), 화면은 그 파일만 읽는다 —
+ * Supabase 가 멈추거나 일시 정지돼도 이미 배포된 화면은 그대로다. 여기서는 '누가 원문과 대조해
+ * 맞다고 확인했는가'만 가져온다.
  *
  * 배지는 거짓말하지 않아야 한다. 화면에 보이는 값이 검수한 값과 한 칸이라도 다르면
  * (JSON 을 고쳤는데 DB 는 그대로이거나 그 반대) 배지를 붙이지 않는다. 그 목록은
@@ -16,7 +16,7 @@ import type { LoanProductMeta, PolicyMeta } from "./types";
 
 export type TrustLevel = "교차검수" | "검수" | "미검수" | "재확인 필요";
 
-/** DB 의 정책 값 중 앱 JSON 과 견주는 칸. scripts/verification-snapshot.sql 의 values 와 같다. */
+/** DB 의 정책 값 중 앱 JSON 과 견주는 칸. scripts/app-data/from-db.mjs 의 values 와 같다. */
 export interface VerifiedValues {
   summary: string | null;
   applyStart: string | null;
