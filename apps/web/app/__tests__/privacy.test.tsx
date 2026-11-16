@@ -26,6 +26,8 @@ describe("/privacy — 처리방침 초안 (설계 '화면' 6)", () => {
       "Amazon Web Services, Inc.",
       "카카오 연결 끊기",
       "확인 필요",
+      "알림 구독 정보",
+      "정책 이름만 들어가고 고른 답은 넣지 않아요",
     ]) {
       expect(text).toContain(phrase);
     }

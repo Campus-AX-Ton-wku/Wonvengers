@@ -8,6 +8,7 @@ import {
   signOut,
   storedSub,
 } from "./auth";
+import { disablePushQuietly, unsubscribeThisDevice } from "./push";
 import { reloadPage } from "./redirect";
 import { deleteAccountRemote, loadRemote, saveRemote } from "./remote";
 import { clearLocalContent, onLocalChange, readLocalContent, writeLocalContent } from "./storage";
@@ -461,6 +462,8 @@ export async function logout(): Promise<LogoutResult> {
   const clear = hasAnyMeta() || (sub !== null && hasAnyConsentRecord(sub));
   let discardedUnsynced = false;
   try {
+    // 공용 기기에 다른 사람의 맞춤 알림이 오지 않게 — 토큰이 있을 때 먼저 끊는다(최대 3초)
+    await disablePushQuietly();
     if (syncEnabled()) await flushNow();
   } finally {
     if (clear) discardedUnsynced = state.status === "conflict" || anyMetaDirty();
@@ -490,6 +493,8 @@ export async function withdraw(): Promise<void> {
       startSync();
       throw err;
     }
+    // 서버는 그 사용자의 구독을 모두 지웠다 — 이 기기 구독만 끊는다
+    await unsubscribeThisDevice();
     clearLocalContent();
     removeMeta();
     forgetConsent();
