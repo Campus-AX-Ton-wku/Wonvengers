@@ -1,3 +1,4 @@
+import type { PolicyMeta } from "../../web/lib/types";
 import type { ApiEvent } from "../src/http";
 import type { UserDataPayload } from "../../web/lib/user-data";
 
@@ -84,4 +85,39 @@ export function apiEvent(
       authorizer: claims ? { jwt: { claims, scopes: null }, principalId: "", integrationLatency: 0 } : undefined,
     },
   } as unknown as ApiEvent;
+}
+
+/** 익산 정책 한 건 (알림 테스트용). 덮어쓸 칸만 넘긴다. 기본은 19~39세 · 익산 · 세 상태 · 소득 5구간 이하 · 주거 무관 · 상시. */
+export function policy(over: Partial<PolicyMeta> & { id: string }): PolicyMeta {
+  return {
+    name: `정책 ${over.id}`,
+    agency: "익산시",
+    regionScope: "전북특별자치도 익산시",
+    applicationStart: "2026-01-01",
+    applicationEnd: null,
+    benefitType: "lump_sum",
+    benefitSummary: "요약",
+    lumpSumBasis: "notCalculable",
+    requiredInputs: [],
+    exclusiveGroup: [],
+    sourceUrl: "https://example.go.kr/a",
+    applyUrl: "https://example.go.kr/b",
+    youthPolicyNo: null,
+    gov24ServiceId: null,
+    verifiedAt: null,
+    effectiveYear: 2026,
+    notes: "",
+    contact: null,
+    nextRound: null,
+    discovery: {
+      ageMin: 19,
+      ageMax: 39,
+      regions: ["전북특별자치도 익산시"],
+      statuses: ["대학생", "재직", "구직"],
+      incomeBracketMin: null,
+      incomeBracketMax: 5,
+      housingTypes: null,
+    },
+    ...over,
+  };
 }
