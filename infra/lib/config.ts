@@ -43,7 +43,13 @@ export const NOTIFY_CRON = "cron(0 0-12 * * ? *)";
  * GitHub Actions 자동 배포 (OIDC — 접근 키를 GitHub 에 두지 않는다).
  * main 에 머지되면 .github/workflows/deploy-aws.yml 이 배포 환경(승인 필요)에서 이 역할을 빌려 cdk deploy 한다.
  */
-export const GITHUB_REPO = "Campus-AX-Ton-wku/Wonvengers";
+/**
+ * GitHub OIDC 토큰의 sub 앞부분. 이 저장소는 '변하지 않는 ID' 형식을 쓴다(use_immutable_subject: true) —
+ * 조직·저장소 이름 뒤에 숫자 ID 가 붙어 이름을 바꾸거나 같은 이름을 새로 만들어도 흉내 낼 수 없다.
+ * 확인: gh api repos/Campus-AX-Ton-wku/Wonvengers/actions/oidc/customization/sub → sub_claim_prefix
+ * (2026-11-16 첫 자동 배포가 'repo:Campus-AX-Ton-wku/Wonvengers' 로 적었다가 거부됐다)
+ */
+export const GITHUB_SUBJECT_PREFIX = "repo:Campus-AX-Ton-wku@316265598/Wonvengers@1332252005";
 export const DEPLOY_ENVIRONMENT = "aws-production";
 export const DEPLOY_ROLE_NAME = "perky-github-deploy";
 export const GITHUB_OIDC = {

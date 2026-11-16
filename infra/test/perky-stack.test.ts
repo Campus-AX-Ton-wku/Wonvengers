@@ -7,7 +7,7 @@ import {
   DEPLOY_ENVIRONMENT,
   DEPLOY_ROLE_NAME,
   GITHUB_OIDC,
-  GITHUB_REPO,
+  GITHUB_SUBJECT_PREFIX,
   KAKAO_OIDC,
   NOTIFY_CRON,
   POLICIES_URL,
@@ -299,12 +299,17 @@ describe("GitHub 자동 배포 (OIDC, docs/기획/2026-11-16-새-정책-알림-�
       Condition: {
         StringEquals: {
           "token.actions.githubusercontent.com:aud": GITHUB_OIDC.audience,
-          "token.actions.githubusercontent.com:sub": `repo:${GITHUB_REPO}:environment:${DEPLOY_ENVIRONMENT}`,
+          "token.actions.githubusercontent.com:sub": `${GITHUB_SUBJECT_PREFIX}:environment:${DEPLOY_ENVIRONMENT}`,
         },
       },
     });
     expect(JSON.stringify(statements[0].Principal)).toMatch(/OIDCProvider|GithubOidc/);
     expect(roles[0].Properties.MaxSessionDuration).toBe(3600);
+  });
+
+  it("신원은 GitHub 의 '변하지 않는 ID' 형식이다 — 저장소 설정 use_immutable_subject: true (11/16 첫 자동 배포가 이 차이로 거부됐다)", () => {
+    // gh api repos/Campus-AX-Ton-wku/Wonvengers/actions/oidc/customization/sub → sub_claim_prefix
+    expect(GITHUB_SUBJECT_PREFIX).toBe("repo:Campus-AX-Ton-wku@316265598/Wonvengers@1332252005");
   });
 
   it("배포 역할이 할 수 있는 일은 이 계정·리전의 CDK 배포 역할 빌리기 하나", () => {

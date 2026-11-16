@@ -24,7 +24,7 @@ import {
   DEPLOY_ROLE_NAME,
   DOMAIN_PREFIX,
   GITHUB_OIDC,
-  GITHUB_REPO,
+  GITHUB_SUBJECT_PREFIX,
   KAKAO_OIDC,
   LOGOUT_URLS,
   NOTIFY_CRON,
@@ -315,7 +315,7 @@ export class PerkyStack extends Stack {
       assumedBy: new iam.WebIdentityPrincipal(githubOidc.oidcProviderArn, {
         StringEquals: {
           "token.actions.githubusercontent.com:aud": GITHUB_OIDC.audience,
-          "token.actions.githubusercontent.com:sub": `repo:${GITHUB_REPO}:environment:${DEPLOY_ENVIRONMENT}`,
+          "token.actions.githubusercontent.com:sub": `${GITHUB_SUBJECT_PREFIX}:environment:${DEPLOY_ENVIRONMENT}`,
         },
       }),
     });
