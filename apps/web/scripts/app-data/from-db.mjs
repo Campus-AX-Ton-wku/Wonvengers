@@ -168,7 +168,7 @@ export function validateRows(rows) {
       const good =
         Array.isArray(docs) && docs.length >= 1 && docs.length <= 15 &&
         new Set(docs.map((d) => d?.name)).size === docs.length &&
-        docs.every((d) => d && typeof d === "object" && typeof d.name === "string" && d.name.length >= 1 && d.name.length <= 60 &&
+        docs.every((d) => d && typeof d === "object" && typeof d.name === "string" && d.name.trim().length >= 1 && d.name.length <= 60 &&
           (d.note === undefined || d.note === null || (typeof d.note === "string" && d.note.length <= 80)));
       need(good, "서류 목록(documents) 모양이 틀렸다 — [{name 1~60자, note 80자 이하}] 1~15개, 이름 중복 없이");
     }

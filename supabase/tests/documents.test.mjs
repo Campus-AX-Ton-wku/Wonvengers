@@ -34,6 +34,8 @@ console.log("\n[1] 모양 검사");
 ok("비워 둘 수 있다", (await q(`select count(*)::int n from policies where documents is null`))[0].n > 0);
 ok("이름만", (await tryExec(set('[{"name":"임대차계약서 사본"}]'))) === null);
 ok("이름 + 메모", (await tryExec(set('[{"name":"주민등록등본","note":"최근 1개월 이내 발급"}]'))) === null);
+ok("정확히 15개", (await tryExec(set(JSON.stringify(Array.from({ length: 15 }, (_, i) => ({ name: `서류${i}` })))))) === null);
+ok("메모 80자", (await tryExec(set(`[{"name":"a","note":"${"가".repeat(80)}"}]`))) === null);
 for (const [label, json] of [
   ["빈 배열", "[]"],
   ["배열이 아님", '{"name":"a"}'],
@@ -45,6 +47,9 @@ for (const [label, json] of [
   ["이름 중복", '[{"name":"a"},{"name":"a"}]'],
   ["16개", JSON.stringify(Array.from({ length: 16 }, (_, i) => ({ name: `서류${i}` })))],
   ["원소가 객체 아님", '["a"]'],
+  ["스칼라 null", "null"],
+  ["숫자", "3"],
+  ["이름이 공백뿐", '[{"name":"   "}]'],
 ]) {
   ok(`거부: ${label}`, ((await tryExec(set(json))) ?? "").includes("서류_형식"));
 }

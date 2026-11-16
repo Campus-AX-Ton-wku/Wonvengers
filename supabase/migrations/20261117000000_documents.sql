@@ -10,8 +10,8 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select jsonb_typeof(d) = 'array'
-    and jsonb_array_length(d) between 1 and 15
+  select case when jsonb_typeof(d) = 'array' then (
+    jsonb_array_length(d) between 1 and 15
     and not exists (
       select 1 from jsonb_array_elements(d) as e(item)
       where case
@@ -19,11 +19,13 @@ as $$
         else exists (select 1 from jsonb_object_keys(e.item) as k(key) where k.key not in ('name', 'note'))
           or coalesce(jsonb_typeof(e.item -> 'name'), '') <> 'string'
           or char_length(e.item ->> 'name') not between 1 and 60
+          or btrim(e.item ->> 'name') = ''
           or (e.item ? 'note' and (coalesce(jsonb_typeof(e.item -> 'note'), '') <> 'string'
                                    or char_length(e.item ->> 'note') > 80))
       end
     )
     and (select count(distinct e.item ->> 'name') from jsonb_array_elements(d) as e(item)) = jsonb_array_length(d)
+  ) else false end
 $$;
 
 alter table public.policies

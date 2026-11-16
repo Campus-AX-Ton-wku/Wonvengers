@@ -220,5 +220,6 @@ describe("서류 목록 (documents)", () => {
   it("모양이 틀리면 빌드를 멈춘다", () => {
     expect(validateRows([row({ documents: [{ note: "x" }] })]).join("\n")).toContain("서류 목록(documents)");
     expect(validateRows([row({ documents: "a" })]).join("\n")).toContain("서류 목록(documents)");
+    expect(validateRows([row({ documents: [{ name: "   " }] })]).join("\n")).toContain("서류 목록(documents)");
   });
 });
