@@ -175,6 +175,8 @@ describe("로그인 상태", () => {
       profile: payload.profile,
       declared: payload.declared,
       checklists: payload.checklists,
+      saved: payload.saved,
+      documentChecks: payload.documentChecks,
     }).toEqual(emptyContent());
   });
 });

@@ -55,6 +55,8 @@ export function validPayload(overrides: Partial<UserDataPayload> = {}): UserData
     checklists: {
       "iksan-newcomer-moving-cost-support": { eligibility: true, period: false, documents: false },
     },
+    saved: [],
+    documentChecks: {},
     consentVersion: "2026-11-04",
     consentAt: "2026-11-04T09:00:00.000Z",
     ...overrides,

@@ -74,6 +74,8 @@ const 기대: UserDataContent = {
   profile: { values: 자격, answeredKeys: ["hasNoHouse"] },
   declared: { singleHousehold: true },
   checklists: { [정책]: { eligibility: true, period: false, documents: false } },
+  saved: [],
+  documentChecks: {},
 };
 
 describe("이 기기의 사본 — 일곱 갈래 키를 한 묶음으로", () => {

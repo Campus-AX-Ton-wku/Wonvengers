@@ -26,6 +26,8 @@ const DATA_KEYS = [
   "profile",
   "declared",
   "checklists",
+  "saved",
+  "documentChecks",
   "consentVersion",
   "consentAt",
 ] as const satisfies readonly (keyof UserDataPayload)[];
