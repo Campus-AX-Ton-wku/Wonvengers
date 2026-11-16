@@ -22,11 +22,6 @@ function 카드들(): HTMLElement[] {
     .filter((a) => a.getAttribute("href")?.startsWith("/find/policies/"));
 }
 
-/** 지금 신청할 수 없는 것들이 들어가는 접힌 묶음. */
-function 신청불가묶음(): HTMLDetailsElement {
-  const summary = screen.getByText(/신청할 수 없는 지원금 \d+개/);
-  return summary.closest("details") as HTMLDetailsElement;
-}
 
 describe("/find/policies", () => {
   // 마감 여부는 오늘 날짜로 판정한다. 아래 건수는 2026-09-03 기준이라 날짜를
@@ -87,7 +82,8 @@ describe("/find/policies", () => {
 
     const 신청가능영역 = screen.getByRole("region", { name: "받을 수 있는 주거 혜택 3개" });
     expect(within(신청가능영역).getAllByRole("link")).toHaveLength(3);
-    expect(screen.getByText("신청할 수 없는 지원금 5개")).toBeTruthy();
+    // 신청할 수 없는 지원금(마감 2 · 해당 없음 3)은 목록에 없다 (11/17)
+    expect(카드들()).toHaveLength(3);
   });
 
   /*
@@ -111,8 +107,9 @@ describe("/find/policies", () => {
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 1 });
-    const 이사비 = screen.getByText("익산시 전입 청년 이사비·중개보수 지원사업").closest("a");
-    expect(이사비?.getAttribute("href")).toBe("/find/policies/iksan-newcomer-moving-cost-support");
+    // 마감된 정책은 목록에 없으므로(11/17) 신청 가능한 정책으로 본다
+    const 분리지급 = screen.getByText("청년 주거급여 분리지급").closest("a");
+    expect(분리지급?.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment");
   });
 
   it("후보가 있으면 2층 진입 CTA 가 보인다", async () => {
@@ -220,28 +217,22 @@ describe("/find/policies", () => {
 });
 
 /**
- * 지금 신청할 수 없는 것은 접어 둔다.
+ * 신청할 수 없는 지원금(마감 · 대상 아님)은 목록에서 뺀다 — 11/17 팀 결정.
  *
- * 1층 태그는 나이·지역·상태·소득만 보므로 마감된 정책도 후보에 남는다
- * (PRD F3-6, 의도된 결정). 문제는 그 카드가 목록에서 자리를 차지한다는 것이고,
- * 하필 정책 데이터의 첫 항목인 국토부 청년월세(최대 480만원)가 마감이라 —
- * 가장 큰 금액이 실제로 받을 수 있는 50만원짜리보다 크게 읽혔다.
- *
- * 지우지는 않는다. 마감 건은 다음 회차에 다시 열리고, 대상이 아닌 건은 왜
- * 아닌지가 답을 고칠 단서다. 없애면 "그런 지원금이 아예 없다"로 읽힌다.
+ * 예전에는 "다음 회차에 다시 열린다 · 왜 아닌지가 답을 고칠 단서다"라는 이유로 접어서 남겨
+ * 두었다. 지금 할 수 있는 것만 보여 주는 쪽으로 바꿨다. 후보가 전부 마감이면 제목이 그렇게 말한다.
  */
 describe("/find/policies 신청할 수 없는 지원금", () => {
-  it("마감된 카드와 대상이 아닌 카드는 접힌 묶음 안에 있다", async () => {
+  it("마감된 카드와 대상이 아닌 카드는 목록에 없다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
     await screen.findByRole("heading", { level: 1 });
 
-    const 묶음 = 신청불가묶음();
-    expect(묶음.open).toBe(false);
+    expect(screen.queryByText(/신청할 수 없는 지원금/)).toBeNull();
     // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
-    expect(within(묶음).getByText("2026.05.29 접수 마감")).toBeTruthy();
+    expect(screen.queryByText("2026.05.29 접수 마감")).toBeNull();
     // 전북 정착은 재직자만 대상이다
-    expect(within(묶음).getByText(/재직만 신청할 수 있습니다/)).toBeTruthy();
+    expect(screen.queryByText(/재직만 신청할 수 있습니다/)).toBeNull();
   });
 
   it("가장 큰 금액이 마감 건이어도 첫 카드를 차지하지 않는다", async () => {
@@ -252,9 +243,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
     expect(카드들()[0].textContent).not.toMatch(/접수 마감/);
   });
 
-  // 만 18세는 마감된 두 사업(국토부 청년월세 19~34세, 전북 정착 재직자)의 후보가
-  // 아니고 해당 없음이 되므로, 묶음 자체는 남는다. 신청 가능 쪽에 마감이 섞이지
-  // 않는 것이 요점이다.
+  // 만 18세 — 신청 가능 쪽에 마감이 섞이지 않는 것이 요점이다.
   it("신청 가능 영역에는 마감된 카드가 없다", async () => {
     saveAnswers({ ...익산_대학생, birthDate: birthDateForAge(18) });
     render(<FindPoliciesPage />);
@@ -268,7 +257,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
    * 후보가 있긴 한데 전부 마감인 경우. 그냥 '해당되는 것이 없어요' 라고 하면
    * "너는 대상이 아니다"로 읽히는데, 실제로는 다음 회차를 기다리면 되는 상황이다.
    */
-  it("후보가 전부 마감이면 제목이 그렇게 말하고, 묶음은 펼쳐 둔다", async () => {
+  it("후보가 전부 마감이면 제목이 그렇게 말하고, 카드는 없다", async () => {
     saveAnswers({
       birthDate: birthDateForAge(30),
       region: "전북특별자치도 전주시",
@@ -282,7 +271,6 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "지금 받을 수 있는 주거 혜택이 없어요"
     );
-    // 보여줄 것이 접힌 묶음뿐이면 접어 둘 이유가 없다 — 빈 화면으로 읽힌다.
-    expect(신청불가묶음().open).toBe(true);
+    expect(카드들()).toHaveLength(0);
   });
 });

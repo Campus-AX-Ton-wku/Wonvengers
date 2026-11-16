@@ -131,22 +131,21 @@ export default function FindResultPage() {
           </main>
 
           <StickyBottomAction>
-            <LinkButton
-              href="/find/policies"
-              onClick={(event) => {
-                // 찾은 경우의 CTA("지원금 N건 자세히 보기")를 처음 누를 때만. 로그인 상태·닫은 기기·로그인을 쓸 수 없는 빌드에서는 그냥 간다.
-                if (찾음 && isLoginAvailable() && !hasStoredLogin() && !hasDismissedSignup()) {
-                  event.preventDefault();
-                  setSignupOpen(true);
-                }
-              }}
-            >
-              {찾음
-                ? `지원금 ${신청가능.length}건 자세히 보기`
-                : count > 0
-                  ? "어떤 지원금이었는지 보기"
-                  : "왜 해당되지 않는지 보기"}
-            </LinkButton>
+            {/* 신청할 수 없는 지원금은 목록에 없으므로(11/17) 받을 게 없으면 목록으로 가는 버튼을 두지 않는다. */}
+            {찾음 && (
+              <LinkButton
+                href="/find/policies"
+                onClick={(event) => {
+                  // 처음 누를 때만. 로그인 상태·닫은 기기·로그인을 쓸 수 없는 빌드에서는 그냥 간다.
+                  if (isLoginAvailable() && !hasStoredLogin() && !hasDismissedSignup()) {
+                    event.preventDefault();
+                    setSignupOpen(true);
+                  }
+                }}
+              >
+                {`지원금 ${신청가능.length}건 자세히 보기`}
+              </LinkButton>
+            )}
             {/* 이 화면에는 '조건 수정'이 없다. CTA 를 누르기 전에 처음부터 다시 고를 수 있게 그 아래에 둔다. */}
             {Object.values(answers).some((v) => v !== null) && (
               <div className="mt-1 flex justify-center">
