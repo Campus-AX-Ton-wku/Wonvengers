@@ -1,5 +1,5 @@
 // supabase/tests/documents.test.mjs
-// 정책 서류 목록 documents (migrations/20261117000000_documents.sql) — 모양 검사와 app_policies() 싣기
+// 정책 서류 목록 documents (migrations/20261116233659_documents.sql) — 모양 검사와 app_policies() 싣기
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,7 +23,7 @@ await db.exec(`
 `);
 for (const f of ["20261110000000_perky_5tables.sql"]) await db.exec(migration(f));
 await db.exec(readFileSync(join(repo, "supabase", "seed.sql"), "utf8"));
-for (const f of ["20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261117000000_documents.sql"]) {
+for (const f of ["20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261116233659_documents.sql"]) {
   await db.exec(migration(f));
 }
 
