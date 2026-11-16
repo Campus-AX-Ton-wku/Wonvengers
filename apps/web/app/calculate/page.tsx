@@ -227,7 +227,7 @@ function CalculateSteps() {
       }
       return null;
     }
-    if (!form.contractStartDate) return "계약 시작 예정일을 입력해주세요.";
+    if (!form.contractStartDate) return "계약 시작일을 입력해주세요.";
     if (form.months <= 0) return "거주 예정 개월 수는 1개월 이상이어야 합니다.";
     if (form.managementFee < 0 || form.oneTimeMoveCost < 0) return "금액은 0원 이상이어야 합니다.";
     if (!form.confirmedMatchesActualContract) {
@@ -342,9 +342,9 @@ function CalculateSteps() {
 
             {/* 휠 데이트 피커. /eligibility 의 생년월일도 같은 컴포넌트를 쓴다 —
                 앱 안에 날짜 UI 가 두 종류이면 같은 동작을 두 번 배워야 한다. */}
-            <FieldGroup label="계약 시작 예정일">
+            <FieldGroup label="계약 시작일">
               <WheelDatePicker
-                label="계약 시작 예정일"
+                label="계약 시작일"
                 years={contractYearOptions(new Date().getFullYear())}
                 value={form.contractStartDate}
                 onChange={(v) => update("contractStartDate", v)}
