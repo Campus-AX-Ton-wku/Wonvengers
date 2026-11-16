@@ -280,3 +280,28 @@ describe("2층 규칙이 없는 정책 (DB 에만 등록한 새 정책)", () => 
     expect(evaluatePolicy(moland, makeProfile(), makeListing(), OPEN_PERIOD_DAY).status).toBe("예상적용");
   });
 });
+
+describe("계약 형태 조건 (정책 discovery.housingTypes ↔ 2층 계약 형태)", () => {
+  // 11/17: 월세로 계산했는데 최종 결과에 '전세보증금반환보증 보증료 지원'이 '조건충족시가능'으로 떴다.
+  // 2층 규칙에는 계약 형태 검사가 없어서 1층의 '전세 계약만' 조건이 2층에서 빠졌다.
+  const jeonseFee = policies.find((p) => p.id === "jeonse-return-guarantee-fee-subsidy")!;
+
+  it("전세 전용 정책은 월세 · 연세 계약이면 대상아님이고 예상액 0", () => {
+    for (const contractType of ["월세", "연세"] as const) {
+      const result = evaluatePolicy(jeonseFee, makeProfile(), makeListing({ contractType }), OPEN_PERIOD_DAY);
+      expect(result.status).toBe("대상아님");
+      expect(result.failedLabels).toContain("전세 계약만 신청할 수 있어요");
+      expect(result.estimatedAmount).toBe(0);
+    }
+  });
+
+  it("계약 형태가 맞는 정책은 그대로 판정한다 (국토부 청년월세 · 월세)", () => {
+    expect(evaluatePolicy(moland, makeProfile(), makeListing({ contractType: "월세" }), OPEN_PERIOD_DAY).status).toBe("예상적용");
+  });
+
+  it("계약 형태를 따지지 않는 정책(housingTypes null)은 영향 없다", () => {
+    expect(housingBenefitSplit.discovery.housingTypes).toBeNull();
+    const result = evaluatePolicy(housingBenefitSplit, makeProfile(), makeListing({ contractType: "월세" }), OPEN_PERIOD_DAY);
+    expect(result.failedLabels).not.toContain("전세 계약만 신청할 수 있어요");
+  });
+});
