@@ -66,12 +66,13 @@ export function fromISODate(iso: string): { year: number; month: number; day: nu
 }
 
 /**
- * 계약 시작 예정일의 연도 목록. 오름차순으로 작년 ~ 내후년.
+ * 계약 시작일의 연도 목록. 오름차순으로 5년 전 ~ 내후년. 휠은 올해에서 시작한다(WheelDatePicker).
  *
- * '예정일'이라 대부분 올해나 내년이지만, 작년을 함께 넣는다 — 상시 접수 정책
+ * 처음에는 '예정일'이라 작년부터만 넣었는데, 이미 살고 있는 계약도 넣을 수 있어야 한다(11/17) — 상시 접수 정책
  * (이사비·주거급여 분리지급)은 이미 계약한 사람이 뒤늦게 신청하는 경우가 있어서,
  * 작년을 빼면 그 사람이 실제 계약일을 넣을 수 없다.
  */
 export function contractYearOptions(currentYear: number): number[] {
-  return [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+  // 11/17: 이미 살고 있는 계약(몇 년 전에 시작)도 넣을 수 있게 5년 전부터 — 이 날짜는 계산에 쓰이지 않는다.
+  return Array.from({ length: 8 }, (_, i) => currentYear - 5 + i);
 }

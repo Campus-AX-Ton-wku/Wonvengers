@@ -8,11 +8,13 @@ import PolicyCard from "@/app/find/PolicyCard";
 import { AppShell, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
+import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
 import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
+import LoginSheet from "./LoginSheet";
 
 /**
  * 1층 · 발견 — 질문 결과 목록.
@@ -23,9 +25,8 @@ import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
  * 답이 전부 '모름'이어도 목록은 보여준다 — 저장된 답변이 없는 상태와 구분할 수
  * 없고, 모름이어도 목록이 떠야 한다(QA체크리스트 1층).
  *
- * 화면에는 지금 신청할 수 있는 것만 둔다. 마감된 사업과 대상이 아닌 사업은 접어
- * 둔다 — 지우지는 않는다. 마감 건은 다음 회차에 다시 열리고, 대상이 아닌 건은
- * 왜 아닌지가 답을 고칠 단서라서, 없애면 "그런 지원금이 아예 없다"로 읽힌다.
+ * 화면에는 지금 신청할 수 있는 것만 둔다. 마감된 사업과 대상이 아닌 사업은 보여 주지 않는다
+ * (11/17 팀 결정 — 예전에는 접어서 남겨 두었다). 후보가 전부 마감이면 제목이 그렇게 말한다.
  */
 
 const policies = policiesJson as PolicyMeta[];
@@ -48,6 +49,7 @@ export default function FindPoliciesPage() {
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     setAnswers(loadAnswers());
@@ -63,12 +65,7 @@ export default function FindPoliciesPage() {
 
   // 접수가 끝난 정책도 1층 태그로는 '가능성 있음' 이 된다. 한 목록에 섞으면 제목의
   // 건수가 못 받는 것까지 세고, 금액이 가장 큰 마감 건이 첫 카드를 차지한다.
-  const { 신청가능, 마감 } = asOf
-    ? splitByApplicationWindow(groups, asOf)
-    : { 신청가능: [], 마감: [] };
-  // 지금 신청할 수 없는 것은 한 묶음이다. 마감이든 대상이 아니든 사용자가 지금
-  // 할 일이 없다는 점은 같아서, 두 묶음으로 나누면 접힌 줄만 둘이 된다.
-  const 신청불가 = [...마감, ...groups.해당없음];
+  const { 신청가능 } = asOf ? splitByApplicationWindow(groups, asOf) : { 신청가능: [] };
 
   return (
     <AppShell className="step-in">
@@ -143,32 +140,12 @@ export default function FindPoliciesPage() {
 
           {count === 0 && (
             <p className="mt-4 text-sm leading-relaxed text-ink-600">
-              지금 답변으로는 조건에 맞는 지원금을 찾지 못했습니다. 아래에서 이유를 확인하고,{" "}
+              지금 답변으로는 조건에 맞는 지원금을 찾지 못했습니다.{" "}
               <Link href="/find" className="font-bold text-brand-700 underline">
                 답변을 바꿔
               </Link>{" "}
               다시 확인해 보세요.
             </p>
-          )}
-
-          {/* 지금 신청할 수 없는 것은 접어 둔다. 마감된 480만원짜리 카드가 펼쳐져
-              있으면 실제로 받을 수 있는 50만원보다 크게 읽힌다. */}
-          {신청불가.length > 0 && (
-            <details className="group mt-6" open={신청가능.length === 0}>
-              <summary className="focus-ring flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-control bg-ink-50 px-4 py-3 text-sm font-bold text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-800 [&::-webkit-details-marker]:hidden">
-                <span>신청할 수 없는 지원금 {신청불가.length}개</span>
-                <ChevronRight
-                  size={ICON_SM + 2}
-                  aria-hidden="true"
-                  className="shrink-0 text-ink-300 transition-transform group-open:rotate-90"
-                />
-              </summary>
-              <div className="mt-2 space-y-3">
-                {신청불가.map(({ policy, result }) => (
-                  <PolicyCard key={policy.id} policy={policy} result={result} asOfISO={asOf} />
-                ))}
-              </div>
-            </details>
           )}
 
           {/* 다음에 할 일 하나. 목록이 답한 것은 '얼마까지'이고, 사용자가 실제로
@@ -186,6 +163,13 @@ export default function FindPoliciesPage() {
             ) : (
               <Link
                 href="/calculate"
+                onClick={(event) => {
+                  // 월세 계산은 로그인하고 한다(11/17). 로그인 상태 · 로그인을 쓸 수 없는 빌드에서는 그냥 간다.
+                  if (isLoginAvailable() && !hasStoredLogin()) {
+                    event.preventDefault();
+                    setLoginOpen(true);
+                  }
+                }}
                 className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
               >
                 <span className="text-balance text-left text-lg font-bold leading-snug text-white">
@@ -212,6 +196,7 @@ export default function FindPoliciesPage() {
         </>
       )}
       </main>
+      {loginOpen && <LoginSheet onClose={() => setLoginOpen(false)} />}
     </AppShell>
   );
 }

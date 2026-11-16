@@ -10,7 +10,11 @@ import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import type { PolicyMeta } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
-const policy = policies.find((item) => item.id === "jeonse-return-guarantee-fee-subsidy")!;
+// 2층은 월세 · 연세만 다뤄서 실제 화면에서는 이 전세 전용 정책이 '대상아님'이 된다(11/17, lib/eligibility.ts).
+// 이 테스트는 확인 필요 조건 화면(예/아니오 · 금액 입력)을 보려는 것이라, 금액 조건이 있는 유일한 정책에서
+// 계약 형태 조건만 푼 사본을 쓴다.
+const jeonse = policies.find((item) => item.id === "jeonse-return-guarantee-fee-subsidy")!;
+const policy: PolicyMeta = { ...jeonse, discovery: { ...jeonse.discovery, housingTypes: null } };
 
 function setup() {
   window.localStorage.clear();
