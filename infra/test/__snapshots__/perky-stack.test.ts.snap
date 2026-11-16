@@ -615,7 +615,7 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "Description": "GitHub Actions 배포 환경에서만 — CDK 배포 역할 빌리기",
+        "Description": "GitHub Actions deploy (environment aws-production only) - may only assume CDK bootstrap roles",
         "MaxSessionDuration": 3600,
         "RoleName": "perky-github-deploy",
       },

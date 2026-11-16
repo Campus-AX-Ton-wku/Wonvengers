@@ -309,7 +309,8 @@ export class PerkyStack extends Stack {
     });
     const deployRole = new iam.Role(this, "GithubDeployRole", {
       roleName: DEPLOY_ROLE_NAME,
-      description: "GitHub Actions 배포 환경에서만 — CDK 배포 역할 빌리기",
+      // IAM 설명은 라틴 문자만 받는다(한글이면 배포가 실패한다)
+      description: "GitHub Actions deploy (environment aws-production only) - may only assume CDK bootstrap roles",
       maxSessionDuration: Duration.hours(1),
       assumedBy: new iam.WebIdentityPrincipal(githubOidc.oidcProviderArn, {
         StringEquals: {
