@@ -1,12 +1,15 @@
 import { MAX_BODY_BYTES, validatePutRequest } from "../../web/lib/user-data";
+import { MAX_PUSH_BODY_BYTES, validatePushEndpoint, validatePushSubscription } from "../../web/lib/push-subscription";
 import type { AccountService } from "./cognito";
 import { bodyBytes, json, type ApiEvent, type ApiResult } from "./http";
 import type { KakaoUnlinker } from "./kakao";
 import { hashUserId, type LogEntry } from "./log";
+import type { PushStore } from "./push-store";
 import type { UserDataStore } from "./store";
 
 export interface Deps {
   store: UserDataStore;
+  push: PushStore;
   accounts: AccountService;
   kakao: KakaoUnlinker;
   now: () => Date;
@@ -30,6 +33,10 @@ export async function route(event: ApiEvent, deps: Deps): Promise<ApiResult> {
         return finish(deps, key, user, await getData(sub, deps));
       case "PUT /me/data":
         return finish(deps, key, user, await putData(sub, event, deps));
+      case "PUT /me/push":
+        return finish(deps, key, user, await putPush(sub, event, deps));
+      case "DELETE /me/push":
+        return finish(deps, key, user, await deletePush(sub, event, deps));
       case "DELETE /me": {
         const username = typeof claims.username === "string" && claims.username !== "" ? claims.username : null;
         if (username === null) return finish(deps, key, user, json(401, { error: "unauthorized" }));
@@ -78,6 +85,38 @@ async function deleteMe(sub: string, username: string, deps: Deps): Promise<ApiR
   const kakaoUserId = await deps.accounts.kakaoUserId(username, sub);
   await deps.kakao.unlink(kakaoUserId);
   await deps.store.delete(sub);
+  await deps.push.deleteAll(sub);
   await deps.accounts.deleteUser(username);
+  return json(204);
+}
+
+/** 본문을 JSON 으로. 크기를 먼저 본다. 실패하면 응답을 돌려준다. */
+function readJson(event: ApiEvent, maxBytes: number): { ok: true; value: unknown } | { ok: false; result: ApiResult } {
+  const bytes = bodyBytes(event);
+  if (bytes.length > maxBytes) return { ok: false, result: json(413, { error: "too_large" }) };
+  try {
+    return { ok: true, value: JSON.parse(bytes.toString("utf8")) };
+  } catch {
+    return { ok: false, result: json(400, { error: "invalid_json" }) };
+  }
+}
+
+/** 알림 켜기 · 갱신 (설계 "API"). 사용자는 토큰 sub 로만 정한다. */
+async function putPush(sub: string, event: ApiEvent, deps: Deps): Promise<ApiResult> {
+  const body = readJson(event, MAX_PUSH_BODY_BYTES);
+  if (!body.ok) return body.result;
+  const checked = validatePushSubscription(body.value);
+  if (!checked.ok) return json(400, { error: "invalid", path: checked.error });
+  await deps.push.put(sub, checked.value, deps.now());
+  return json(204);
+}
+
+/** 알림 끄기 — 이 기기 하나. 없어도 204. */
+async function deletePush(sub: string, event: ApiEvent, deps: Deps): Promise<ApiResult> {
+  const body = readJson(event, MAX_PUSH_BODY_BYTES);
+  if (!body.ok) return body.result;
+  const checked = validatePushEndpoint(body.value);
+  if (!checked.ok) return json(400, { error: "invalid", path: checked.error });
+  await deps.push.delete(sub, checked.value.endpoint);
   return json(204);
 }
