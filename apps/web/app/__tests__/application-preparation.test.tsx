@@ -13,6 +13,14 @@ const policy = (policiesJson as PolicyMeta[]).find(
 describe("신청 준비 흐름", () => {
   beforeEach(() => window.localStorage.clear());
 
+  it("안내 문구 세 개를 두지 않는다 — 기기 저장 안내 · '제출 전 다시 확인' 상자 · 신청 위치 한 줄 (11/17)", async () => {
+    render(<ApplicationPreparation policy={policy} />);
+    await screen.findByRole("heading", { level: 1, name: "필수 확인 사항을 점검해요" });
+    expect(screen.queryByText(/확인한 항목은 이 기기에 저장되어/)).toBeNull();
+    expect(screen.queryByText("제출 전 다시 확인해 주세요")).toBeNull();
+    expect(screen.queryByText(/신청 위치 ·/)).toBeNull();
+  });
+
   it("실제 정책 기간을 보여주고 확인 상태를 정책별로 저장한다", async () => {
     const user = userEvent.setup();
     render(<ApplicationPreparation policy={policy} />);
