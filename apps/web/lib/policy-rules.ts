@@ -54,11 +54,11 @@ function ageCheck(birthDate: string, asOfISO: string, min: number, max: number):
 }
 
 /**
- * 앱의 판정 질문으로는 알 수 없어서 사용자가 결과 화면에서 직접 답하는 조건.
+ * 앱의 판정 질문으로는 알 수 없는, 그 정책만의 조건.
  *
- * 답이 없으면 'unknown' 으로 남는다 — 예전처럼 result 를 unknown 으로 박아 두는
- * 것과 같은 상태다. 답이 있으면 judge 로 pass/fail 을 낸다. 어느 쪽이든 ask 를
- * 함께 실어 보내 결과 화면이 입력 칸을 그리고 이미 답한 값도 고칠 수 있게 한다.
+ * 답이 없으면 'unknown' 으로 남는다. 답(perky.declared)이 있으면 judge 로 pass/fail 을 낸다.
+ * ask 는 '사용자가 직접 확인할 조건'이라는 표시다 — 신청 준비가 이 표시로 보여 줄 조건을 고른다.
+ * 11/18 결과 화면의 조건 질문 화면(/result/review/[id])을 지웠다 — 이제 이 조건은 어디서도 묻지 않고, 신청 준비 '자격 조건 확인' 줄에 이름만 보여 준다(lib/preparation.ts conditionsToConfirm). 예전에 답한 값(perky.declared)은 그대로 판정에 쓴다.
  */
 function declaredCheck(
   p: EligibilityProfile,
@@ -296,8 +296,9 @@ const jeonseGuaranteeFee: RuleFn = (p) => [
  * 「익산시 인구증가시책 지원 조례」 [별표] 1 · 3호의 대상이 똑같이 '전입신고일 기준 1년
  * 이전부터 타 시군구에 주민등록을 두고 있다가 관내로 전입한 사람'이다.
  *
- * 전입 이력은 앱 입력에 없어 결과 화면에서 직접 묻는다. 같은 키를 써서 한 번 답하면
- * 두 정책에 함께 반영된다. 예전 수혜 여부도 두 정책 모두 '기 지원받은 사실이 있으면 불가'다.
+ * 전입 이력은 앱 입력에 없어 '확인 필요'로 남고, 신청 준비 '자격 조건 확인'에 이름이 나온다.
+ * 같은 키라 예전에 한 번 답했으면 두 정책에 함께 반영된다. 예전 수혜 여부도 두 정책 모두
+ * '기 지원받은 사실이 있으면 불가'다.
  */
 function iksanMoveInChecks(p: EligibilityProfile): CheckOutcome[] {
   return [

@@ -35,7 +35,7 @@ export interface EligibilityProfile {
   jeonbukResidentOverOneYear: Answer<boolean>;
   employedInTargetSectorOver3Months: Answer<boolean>; // 농업·임업·어업·중소기업정규직·문화예술·연구소기업정규직
   /**
-   * 결과 화면에서 사용자가 직접 답한 '확인 필요' 조건. check.key 로 찾는다.
+   * 사용자가 직접 답한 '확인 필요' 조건(예전 결과 화면 질문, 11/18 화면은 지움). check.key 로 찾는다.
    *
    * 판정 질문(/eligibility)이 받지 않는 항목이라 별도 저장소(perky.declared)에
    * 두고 loadProfile 이 합쳐 준다. 여기 없는 키는 여전히 '확인 필요'다.
@@ -60,17 +60,17 @@ export interface CheckOutcome {
   result: CheckResult;
   howToConfirm?: string;
   /**
-   * 이 조건을 사용자가 직접 답할 수 있으면 그 입력 방법. 없으면 프로필에서
-   * 계산되는 조건이라 결과 화면에서 따로 물을 것이 없다는 뜻이다.
+   * 이 조건을 사용자가 직접 확인해야 하면 그 입력 방법(신청 준비가 보여 줄 조건을 고르는 표시).
+   * 없으면 프로필에서 계산되는 조건이다.
    */
   ask?: DeclarableInput;
 }
 
-/** 사용자가 결과 화면에서 직접 신고한 값. */
+/** 사용자가 직접 신고한 값 (예전 결과 화면 질문의 답 — 11/18 화면은 지웠고 값은 판정에 그대로 쓴다). */
 export type DeclaredValue = number | boolean | string;
 
 /**
- * '확인 필요' 조건을 결과 화면에서 물어보는 방법.
+ * '확인 필요' 조건을 물어보는 방법 (예전 결과 화면 질문용, 11/18 화면은 지웠다).
  *
  * 판정 기준(3억원 이하 등)은 규칙 쪽에 남는다. 여기에는 화면이 무엇을 어떻게
  * 그릴지만 담는다 — 기준값을 UI 에 복제하면 둘이 어긋난다.
