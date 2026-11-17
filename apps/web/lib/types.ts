@@ -357,16 +357,3 @@ export interface NextRound {
   confirmedAt: string; // YYYY-MM-DD
   via: "공고" | "전화";
 }
-
-/** 지역 상담 창구. 정책과 같은 regionScope 접두사 규칙으로 매칭한다 (lib/region.ts). */
-export interface ConsultCenterMeta {
-  id: string;
-  name: string;
-  regionScope: string;
-  phone: string | null;
-  url: string | null;
-  hours: string | null; // "평일 09:00~18:00"
-  topics: string[];
-  verifiedAt: string | null;
-  notes: string; // 내부 메모. 화면에 그리지 않는다
-}

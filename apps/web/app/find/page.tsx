@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
-import { RegionSummary } from "@/app/find/ConsultCenters";
+import { RegionSummary } from "@/app/find/RegionSummary";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
