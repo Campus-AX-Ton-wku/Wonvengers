@@ -131,6 +131,14 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `shadow-card` | 지면 위에 올라온 흰 카드 |
 | `shadow-raised` | 시트, 휠 피커 패널 |
 | `shadow-sticky` | 하단 고정 CTA 위쪽 — "아래에 더 있다" 신호 |
+| `shadow-btn-*` | 버튼 재질 — `primary` · `secondary` · `quiet` · `danger` 와 각 `-pressed` |
+
+**버튼 재질 (2026-11-17).** Perky 처럼 둥글고 폭신하게 — 윗면에 흰 빛 1px, 아랫면에 립
+3px(면이 옅은 `secondary`·`quiet` 은 2px). **누르면 립이 1px 로 줄고 버튼이 2px
+내려앉는다.** 예전에는 `scale(0.99)` 로 살짝 작아지게만 했다(더 깊게 줄이면 카드 전체가
+흔들려 보였다). 크기 대신 위치를 옮기므로 옆 요소와 테두리가 흔들리지 않는다. `text` 는
+립이 없어 내려앉지 않고 누를 때만 면이 생긴다. 비활성은 립도 내려앉음도 없다. 배지는
+누르는 것이 아니라서 립이 없다.
 
 그림자 색은 검정이 아니라 `rgba(11,42,74,…)` 다. 파란 지면 위 중성 회색 그림자는
 탁하게 뜬다. offset 과 blur 를 함께 준다 — 0 offset 컬러 헤일로는 깊이가 아니라 장식이다.
@@ -151,11 +159,11 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `AppShell` | 지면 — `max-w-lg`, 좌우 20px, `min-h-dvh` |
 | `TopBar` | 뒤로가기(함수 또는 링크) + 워드마크 |
 | `StickyBottomAction` | 하단 고정 영역, safe-area 여백 포함 |
-| `Button` / `LinkButton` | `primary` · `secondary` · `quiet` × `lg`(56px) · `md`(44px) |
+| `Button` / `LinkButton` | `primary` · `secondary` · `quiet` · `text` · `danger` × `lg`(56px, 하단 고정) · `screen`(52px, 카드·시트 안) · `md`(44px, 줄 안 보조). 이 세 크기 밖으로 만들지 않는다. `danger` 는 지우는 동작의 확인 시트 안에서만(탈퇴 · 로그아웃 · 처음부터 다시) |
 | `IconButton` / `IconLink` | 44px 타깃. `label` 이 **필수** |
 | `Card` | `plain` · `flat` · `info` · `notice` |
 | `ChoiceCard` | 세로 선택지. 선택 표시는 색 + 체크 + `aria-pressed` |
-| `StatusBadge` / `CARD_STATUS_BADGE` | 상태 배지와 1층 카드 상태 5종의 톤·아이콘 표 |
+| `StatusBadge` / `CARD_STATUS_BADGE` | 상태 배지와 1층 카드 상태 5종의 톤·아이콘 표. 마감 표시는 상시 `info` · D-8 이상 `outline` · 7일 이하·오늘 마감 `danger` · 접수 마감 `muted` (`app/home/page.tsx`) |
 | `StepHeader` / `AnsweredStack` | 질문 제목 · 답한 질문 쌓기(진행률 대신) |
 | `Field` / `FieldGroup` / `FieldError` / `MoneyInput` / `NumberInput` | 입력 |
 | `Disclosure` | `<details>` 기반 접기. 라벨에 건수를 적는다 |
@@ -195,8 +203,8 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `search` | 온보딩 1 (발견) |
 | `guide` | 온보딩 2 (안내) |
 | `success` | 온보딩 3 (결과) |
-| `found` | `/find/result` — 지원금을 찾았을 때 |
-| `empty` | `/find/result` — 못 찾았을 때 |
+| `found` | `/find/result` — 지원금을 찾았을 때 · `/home` 요약 카드(아래) |
+| `empty` | `/find/result` — 못 찾았을 때 · `/home` 지금 신청할 수 있는 게 0건 |
 | `thinking` | `/result` — 계산할 입력이 없을 때 |
 | `basic` | 기본값 |
 
@@ -207,6 +215,12 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
   `h-auto` 로 준다
 - `alt=""` + `aria-hidden` 이다. 상태는 언제나 옆의 글자가 말한다 — 캐릭터가
   그것을 대신하지 않는다
+
+**`/home` 요약 카드 (2026-11-17).** 카드 오른쪽 위에 몸의 절반쯤 걸터앉는다(112px,
+글 영역 오른쪽을 비워 둔다). 위에서부터 먼저 맞는 하나만 — ① 지금 신청할 수 있는 게
+0건 → `empty` ② 지금 신청할 수 있는 찜을 모두 준비함 → `success` + "이제 신청만
+남았어요" ③ 그 밖 → `found` (`lib/home.ts` `homePose`). 답이 없는 상태(시작하기 카드)와
+빈 찜 목록에는 캐릭터를 두지 않는다.
 
 ---
 
