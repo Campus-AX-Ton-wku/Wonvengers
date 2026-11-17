@@ -157,6 +157,27 @@ describe("강조 위계", () => {
  * loanProductsForRegion 단위 테스트와 짝이다 — 여기서는 실제 데이터
  * (data/loan-products.json)로 화면에 실제로 걸러져 나오는지까지 본다.
  */
+describe("대출·보증 상품 — 접힘 (11/17 결과 화면 정리)", () => {
+  it("현금 지원이 아닌 대출·보증은 닫힌 한 줄로 접혀 있고, 위 금액에 넣지 않았다고 밝힌다", async () => {
+    saveListing(makeListing({ region: "전북특별자치도 익산시", oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    const summary = screen.getByText(/^현금 지원이 아닌 대출·보증 \d+개$/);
+    const details = summary.closest("details") as HTMLDetailsElement;
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+    expect(within(details).getByText("위 금액에는 넣지 않았어요")).toBeTruthy();
+    // 상품 문단과 신청 링크는 상품마다 다시 접혀 있다
+    const product = within(details).getByText("청년전용 버팀목 전세자금대출").closest("li")!;
+    expect((within(product).getByText("조건과 신청 방법").closest("details") as HTMLDetailsElement).open).toBe(false);
+    expect(within(product).getByRole("link", { name: /신청 페이지로 이동/ }).closest("details")).not.toBeNull();
+    // 팀의 설계 이유를 사용자에게 설명하던 긴 문단은 없다
+    expect(screen.queryByText(/실제보다 많이 받는 것처럼 보일 수 있기 때문입니다/)).toBeNull();
+  });
+});
+
 describe("대출·보증 상품 — 지역 필터", () => {
   it("익산 사용자에게는 익산 전용 대출상품이 보인다", async () => {
     saveListing(makeListing({ region: "전북특별자치도 익산시", oneTimeMoveCost: 600000 }));
