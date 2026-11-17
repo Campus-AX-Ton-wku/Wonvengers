@@ -78,10 +78,14 @@ describe("TopBar 뒤로가기", () => {
 });
 
 describe("TopBar 줄 구조", () => {
-  it("양옆 칸이 같은 폭인 3칸 그리드고, 왼쪽은 시작·오른쪽은 끝에 붙는다", () => {
+  it("가운데 브랜드가 없다 — 로고를 누르면 처음 화면으로 가서 답을 다시 넣게 됐다(11/17)", () => {
+    render(<TopBar backHref="/eligibility" />);
+    expect(screen.queryByRole("link", { name: "Perky" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "Perky" })).toBeNull();
+  });
+
+  it("왼쪽 칸과 오른쪽 칸이 양 끝에 붙는다", () => {
     render(<TopBar />);
-    expect(screen.getByTestId("top-bar-row").className).toContain("grid-cols-[1fr_auto_1fr]");
-    expect(screen.getByTestId("top-bar-left").className).toContain("justify-self-start");
-    expect(screen.getByTestId("top-bar-right").className).toContain("justify-self-end");
+    expect(screen.getByTestId("top-bar-row").className).toContain("justify-between");
   });
 });

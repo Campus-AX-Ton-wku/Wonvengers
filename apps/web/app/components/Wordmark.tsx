@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const WORDMARK_SRC = "/brand/perky-wordmark-primary.svg";
 
 /**
@@ -13,7 +11,7 @@ export function Wordmark({
   size = "sm",
   className = "",
 }: {
-  /** sm — 상단 바. lg — 랜딩·온보딩의 브랜드 한 번. */
+  /** lg — 랜딩·온보딩의 브랜드 한 번. sm — 작은 자리용. */
   size?: "sm" | "lg";
   className?: string;
 }) {
@@ -25,21 +23,5 @@ export function Wordmark({
       height={size === "lg" ? 56 : 24}
       className={`block w-auto object-contain ${size === "lg" ? "h-14" : "h-6"} ${className}`}
     />
-  );
-}
-
-/**
- * 상단 바 가운데의 브랜드. 내부 화면에서 홈으로 돌아갈 유일한 통로다.
- *
- * 44px 터치 타깃 안에 Figma 원본 워드마크를 배치한다.
- */
-export function HomeMark() {
-  return (
-    <Link
-      href="/"
-      className="focus-ring inline-flex min-h-11 items-center rounded-lg px-2 py-1 transition-opacity hover:opacity-70"
-    >
-      <Wordmark />
-    </Link>
   );
 }

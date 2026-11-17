@@ -34,4 +34,4 @@ export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";
 export type { BadgeTone } from "./StatusBadge";
 export { StepHeader } from "./StepHeader";
 export { TopBar } from "./TopBar";
-export { HomeMark, Wordmark } from "./Wordmark";
+export { Wordmark } from "./Wordmark";
