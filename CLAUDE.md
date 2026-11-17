@@ -16,7 +16,7 @@
 **손대지 말 것.** Benefit Result Card 리디자인(`apps/web/app/result/BenefitResultCard.tsx`,
 `apps/web/lib/benefit-result.ts`, `apps/web/app/result/ResultState.tsx` 등)은 다른 사람 작업이다.
 2026-09-03에 develop으로 머지됐다(PR #90·#92·#94) — 이제 `git status`에 계속 뜨지는 않지만,
-여전히 이유 없이 건드리지 않는다. (예전엔 `app/components/BenefitResultCard.tsx` 경로의
+여전히 이유 없이 건드리지 않는다. **2026-11-17 결과 화면 정리(ggue 승인)** 로 카드 · 어댑터를 덜어냈다(`.impeccable/critique` 진단 — 반복 문구 · 합계 밖 금색 · 대출 펼침). 고칠 이유가 있으면 지금처럼 고친다. (예전엔 `app/components/BenefitResultCard.tsx` 경로의
 미완성 초안이 로컬에 커밋 안 된 채로 계속 남아 있었는데, develop 머지 시 최종본으로 교체됐다.)
 
 ## 데이터 3분류

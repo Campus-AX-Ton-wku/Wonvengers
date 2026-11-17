@@ -1,4 +1,4 @@
-import { benefitCeiling, benefitTypeLabel, payoutTiming } from "./benefit";
+import { benefitCeiling, payoutTiming } from "./benefit";
 import type { CalculationSummary, PolicyResult } from "./types";
 import { formatDotDate } from "./date";
 
@@ -10,12 +10,25 @@ export interface BenefitResultCardData {
   policyId: string;
   title: string;
   agency: string;
-  amount: { value: number; unit: "원"; period: string; isMaximum: boolean };
+  amount: {
+    value: number;
+    unit: "원";
+    /** 지급 방식 한 줄 (매월 지급 · 거주 기간 동안 / 첫 학기 30만원 · 이후 학기마다 10만원 …) */
+    period: string;
+    isMaximum: boolean;
+    /**
+     * 이 금액이 결과 화면 맨 위 '최대 지원 가능액' 합계에 들어갔는가(11/17).
+     * 들어간 금액만 금색으로 그린다 — 합계에 없는 공고 금액을 같은 금색 상자에 두면
+     * 사용자는 카드 금액을 모두 더한 값을 받는다고 읽는다.
+     */
+    countsInTotal: boolean;
+    /** 합계에 들어가지 않은 이유. 들어갔으면 null */
+    note: string | null;
+  };
   evidence: { matchedCount: number; missingCount: number; message: string };
   /** 원본 공고에는 날짜만 있어, 시간은 임의로 만들지 않고 YYYY-MM-DD를 보존한다. */
   deadlineAt: string | null;
   deadlineDays: number | null;
-  steps: Array<{ label: string; value: string; tone: "ok" | "warn" | "danger" | "neutral"; href?: string }>;
   source: { name: string; updatedAt: string | null; url: string };
   primaryAction: { label: string; kind: "prepare" | "review"; href: string };
 }
@@ -61,7 +74,14 @@ function evidenceMessage(result: PolicyResult): string {
   return `확인한 조건 ${result.passedLabels.length}개가 모두 일치해요.`;
 }
 
-export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): BenefitResultCardData | null {
+/**
+ * @param includedPolicyIds 맨 위 합계(최선 조합)에 든 정책 id. 안 넘기면 예상액이 있는지로 본다.
+ */
+export function toBenefitResultCardData(
+  result: PolicyResult,
+  asOfISO: string,
+  includedPolicyIds?: ReadonlySet<string>
+): BenefitResultCardData | null {
   const { policy } = result;
   const state = benefitResultState(result, asOfISO);
   if (state === null) return null;
@@ -72,9 +92,16 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
   // 개인별 금액을 계산할 수 없는 정책만 공고 상한으로 보완한다. 둘 다 실제 정책 데이터다.
   const amountValue = result.estimatedAmount > 0 ? result.estimatedAmount : ceiling?.amount ?? 0;
   const isMaximum = ceiling !== null && amountValue === ceiling.amount;
-  const detailHref = `/find/policies/${policy.id}`;
-  const prepareHref = `${detailHref}/prepare`;
+  const prepareHref = `/find/policies/${policy.id}/prepare`;
   const reviewHref = `/result/review/${policy.id}`;
+  const counted = result.estimatedAmount > 0 && (includedPolicyIds?.has(policy.id) ?? true);
+  const note = counted
+    ? null
+    : result.estimatedAmount > 0
+      ? "같이 받을 수 없는 지원과 겹쳐 위 합계에서 뺐어요"
+      : policy.lumpSumBasis === "fixedGrant"
+        ? "정해진 금액이라 위 합계에는 넣지 않았어요"
+        : "이 화면에서 계산하지 않는 지원이라 위 합계에는 넣지 않았어요";
 
   return {
     state,
@@ -84,39 +111,21 @@ export function toBenefitResultCardData(result: PolicyResult, asOfISO: string): 
     amount: {
       value: amountValue,
       unit: "원",
-      period: result.estimatedAmount > 0 ? payoutTiming(policy) : `개인 예상액 계산 전 · ${payoutTiming(policy)}`,
+      period: payoutTiming(policy),
       isMaximum,
+      countsInTotal: counted,
+      note,
     },
     evidence: { matchedCount, missingCount, message: evidenceMessage(result) },
     deadlineAt: deadline,
     deadlineDays: deadline ? daysUntil(asOfISO, deadline) : null,
-    steps: [
-      {
-        label: "자격 요건",
-        value: missingCount > 0 ? `확인 필요 ${missingCount}개` : `확인 완료 ${matchedCount}개`,
-        tone: missingCount > 0 ? "warn" : "ok",
-        href: missingCount > 0 ? reviewHref : undefined,
-      },
-      {
-        label: "지원 형태",
-        value: benefitTypeLabel(policy.benefitType, policy.lumpSumBasis),
-        tone: "neutral",
-      },
-      {
-        label: "신청 방식",
-        value: state === "check" ? "조건 확인 후 안내" : "공식 신청 페이지에서 진행",
-        tone: state === "urgent" ? "danger" : state === "check" ? "neutral" : "ok",
-        // 외부 applyUrl은 신청 준비 화면의 출처 안내를 거친 뒤에만 연다.
-        href: state === "check" ? undefined : prepareHref,
-      },
-    ],
     source: { name: policy.agency, updatedAt: policy.verifiedAt, url: policy.sourceUrl },
     primaryAction: state === "check"
       ? { label: `조건 ${missingCount}개 확인하기`, kind: "review", href: reviewHref }
       : {
           label: state === "urgent" ? "마감 전 신청 준비하기" : "신청 준비 시작하기",
           kind: "prepare",
-          href: detailHref,
+          href: prepareHref,
         },
   };
 }
@@ -125,10 +134,14 @@ export function isExpiredResult(result: PolicyResult, asOfISO: string): boolean 
   return result.policy.applicationEnd !== null && daysUntil(asOfISO, result.policy.applicationEnd) < 0;
 }
 
-export function benefitResultCards(results: PolicyResult[], asOfISO: string): BenefitResultCardData[] {
+export function benefitResultCards(
+  results: PolicyResult[],
+  asOfISO: string,
+  includedPolicyIds?: ReadonlySet<string>
+): BenefitResultCardData[] {
   const order: Record<BenefitResultState, number> = { urgent: 0, eligible: 1, check: 2 };
   return results
-    .map((result) => toBenefitResultCardData(result, asOfISO))
+    .map((result) => toBenefitResultCardData(result, asOfISO, includedPolicyIds))
     .filter((card): card is BenefitResultCardData => card !== null)
     .sort((a, b) => order[a.state] - order[b.state]);
 }
