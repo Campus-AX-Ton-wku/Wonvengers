@@ -151,6 +151,38 @@ describe("강조 위계", () => {
   });
 });
 
+describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 카드를 한 장으로)", () => {
+  function 요약카드(): HTMLElement {
+    const card = screen.getByText(지원금_라벨).closest("section");
+    if (!card) throw new Error("요약 카드를 찾지 못했다");
+    return card as HTMLElement;
+  }
+
+  it("한 카드 안에서 내는 돈 − 받는 지원 = 실제 부담을 줄로 보여 주고, 한 달 부담도 적는다", async () => {
+    renderWithInput();
+    await screen.findByText(지원금_라벨);
+    const card = 요약카드();
+
+    expect(within(card).getByText(/^월세·관리비 \d+개월$/)).toBeTruthy();
+    expect(within(card).getByText("이사비")).toBeTruthy();
+    // 받는 지원은 합계에 든 정책 이름과 빼는 금액으로 — 어떤 지원을 더했는지(F4-5)가 접히지 않고 보인다
+    const supportRows = within(card).getAllByText(/^− .+원$/);
+    expect(supportRows.length).toBeGreaterThan(0);
+    expect(supportRows[0].closest("details")).toBeNull();
+    expect(within(card).getByText(/^한 달에 약 .+원$/)).toBeTruthy();
+    expect(within(card).getByText(/계약 당일 필요한 현금/)).toBeTruthy();
+  });
+
+  it("조합 · 목돈을 따로 카드로 두지 않고, 제목 아래 금액 줄도 반복하지 않는다", async () => {
+    renderWithInput();
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.queryByText("이 금액은 아래 조합으로 계산했습니다")).toBeNull();
+    expect(screen.queryByText("계약 시 필요한 목돈과 지급 시점은 달라요")).toBeNull();
+    expect(screen.queryByText(/받을 수 있어요$/)).toBeNull();
+  });
+});
+
 /**
  * "이용 가능한 대출·보증 상품" 섹션이 loan-products.json 을 지역 구분 없이
  * 통째로 보여주던 버그의 회귀 테스트. lib/__tests__/region.test.ts 의

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
 import type { LoanProductMeta } from "@/lib/types";
 import { summaryHighlights } from "@/lib/summary";
-import { formatKoreanMoney } from "@/lib/money";
 import { excludedByOverlap } from "@/lib/combinations";
 import { loanProductsForRegion } from "@/lib/region";
 import { formatDotDate } from "@/lib/date";
@@ -13,7 +12,6 @@ import {
   Button,
   ContactInfo,
   Disclosure,
-  ResultSummary,
   TopBar,
 } from "@/app/components";
 import {
@@ -23,12 +21,11 @@ import {
   ICON_SM,
   Info,
   Landmark,
-  ListChecks,
-  Wallet,
 } from "@/app/components/icons";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
 import BenefitResultCard from "./BenefitResultCard";
+import { ResultReceipt } from "./ResultReceipt";
 import { ResultLoading, ResultState } from "./ResultState";
 import { benefitResultCards } from "@/lib/benefit-result";
 
@@ -74,15 +71,12 @@ export default function ResultPage() {
       : `바로 신청 가능한 혜택 ${leadCards.length}개`;
   const resultSupport = leadState === "urgent"
     ? leadDeadlineDays === 0 ? "오늘 안에 신청을 준비해주세요" : `${leadDeadlineDays}일 안에 신청해야 해요`
-    : leadState === "check"
-      ? summary.maxSupportAmount > 0 ? `확인 후 최대 ${formatKoreanMoney(summary.maxSupportAmount)} 가능` : "자격 조건은 신청 준비에서 확인해요"
-      : summary.maxSupportAmount > 0 ? `최대 ${formatKoreanMoney(summary.maxSupportAmount)} 받을 수 있어요` : "신청 전에 공고상 지원 한도를 확인해주세요";
+    : null;
 
   // 정책 카드와 같은 규칙으로 지역을 거른다 — 안 거르면 익산·군산 전용 대출상품이
   // 그 외 지역 사용자에게도 그대로 보인다.
   const loanProducts = loanProductsForRegion(allLoanProducts, listing.region);
 
-  const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
   const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
 
@@ -95,67 +89,18 @@ export default function ResultPage() {
           <h1 className="text-[21px] font-extrabold leading-[1.4] text-ink-900">
             {resultHeadline}
           </h1>
-          <p className={`mt-0.5 text-sm font-bold ${leadState === "urgent" ? "text-danger-700" : "text-brand-700"}`}>
-            {resultSupport}
-          </p>
+          {/* 둘째 줄은 마감 임박일 때만 — 금액은 바로 아래 영수증이 말한다(11/18, 같은 금액 반복을 뺐다) */}
+          {resultSupport && <p className="mt-0.5 text-sm font-bold text-danger-700">{resultSupport}</p>}
         </header>
 
-      <ResultSummary
+      <ResultReceipt
+        listing={listing}
         supportAmount={summary.maxSupportAmount}
         finalCost={summary.finalEstimatedHousingCost}
-        nominalTotal={summary.nominalTotalCost}
+        included={included}
+        overlapExcluded={overlapExcluded}
         unknownConditions={unknownConditions}
       />
-
-      {/* F4-5: 어떤 정책을 합쳐서 나온 금액이고, 무엇이 중복 제한으로 빠졌는지. */}
-      <section className="rounded-card bg-surface p-5 text-sm shadow-card">
-        <SectionTitle icon={<ListChecks size={ICON_MD} aria-hidden="true" />}>
-          이 금액은 아래 조합으로 계산했습니다
-        </SectionTitle>
-        {included.length > 0 ? (
-          <ul className="mt-2 flex flex-col gap-1">
-            {included.map((item) => (
-              <li key={item.id} className="flex items-baseline justify-between gap-3 text-sm text-ink-600">
-                <span>{item.name}</span>
-                <span className="shrink-0 font-bold text-ink-900 tabular-nums">
-                  {formatKoreanMoney(item.amount)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm leading-relaxed text-ink-500">
-            합산할 수 있는 정책이 없습니다. 아래 목록에서 각 정책의 미충족·확인 필요 조건을 보세요.
-          </p>
-        )}
-
-        {overlapExcluded.length > 0 && (
-          <Disclosure label={`중복 수급으로 빠진 정책 ${overlapExcluded.length}개`}>
-            <ul className="flex flex-col gap-2 px-1 text-sm leading-relaxed text-ink-500">
-              {overlapExcluded.map((x) => (
-                <li key={x.policy.id}>
-                  <strong className="text-ink-600">{x.policy.name}</strong> —{" "}
-                  {x.conflictsWith.join(" · ")}과(와) 중복 수급할 수 없어, 금액이 더 큰 쪽만
-                  넣었습니다.
-                </li>
-              ))}
-            </ul>
-          </Disclosure>
-        )}
-      </section>
-
-      <section className="rounded-card bg-surface p-5 text-sm shadow-card">
-        <SectionTitle icon={<Wallet size={ICON_MD} aria-hidden="true" />}>
-          계약 시 필요한 목돈과 지급 시점은 달라요
-        </SectionTitle>
-        <p className="mt-1 text-ink-500">
-          계약 당일 필요한 현금: <strong>{formatKoreanMoney(upfrontCash)}</strong> (보증금
-          {listing.contractType === "연세" ? " + 연세 선납액" : ""})
-        </p>
-        <p className="mt-1 text-ink-500">
-          월 단위 지원금은 계약 이후 매월 나눠 지급되며, 계약 당일 필요한 목돈을 줄여주지 않습니다.
-        </p>
-      </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="benefit-cards-heading">
         <h2 id="benefit-cards-heading" className="sr-only">맞춤 혜택 {cardResults.length}개</h2>
@@ -233,29 +178,6 @@ export default function ResultPage() {
       </Button>
       </main>
     </AppShell>
-  );
-}
-
-/**
- * 카드 제목 — 원형 면에 아이콘 하나 + 한 줄.
- * 아이콘은 장식이므로 접근성 트리에서 뺀다(호출부에서 aria-hidden).
- */
-function SectionTitle({
-  icon,
-  as: Tag = "p",
-  children,
-}: {
-  icon: React.ReactNode;
-  as?: "p" | "h2";
-  children: React.ReactNode;
-}) {
-  return (
-    <Tag className="flex items-center gap-3 text-base font-bold text-ink-900">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-        {icon}
-      </span>
-      <span>{children}</span>
-    </Tag>
   );
 }
 

@@ -115,7 +115,8 @@ describe("2층 정책 카드", () => {
   it("최대 지원 가능액과 조합 목록은 접히지 않는다", async () => {
     await renderResult();
     expect(screen.getByText("최대 지원 가능액 (12개월 기준)").closest("details")).toBeNull();
-    expect(screen.getByText("이 금액은 아래 조합으로 계산했습니다").closest("details")).toBeNull();
+    // 조합은 요약 영수증의 '받는 지원' 줄로 보인다(11/18) — 접지 않는다
+    expect(screen.getAllByText(/^− .+원$/)[0].closest("details")).toBeNull();
   });
 
   it("대상아님·신청불가 정책은 Figma 결과 카드 variant로 만들지 않는다", async () => {
