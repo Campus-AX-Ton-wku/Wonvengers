@@ -12,12 +12,13 @@ import {
   buttonClass,
 } from "@/app/components";
 import { Check, ICON_SM, ShieldCheck } from "@/app/components/icons";
-import { formatDotDate } from "@/lib/date";
-import { pageProgress } from "@/lib/preparation";
+import { formatDotDate, seoulTodayISO } from "@/lib/date";
+import { conditionsToConfirm, pageProgress } from "@/lib/preparation";
 import {
   EMPTY_CHECKLIST,
   loadChecklist,
   loadDocumentChecks,
+  loadProfile,
   saveChecklist,
   saveDocumentChecks,
 } from "@/lib/storage";
@@ -29,6 +30,7 @@ type ChecklistKey = keyof ChecklistState;
 export default function ApplicationPreparation({ policy }: { policy: PolicyMeta }) {
   const [checklist, setChecklist] = useState<ChecklistState>(EMPTY_CHECKLIST);
   const [checkedDocs, setCheckedDocs] = useState<string[]>([]);
+  const [conditions, setConditions] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const confirmLinkRef = useRef<HTMLAnchorElement>(null);
@@ -43,8 +45,9 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
   useEffect(() => {
     setChecklist(loadChecklist(policy.id));
     setCheckedDocs(loadDocumentChecks(policy.id));
+    setConditions(conditionsToConfirm(policy, loadProfile(), seoulTodayISO()));
     setHydrated(true);
-  }, [policy.id]);
+  }, [policy]);
 
   useEffect(() => {
     if (!handoffOpen && restoreFocusRef.current) {
@@ -128,7 +131,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
           <ChecklistRow
             checked={checklist.eligibility}
             label="자격 조건 확인"
-            support="내 정보와 공고의 지원 대상을 다시 대조해요"
+            support={conditions.length > 0 ? conditions.join(" · ") : "내 정보와 공고의 지원 대상을 다시 대조해요"}
             onChange={(checked) => setChecked("eligibility", checked)}
           />
           <ChecklistRow
