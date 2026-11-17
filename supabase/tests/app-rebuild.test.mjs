@@ -1,5 +1,5 @@
 // supabase/tests/app-rebuild.test.mjs
-// 정책 데이터가 바뀌면 Vercel 다시 빌드 (migrations/20261117110000_app_rebuild.sql)
+// 정책 데이터가 바뀌면 Vercel 다시 빌드 (migrations/20261117104553_app_rebuild.sql · 20261117104705_app_rebuild_timeout.sql)
 //
 //   cd supabase/tests && node app-rebuild.test.mjs
 //
@@ -29,11 +29,11 @@ await db.exec(`
   alter default privileges in schema public grant all on sequences to anon, authenticated;
 
   create schema net;
-  create table net.calls (id bigserial primary key, url text, body jsonb);
+  create table net.calls (id bigserial primary key, url text, body jsonb, timeout_ms int);
   create table net._http_response (id bigint primary key, status_code int, timed_out boolean, error_msg text);
   create function net.http_post(url text, body jsonb default '{}'::jsonb, params jsonb default '{}'::jsonb,
                                 headers jsonb default '{}'::jsonb, timeout_milliseconds int default 5000)
-    returns bigint language sql as $$ insert into net.calls (url, body) values (url, body) returning id $$;
+    returns bigint language sql as $$ insert into net.calls (url, body, timeout_ms) values (url, body, timeout_milliseconds) returning id $$;
 
   create schema vault;
   create table vault.decrypted_secrets (name text, decrypted_secret text);
@@ -50,7 +50,7 @@ await db.exec(readFileSync(join(repo, "supabase", "seed.sql"), "utf8"));
 for (const f of ["20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261116233659_documents.sql"]) {
   await db.exec(migration(f));
 }
-const rebuildSql = migration("20261117110000_app_rebuild.sql")
+const rebuildSql = ["20261117104553_app_rebuild.sql", "20261117104705_app_rebuild_timeout.sql"].map(migration).join("\n")
   .split("\n")
   .filter((line) => !/^\s*create extension/i.test(line))
   .join("\n");
@@ -79,6 +79,7 @@ await db.exec(`update vault.decrypted_secrets set decrypted_secret = '${HOOK}' w
 console.log("\n[3] 공개 데이터가 바뀔 때만 부른다");
 ok("처음에는 부른다", (await run()) === "빌드 요청" && (await calls()) === 1);
 ok("Vault 의 주소로 부른다", (await q("select url from net.calls order by id desc limit 1"))[0].url === HOOK);
+ok("30초까지 기다린다", (await q("select timeout_ms from net.calls order by id desc limit 1"))[0].timeout_ms === 30000);
 ok("그대로면 부르지 않는다", (await run()) === "같음" && (await calls()) === 1);
 await edit("payout_note = coalesce(payout_note, '') || ' (검사)'");
 ok("앱에 나가는 칸을 고치면 부른다", (await run()) === "빌드 요청" && (await calls()) === 2);

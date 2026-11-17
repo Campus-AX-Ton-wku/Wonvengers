@@ -1,4 +1,4 @@
--- supabase/migrations/20261117110000_app_rebuild.sql
+-- supabase/migrations/20261117104553_app_rebuild.sql
 -- 정책 데이터가 바뀌면 Vercel 을 다시 빌드한다 (11/17)
 --
 -- 앱은 빌드할 때 public.app_policies() 를 읽는다(apps/web/scripts/fetch-app-data.mjs). 그래서 DB 를 고쳐도

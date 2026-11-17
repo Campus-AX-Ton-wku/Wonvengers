@@ -42,7 +42,7 @@ DB(`public.app_policies()`)에서 다시 만드는 **생성물**이다 — 손�
    - `apply_start` 필수(상시 접수면 사업 연도 1월 1일), `apply_url` 필수
    - 지역은 `region_codes` 하나 + `region_label` — `scripts/app-data/from-db.mjs` 의 `REGION_BY_CODE` 대로
    - 검사에 걸리면 빌드가 멈추고 정식 앱은 직전 배포 그대로 남는다(오류 문구가 고칠 칸을 알려 준다)
-   - **저장하면 5분 안에 Vercel 이 알아서 다시 빌드한다**(11/17, `20261117110000_app_rebuild.sql`). 손으로 Redeploy 할 필요 없다. 상태는 `select * from private.app_rebuild_state;`
+   - **저장하면 5분 안에 Vercel 이 알아서 다시 빌드한다**(11/17, `20261117104553_app_rebuild.sql`). 손으로 Redeploy 할 필요 없다. 상태는 `select * from private.app_rebuild_state;`
 2. `lib/policy-rules.ts` — `RuleFn` 작성 후 `POLICY_RULES` 맵에 등록
    - **없어도 앱은 돈다** — 2층에서 '조건충족시가능' + "공고 원문의 지원 대상 확인"으로 나온다. 정밀 판정이 필요할 때 쓴다
    - 헬퍼: `ageCheck` / `boolCheck` / `maxCeilingCheck` / `rangeCheck`
