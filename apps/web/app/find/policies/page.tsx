@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import ConsultCenters, { centersFor } from "@/app/find/ConsultCenters";
 import PolicyCard from "@/app/find/PolicyCard";
 import { AppShell, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
@@ -105,13 +104,6 @@ export default function FindPoliciesPage() {
               </Link>
             </div>
           </div>
-
-          {resolved.region && (
-            <ConsultCenters
-              centers={centersFor(resolved.region)}
-              regionLabel={resolved.region.split(" ").at(-1) ?? resolved.region}
-            />
-          )}
 
           {!isTrustedRegion(resolved.region) && (
             <p className="mt-4 flex items-start gap-2 rounded-control bg-ink-100 p-3.5 text-xs leading-relaxed text-ink-600">

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import policies from "@/data/policies.json";
 import loanProducts from "@/data/loan-products.json";
-import consultCenters from "@/data/consult-centers.json";
 
 const PHONE = /^(0\d{1,2}-\d{3,4}-\d{4}|1\d{3}-\d{4})$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,20 +38,6 @@ describe("연락처·다음 회차 필드", () => {
       expect(n.text.trim()).not.toBe("");
       expect(n.confirmedAt).toMatch(DATE);
       expect(["공고", "전화"]).toContain(n.via);
-    }
-  });
-});
-
-describe("consult-centers.json", () => {
-  it("id 가 중복되지 않고 형식이 맞다", () => {
-    const ids = (consultCenters as { id: string }[]).map((c) => c.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const c of consultCenters as { id: string; name: string; regionScope: string; phone: string | null; topics: string[]; verifiedAt: string | null }[]) {
-      expect(c.name.trim()).not.toBe("");
-      expect(c.regionScope.trim()).not.toBe("");
-      if (c.phone !== null) expect(c.phone).toMatch(PHONE);
-      expect(Array.isArray(c.topics)).toBe(true);
-      if (c.verifiedAt !== null) expect(c.verifiedAt).toMatch(DATE);
     }
   });
 });
