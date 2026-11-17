@@ -13,6 +13,7 @@ import {
   type ChecklistState,
   type UserDataContent,
 } from "./user-data";
+import { isSaved, toggleSaved } from "./saved";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -304,6 +305,48 @@ function checklistIds(): string[] {
   return ids;
 }
 
+// ── 찜 · 서류 체크 (11/17, docs/기획/2026-11-17-홈-찜하기-설계.md) ──
+const SAVED_KEY = "perky.saved";
+const DOCUMENT_CHECKS_PREFIX = "perky.document-checks:";
+
+export function loadSaved(): string[] {
+  const v = readJSON<unknown>(SAVED_KEY);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+export function saveSavedList(ids: readonly string[]): void {
+  if (writeJSONSafely(SAVED_KEY, ids)) notifyLocalChange();
+}
+
+/** 찜 ↔ 해제. 바뀐 뒤 찜 상태를 돌려준다. */
+export function toggleSavedPolicy(id: string): boolean {
+  const next = toggleSaved(loadSaved(), id);
+  saveSavedList(next);
+  return isSaved(next, id);
+}
+
+export function loadDocumentChecks(policyId: string): string[] {
+  const v = readJSON<unknown>(`${DOCUMENT_CHECKS_PREFIX}${policyId}`);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+export function saveDocumentChecks(policyId: string, names: readonly string[]): void {
+  if (writeJSONSafely(`${DOCUMENT_CHECKS_PREFIX}${policyId}`, names)) notifyLocalChange();
+}
+
+function documentCheckIds(): string[] {
+  const ids: string[] = [];
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(DOCUMENT_CHECKS_PREFIX)) ids.push(key.slice(DOCUMENT_CHECKS_PREFIX.length));
+    }
+  } catch {
+    // 읽기가 막혀 있으면 없는 것으로 본다
+  }
+  return ids;
+}
+
 // ── 바뀜 알림 ──
 
 /**
@@ -344,7 +387,7 @@ function quietly(write: () => void): void {
 
 // ── 사본 묶음 — lib/sync.ts 가 이 묶음으로 서버와 주고받는다 (lib/user-data.ts) ──
 
-const SYNCED_KEYS = [ANSWERS_KEY, ANSWERED_KEY, LISTING_KEY, PROFILE_KEY, ELIGIBILITY_ANSWERED_KEY, DECLARED_KEY];
+const SYNCED_KEYS = [ANSWERS_KEY, ANSWERED_KEY, LISTING_KEY, PROFILE_KEY, ELIGIBILITY_ANSWERED_KEY, DECLARED_KEY, SAVED_KEY];
 
 /** 이 기기의 답 일곱 갈래를 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
 export function readLocalContent(): UserDataContent {
@@ -371,6 +414,8 @@ export function readLocalContent(): UserDataContent {
           },
     declared,
     checklists: Object.fromEntries(checklistIds().map((id) => [id, loadChecklist(id)])),
+    saved: readJSON<unknown>(SAVED_KEY) ?? [],
+    documentChecks: Object.fromEntries(documentCheckIds().map((id) => [id, loadDocumentChecks(id)])),
   });
 }
 
@@ -380,6 +425,7 @@ export function clearLocalContent(): void {
   try {
     for (const key of SYNCED_KEYS) window.localStorage.removeItem(key);
     for (const id of checklistIds()) window.localStorage.removeItem(`${CHECKLIST_PREFIX}${id}`);
+    for (const id of documentCheckIds()) window.localStorage.removeItem(`${DOCUMENT_CHECKS_PREFIX}${id}`);
   } catch {
     // 지우기가 막혀 있으면 할 수 있는 것이 없다.
   }
@@ -400,6 +446,8 @@ export function writeLocalContent(content: UserDataContent): void {
     }
     if (content.declared) writeJSON(DECLARED_KEY, content.declared);
     for (const [id, checklist] of Object.entries(content.checklists)) saveChecklist(id, checklist);
+    if (content.saved.length > 0) writeJSON(SAVED_KEY, content.saved);
+    for (const [id, names] of Object.entries(content.documentChecks)) writeJSON(`${DOCUMENT_CHECKS_PREFIX}${id}`, names);
   });
 }
 

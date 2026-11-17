@@ -5,7 +5,7 @@ import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { reloadPage } from "@/lib/redirect";
 import { retrySync, startSync, useSyncState } from "@/lib/sync";
 import { IconLink } from "./IconButton";
-import { ICON_LG, UserRound } from "./icons";
+import { House, ICON_LG, UserRound } from "./icons";
 import { SyncConflictSheet } from "./SyncConflictSheet";
 
 /**
@@ -33,28 +33,33 @@ export function AccountSlot() {
 
   const failed = sync.status === "error";
   return (
-    <div className="relative">
-      <IconLink href="/account" label={failed ? "내 계정 (저장 안 됨)" : "내 계정"} className="relative">
-        <UserRound size={ICON_LG} aria-hidden="true" />
-        {failed && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-warn-800" />}
+    <div className="flex items-center">
+      <IconLink href="/home" label="홈">
+        <House size={ICON_LG} aria-hidden="true" />
       </IconLink>
-      {failed && (
-        <button
-          type="button"
-          onClick={() => void retrySync()}
-          className="focus-ring absolute right-0 top-full z-30 mt-1 inline-flex min-h-11 items-center whitespace-nowrap rounded-full bg-warn-50 px-3 text-xs font-bold text-warn-800 shadow-card"
-        >
-          저장 안 됨 · 다시 시도
-        </button>
-      )}
-      {sync.status === "conflict" && sync.conflict && (
-        <SyncConflictSheet
-          onResolved={(choice) => {
-            // 화면들은 마운트 때 사본을 한 번 읽는다. 저장된 답으로 바꿨으면 다시 연다.
-            if (choice === "remote") reloadPage();
-          }}
-        />
-      )}
+      <div className="relative">
+        <IconLink href="/account" label={failed ? "내 계정 (저장 안 됨)" : "내 계정"} className="relative">
+          <UserRound size={ICON_LG} aria-hidden="true" />
+          {failed && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-warn-800" />}
+        </IconLink>
+        {failed && (
+          <button
+            type="button"
+            onClick={() => void retrySync()}
+            className="focus-ring absolute right-0 top-full z-30 mt-1 inline-flex min-h-11 items-center whitespace-nowrap rounded-full bg-warn-50 px-3 text-xs font-bold text-warn-800 shadow-card"
+          >
+            저장 안 됨 · 다시 시도
+          </button>
+        )}
+        {sync.status === "conflict" && sync.conflict && (
+          <SyncConflictSheet
+            onResolved={(choice) => {
+              // 화면들은 마운트 때 사본을 한 번 읽는다. 저장된 답으로 바꿨으면 다시 연다.
+              if (choice === "remote") reloadPage();
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

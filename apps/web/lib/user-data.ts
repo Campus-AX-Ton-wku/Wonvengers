@@ -47,6 +47,10 @@ export interface UserDataContent {
   declared: Record<string, DeclaredValue> | null;
   /** perky.application-checklist:<policyId> */
   checklists: Record<string, ChecklistState>;
+  /** perky.saved — 찜한 지원금 id, 최근 것이 앞 (11/17) */
+  saved: string[];
+  /** perky.document-checks:<policyId> — 정책별로 체크한 서류 이름 (11/17) */
+  documentChecks: Record<string, string[]>;
 }
 
 export interface UserDataPayload extends UserDataContent {
@@ -150,6 +154,11 @@ const PAYLOAD_KEYS = [
 
 const MAX_DECLARED = 100;
 const MAX_CHECKLISTS = 200;
+export const MAX_SAVED = 50;
+export const MAX_DOCUMENTS = 15;
+export const MAX_DOCUMENT_NAME = 60;
+/** 없어도 받는 칸 — 예전 앱(홈 화면에 캐시된 앱 포함)은 보내지 않는다 */
+const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks"] as const;
 const DECLARED_KEY = /^[A-Za-z0-9_:.-]{1,100}$/;
 const POLICY_ID = /^[a-z0-9-]{1,100}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -312,8 +321,33 @@ function parseChecklists(v: unknown, path: string): Record<string, ChecklistStat
   return out;
 }
 
+function parseSaved(v: unknown, path: string): string[] {
+  if (!Array.isArray(v) || v.length > MAX_SAVED) fail(path, "not a list");
+  for (const id of v) if (typeof id !== "string" || !POLICY_ID.test(id)) fail(path, "bad policy id");
+  if (new Set(v).size !== v.length) fail(path, "duplicate");
+  return [...(v as string[])];
+}
+
+function parseDocumentChecks(v: unknown, path: string): Record<string, string[]> {
+  const entries = Object.entries(record(v, path));
+  if (entries.length > MAX_SAVED) fail(path, "too many entries");
+  const out: Record<string, string[]> = {};
+  for (const [policyId, names] of entries) {
+    if (!POLICY_ID.test(policyId)) fail(path, "bad policy id");
+    const p = `${path}.${policyId}`;
+    if (!Array.isArray(names) || names.length > MAX_DOCUMENTS) fail(p, "not a list");
+    for (const n of names) if (typeof n !== "string" || n.length < 1 || n.length > MAX_DOCUMENT_NAME) fail(p, "bad name");
+    if (new Set(names).size !== names.length) fail(p, "duplicate");
+    out[policyId] = [...(names as string[])];
+  }
+  return out;
+}
+
 function parsePayload(v: unknown, path: string): UserDataPayload {
-  const o = exact(v, path, PAYLOAD_KEYS);
+  const o = record(v, path);
+  const allowed: readonly string[] = [...PAYLOAD_KEYS, ...OPTIONAL_PAYLOAD_KEYS];
+  for (const k of Object.keys(o)) if (!allowed.includes(k)) fail(`${path}.${k}`, "unknown key");
+  for (const k of PAYLOAD_KEYS) if (!Object.prototype.hasOwnProperty.call(o, k)) fail(`${path}.${k}`, "missing");
   if (o.schemaVersion !== SCHEMA_VERSION) fail(`${path}.schemaVersion`, "unsupported version");
   if (o.consentVersion !== CONSENT_VERSION) fail(`${path}.consentVersion`, "consent required");
   return {
@@ -325,6 +359,9 @@ function parsePayload(v: unknown, path: string): UserDataPayload {
     profile: nullable(o.profile, (x) => parseProfile(x, `${path}.profile`)),
     declared: nullable(o.declared, (x) => parseDeclared(x, `${path}.declared`)),
     checklists: parseChecklists(o.checklists, `${path}.checklists`),
+    saved: o.saved === undefined ? [] : parseSaved(o.saved, `${path}.saved`),
+    documentChecks:
+      o.documentChecks === undefined ? {} : parseDocumentChecks(o.documentChecks, `${path}.documentChecks`),
   };
 }
 
@@ -363,6 +400,8 @@ export function emptyContent(): UserDataContent {
     profile: null,
     declared: null,
     checklists: {},
+    saved: [],
+    documentChecks: {},
   };
 }
 
@@ -371,7 +410,8 @@ export function emptyContent(): UserDataContent {
  * 계약 조건 하나가 깨졌다고 1층 답까지 못 올리면 안 된다.
  */
 export function sanitizeContent(
-  raw: Record<"answers" | "listing" | "profile" | "declared" | "checklists", unknown>
+  raw: Record<"answers" | "listing" | "profile" | "declared" | "checklists", unknown> &
+    Partial<Record<"saved" | "documentChecks", unknown>>
 ): UserDataContent {
   const keep = <T>(parse: () => T, fallback: T): T => {
     const result = attempt(parse);
@@ -384,6 +424,11 @@ export function sanitizeContent(
     profile: keep(() => nullable(raw.profile, (x) => parseProfile(x, "profile")), null),
     declared: declared && Object.keys(declared).length > 0 ? declared : null,
     checklists: keep(() => parseChecklists(raw.checklists, "checklists"), {}),
+    saved: keep(() => (raw.saved === undefined ? [] : parseSaved(raw.saved, "saved")), []),
+    documentChecks: keep(
+      () => (raw.documentChecks === undefined ? {} : parseDocumentChecks(raw.documentChecks, "documentChecks")),
+      {}
+    ),
   };
 }
 
@@ -394,7 +439,9 @@ export function isEmptyContent(c: UserDataContent): boolean {
     c.listing === null &&
     c.profile === null &&
     (c.declared === null || Object.keys(c.declared).length === 0) &&
-    Object.keys(c.checklists).length === 0
+    Object.keys(c.checklists).length === 0 &&
+    c.saved.length === 0 &&
+    Object.keys(c.documentChecks).length === 0
   );
 }
 
@@ -406,6 +453,8 @@ export function contentOf(c: UserDataContent): UserDataContent {
     profile: c.profile,
     declared: c.declared && Object.keys(c.declared).length > 0 ? c.declared : null,
     checklists: c.checklists,
+    saved: c.saved,
+    documentChecks: c.documentChecks,
   };
 }
 

@@ -3,7 +3,7 @@ import { mockClient } from "aws-sdk-client-mock";
 import { ConditionalCheckFailedException, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoUserDataStore, TTL_SECONDS } from "../src/store";
-import type { UserDataPayload } from "../../web/lib/user-data";
+import { validateUserData, type UserDataPayload } from "../../web/lib/user-data";
 import { A, validPayload } from "./fixtures";
 
 const ddb = mockClient(DynamoDBDocumentClient);
@@ -24,6 +24,18 @@ describe("DynamoUserDataStore", () => {
       ConsistentRead: true,
     });
     expect(item).toEqual({ data: validPayload(), updatedAt: "2026-11-04T09:00:00.000Z" });
+  });
+
+  it("찜 필드가 없는 옛 항목도 읽고, 검증하면 saved [] · documentChecks {} 가 된다", async () => {
+    const { saved: _s, documentChecks: _d, ...old } = validPayload();
+    ddb.on(GetCommand).resolves({ Item: { ...old, userId: A.sub, updatedAt: "2026-11-04T09:00:00.000Z", expiresAt: 1 } });
+    const item = await store.get(A.sub);
+    const checked = validateUserData(JSON.parse(JSON.stringify(item!.data)));
+    expect(checked.ok).toBe(true);
+    if (checked.ok) {
+      expect(checked.value.saved).toEqual([]);
+      expect(checked.value.documentChecks).toEqual({});
+    }
   });
 
   it("항목이 없으면 null", async () => {

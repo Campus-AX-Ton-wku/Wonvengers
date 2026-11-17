@@ -72,6 +72,8 @@ jobs:
         run: node app-policies.test.mjs
       - name: 앱 JSON → DB 이관 (11/16)
         run: node app-fields.test.mjs
+      - name: 정책 서류 목록 (11/17)
+        run: node documents.test.mjs
 
   api-infra:
     name: AWS — api · infra 검사 · 묶기

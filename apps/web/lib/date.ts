@@ -3,6 +3,16 @@ export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** 서울 달력 기준 오늘(YYYY-MM-DD). 기기 시간대와 상관없이 같은 날을 준다. */
+export function seoulTodayISO(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 export function calcAge(birthDateISO: string, asOfISO: string): number {
   const birth = new Date(birthDateISO);
   const asOf = new Date(asOfISO);

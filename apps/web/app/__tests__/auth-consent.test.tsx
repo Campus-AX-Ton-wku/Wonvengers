@@ -73,6 +73,13 @@ describe("/auth/consent (설계 '화면' 3)", () => {
     expect(rows.find((r) => r.textContent?.includes("계약 조건"))?.textContent).toContain("이사 비용");
   });
 
+  it("찜한 지원금도 저장 항목으로 보여준다", async () => {
+    render(<ConsentPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("찜한 지원금"));
+    expect(row?.textContent).toContain("서류 준비 체크");
+  });
+
   it("동의 전에는 서버로 아무것도 보내지 않는다", async () => {
     render(<ConsentPage />);
     await screen.findByRole("button", { name: "동의하고 저장" });

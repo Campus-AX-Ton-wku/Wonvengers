@@ -69,7 +69,11 @@ export function loadRemote(): Promise<GetResponseBody | null> {
   });
 }
 
-export function saveRemote(data: UserDataPayload, baseUpdatedAt: string | null): Promise<SaveResult> {
+/** 전송 본문. 비어 있는 찜 필드는 빼고 보낸다(lib/sync.ts payloadFor). */
+export type PutPayload = Omit<UserDataPayload, "saved" | "documentChecks"> &
+  Partial<Pick<UserDataPayload, "saved" | "documentChecks">>;
+
+export function saveRemote(data: PutPayload, baseUpdatedAt: string | null): Promise<SaveResult> {
   return withTimeout(async (signal): Promise<SaveResult> => {
     const res = await call(signal, "PUT", "/me/data", { data, baseUpdatedAt });
     if (res.status === 409) return { ok: false, conflict: true };

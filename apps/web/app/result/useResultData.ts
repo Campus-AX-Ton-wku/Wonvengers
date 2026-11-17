@@ -8,6 +8,7 @@ import type {
   ListingInput,
   PolicyMeta,
 } from "@/lib/types";
+import { seoulTodayISO } from "@/lib/date";
 import { buildCalculationSummary } from "@/lib/summary";
 import { loadListing, loadProfile } from "@/lib/storage";
 import { policiesForRegion } from "@/lib/region";
@@ -24,14 +25,7 @@ const policies = policiesData as PolicyMeta[];
  */
 export function useResultData() {
   // 기준일은 서울 달력 날짜로 화면 진입 시 한 번만 고정한다.
-  const [asOf] = useState(() =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Seoul",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date())
-  );
+  const [asOf] = useState(() => seoulTodayISO());
   const [saved, setSaved] = useState<{
     listing: ListingInput;
     profile: EligibilityProfile;

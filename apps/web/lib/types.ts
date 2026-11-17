@@ -142,6 +142,11 @@ export interface PolicyDiscovery {
   housingTypes: HousingType[] | null;
 }
 
+export interface PolicyDocument {
+  name: string; // 1~60자, 정책 안에서 겹치지 않는다(체크 키)
+  note?: string; // 0~80자 (예: 최근 1개월 이내 발급)
+}
+
 export interface PolicyMeta {
   id: string;
   discovery: PolicyDiscovery;
@@ -177,6 +182,11 @@ export interface PolicyMeta {
    * 예) 학기마다 나눠 지급. 없으면 '1회 지급'이다.
    */
   payoutNote?: string;
+  /**
+   * 신청 서류 목록 (Supabase policies.documents, 11/17). 있으면 신청 준비 화면이 서류 하나하나를 체크리스트로
+   * 보여 주고, 없으면 확인 3개(자격 · 기간 · 서류)를 쓴다. 팀이 공고 원문을 보고 입력한다.
+   */
+  documents?: PolicyDocument[];
   requiredInputs: RequiredInputKey[];
   exclusiveGroup: string[]; // 동시 합산 불가 그룹 id들
   sourceUrl: string;

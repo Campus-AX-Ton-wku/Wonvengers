@@ -15,6 +15,7 @@ import {
   saveAnswers,
   saveAnsweredKeys,
   saveChecklist,
+  saveSavedList,
 } from "@/lib/storage";
 import {
   SAVE_DEBOUNCE_MS,
@@ -555,3 +556,25 @@ describe("검토 1차 — 늦게 온 응답", () => {
   });
 });
 
+
+describe("PUT 본문의 찜 필드", () => {
+  it("찜한 게 없으면 saved · documentChecks 를 빼고 보낸다 (배포 전 API 의 exact() 가 400 을 내므로)", async () => {
+    await bootSynced();
+    save.mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:20:00.000Z" });
+    saveAnswers(답);
+    await flushNow();
+    const [body] = save.mock.calls[0];
+    expect(body).not.toHaveProperty("saved");
+    expect(body).not.toHaveProperty("documentChecks");
+  });
+
+  it("찜한 게 있으면 saved 를 함께 보낸다", async () => {
+    await bootSynced();
+    save.mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:20:00.000Z" });
+    saveSavedList(["a"]);
+    await flushNow();
+    const [body] = save.mock.calls[0];
+    expect(body.saved).toEqual(["a"]);
+    expect(body).not.toHaveProperty("documentChecks");
+  });
+});
