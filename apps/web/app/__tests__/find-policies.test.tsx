@@ -59,6 +59,14 @@ describe("/find/policies", () => {
     expect(screen.getByRole("link", { name: /조건 수정/ }).getAttribute("href")).toBe("/find");
   });
 
+  it("지역 상담 창구 묶음('익산시에서 상담받을 수 있는 곳')을 두지 않는다 (11/17)", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByText(/상담받을 수 있는 곳/)).toBeNull();
+  });
+
   it("답하지 않은 항목은 요약 줄에 '모름'으로 남는다", async () => {
     saveAnswers({ ...익산_대학생, status: null });
     render(<FindPoliciesPage />);

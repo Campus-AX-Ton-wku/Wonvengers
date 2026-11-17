@@ -365,7 +365,9 @@ describe("/find 지역 요약", () => {
     resetNavigation(`/find?${new URLSearchParams({ q: "region", p: "전북특별자치도" })}`);
     render(<FindPage />);
 
-    expect(await screen.findByText(/^익산시 · 지원 정책 \d+건/)).toBeTruthy();
+    const line = await screen.findByText(/^익산시 · 지원 정책 \d+건/);
+    // 상담 창구 수는 더 붙이지 않는다 (11/17 — 상담 창구 안내를 뺐다)
+    expect(line.textContent).not.toMatch(/상담 창구/);
   });
 });
 
