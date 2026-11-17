@@ -6,6 +6,7 @@ import {
   AppShell,
   LinkButton,
   PerkyCharacter,
+  PerkyNote,
   ResetAnswersButton,
   StickyBottomAction,
   TopBar,
@@ -66,7 +67,11 @@ export default function FindResultPage() {
       <TopBar backHref="/find" />
 
       {!loaded ? (
-        <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
+        /* 정적 export 라 휴대폰이 JS 를 받아 뜰 때까지 이 상태가 화면에 남는다 — 그동안 찾는 중인 Perky(search).
+           불러오면 같은 자리에서 found/empty 로 바뀐다. 한 번에 한 포즈다. */
+        <main className="flex flex-1 items-center justify-center py-6">
+          <PerkyNote state="search" title="답을 바탕으로 지원금을 찾고 있어요" role="status" />
+        </main>
       ) : (
         <>
           {/* 화면 한가운데. 이 숫자 말고는 볼 것이 없어야 한다. */}

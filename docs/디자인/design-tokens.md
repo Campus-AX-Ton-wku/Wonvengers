@@ -167,9 +167,10 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `StepHeader` / `AnsweredStack` | 질문 제목 · 답한 질문 쌓기(진행률 대신) |
 | `Field` / `FieldGroup` / `FieldError` / `MoneyInput` / `NumberInput` | 입력 |
 | `Disclosure` | `<details>` 기반 접기. 라벨에 건수를 적는다 |
-| `EmptyState` | 캐릭터 + 이유 + 다음 행동 |
+| `EmptyState` | 캐릭터(160px) + 이유 + 다음 행동. 화면 전체이면 `asHeading` 으로 제목을 h1 로 |
 | `ResultSummary` | 2층 결과의 두 숫자 |
-| `PerkyCharacter` | 8종 포즈 |
+| `PerkyCharacter` | 8종 포즈. 그린 포즈를 `data-pose` 로 남긴다(테스트가 짚는다) |
+| `PerkyNote` | 작게 놓는 Perky(80px) + 글 한두 줄 — 로딩·완료 안내 |
 | `Wordmark` / `HomeMark` | 워드마크 — 'P' 위의 새싹 두 잎 |
 
 여기에 없는 것은 공통이 아니다. 한 화면에서만 쓰는 조각은 그 화면 옆에 둔다
@@ -207,6 +208,20 @@ Perky 는 모서리가 둥근 캐릭터다. 컨트롤과 카드가 같은 곡률
 | `empty` | `/find/result` — 못 찾았을 때 · `/home` 지금 신청할 수 있는 게 0건 |
 | `thinking` | `/result` — 계산할 입력이 없을 때 |
 | `basic` | 기본값 |
+
+**새 자리 (2026-11-17 디자인 시안 '마스코트 배치 가이드').** 크기와 놓는 법은 셋 —
+걸치기 112–150px(요약 카드 오른쪽 위) · 가운데 세우기 120–160px(빈 상태·오류, 아래에
+이유 한 줄과 다음 행동) · 작게 72–96px(시트·로딩·완료 안내, 글 왼쪽, `PerkyNote`).
+
+| 포즈 | 새 자리 | 놓는 법 |
+|---|---|---|
+| `wave` | 로그인 시트(`LoginSheet`) — 제목 왼쪽 | 작게 72px (`Sheet` 의 `visual`) |
+| `search` | `/find/result` 불러오는 중 — 정적 HTML 이 JS 를 기다리는 동안 보인다 | 작게 80px |
+| `success` | 신청 준비 체크를 모두 마쳤을 때(`ApplicationPreparation`) — 하나라도 풀면 사라진다 | 작게 80px |
+| `thinking` | 화면 오류(`app/error.tsx` — 연결이 완전히 끊기면 Next 가 브라우저 이동으로 넘어가 브라우저 화면이 먼저 뜬다) · 로그인 실패(`/auth/callback`, 스스로 취소한 것은 제외) | 가운데 140–160px |
+| `empty` | 없는 페이지(`app/not-found.tsx`) | 가운데 160px |
+
+`guide` 는 홈에 쓰지 않고, `basic` 은 새 자리를 두지 않는다.
 
 규칙:
 

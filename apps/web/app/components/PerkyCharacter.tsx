@@ -60,6 +60,7 @@ export default function PerkyCharacter({
       src={CHARACTER_ASSETS[state]}
       alt=""
       aria-hidden="true"
+      data-pose={state}
       width={size}
       height={size}
       priority={priority}

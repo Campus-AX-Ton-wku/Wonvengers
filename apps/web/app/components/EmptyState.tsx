@@ -14,18 +14,26 @@ export function EmptyState({
   title,
   description,
   action,
+  asHeading = false,
 }: {
   character?: PerkyState;
   title: string;
+  /** 이 빈 상태가 화면 전체일 때(없는 페이지·오류) 제목을 h1 로 그린다. */
+  asHeading?: boolean;
   description?: React.ReactNode;
   /** 다음 행동. 버튼 하나 또는 둘. */
   action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center gap-5 py-10 text-center">
-      <PerkyCharacter state={character} size={200} className="h-auto w-[min(48vw,180px)]" />
+      {/* 가운데 세우기 · 120–160px (디자인 시안 '마스코트 배치 가이드') */}
+      <PerkyCharacter state={character} size={160} className="h-auto w-[min(42vw,160px)]" />
       <div className="flex flex-col gap-2">
-        <p className="text-xl font-extrabold leading-snug text-ink-900">{title}</p>
+        {asHeading ? (
+          <h1 className="text-xl font-extrabold leading-snug text-ink-900">{title}</h1>
+        ) : (
+          <p className="text-xl font-extrabold leading-snug text-ink-900">{title}</p>
+        )}
         {description && (
           <p className="text-sm leading-relaxed text-ink-600">{description}</p>
         )}
