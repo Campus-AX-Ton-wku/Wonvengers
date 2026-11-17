@@ -1,5 +1,6 @@
+import { POLICY_RULES } from "./policy-rules";
 import type { ChecklistState } from "./user-data";
-import type { PolicyMeta } from "./types";
+import type { EligibilityProfile, PolicyMeta } from "./types";
 
 /** 신청 준비 진행률 · 마감 표시 (docs/기획/2026-11-17-홈-찜하기-설계.md "2 · 3"). */
 
@@ -37,4 +38,46 @@ export function deadlineLabel(policy: PolicyMeta, todayISO: string): string {
   if (todayISO > policy.applicationEnd) return "접수 마감";
   const days = Math.round((Date.parse(policy.applicationEnd) - Date.parse(todayISO)) / DAY);
   return days === 0 ? "오늘 마감" : `D-${days}`;
+}
+
+/** 판정 질문에 아직 하나도 답하지 않은 사람 — 모든 답이 '모름'이다. */
+const UNKNOWN_PROFILE: EligibilityProfile = {
+  birthDate: "",
+  isStudentOrEmployed: "unknown",
+  livesApartFromParents: "unknown",
+  canRegisterResidence: "unknown",
+  hasNoHouse: "unknown",
+  isContractHolder: "unknown",
+  householdSize: "unknown",
+  useOriginHousehold: "unknown",
+  ownHouseholdMonthlyIncome: "unknown",
+  originHouseholdMonthlyIncome: "unknown",
+  assetsUnder107M: "unknown",
+  isBasicLivelihoodRecipient: "unknown",
+  isNearPovertyClass: "unknown",
+  receivingOtherRentSupport: "unknown",
+  jeonbukResidentOverOneYear: "unknown",
+  employedInTargetSectorOver3Months: "unknown",
+};
+
+/**
+ * 신청 준비 체크리스트 '자격 조건 확인' 줄에 적을, 이 정책에서 아직 확인할 조건 (11/17).
+ *
+ * 결과 화면은 더 이상 정책별 조건을 따지게 하지 않는다 — 금액과 [신청 준비]·찜까지만 보여 주고,
+ * 전입 이력처럼 앱이 공통 질문으로 묻지 않는 조건은 신청할 때 여기서 확인한다.
+ * - 계산 전(프로필 없음): 그 정책만의 조건(결과 화면에서 직접 답하던 것)만 — 나이·소득 같은 공통 조건까지
+ *   늘어놓으면 목록이 길어지고, 그건 지원금 찾기 답으로 이미 걸렀다
+ * - 계산 뒤: 아직 '모름'인 조건 전부(직접 답한 것은 뺀다)
+ * - 판정 규칙이 없는 새 정책(DB 에만 등록): 공고 원문의 지원 대상
+ */
+export function conditionsToConfirm(
+  policy: PolicyMeta,
+  profile: EligibilityProfile | null,
+  asOfISO: string
+): string[] {
+  const rule = POLICY_RULES[policy.id];
+  if (!rule) return ["공고 원문의 지원 대상 · 제외 대상"];
+  return rule(profile ?? UNKNOWN_PROFILE, asOfISO)
+    .filter((check) => check.result === "unknown" && (profile !== null || check.ask !== undefined))
+    .map((check) => check.label);
 }

@@ -13,6 +13,13 @@ const policy = (policiesJson as PolicyMeta[]).find(
 describe("신청 준비 흐름", () => {
   beforeEach(() => window.localStorage.clear());
 
+  it("'자격 조건 확인' 줄은 그 정책에서 아직 확인할 조건을 구체적으로 보여 준다 (11/17)", async () => {
+    const moveIn = (policiesJson as PolicyMeta[]).find((item) => item.id === "iksan-move-in-household-incentive")!;
+    render(<ApplicationPreparation policy={moveIn} />);
+    const row = await screen.findByRole("checkbox", { name: /자격 조건 확인/ });
+    expect(row.closest("label")?.textContent).toContain("전입 전 1년 이상 다른 시·군·구에 주민등록");
+  });
+
   it("안내 문구 세 개를 두지 않는다 — 기기 저장 안내 · '제출 전 다시 확인' 상자 · 신청 위치 한 줄 (11/17)", async () => {
     render(<ApplicationPreparation policy={policy} />);
     await screen.findByRole("heading", { level: 1, name: "필수 확인 사항을 점검해요" });

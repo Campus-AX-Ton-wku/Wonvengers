@@ -30,7 +30,7 @@ export interface BenefitResultCardData {
   deadlineAt: string | null;
   deadlineDays: number | null;
   source: { name: string; updatedAt: string | null; url: string };
-  primaryAction: { label: string; kind: "prepare" | "review"; href: string };
+  primaryAction: { label: string; kind: "prepare"; href: string };
 }
 
 /** YYYY-MM-DD 두 값을 시간대 변화 없이 달력 날짜로 비교한다. */
@@ -93,7 +93,6 @@ export function toBenefitResultCardData(
   const amountValue = result.estimatedAmount > 0 ? result.estimatedAmount : ceiling?.amount ?? 0;
   const isMaximum = ceiling !== null && amountValue === ceiling.amount;
   const prepareHref = `/find/policies/${policy.id}/prepare`;
-  const reviewHref = `/result/review/${policy.id}`;
   const counted = result.estimatedAmount > 0 && (includedPolicyIds?.has(policy.id) ?? true);
   const note = counted
     ? null
@@ -120,13 +119,13 @@ export function toBenefitResultCardData(
     deadlineAt: deadline,
     deadlineDays: deadline ? daysUntil(asOfISO, deadline) : null,
     source: { name: policy.agency, updatedAt: policy.verifiedAt, url: policy.sourceUrl },
-    primaryAction: state === "check"
-      ? { label: `조건 ${missingCount}개 확인하기`, kind: "review", href: reviewHref }
-      : {
-          label: state === "urgent" ? "마감 전 신청 준비하기" : "신청 준비 시작하기",
-          kind: "prepare",
-          href: prepareHref,
-        },
+    // 확인 필요도 결과 화면에서 조건을 따지게 하지 않는다(11/17) — 신청 준비로 이어 가고,
+    // 정책별 조건은 신청 준비 체크리스트의 '자격 조건 확인'에 적는다(lib/preparation.ts conditionsToConfirm).
+    primaryAction: {
+      label: state === "urgent" ? "마감 전 신청 준비하기" : "신청 준비 시작하기",
+      kind: "prepare",
+      href: prepareHref,
+    },
   };
 }
 

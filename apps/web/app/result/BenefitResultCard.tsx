@@ -5,7 +5,7 @@ import { benefitFormula } from "@/lib/benefit";
 import { formatDeadline, type BenefitResultCardData } from "@/lib/benefit-result";
 import type { ListingInput, PolicyResult } from "@/lib/types";
 import { ExternalLink, ICON_SM } from "@/app/components/icons";
-import { Disclosure, StatusBadge, buttonClass } from "@/app/components";
+import { Disclosure, SaveButton, StatusBadge, buttonClass } from "@/app/components";
 
 const STATE_COPY = {
   eligible: { label: "신청 가능", tone: "ok" as const },
@@ -28,8 +28,10 @@ function DestinationLink({ href, children, className }: { href: string; children
  * 결과 카드 — 공식 Figma Benefit Result Card(104:56)에서 출발해 11/17 에 덜어냈다
  * (.impeccable/critique 진단: 카드마다 같은 사실을 4~6번 말하고, 정책 하나가 상자 9개를 썼다).
  *
- * 남긴 것과 순서: 상태 배지(마감 임박이면 옆에 마감일) → 이름 · 기관 → 금액(지급 방식 한 줄) → 빠진 정보(확인 필요만)
- * → 다음 행동 하나 → 자세히(요건 · 계산식) → 출처 · 대조일.
+ * 남긴 것과 순서: 상태 배지(마감 임박이면 옆에 마감일) · ♡ 찜 → 이름 · 기관 → 금액(지급 방식 한 줄)
+ * → 다음 행동 하나(신청 준비) → 자세히(요건 · 계산식) → 출처 · 대조일.
+ * 확인 필요도 여기서 조건을 따지게 하지 않는다(11/17) — "자격 조건은 신청 준비에서 확인해요" 한 줄만 두고,
+ * 정책별 조건은 찜 → 홈 → 신청 준비 체크리스트의 '자격 조건 확인'에서 확인한다.
  * 뺀 것: 우상단 "조건 N개 일치/확인", 신청 가능 카드의 "내 조건과 잘 맞아요" 상자,
  * 자격 요건 · 지원 형태 · 신청 방식 행(배지 · 금액 · 버튼과 같은 말), '검수 상태' 토글(출처 줄의 대조일).
  *
@@ -59,7 +61,10 @@ export default function BenefitResultCard({
     <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
       <div className="flex min-h-[30px] items-center justify-between gap-3">
         <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
-        {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
+        <div className="flex items-center gap-1">
+          {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
+          <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2" />
+        </div>
         <span className="sr-only">{result.status}</span>
       </div>
 
@@ -98,15 +103,12 @@ export default function BenefitResultCard({
       )}
 
       {card.state === "check" && (
-        <div className="mt-3 rounded-[14px] bg-warn-50 px-3.5 py-3">
-          <p className="text-sm font-bold text-warn-800">{card.evidence.missingCount}가지 정보가 더 필요해요</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-600">{card.evidence.message}</p>
-        </div>
+        <p className="mt-2 px-1 text-xs font-medium text-warn-800">자격 조건은 신청 준비에서 확인해요</p>
       )}
 
       <DestinationLink
         href={card.primaryAction.href}
-        className={`${buttonClass({ variant: card.primaryAction.kind === "prepare" ? "primary" : "secondary", size: "md" })} mt-3 min-h-[50px]`}
+        className={`${buttonClass({ variant: "primary", size: "md" })} mt-3 min-h-[50px]`}
       >
         {card.primaryAction.label}
       </DestinationLink>

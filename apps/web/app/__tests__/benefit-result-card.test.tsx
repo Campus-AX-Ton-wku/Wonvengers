@@ -91,15 +91,19 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     expect(screen.queryByText(/개인 예상액 계산 전/)).toBeNull();
   });
 
-  it("확인 필요는 빠진 조건을 보여 주고, 버튼은 해당 정책의 확인 화면으로, 출처는 새 창으로 간다", () => {
+  it("확인 필요도 결과에서 조건을 따지지 않는다 — 신청 준비로 이어 가고, 자격 확인은 거기서 한다고만 밝힌다 (11/17)", () => {
     const policyResult = result("조건충족시가능");
     const card = toBenefitResultCardData(policyResult, "2026-09-02");
     if (!card) throw new Error("카드 생성 실패");
     render(<BenefitResultCard card={card} result={policyResult} listing={listing} />);
 
-    expect(screen.getByText("1가지 정보가 더 필요해요")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "조건 1개 확인하기" }).getAttribute("href")).toBe(
-      "/result/review/real-policy-id",
+    // 자격이 확정되지 않았다는 배지는 남긴다(토글 밖)
+    expect(screen.getAllByText("확인 필요").some((el) => el.closest("details") === null)).toBe(true);
+    expect(screen.queryByText(/가지 정보가 더 필요해요/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /조건 \d+개 확인하기/ })).toBeNull();
+    expect(screen.getByText("자격 조건은 신청 준비에서 확인해요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "신청 준비 시작하기" }).getAttribute("href")).toBe(
+      "/find/policies/real-policy-id/prepare",
     );
     const source = screen.getByRole("link", { name: /실제 응답 기관 공식 출처/ });
     expect(source.getAttribute("target")).toBe("_blank");
