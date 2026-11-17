@@ -114,7 +114,7 @@ export function saveEligibilityAnsweredKeys(keys: readonly RequiredInputKey[]): 
   if (writeJSONSafely(ELIGIBILITY_ANSWERED_KEY, keys)) notifyLocalChange();
 }
 
-// ── 결과 화면에서 직접 답한 '확인 필요' 조건 ──
+// ── 사용자가 직접 답한 '확인 필요' 조건 (예전 결과 화면 질문의 답 — 11/18 화면은 지웠고, 값은 판정 · 동기화에 그대로 쓴다) ──
 
 /**
  * 판정 질문(/eligibility)이 받지 않는 조건의 답. check.key 로 찾는다.
