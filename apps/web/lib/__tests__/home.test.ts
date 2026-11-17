@@ -1,31 +1,82 @@
 // apps/web/lib/__tests__/home.test.ts
 import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
-import { availableCount, savedCards } from "../home";
-import type { PolicyMeta } from "../types";
+import { resolveAnswers } from "../age";
+import { groupPolicies, splitByApplicationWindow } from "../discovery";
+import { availableCount, homePose, openPolicies, previewPolicies, savedCards, type SavedCard } from "../home";
+import type { DiscoveryAnswers, PolicyMeta } from "../types";
 import { birthDateForAge } from "./fixtures";
 
 const policies = policiesJson as PolicyMeta[];
 const none = { eligibility: false, period: false, documents: false };
 const read = { checklist: () => none, documents: () => [] as string[] };
+const TODAY = "2026-11-17";
+const 익산_대학생: DiscoveryAnswers = {
+  birthDate: birthDateForAge(23), region: "전북특별자치도 익산시", status: "대학생", incomeBracket: 1, housingType: "월세",
+};
 
 describe("홈 계산", () => {
   it("답이 하나도 없으면 null — '시작하기'를 보여 준다", () => {
-    expect(availableCount(policies, { birthDate: null, region: null, status: null, incomeBracket: null, housingType: null }, "2026-11-17")).toBeNull();
+    expect(availableCount(policies, { birthDate: null, region: null, status: null, incomeBracket: null, housingType: null }, TODAY)).toBeNull();
   });
 
   it("지금 신청할 수 있는 후보 수 (목록 화면과 같은 계산)", () => {
-    const n = availableCount(policies, {
-      birthDate: birthDateForAge(23), region: "전북특별자치도 익산시", status: "대학생", incomeBracket: 1, housingType: "월세",
-    }, "2026-11-17");
+    const n = availableCount(policies, 익산_대학생, TODAY);
     expect(n).toBeGreaterThan(0);
   });
 
-  it("찜 카드는 찜한 순서, 데이터에 없는 id 는 빼고, 마감 표시와 진행률을 붙인다", () => {
-    const cards = savedCards(policies, ["no-such-policy", "youth-housing-benefit-split-payment", "moland-youth-rent-support"], "2026-11-17", read);
+  it("신청할 수 있는 정책은 목록 화면과 같은 것, 같은 순서다", () => {
+    const list = splitByApplicationWindow(groupPolicies(policies, resolveAnswers(익산_대학생, TODAY)), TODAY).신청가능;
+    expect(openPolicies(policies, 익산_대학생, TODAY)?.map((p) => p.id)).toEqual(list.map((t) => t.policy.id));
+  });
+
+  it("찜한 카드는 찜한 순서, 데이터에 없는 id 는 빼고, 마감 표시와 진행률을 붙인다", () => {
+    const cards = savedCards(policies, ["no-such-policy", "youth-housing-benefit-split-payment", "moland-youth-rent-support"], TODAY, read);
     expect(cards.map((c) => c.policy.id)).toEqual(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
     expect(cards[0].deadline).toBe("상시");
     expect(cards[1].deadline).toBe("접수 마감");
     expect(cards[0].progress).toMatchObject({ label: "신청 준비 0/3", done: 0, total: 3 });
+  });
+});
+
+describe("요약 카드 미리 보기", () => {
+  // 순서만 보는 계산이라 실제 데이터의 신청 가능 건수(때마다 바뀐다)에 기대지 않는다.
+  const open = policies.slice(0, 5);
+
+  it("찜이 없으면 목록 순서대로 앞 3건", () => {
+    expect(previewPolicies(open, 0)).toEqual(open.slice(0, 3));
+  });
+
+  it("3건 이하면 전부", () => {
+    expect(previewPolicies(open.slice(0, 2), 0)).toEqual(open.slice(0, 2));
+  });
+
+  it("찜이 하나라도 있으면 보여 주지 않는다 — 아래 찜 목록과 겹친다", () => {
+    expect(previewPolicies(open, 1)).toEqual([]);
+  });
+});
+
+describe("요약 카드 마스코트 포즈 — 위에서부터 먼저 맞는 하나", () => {
+  const policy = policies[0];
+  const card = (deadline: string, done: number, total = 3): SavedCard => ({
+    policy, deadline, progress: { kind: "checks", done, total, label: `신청 준비 ${done}/${total}` },
+  });
+
+  it("신청할 수 있는 게 0건이면 empty — 찜 준비가 끝났어도", () => {
+    expect(homePose(0, [card("상시", 3)])).toBe("empty");
+  });
+
+  it("지금 신청할 수 있는 찜이 모두 준비 끝이면 success", () => {
+    expect(homePose(4, [card("상시", 3), card("D-12", 5, 5)])).toBe("success");
+  });
+
+  it("마감·예정인 찜은 따지지 않는다 — 지금 신청할 수 없다", () => {
+    expect(homePose(4, [card("상시", 3), card("접수 마감", 1), card("신청 예정", 0)])).toBe("success");
+    expect(homePose(4, [card("접수 마감", 3)])).toBe("found");
+  });
+
+  it("하나라도 덜 됐거나 찜이 없으면 found", () => {
+    expect(homePose(4, [card("상시", 3), card("오늘 마감", 2)])).toBe("found");
+    expect(homePose(4, [])).toBe("found");
   });
 });

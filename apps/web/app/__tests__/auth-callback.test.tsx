@@ -76,6 +76,8 @@ describe("/auth/callback", () => {
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("로그인하지 못했어요");
     expect(screen.getByRole("link", { name: "로그인 없이 계속하기" }).getAttribute("href")).toBe("/find/policies");
     expect(screen.getByRole("link", { name: "질문으로 돌아가기" }).getAttribute("href")).toBe("/find");
+    // 오류 자리의 Perky — thinking (디자인 시안 '마스코트 배치 가이드')
+    expect(document.querySelector("[data-pose]")?.getAttribute("data-pose")).toBe("thinking");
   });
 
   it("카카오에서 취소했으면(access_denied) 취소했다고 말하고, 보던 결과로 돌아가게 한다", async () => {
@@ -86,6 +88,8 @@ describe("/auth/callback", () => {
 
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("로그인을 취소했어요");
     expect(screen.getByRole("link", { name: "로그인 없이 계속하기" }).getAttribute("href")).toBe("/find/policies");
+    // 스스로 취소한 것은 오류가 아니다 — 캐릭터를 두지 않는다.
+    expect(document.querySelector("[data-pose]")).toBeNull();
   });
 
   it("돌아갈 곳 기록이 없으면 질문 화면으로 — 같은 곳을 가리키는 링크를 둘 두지 않는다", async () => {
