@@ -26,6 +26,6 @@ describe("홈 계산", () => {
     expect(cards.map((c) => c.policy.id)).toEqual(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
     expect(cards[0].deadline).toBe("상시");
     expect(cards[1].deadline).toBe("접수 마감");
-    expect(cards[0].progress).toBe("확인 0/3");
+    expect(cards[0].progress).toMatchObject({ label: "신청 준비 0/3", done: 0, total: 3 });
   });
 });

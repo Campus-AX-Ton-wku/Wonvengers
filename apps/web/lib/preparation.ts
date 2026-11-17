@@ -18,7 +18,7 @@ export function homeProgress(policy: PolicyMeta, checklist: ChecklistState, chec
     return { kind: "documents" as const, done, total: docs.length, label: `서류 ${done}/${docs.length} 준비` };
   }
   const done = checksDone(checklist);
-  return { kind: "checks" as const, done, total: 3, label: `확인 ${done}/3` };
+  return { kind: "checks" as const, done, total: 3, label: `신청 준비 ${done}/3` };
 }
 
 /** 체크리스트 화면: 서류 있으면 자격 + 기간 + 서류 하나하나. */

@@ -17,7 +17,7 @@ import { SyncConflictSheet } from "./SyncConflictSheet";
  * 저장 실패는 아이콘의 작은 점 + 그 아래 떠 있는 "저장 안 됨 · 다시 시도". 칸이 44px 라 문구를 칸 안에
  * 넣으면 가운데 브랜드가 밀린다 — 떠 있게 두어 레이아웃을 움직이지 않는다.
  */
-export function AccountSlot() {
+export function AccountSlot({ onHome = false }: { /** 홈 화면이면 [홈]을 뺀다. */ onHome?: boolean }) {
   const [signedIn, setSignedIn] = useState(false);
   const sync = useSyncState();
 
@@ -34,9 +34,11 @@ export function AccountSlot() {
   const failed = sync.status === "error";
   return (
     <div className="flex items-center">
-      <IconLink href="/home" label="홈">
-        <House size={ICON_LG} aria-hidden="true" />
-      </IconLink>
+      {!onHome && (
+        <IconLink href="/home" label="홈">
+          <House size={ICON_LG} aria-hidden="true" />
+        </IconLink>
+      )}
       <div className="relative">
         <IconLink href="/account" label={failed ? "내 계정 (저장 안 됨)" : "내 계정"} className="relative">
           <UserRound size={ICON_LG} aria-hidden="true" />

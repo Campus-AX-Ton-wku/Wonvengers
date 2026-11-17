@@ -4,6 +4,7 @@ import { useBack } from "@/lib/navigation";
 import { AccountSlot } from "./AccountSlot";
 import { ArrowLeft, ICON_LG } from "./icons";
 import { IconButton } from "./IconButton";
+import { Wordmark } from "./Wordmark";
 
 /** 화면마다 8종이던 뒤로 문구를 하나로 모았다 (docs/기획/2026-11-03-단계-이동-설계.md). */
 const BACK_LABEL = "이전 단계로";
@@ -18,6 +19,7 @@ const BACK_LABEL = "이전 단계로";
  *
  * 가운데 브랜드(Perky 로고 → /)는 11/17 에 뺐다. 결과까지 본 사람이 누르면 처음 화면으로 가서 답을 다시
  * 넣게 됐고, 답 비우기는 '처음부터 다시'가, 홈은 로그인 뒤 [홈] 아이콘이 맡는다. 줄은 양 끝 배치다.
+ * 홈 화면(home)만 왼쪽에 로고를 둔다 — 링크가 아니다. 오른쪽에서는 자기 자신을 가리키는 [홈]을 뺀다.
  * 오른쪽 칸은 right 를 넘기지 않으면 계정 칸(AccountSlot)이다 — 로그인 전에는 그 칸도 빈 자리다
  * (docs/기획/2026-11-04-카카오-로그인-설계.md '화면' 4). 로그인 흐름 화면(/auth/*)은 빈 자리를 넘긴다.
  *
@@ -25,6 +27,7 @@ const BACK_LABEL = "이전 단계로";
  */
 export function TopBar({
   backHref,
+  home = false,
   right,
 }: {
   /** 앞 화면이 앱 밖일 때 갈 곳. 없으면 화살표를 그리지 않는다. */
@@ -34,6 +37,8 @@ export function TopBar({
    * 아직 넘기므로 받기만 하고 쓰지 않는다.
    */
   backLabel?: string;
+  /** 홈 화면(/home) — 왼쪽에 로고, 오른쪽에 [홈] 없음. */
+  home?: boolean;
   right?: React.ReactNode;
 }) {
   return (
@@ -42,11 +47,20 @@ export function TopBar({
     <header className="sticky top-0 z-20 -mx-4 bg-canvas px-1.5 pt-[env(safe-area-inset-top)] min-[390px]:-mx-5 min-[390px]:px-2.5">
       <div data-testid="top-bar-row" className="flex h-14 items-center justify-between">
         <div data-testid="top-bar-left" className="flex">
-          {backHref ? <BackButton backHref={backHref} /> : <span className="w-11" aria-hidden="true" />}
+          {home ? (
+            /* 아이콘 버튼 안 여백(10px)만큼 띄워 로고 왼쪽 끝을 본문 gutter 에 맞춘다. */
+            <span className="flex min-h-11 items-center px-2.5">
+              <Wordmark />
+            </span>
+          ) : backHref ? (
+            <BackButton backHref={backHref} />
+          ) : (
+            <span className="w-11" aria-hidden="true" />
+          )}
         </div>
 
         <div data-testid="top-bar-right" className="flex">
-          {right ?? <AccountSlot />}
+          {right ?? <AccountSlot onHome={home} />}
         </div>
       </div>
     </header>
