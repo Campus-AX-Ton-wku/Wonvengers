@@ -11,7 +11,7 @@ import type { DiscoveryCardStatus } from "@/lib/types";
  * `getByText("가능성 있음")` 으로 배지 자체를 집어 색 클래스를 검사한다 —
  * 한 겹 더 감싸면 클래스가 붙은 요소를 놓친다.
  */
-export type BadgeTone = "ok" | "warn" | "danger" | "neutral" | "muted" | "info";
+export type BadgeTone = "ok" | "warn" | "danger" | "neutral" | "muted" | "info" | "outline";
 
 const TONE: Record<BadgeTone, { className: string; Icon: typeof CircleCheck }> = {
   /** 조건에 맞고 지금 행동할 수 있다. */
@@ -28,6 +28,11 @@ const TONE: Record<BadgeTone, { className: string; Icon: typeof CircleCheck }> =
    */
   muted: { className: "bg-ink-100 text-ink-600", Icon: Ban },
   info: { className: "bg-brand-50 text-brand-800", Icon: Info },
+  /**
+   * 마감까지 여유가 있는 날짜(D-8 이상). 사실을 알릴 뿐 행동을 재촉하지 않아 면을 칠하지 않는다 —
+   * 7일 이하가 되면 danger 로 넘어간다 (app/home/page.tsx).
+   */
+  outline: { className: "bg-surface text-ink-700 ring-1 ring-inset ring-ink-200", Icon: Clock },
 };
 
 /**

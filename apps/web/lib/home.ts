@@ -1,22 +1,46 @@
 // apps/web/lib/home.ts
 import { resolveAnswers } from "./age";
-import { applicationOpenCount, groupPolicies } from "./discovery";
+import { groupPolicies, splitByApplicationWindow } from "./discovery";
 import { deadlineLabel, homeProgress } from "./preparation";
 import type { DiscoveryAnswers, PolicyMeta } from "./types";
 import type { ChecklistState } from "./user-data";
 
 /** 홈 화면 계산 (docs/기획/2026-11-17-홈-찜하기-설계.md "2. 홈 화면"). 화면 없이 값만. */
-export function availableCount(policies: PolicyMeta[], answers: DiscoveryAnswers, todayISO: string): number | null {
+
+/**
+ * 지금 신청할 수 있는 정책. 목록 화면(/find/policies)이 보여 주는 것과 같은 것, 같은 순서다 —
+ * 홈 미리 보기에서 [모두 보기]를 눌렀을 때 같은 카드가 같은 자리에서 이어져야 한다.
+ * 답이 하나도 없으면 null.
+ */
+export function openPolicies(policies: PolicyMeta[], answers: DiscoveryAnswers, todayISO: string): PolicyMeta[] | null {
   if (Object.values(answers).every((v) => v === null)) return null;
-  return applicationOpenCount(groupPolicies(policies, resolveAnswers(answers, todayISO)), todayISO);
+  const groups = groupPolicies(policies, resolveAnswers(answers, todayISO));
+  return splitByApplicationWindow(groups, todayISO).신청가능.map((t) => t.policy);
 }
+
+export function availableCount(policies: PolicyMeta[], answers: DiscoveryAnswers, todayISO: string): number | null {
+  return openPolicies(policies, answers, todayISO)?.length ?? null;
+}
+
+/** 요약 카드 안 미리 보기 줄 수. 넷 이상이면 카드가 목록이 되어 아래 찜 칸이 화면 밖으로 밀린다. */
+const PREVIEW_MAX = 3;
+
+/**
+ * 요약 카드 미리 보기 — 찜이 없을 때만 목록 순서대로 앞 3건.
+ * 찜이 생기면 아래 '찜한 지원금'이 정책 이름을 보여 주므로 같은 이름이 두 번 나오지 않게 뺀다.
+ */
+export function previewPolicies(open: readonly PolicyMeta[], savedCount: number): PolicyMeta[] {
+  return savedCount > 0 ? [] : open.slice(0, PREVIEW_MAX);
+}
+
+export type SavedCard = { policy: PolicyMeta; deadline: string; progress: ReturnType<typeof homeProgress> };
 
 export function savedCards(
   policies: PolicyMeta[],
   saved: readonly string[],
   todayISO: string,
   read: { checklist(id: string): ChecklistState; documents(id: string): string[] }
-): { policy: PolicyMeta; deadline: string; progress: ReturnType<typeof homeProgress> }[] {
+): SavedCard[] {
   const byId = new Map(policies.map((p) => [p.id, p]));
   return saved.flatMap((id) => {
     const policy = byId.get(id);
@@ -27,4 +51,25 @@ export function savedCards(
       progress: homeProgress(policy, read.checklist(id), read.documents(id)),
     }];
   });
+}
+
+/** 지금은 신청할 수 없는 마감 표시 (lib/preparation.ts deadlineLabel). */
+export function isClosedDeadline(deadline: string): boolean {
+  return deadline === "접수 마감" || deadline === "신청 예정";
+}
+
+export type HomePose = "empty" | "success" | "found";
+
+/**
+ * 요약 카드에 걸터앉는 Perky 포즈 — 위에서부터 먼저 맞는 하나만 (디자인 시안 '마스코트 배치 가이드').
+ *  1. 지금 신청할 수 있는 게 0건 → empty
+ *  2. 지금 신청할 수 있는 찜이 모두 준비 끝 → success ("이제 신청만 남았어요")
+ *  3. 그 밖 → found
+ * 마감·예정인 찜은 2번에서 따지지 않는다. 준비를 마쳐도 지금은 신청할 수 없다.
+ */
+export function homePose(count: number, cards: readonly SavedCard[]): HomePose {
+  if (count === 0) return "empty";
+  const open = cards.filter((c) => !isClosedDeadline(c.deadline));
+  if (open.length > 0 && open.every((c) => c.progress.done >= c.progress.total)) return "success";
+  return "found";
 }

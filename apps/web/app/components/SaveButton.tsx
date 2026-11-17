@@ -42,8 +42,11 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
         aria-pressed={saved}
         aria-label={`${policyName} 찜하기`}
         onClick={onClick}
-        className={`focus-ring inline-flex size-11 items-center justify-center rounded-full transition-colors hover:bg-brand-50 ${
-          saved ? "text-accent-600" : "text-ink-500"
+        /* 찜한 하트는 파랑이다. 예전에는 금색(accent)이었는데, 금색은 금액에만 쓰는 색이라
+           "이 색 = 받을 수 있는 돈" 신호가 흐려졌다 (globals.css). 모양도 빈 하트 ↔ 채운 하트로
+           바뀌어 색만으로 상태를 말하지 않는다. */
+        className={`focus-ring inline-flex size-11 items-center justify-center rounded-full transition-colors ${
+          saved ? "bg-brand-50 text-brand-600 hover:bg-brand-100" : "text-ink-500 hover:bg-brand-50"
         } ${className}`}
       >
         <Heart size={ICON_MD} aria-hidden="true" fill={saved ? "currentColor" : "none"} />
