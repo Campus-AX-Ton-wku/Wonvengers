@@ -70,12 +70,12 @@ export default function ResultPage() {
   const resultHeadline = leadState === "urgent"
     ? `마감이 가까운 혜택 ${leadCards.length}개`
     : leadState === "check"
-      ? `조건 확인이 필요한 혜택 ${leadCards.length}개`
+      ? `확인 후 받을 수 있는 혜택 ${leadCards.length}개`
       : `바로 신청 가능한 혜택 ${leadCards.length}개`;
   const resultSupport = leadState === "urgent"
     ? leadDeadlineDays === 0 ? "오늘 안에 신청을 준비해주세요" : `${leadDeadlineDays}일 안에 신청해야 해요`
     : leadState === "check"
-      ? summary.maxSupportAmount > 0 ? `확인 후 최대 ${formatKoreanMoney(summary.maxSupportAmount)} 가능` : "조건을 확인하면 예상 금액을 계산할 수 있어요"
+      ? summary.maxSupportAmount > 0 ? `확인 후 최대 ${formatKoreanMoney(summary.maxSupportAmount)} 가능` : "자격 조건은 신청 준비에서 확인해요"
       : summary.maxSupportAmount > 0 ? `최대 ${formatKoreanMoney(summary.maxSupportAmount)} 받을 수 있어요` : "신청 전에 공고상 지원 한도를 확인해주세요";
 
   // 정책 카드와 같은 규칙으로 지역을 거른다 — 안 거르면 익산·군산 전용 대출상품이

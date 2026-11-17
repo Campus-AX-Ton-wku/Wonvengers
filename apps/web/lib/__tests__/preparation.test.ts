@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { deadlineLabel, homeProgress, pageProgress } from "../preparation";
+import { conditionsToConfirm, deadlineLabel, homeProgress, pageProgress } from "../preparation";
 import type { PolicyMeta } from "../types";
+import policiesJson from "@/data/policies.json";
+import { makeProfile } from "./fixtures";
 
 const base = { id: "p", applicationStart: "2026-01-01", applicationEnd: null } as unknown as PolicyMeta;
 const withDocs = { ...base, documents: [{ name: "가" }, { name: "나" }, { name: "다" }] } as PolicyMeta;
@@ -33,5 +35,27 @@ describe("마감 표시 (서울 날짜)", () => {
     [p("2026-12-01", "2026-12-31"), "신청 예정"],
   ])("%#", (policy, label) => {
     expect(deadlineLabel(policy, "2026-11-17")).toBe(label);
+  });
+});
+
+describe("신청 준비에서 확인할 자격 조건 (11/17 — 결과 화면에서 따지지 않고 여기로 옮겼다)", () => {
+  const all = policiesJson as PolicyMeta[];
+  const moveIn = all.find((p) => p.id === "iksan-move-in-household-incentive")!;
+
+  it("계산 전(프로필 없음)이면 그 정책만의 조건을 보여 준다", () => {
+    expect(conditionsToConfirm(moveIn, null, "2026-11-17")).toEqual([
+      "전입 전 1년 이상 다른 시·군·구에 주민등록",
+      "예전에 익산시 전입 지원을 받은 적 없음",
+    ]);
+  });
+
+  it("이미 답한 조건은 빼고 아직 모르는 것만", () => {
+    const profile = makeProfile({ selfDeclared: { livedOutsideIksan1YearBeforeMoveIn: true } });
+    expect(conditionsToConfirm(moveIn, profile, "2026-11-17")).toEqual(["예전에 익산시 전입 지원을 받은 적 없음"]);
+  });
+
+  it("판정 규칙이 없는 새 정책은 공고 원문의 지원 대상을 확인하라고 한다", () => {
+    const fresh = { ...moveIn, id: "brand-new-policy" } as PolicyMeta;
+    expect(conditionsToConfirm(fresh, null, "2026-11-17")).toEqual(["공고 원문의 지원 대상 · 제외 대상"]);
   });
 });
