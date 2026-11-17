@@ -118,9 +118,6 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             </div>
             <SaveButton policyId={policy.id} policyName={policy.name} />
           </div>
-          <p className="mt-1 text-sm leading-[22px] text-ink-500">
-            확인한 항목은 이 기기에 저장되어 언제든 이어서 볼 수 있어요.
-          </p>
           <p className="mt-2 text-xs font-medium text-brand-700" role="status" aria-live="polite">
             {hydrated ? `${progress.done} / ${progress.total} 확인` : "저장된 확인 상태 불러오는 중"}
           </p>
@@ -158,21 +155,6 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             />
           )}
         </section>
-
-        <section className="mt-5 rounded-control bg-accent-50 px-4 py-3.5" aria-labelledby="official-notice-title">
-          <h2 id="official-notice-title" className="text-sm font-bold leading-[22px] text-ink-900">
-            제출 전 다시 확인해 주세요
-          </h2>
-          <p className="mt-1 text-[11px] leading-4 text-ink-500">
-            {docs.length > 0
-              ? "서류 발급일 기준은 공식 공고에서 다시 확인해 주세요."
-              : "현재 정책 데이터에는 준비 서류 목록이 제공되지 않습니다. 필요 서류와 발급일 기준은 공식 공고에서 확인해 주세요."}
-          </p>
-        </section>
-
-        <p className="mt-4 text-[11px] leading-4 text-ink-500">
-          신청 위치 · {policy.agency} 공식 사이트 · 외부 이동 전 안내 제공
-        </p>
       </main>
 
       <StickyBottomAction>

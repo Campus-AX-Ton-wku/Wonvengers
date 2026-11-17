@@ -74,6 +74,8 @@ jobs:
         run: node app-fields.test.mjs
       - name: 정책 서류 목록 (11/17)
         run: node documents.test.mjs
+      - name: 정책이 바뀌면 다시 빌드 (11/17)
+        run: node app-rebuild.test.mjs
 
   api-infra:
     name: AWS — api · infra 검사 · 묶기
