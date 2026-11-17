@@ -34,6 +34,7 @@ const row = (over = {}) => ({
   lump_sum_cap: null,
   lump_sum_basis: null,
   payout_note: null,
+  documents: null,
   exclusive_groups: ["youth-rent"],
   required_inputs: ["rent"],
   youth_policy_no: "20260326005400212297",
@@ -197,5 +198,28 @@ describe("변환표가 앱 어휘와 맞다", () => {
 
   it("커밋하는 JSON 모양 — 2칸 들여쓰기 + 마지막 줄바꿈", () => {
     expect(formatJson([{ a: 1 }])).toBe('[\n  {\n    "a": 1\n  }\n]\n');
+  });
+});
+
+describe("서류 목록 (documents)", () => {
+  it("있으면 payoutNote 다음에 싣고, 없으면 칸을 적지 않는다", () => {
+    const docs = [{ name: "임대차계약서 사본", note: "확정일자 포함" }, { name: "주민등록등본" }];
+    const [withDocs] = toAppData([row({ documents: docs })], at).policies;
+    expect(withDocs.documents).toEqual(docs);
+    const keys = Object.keys(withDocs);
+    expect(keys.indexOf("documents")).toBe(keys.indexOf("requiredInputs") - 1);
+    const [plain] = toAppData([row()], at).policies;
+    expect("documents" in plain).toBe(false);
+  });
+
+  it("안내 상품에는 싣지 않는다", () => {
+    const [loanItem] = toAppData([loan({ documents: [{ name: "a" }] })], at).loanProducts;
+    expect("documents" in loanItem).toBe(false);
+  });
+
+  it("모양이 틀리면 빌드를 멈춘다", () => {
+    expect(validateRows([row({ documents: [{ note: "x" }] })]).join("\n")).toContain("서류 목록(documents)");
+    expect(validateRows([row({ documents: "a" })]).join("\n")).toContain("서류 목록(documents)");
+    expect(validateRows([row({ documents: [{ name: "   " }] })]).join("\n")).toContain("서류 목록(documents)");
   });
 });

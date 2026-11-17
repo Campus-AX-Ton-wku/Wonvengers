@@ -28,6 +28,8 @@ export {
   ExternalLink,
   FileText,
   HandCoins,
+  Heart,
+  House,
   Info,
   Landmark,
   ListChecks,

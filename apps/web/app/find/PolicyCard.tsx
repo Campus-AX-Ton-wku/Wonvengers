@@ -3,7 +3,7 @@ import type { DiscoveryCardStatus, PolicyMeta, TagResult } from "@/lib/types";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate } from "@/lib/date";
-import { CARD_STATUS_BADGE, StatusBadge } from "@/app/components";
+import { CARD_STATUS_BADGE, SaveButton, StatusBadge } from "@/app/components";
 import { ChevronRight, ICON_MD, ShieldCheck } from "@/app/components/icons";
 import { verificationBadge } from "@/lib/verification";
 
@@ -72,11 +72,14 @@ export default function PolicyCard({
      * 따로 누를 수 있는 것이 아니다 — 같은 카드에 누를 곳이 둘이면 어디를 눌러야
      * 하는지 생각하게 된다.
      *
+     * 11/17: 오른쪽 위 ♡ 찜 버튼은 링크 밖 형제라 누를 곳이 겹치지 않는다.
+     *
      * 구분선을 두지 않는다. 지면(옅은 파랑) 위의 흰 카드는 여백만으로 나뉜다.
      */
+    <div className="relative">
     <Link
       href={`/find/policies/${policy.id}`}
-      className="focus-ring block rounded-card bg-surface px-5 py-5 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
+      className="focus-ring block rounded-card bg-surface py-5 pl-5 pr-14 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
     >
       {/* 색만으로 상태를 말하지 않는다 — 배지마다 아이콘이 하나씩 붙는다. */}
       <div className="flex flex-wrap items-center gap-1.5">
@@ -108,5 +111,7 @@ export default function PolicyCard({
 
       {note && <p className="mt-2 text-sm leading-relaxed text-ink-600">{note}</p>}
     </Link>
+    <SaveButton policyId={policy.id} policyName={policy.name} className="absolute right-2 top-2" />
+    </div>
   );
 }

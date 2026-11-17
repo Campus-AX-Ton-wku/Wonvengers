@@ -60,6 +60,7 @@ function 답심기(): void {
 async function 다시하기(user: ReturnType<typeof userEvent.setup>): Promise<void> {
   await user.click(await screen.findByRole("button", { name: "처음부터 다시" }));
   const sheet = screen.getByRole("dialog", { name: "고른 답을 모두 지우고 첫 질문부터 다시 할까요?" });
+  expect(within(sheet).getByText("찜한 지원금과 서류 준비 체크도 함께 지워져요.")).toBeTruthy();
   await user.click(within(sheet).getByRole("button", { name: "다시 하기" }));
 }
 
@@ -175,6 +176,11 @@ describe("로그인 상태", () => {
       profile: payload.profile,
       declared: payload.declared,
       checklists: payload.checklists,
+      // 비어 있는 찜 필드는 본문에서 빠진다 — 서버가 빈 값으로 읽는다
+      saved: payload.saved ?? [],
+      documentChecks: payload.documentChecks ?? {},
     }).toEqual(emptyContent());
+    expect(payload).not.toHaveProperty("saved");
+    expect(payload).not.toHaveProperty("documentChecks");
   });
 });

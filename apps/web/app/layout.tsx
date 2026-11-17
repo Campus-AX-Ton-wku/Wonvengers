@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ENTRY_SCRIPT } from "@/lib/entry";
+import { START_REDIRECT } from "@/lib/start-redirect";
 import { contentSecurityPolicy } from "@/lib/csp";
 
 /*
@@ -81,25 +82,6 @@ export const metadata: Metadata = {
   description: "계약 조건을 입력하면 청년 주거지원 정책을 판정하고 최종 예상 주거비를 계산합니다.",
 };
 
-/**
- * 루트 방문자를 온보딩으로 보내는 스크립트. React 가 뜨기 전에 실행된다.
- *
- * useEffect 로 하면 랜딩이 한 프레임 그려진 뒤 화면이 갈아치워진다 — 깜빡임이
- * 고장으로 읽힌다. <head> 앞에서 동기 실행하면 페인트 전에 이동한다
- * (다크모드 플래시를 막는 것과 같은 방법).
- *
- * 이 스크립트가 실패해도 앱은 멀쩡하다: JavaScript가 꺼져 있으면 랜딩이 뜬다.
- *
- * 조건이 pathname === "/" 인 이유: 목록·결과 링크로 바로 들어온 사람을 온보딩으로
- * 끌고 가면 자기가 열려던 화면을 못 본다.
- *
- * 같은 스크립트가 이 탭의 첫 화면 기록 칸에 표도 단다(lib/entry.ts — history.state 의 표,
- * 그 값은 sessionStorage). 왼쪽 위 화살표가 그 표로 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지
- * 정한다. React 가 뜨기 전에 달아야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도
- * 놓치지 않는다.
- */
-const ONBOARDING_REDIRECT = `if(location.pathname==="/"){location.replace("/onboarding")}`;
-
 /* viewport-fit=cover 로 노치·홈 인디케이터 영역까지 지면을 넓히고,
    safe-area-inset 여백은 각 컴포넌트에서 준다. 확대는 접근성상 막지 않는다. */
 export const viewport: Viewport = {
@@ -120,7 +102,10 @@ export default function RootLayout({
         {process.env.NODE_ENV === "production" && (
           <meta httpEquiv="Content-Security-Policy" content={contentSecurityPolicy()} />
         )}
-        <script dangerouslySetInnerHTML={{ __html: `${ONBOARDING_REDIRECT};${ENTRY_SCRIPT}` }} />
+        {/* 루트 리다이렉트는 lib/start-redirect.ts. 같은 스크립트가 이 탭의 첫 화면 기록 칸에 표도 단다
+            (lib/entry.ts). 왼쪽 위 화살표가 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지 정하는 표이고,
+            React 가 뜨기 전에 달아야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도 놓치지 않는다. */}
+        <script dangerouslySetInnerHTML={{ __html: `${START_REDIRECT};${ENTRY_SCRIPT}` }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>
     </html>
