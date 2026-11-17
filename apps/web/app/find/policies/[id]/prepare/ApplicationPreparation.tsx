@@ -6,6 +6,7 @@ import {
   Button,
   SaveButton,
   ContactInfo,
+  PerkyNote,
   StickyBottomAction,
   TopBar,
   buttonClass,
@@ -155,6 +156,16 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             />
           )}
         </section>
+
+        {/* 끝까지 마친 순간에만 해낸 Perky(success). 하나라도 풀면 사라진다 — 상태를 말하는 자리에만 둔다. */}
+        {hydrated && progress.done === progress.total && (
+          <PerkyNote
+            state="success"
+            title="준비를 모두 마쳤어요"
+            description="이제 공식 신청 사이트에서 신청하면 돼요."
+            className="mt-5 rounded-card bg-ok-50 px-4 py-3"
+          />
+        )}
       </main>
 
       <StickyBottomAction>

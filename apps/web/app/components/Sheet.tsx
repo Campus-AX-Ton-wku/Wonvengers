@@ -26,11 +26,14 @@ const INITIAL_FOCUS = '[data-autofocus]:not([disabled])';
 export function Sheet({
   title,
   description,
+  visual,
   onClose,
   children,
 }: {
   title: string;
   description?: React.ReactNode;
+  /** 제목 왼쪽에 작게 놓을 그림(Perky 포즈). 상태는 제목이 말하므로 그림은 aria-hidden 이어야 한다. */
+  visual?: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -92,9 +95,18 @@ export function Sheet({
         aria-describedby={description ? descriptionId : undefined}
         className="flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
       >
-        <h2 id={titleId} className="text-balance text-xl font-extrabold leading-snug text-ink-900">
-          {title}
-        </h2>
+        {visual ? (
+          <div className="flex items-center gap-3">
+            {visual}
+            <h2 id={titleId} className="min-w-0 text-balance text-xl font-extrabold leading-snug text-ink-900">
+              {title}
+            </h2>
+          </div>
+        ) : (
+          <h2 id={titleId} className="text-balance text-xl font-extrabold leading-snug text-ink-900">
+            {title}
+          </h2>
+        )}
         {description && (
           <p id={descriptionId} className="text-sm leading-relaxed text-ink-600">
             {description}

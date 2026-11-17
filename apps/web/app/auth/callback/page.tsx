@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppShell, SyncConflictSheet, TopBar, buttonClass } from "@/app/components";
+import { AppShell, PerkyCharacter, SyncConflictSheet, TopBar, buttonClass } from "@/app/components";
 import { consumeReturnTo, handleCallback, isLoginAvailable } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
 import { initialSync } from "@/lib/sync";
@@ -66,6 +66,11 @@ export default function AuthCallbackPage() {
       <main className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
         {done ? (
           <>
+            {/* 로그인이 안 된 오류(교환 실패 · 로그인을 쓸 수 없음)에만 생각 중 Perky(thinking).
+                카카오에서 스스로 취소한 것은 오류가 아니라 두지 않는다. 가운데 세우기 120–160px. */}
+            {phase !== "cancelled" && (
+              <PerkyCharacter state="thinking" size={140} priority className="h-auto w-[140px]" />
+            )}
             <h1 className="text-xl font-extrabold text-ink-900">
               {phase === "unavailable"
                 ? "지금은 로그인을 쓸 수 없어요"
