@@ -55,7 +55,6 @@ function 답심기(): void {
   saveDeclared("singleHousehold", true);
   saveChecklist("iksan-newcomer-moving-cost-support", { eligibility: true, period: true, documents: false });
   window.localStorage.setItem("perky.onboarded", "1");
-  window.localStorage.setItem("perky.signup-dismissed", "1");
 }
 
 async function 다시하기(user: ReturnType<typeof userEvent.setup>): Promise<void> {
@@ -104,7 +103,6 @@ describe("/find/policies — '조건 수정' 옆", () => {
 
     expect(readLocalContent()).toEqual(emptyContent());
     expect(window.localStorage.getItem("perky.onboarded")).toBe("1");
-    expect(window.localStorage.getItem("perky.signup-dismissed")).toBe("1");
     expect(routerMock.replace).toHaveBeenCalledWith("/find?q=birth");
     expect(routerMock.push).not.toHaveBeenCalled();
   });

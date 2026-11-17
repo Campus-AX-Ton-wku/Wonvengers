@@ -98,7 +98,9 @@ describe("/find/result", () => {
       "지금 신청할 수 있는 지원금이 없어요"
     );
     expect(screen.getByText(/다음 모집 공고를 기다려야 합니다/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /어떤 지원금이었는지 보기/ })).toBeTruthy();
+    // 신청할 수 없는 지원금은 목록에 없으므로(11/17) 목록으로 가는 버튼을 두지 않는다 — '처음부터 다시'만
+    expect(screen.queryByRole("link", { name: /보기/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "처음부터 다시" })).toBeTruthy();
   });
 
   it("후보가 아예 없으면 그렇게 말한다", async () => {
@@ -111,7 +113,8 @@ describe("/find/result", () => {
     });
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("아쉽게도 해당되는 지원금이 없어요");
-    expect(screen.getByRole("link", { name: /왜 해당되지 않는지 보기/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /보기/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "처음부터 다시" })).toBeTruthy();
   });
 
   /*

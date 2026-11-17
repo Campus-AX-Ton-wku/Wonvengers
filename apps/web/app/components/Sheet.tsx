@@ -11,7 +11,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
 const INITIAL_FOCUS = '[data-autofocus]:not([disabled])';
 
 /**
- * 아래에서 올라오는 확인 시트. 가입 제안·"처음부터 다시"·회원 탈퇴·충돌 질문이 함께 쓴다.
+ * 아래에서 올라오는 확인 시트. 월세 계산 전 로그인·"처음부터 다시"·회원 탈퇴·충돌 질문이 함께 쓴다.
  *
  * 열리면 data-autofocus 가 붙은 요소(없으면 첫 버튼)에 포커스. 열려 있는 동안 Tab 은 시트 안에서만 돈다. Esc 와 어두운 바깥을 누르면 onClose.
  * 닫히면(이 컴포넌트가 사라지면) 시트를 연 요소로 포커스를 돌려준다 — 닫은 뒤 키보드 사용자가

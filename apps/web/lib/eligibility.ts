@@ -37,6 +37,21 @@ export function evaluatePolicy(
     };
   }
 
+  // 1층의 계약 형태 조건(예: 전세 계약만)을 2층 계약에도 적용한다. 2층 규칙(policy-rules.ts)에는 이 검사가 없어서
+  // 월세로 계산한 사람에게 전세 전용 정책이 '조건충족시가능'으로 떴다(11/17). 2층은 월세 · 연세만 다룬다.
+  const housingTypes = policy.discovery.housingTypes;
+  if (housingTypes !== null && !housingTypes.includes(listing.contractType)) {
+    return {
+      policy,
+      status: "대상아님",
+      checks: [],
+      passedLabels: [],
+      failedLabels: [`${housingTypes.join(" · ")} 계약만 신청할 수 있어요`],
+      unknownLabels: [],
+      estimatedAmount: 0,
+    };
+  }
+
   const ruleFn = POLICY_RULES[policy.id];
   const checks = ruleFn ? ruleFn(profile, asOfISO) : [NO_RULES_CHECK];
 

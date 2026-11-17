@@ -136,16 +136,16 @@ describe("/calculate 1층 답변 이어받기", () => {
 });
 
 /*
- * 계약 시작 예정일은 휠 데이트 피커다 (⚠️ 스파이크).
+ * 계약 시작일은 휠 데이트 피커다 (⚠️ 스파이크).
  *
  * jsdom 은 레이아웃이 없어 실제 스크롤을 흉내낼 수 없다 — scrollTop 이 항상 0이다.
  * 그래서 여기서는 굴러가는 감각이 아니라 **값이 새는 경로**를 지킨다: 확인을 누르기
  * 전에는 저장되지 않는지, 없는 날짜가 남지 않는지, 연도 방향이 뒤바뀌지 않았는지.
  * 스크롤 위치 ↔ 인덱스 계산은 lib/__tests__/wheel.test.ts 가 따로 덮는다.
  */
-describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
-  const 열기 = () => screen.getByRole("button", { name: /^계약 시작 예정일 —/ });
-  const 칸 = (part: string) => screen.getByRole("listbox", { name: `계약 시작 예정일 ${part}` });
+describe("/calculate 계약 시작일 (휠 피커)", () => {
+  const 열기 = () => screen.getByRole("button", { name: /^계약 시작일 —/ });
+  const 칸 = (part: string) => screen.getByRole("listbox", { name: `계약 시작일 ${part}` });
   const 항목 = (part: string, name: string | RegExp) =>
     within(칸(part)).getByRole("option", { name });
 
@@ -167,14 +167,14 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     );
   });
 
-  it("연도 목록이 작년부터 오름차순이다 (생년월일과 반대 방향)", async () => {
+  it("연도 목록이 5년 전부터 오름차순이다 (생년월일과 반대 방향)", async () => {
     const user = userEvent.setup();
     await goToStep2(user);
     await user.click(열기());
 
     const years = within(칸("년")).getAllByRole("option").map((o) => o.textContent);
     const now = new Date().getFullYear();
-    expect(years[0]).toBe(`${now - 1}년`);
+    expect(years[0]).toBe(`${now - 5}년`);
     expect(years.at(-1)).toBe(`${now + 2}년`);
   });
 
@@ -190,14 +190,14 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
 
     // 아직 확인을 안 눌렀다 — 필수값 검증이 막아야 한다
     await user.click(screen.getByRole("button", { name: "다음" }));
-    expect(screen.getByText("계약 시작 예정일을 입력해주세요.")).toBeTruthy();
+    expect(screen.getByText("계약 시작일을 입력해주세요.")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "확인" }));
     // 저장은 검증을 다 통과해야 일어난다 — '실제 계약과 일치' 확인까지 켠다
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
-    expect(screen.queryByText("계약 시작 예정일을 입력해주세요.")).toBeNull();
+    expect(screen.queryByText("계약 시작일을 입력해주세요.")).toBeNull();
     expect(loadListing()?.contractStartDate).toBe("2027-09-01");
   });
 
@@ -205,7 +205,7 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     const user = userEvent.setup();
     await goToStep2(user);
 
-    expect(screen.getByRole("button", { name: "계약 시작 예정일 — 선택 안 함" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "계약 시작일 — 선택 안 함" })).toBeTruthy();
 
     await user.click(열기());
     await user.click(항목("년", "2027년"));
@@ -213,7 +213,7 @@ describe("/calculate 계약 시작 예정일 (휠 피커)", () => {
     await user.click(항목("일", "5일"));
     await user.click(screen.getByRole("button", { name: "확인" }));
 
-    expect(screen.getByRole("button", { name: "계약 시작 예정일 — 2027년 3월 5일" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "계약 시작일 — 2027년 3월 5일" })).toBeTruthy();
   });
 
   /* 키보드 타이핑 점프. 스크롤은 jsdom 에서 흉내낼 수 없지만 keydown 은 실제로 뜬다.

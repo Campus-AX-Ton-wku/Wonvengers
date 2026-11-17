@@ -374,7 +374,7 @@ export function readLocalContent(): UserDataContent {
   });
 }
 
-/** 이 기기의 답을 모두 지운다. 로그인·동의·온보딩·가입 시트 기록은 답이 아니라서 남긴다. */
+/** 이 기기의 답을 모두 지운다. 로그인·동의·온보딩 기록은 답이 아니라서 남긴다. */
 export function clearLocalContent(): void {
   if (typeof window === "undefined") return;
   try {
@@ -405,33 +405,10 @@ export function writeLocalContent(content: UserDataContent): void {
 
 /**
  * '처음부터 다시'. 1층 답, 2층 계약 조건·자격 답, 신청 체크리스트(첫 항목이 "자격 조건 확인"이라
- * 답이 바뀌면 예전 체크가 맞지 않는다), perky.declared 를 지운다. 로그인 상태·가입 시트 닫음 기록은 남긴다.
+ * 답이 바뀌면 예전 체크가 맞지 않는다), perky.declared 를 지운다. 로그인 상태는 남긴다.
  * 로그인 상태면 lib/sync.ts 가 비운 데이터를 기다리지 않고 바로 올린다 — 다른 기기에서도 빈 상태.
  */
 export function resetAllAnswers(): void {
   quietly(clearLocalContent);
   notifyLocalChange(true);
-}
-
-// ── 가입 제안 시트 (app/find/result/SignupSheet.tsx) ──
-
-/** 닫으면 그 기기에서는 다시 띄우지 않는다. '처음부터 다시'·로그아웃으로도 지우지 않는다(답이 아니다). */
-export const SIGNUP_DISMISSED_KEY = "perky.signup-dismissed";
-
-export function hasDismissedSignup(): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(SIGNUP_DISMISSED_KEY) === "1";
-  } catch {
-    // 읽기가 막혀 있으면 닫은 것으로 본다. 매번 시트에 막히는 것보다 낫다.
-    return true;
-  }
-}
-
-export function dismissSignup(): void {
-  try {
-    window.localStorage.setItem(SIGNUP_DISMISSED_KEY, "1");
-  } catch {
-    // 못 적으면 다음에 한 번 더 보인다.
-  }
 }
