@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import { AppShell, LinkButton, TopBar } from "@/app/components";
-import { ChevronRight, ICON_SM } from "@/app/components/icons";
+import { ChevronRight, ICON_MD, ICON_SM } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
@@ -56,14 +56,14 @@ export default function HomePage() {
     return onLocalChange(read);
   }, []);
 
-  if (!ready) return <AppShell><TopBar /><p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p></AppShell>;
+  if (!ready) return <AppShell><TopBar home /><p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p></AppShell>;
 
   const count = availableCount(policies, answers, today);
   const cards = savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks });
 
   return (
     <AppShell>
-      <TopBar />
+      <TopBar home />
       <main className="flex flex-col gap-6 pb-10 pt-4">
         <header className="flex flex-col gap-1">
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">내 주거지원 현황</h1>
@@ -77,7 +77,7 @@ export default function HomePage() {
           )}
         </header>
 
-        <section aria-label="내 지원 요약" className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card">
+        <section aria-label="내 지원 요약" className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card">
           {count === null ? (
             <>
               <p className="text-base font-bold text-ink-900">질문에 답하면 받을 수 있는 지원금을 찾아 드려요</p>
@@ -85,15 +85,15 @@ export default function HomePage() {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-base font-bold text-ink-900">지금 받을 수 있는 지원금 {count}건</p>
-                <Link href="/find/policies" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">목록 보기</Link>
-              </div>
+              <SummaryRow value={`${count}건`} label="지금 받을 수 있는 지원금" href="/find/policies" action="목록 보기" />
               {costs ? (
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-ink-700">지원받으면 {formatKoreanMoney(costs.nominal)} → <strong className="text-accent-600">{formatKoreanMoney(costs.final)}</strong></p>
-                  <Link href="/result" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">결과 보기</Link>
-                </div>
+                <SummaryRow
+                  value={formatKoreanMoney(costs.final)}
+                  valueClassName="text-accent-600"
+                  label={`최종 예상 주거비 · 지원 전 ${formatKoreanMoney(costs.nominal)}`}
+                  href="/result"
+                  action="결과 보기"
+                />
               ) : (
                 <Link href="/calculate" className="focus-ring inline-flex min-h-11 items-center text-sm font-bold text-brand-700">내 월세 계산하기</Link>
               )}
@@ -112,13 +112,20 @@ export default function HomePage() {
             <ul className="flex flex-col gap-3">
               {cards.map(({ policy, deadline, progress }) => (
                 <li key={policy.id}>
-                  <Link href={`/find/policies/${policy.id}/prepare`} className="focus-ring block rounded-card bg-surface p-5 shadow-card">
-                    <p className="text-base font-bold text-ink-900">{policy.name}</p>
-                    <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
-                    <div className="mt-3 flex items-center justify-between text-sm">
-                      <span className="font-bold text-brand-700">{progress}</span>
-                      <span className="text-ink-600">{deadline}</span>
+                  <Link href={`/find/policies/${policy.id}/prepare`} className="focus-ring flex items-center gap-3 rounded-card bg-surface p-5 shadow-card">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-bold text-ink-900">{policy.name}</p>
+                      <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
+                      <div className="mt-3 flex items-center justify-between text-sm">
+                        <span className="font-bold text-brand-700">{progress.label}</span>
+                        <span className="text-ink-600">{deadline}</span>
+                      </div>
+                      {/* 문구가 진행률을 이미 말한다 — 막대는 눈으로 보는 보조라 읽지 않는다. */}
+                      <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                        <div className="h-full rounded-full bg-brand-600" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+                      </div>
                     </div>
+                    <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
                   </Link>
                 </li>
               ))}
@@ -127,5 +134,24 @@ export default function HomePage() {
         </section>
       </main>
     </AppShell>
+  );
+}
+
+/** 요약 카드 한 줄 — 큰 값, 그 아래 작은 설명, 오른쪽 알약 버튼(토스 홈의 잔액 줄). */
+function SummaryRow({ value, valueClassName = "text-ink-900", label, href, action }: {
+  value: string;
+  valueClassName?: string;
+  label: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className={`text-xl font-extrabold ${valueClassName}`}>{value}</p>
+        <p className="mt-0.5 text-sm text-ink-500">{label}</p>
+      </div>
+      <LinkButton href={href} variant="secondary" size="md" full={false} className="shrink-0">{action}</LinkButton>
+    </div>
   );
 }

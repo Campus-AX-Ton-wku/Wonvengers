@@ -48,7 +48,8 @@ describe("/home", () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(within(summary).getByText(/지금 받을 수 있는 지원금 \d+건/)).toBeTruthy();
+    expect(within(summary).getByText(/^\d+건$/)).toBeTruthy();
+    expect(within(summary).getByText("지금 받을 수 있는 지원금")).toBeTruthy();
     expect(within(summary).getByRole("link", { name: "목록 보기" }).getAttribute("href")).toBe("/find/policies");
     expect(within(summary).getByRole("link", { name: "내 월세 계산하기" }).getAttribute("href")).toBe("/calculate");
   });
@@ -74,7 +75,7 @@ describe("/home", () => {
     const card = within(list).getByRole("link", { name: /청년 주거급여 분리지급/ });
     expect(card.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment/prepare");
     expect(within(card).getByText("상시")).toBeTruthy();
-    expect(within(card).getByText("확인 0/3")).toBeTruthy();
+    expect(within(card).getByText("신청 준비 0/3")).toBeTruthy();
   });
 
   it("계산이 끝났으면 지원 전후 월세와 결과 보기, 계산하기 링크는 숨긴다", async () => {
@@ -85,7 +86,9 @@ describe("/home", () => {
     const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, todayISO());
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(summary.textContent).toContain(`지원받으면 ${formatKoreanMoney(s.nominalTotalCost)} → ${formatKoreanMoney(s.finalEstimatedHousingCost)}`);
+    // 토스식: 큰 금액 한 줄 + 작은 설명 한 줄
+    expect(within(summary).getByText(formatKoreanMoney(s.finalEstimatedHousingCost))).toBeTruthy();
+    expect(within(summary).getByText(`최종 예상 주거비 · 지원 전 ${formatKoreanMoney(s.nominalTotalCost)}`)).toBeTruthy();
     expect(within(summary).getByRole("link", { name: "결과 보기" }).getAttribute("href")).toBe("/result");
     expect(within(summary).queryByRole("link", { name: "내 월세 계산하기" })).toBeNull();
   });

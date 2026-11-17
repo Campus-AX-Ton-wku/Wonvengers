@@ -75,6 +75,16 @@ describe("상단바 오른쪽 자리 (설계 '화면' 4)", () => {
     expect(link.getAttribute("href")).toBe("/home");
   });
 
+  it("홈 화면에서는 [홈]을 빼고 계정만 둔다 — 자기 자신을 가리키는 버튼이었다", async () => {
+    enableLogin();
+    signInAs();
+    seedSyncMeta();
+    load.mockResolvedValue(remoteItem());
+    render(<TopBar home />);
+    expect(await screen.findByRole("link", { name: "내 계정" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "홈" })).toBeNull();
+  });
+
   it("저장에 실패하면 '저장 안 됨 · 다시 시도', 누르면 다시 시도한다", async () => {
     enableLogin();
     signInAs();
