@@ -12,9 +12,9 @@ describe("진행률", () => {
       kind: "documents", done: 1, total: 3, label: "서류 1/3 준비",
     });
   });
-  it("서류 목록이 없으면 확인 3개", () => {
+  it("서류 목록이 없으면 신청 준비 3단계(자격 · 기간 · 서류)", () => {
     expect(homeProgress(base, { eligibility: true, period: true, documents: false }, [])).toEqual({
-      kind: "checks", done: 2, total: 3, label: "확인 2/3",
+      kind: "checks", done: 2, total: 3, label: "신청 준비 2/3",
     });
   });
   it("체크리스트 화면은 서류 있으면 자격 + 기간 + 서류", () => {

@@ -16,7 +16,7 @@ export function savedCards(
   saved: readonly string[],
   todayISO: string,
   read: { checklist(id: string): ChecklistState; documents(id: string): string[] }
-): { policy: PolicyMeta; deadline: string; progress: string }[] {
+): { policy: PolicyMeta; deadline: string; progress: ReturnType<typeof homeProgress> }[] {
   const byId = new Map(policies.map((p) => [p.id, p]));
   return saved.flatMap((id) => {
     const policy = byId.get(id);
@@ -24,7 +24,7 @@ export function savedCards(
     return [{
       policy,
       deadline: deadlineLabel(policy, todayISO),
-      progress: homeProgress(policy, read.checklist(id), read.documents(id)).label,
+      progress: homeProgress(policy, read.checklist(id), read.documents(id)),
     }];
   });
 }
