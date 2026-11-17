@@ -55,23 +55,27 @@ describe("2층 정책 카드", () => {
     expect(details.open).toBe(false);
   });
 
-  it("요건 토글 라벨에 충족 건수가 적혀 있다", async () => {
+  it("요건과 계산식은 카드 안의 토글 하나에 함께 있다 (11/17 — 카드 밖 별도 상자를 없앰)", async () => {
     await renderResult();
-    const resultItem = topCards()[0].closest(".stagger-in") as HTMLElement;
-    expect(within(resultItem).getByText(/요건 자세히 보기 · 충족 \d+/)).toBeTruthy();
+    const card = topCards()[0];
+    expect(card.querySelectorAll("details")).toHaveLength(1);
+    expect(within(card).getByText("요건과 계산 방법 보기")).toBeTruthy();
+    expect(within(card).getByText(/× \d+개월|예상액/).closest("details")).not.toBeNull();
   });
 
-  it("확인 날짜는 '검수 상태' 토글 안에 있다", async () => {
+  it("원문 대조일은 토글 없이 출처 줄에 바로 보인다 — '검수 상태' 토글은 두지 않는다 (11/17)", async () => {
     await renderResult();
     // 익산 이사비는 2026-05-14 예산 소진 마감(2026-11-03 원문 재대조)이라 맨 위 카드가 아니다 — 상시인 분리지급으로 본다.
     const title = screen.getByRole("heading", { name: /청년 주거급여 분리지급/ });
     const card = title.closest("article")!;
-    const resultItem = card.closest(".stagger-in") as HTMLElement;
     expect(card, "청년 주거급여 분리지급 카드를 찾지 못했다").toBeTruthy();
 
-    const details = 상세_토글(resultItem, /2026년 기준/);
+    const source = within(card).getByRole("link", { name: /공식 출처 새 창에서 열기/ });
+    expect(source.textContent).toMatch(/\d{4}\.\d{2}\.\d{2} 대조|원문 확인 필요/);
+    expect(source.closest("details")).toBeNull();
+    expect(within(card).queryByText("검수 상태")).toBeNull();
+    const details = 상세_토글(card, /2026년 공고 기준/);
     expect(details.open).toBe(false);
-    expect(within(details).getByText("검수 상태")).toBeTruthy();
   });
 
   it("내부 검수 메모(notes)는 정책·대출 어디에도 그리지 않는다", async () => {
@@ -104,8 +108,8 @@ describe("2층 정책 카드", () => {
     expect(within(card).getByText(/^(예상적용|조건충족시가능)$/).closest("details")).toBeNull();
     expect(within(card).getByText(/받을 수 있는 예상 금액/).closest("details")).toBeNull();
     expect(within(card).getByRole("link", { name: /신청 준비 시작하기|마감 전 신청 준비하기/ }).closest("details")).toBeNull();
-    expect(within(card).getByRole("link", { name: /공식 신청 페이지에서 진행/ }).closest("details")).toBeNull();
-    expect(within(card).queryByText("예상 금액 계산식 보기")).toBeNull();
+    expect(within(card).getByRole("link", { name: /공식 출처 새 창에서 열기/ }).closest("details")).toBeNull();
+    expect((within(card).getByText("요건과 계산 방법 보기").closest("details") as HTMLDetailsElement).open).toBe(false);
   });
 
   it("최대 지원 가능액과 조합 목록은 접히지 않는다", async () => {

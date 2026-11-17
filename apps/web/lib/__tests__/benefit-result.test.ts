@@ -77,8 +77,46 @@ describe("Benefit Result Card adapter", () => {
     if (!card) throw new Error("카드 후보가 누락됨");
     expect(card.amount.value).toBe(123456);
     expect(card.deadlineAt).toBe("2026-10-31");
-    expect(card.primaryAction.href).toBe("/find/policies/test-policy");
-    expect(card.steps[2].href).toBe(`/find/policies/${result.policy.id}/prepare`);
+    // '신청 준비 시작하기'는 이름 그대로 신청 준비 화면으로 간다(11/17 — 예전엔 상세로 가서 아래 행과 목적지가 갈렸다)
+    expect(card.primaryAction.href).toBe("/find/policies/test-policy/prepare");
+  });
+
+  describe("금액이 위 합계에 들어가는지 (11/17 결과 화면 정리)", () => {
+    it("예상액이 있고 최선 조합에 든 정책만 합계 금액이다", () => {
+      const result = makePolicyResult({ estimatedAmount: 120000 });
+      const card = toBenefitResultCardData(result, "2026-09-02", new Set(["test-policy"]))!;
+      expect(card.amount.countsInTotal).toBe(true);
+      expect(card.amount.note).toBeNull();
+    });
+
+    it("조합 정보를 안 넘기면 예상액이 있는지로 본다", () => {
+      expect(toBenefitResultCardData(makePolicyResult({ estimatedAmount: 120000 }), "2026-09-02")!.amount.countsInTotal).toBe(true);
+    });
+
+    it("예상액이 있어도 중복 수급으로 조합에서 빠졌으면 합계 금액이 아니다", () => {
+      const card = toBenefitResultCardData(makePolicyResult({ estimatedAmount: 120000 }), "2026-09-02", new Set(["other"]))!;
+      expect(card.amount.countsInTotal).toBe(false);
+      expect(card.amount.note).toBe("같이 받을 수 없는 지원과 겹쳐 위 합계에서 뺐어요");
+    });
+
+    it("공고가 정한 정액(fixedGrant)은 공고 금액을 보여 주되 합계 금액이 아니라고 밝힌다", () => {
+      const result = makePolicyResult({ status: "조건충족시가능", unknownLabels: ["전입 이력"], estimatedAmount: 0 });
+      result.policy = {
+        ...result.policy,
+        benefitType: "lump_sum",
+        lumpSumBasis: "fixedGrant",
+        lumpSumCap: 100000,
+        monthlyCap: undefined,
+        maxMonths: undefined,
+        payoutNote: "전입 6개월 후 1회 지급 · 익산 지역화폐",
+      };
+      const card = toBenefitResultCardData(result, "2026-09-02", new Set())!;
+      expect(card.amount.countsInTotal).toBe(false);
+      expect(card.amount.value).toBe(100000);
+      expect(card.amount.note).toBe("정해진 금액이라 위 합계에는 넣지 않았어요");
+      // '개인 예상액 계산 전'처럼 나중에 계산될 것 같은 말을 쓰지 않는다 — 지급 방식만 적는다
+      expect(card.amount.period).toBe("전입 6개월 후 1회 지급 · 익산 지역화폐");
+    });
   });
 
   it("지난 마감일은 expired 상태 화면의 근거가 된다", () => {
