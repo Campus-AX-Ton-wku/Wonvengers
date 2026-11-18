@@ -30,8 +30,8 @@ export function ResultReceipt({
   listing: ListingInput;
   supportAmount: number;
   finalCost: number;
-  /** 맨 위 합계(최선 조합)에 든 정책 */
-  included: { id: string; name: string; amount: number }[];
+  /** 맨 위 합계(최선 조합)에 든 정책. oneTime 은 한 번 주는 지원(이사비 등) */
+  included: { id: string; name: string; amount: number; oneTime: boolean }[];
   /** 중복 수급 제한으로 조합에서 빠진 정책 */
   overlapExcluded: { policy: PolicyMeta; conflictsWith: string[] }[];
   /** 이 금액에 아직 확인되지 않은 조건이 섞여 있으면 그 목록 */
@@ -40,7 +40,18 @@ export function ResultReceipt({
   // lib/rent.ts nominalTotalCost 와 같은 셈 — 기간은 12개월까지만 센다
   const months = Math.min(listing.months, 12);
   const rentAndFee = (monthlyRentEquivalent(listing) + listing.managementFee) * months;
-  const monthly = months > 0 ? Math.round(finalCost / months / 100) * 100 : 0;
+  // 매달 나가는 돈과 한 번 내는 돈을 나눈다(11/18 진단 2회차) — 이사비를 12개월로 나눠 '한 달에 약 …'으로 쓰면
+  // 실제로 매달 나가는 돈보다 크게 읽힌다. 한 번 주는 지원은 이사비에서 먼저 빼고, 남으면 매달 쪽에서 뺀다.
+  const monthlySupport = included.filter((i) => !i.oneTime).reduce((sum, i) => sum + i.amount, 0);
+  const oneTimeSupport = included.filter((i) => i.oneTime).reduce((sum, i) => sum + i.amount, 0);
+  const moveNet = Math.max(0, listing.oneTimeMoveCost - oneTimeSupport);
+  const leftover = Math.max(0, oneTimeSupport - listing.oneTimeMoveCost);
+  const recurringNet = Math.max(0, rentAndFee - monthlySupport - leftover);
+  const monthly = months > 0 ? Math.round(recurringNet / months / 100) * 100 : 0;
+  const monthlyLine =
+    monthly > 0 || moveNet > 0
+      ? `매달 약 ${formatKoreanMoney(monthly)}${moveNet > 0 ? ` + 이사비 ${formatKoreanMoney(moveNet)}(한 번)` : ""}`
+      : null;
   const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
 
   return (
@@ -87,7 +98,7 @@ export function ResultReceipt({
         <p className="mt-1 text-xl font-extrabold leading-tight text-ink-900 tabular-nums">
           {formatKoreanMoney(finalCost)}
         </p>
-        {monthly > 0 && <p className="mt-1 text-xs text-ink-600">한 달에 약 {formatKoreanMoney(monthly)}</p>}
+        {monthlyLine && <p className="mt-1 text-xs text-ink-600">{monthlyLine}</p>}
       </div>
 
       {overlapExcluded.length > 0 && (

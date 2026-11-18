@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
 import {
+  monthlyBreakdown,
   benefitCeiling,
   largestTotalCeiling,
   benefitFormula,
@@ -185,5 +186,20 @@ describe("largestTotalCeiling", () => {
 
   it("고를 정책이 없으면 없다고 한다", () => {
     expect(largestTotalCeiling([])).toBeNull();
+  });
+});
+
+describe("monthlyBreakdown — 매달 주는 지원의 한 달 금액 (11/18 결과 카드 단위)", () => {
+  const all = policiesData as PolicyMeta[];
+  const split = all.find((p) => p.id === "youth-housing-benefit-split-payment")!;
+
+  it("월세 상한형은 월세와 상한 중 작은 값 × 개월", () => {
+    // 연세 480만원 → 월 40만원, 상한 21만 2천원
+    expect(monthlyBreakdown(split, makeListing())).toEqual({ monthly: 212000, months: 12 });
+  });
+
+  it("일시금은 매달 주는 지원이 아니다", () => {
+    const lump = all.find((p) => p.benefitType === "lump_sum")!;
+    expect(monthlyBreakdown(lump, makeListing())).toBeNull();
   });
 });
