@@ -129,9 +129,10 @@ describe("2층 정책 카드", () => {
     }
   });
 
-  it("공식 결과 카드는 하나의 접근성 영역에 그대로 노출한다", async () => {
+  it("결과 카드는 합계 안 · 밖 두 영역에 빠짐없이 나뉘어 있다 (11/18)", async () => {
     await renderResult();
-    const region = screen.getByRole("region", { name: /맞춤 혜택 \d+개/ });
-    expect(within(region).getAllByRole("article").length).toBe(topCards().length);
+    const regions = screen.getAllByRole("region", { name: /^(위 금액에 넣은 지원|조건이 맞으면 더 받을 수 있는 지원) \d+개$/ });
+    const inRegions = regions.reduce((n, r) => n + within(r).getAllByRole("article").length, 0);
+    expect(inRegions).toBe(topCards().length);
   });
 });
