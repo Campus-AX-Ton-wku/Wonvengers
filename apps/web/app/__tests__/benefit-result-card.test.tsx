@@ -72,7 +72,7 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     expect(within(article).queryByText(/조건 \d+개 (일치|확인)$/)).toBeNull();
   });
 
-  it("합계에 든 금액만 금색이다 — 정해진 공고 금액은 잉크색으로 '합계에 넣지 않았다'고 밝힌다", () => {
+  it("합계에 든 일시금은 금색 상자 — 합계 밖 정액은 작은 카드에 잉크색으로, 보조 버튼 하나만 (11/18)", () => {
     const counted = result();
     const countedCard = toBenefitResultCardData(counted, "2026-09-02", new Set(["real-policy-id"]))!;
     const { unmount } = render(<BenefitResultCard card={countedCard} result={counted} listing={listing} />);
@@ -85,10 +85,27 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     fixed.policy = { ...fixed.policy, lumpSumBasis: "fixedGrant", lumpSumCap: 100000, payoutNote: "전입 6개월 후 1회 지급" };
     const fixedCard = toBenefitResultCardData(fixed, "2026-09-02", new Set())!;
     render(<BenefitResultCard card={fixedCard} result={fixed} listing={listing} />);
-    expect(screen.getByText("공고상 금액")).toBeTruthy();
-    expect(screen.getByText("최대 10만원").className).not.toContain("accent");
-    expect(screen.getByText(/정해진 금액이라 위 합계에는 넣지 않았어요/)).toBeTruthy();
-    expect(screen.queryByText(/개인 예상액 계산 전/)).toBeNull();
+    const article = screen.getByRole("article");
+    expect(within(article).getByText("최대 10만원").className).not.toContain("accent");
+    expect(within(article).getByText(/공고상 금액/)).toBeTruthy();
+    // 합계 밖이라는 설명 · 자격 확인 안내는 그룹 설명이 한 번만 한다 — 카드마다 되풀이하지 않는다
+    expect(within(article).queryByText(/위 합계에는 넣지 않았어요/)).toBeNull();
+    expect(within(article).queryByText("자격 조건은 신청 준비에서 확인해요")).toBeNull();
+    expect(article.querySelector("details")).toBeNull();
+    const cta = within(article).getByRole("link", { name: "신청 준비 시작하기" });
+    expect(cta.className).not.toContain("bg-brand-600");
+    expect(cta.className).toMatch(/min-h-(?:11|\[50px\])/);
+  });
+
+  it("매달 주는 지원은 한 달 금액을 크게, 개월 합계를 아래에 (금액이 '매달 254만원'으로 읽히지 않게)", () => {
+    const monthly = result();
+    monthly.policy = { ...monthly.policy, benefitType: "rent_capped_monthly", monthlyCap: 212000, lumpSumBasis: undefined, lumpSumCap: undefined };
+    monthly.estimatedAmount = 2544000;
+    const card = toBenefitResultCardData(monthly, "2026-09-02", new Set(["real-policy-id"]))!;
+    render(<BenefitResultCard card={card} result={monthly} listing={makeListing({ contractType: "월세", rentOrYearlyAmount: 350000, months: 12 })} />);
+    expect(screen.getByText("월 21만 2,000원").className).toContain("text-accent-700");
+    expect(screen.getByText("12개월이면 254만 4,000원")).toBeTruthy();
+    expect(screen.queryByText(/거주 기간 동안/)).toBeNull();
   });
 
   it("확인 필요도 결과에서 조건을 따지지 않는다 — 신청 준비로 이어 가고, 자격 확인은 거기서 한다고만 밝힌다 (11/17)", () => {
@@ -101,7 +118,6 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     expect(screen.getAllByText("확인 필요").some((el) => el.closest("details") === null)).toBe(true);
     expect(screen.queryByText(/가지 정보가 더 필요해요/)).toBeNull();
     expect(screen.queryByRole("link", { name: /조건 \d+개 확인하기/ })).toBeNull();
-    expect(screen.getByText("자격 조건은 신청 준비에서 확인해요")).toBeTruthy();
     expect(screen.getByRole("link", { name: "신청 준비 시작하기" }).getAttribute("href")).toBe(
       "/find/policies/real-policy-id/prepare",
     );

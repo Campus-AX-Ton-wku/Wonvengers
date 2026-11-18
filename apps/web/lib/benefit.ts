@@ -43,6 +43,22 @@ export function estimatePolicyAmount(policy: PolicyMeta, listing: ListingInput):
 }
 
 /**
+ * 매달 주는 지원이면 한 달 금액과 개월 수 (11/18). 결과 카드가 총액만 크게 쓰고 아래에 '매월 지급'을
+ * 붙이면 '매달 254만원'으로 읽힌다 — 한 달 금액을 크게, 개월 합계를 작게 쓰려고 나눈다.
+ * 일시금은 null.
+ */
+export function monthlyBreakdown(policy: PolicyMeta, listing: ListingInput): { monthly: number; months: number } | null {
+  if (policy.benefitType !== "rent_capped_monthly" && policy.benefitType !== "flat_monthly") return null;
+  const months = supportedMonths(policy, listing);
+  if (months <= 0) return null;
+  const monthly =
+    policy.benefitType === "rent_capped_monthly"
+      ? Math.min(policy.monthlyCap ?? Infinity, monthlyRentEquivalent(listing))
+      : policy.monthlyCap ?? 0;
+  return { monthly: Math.round(monthly), months };
+}
+
+/**
  * 금액이 어떻게 나온 값인지 한 문장으로 설명한다 (F4-3).
  * 총액만 보여주면 "왜 이 금액인지"를 알 수 없고, 사용자가 검산할 수도 없다.
  */

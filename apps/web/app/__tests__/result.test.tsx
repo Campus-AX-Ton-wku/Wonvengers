@@ -151,6 +151,21 @@ describe("강조 위계", () => {
   });
 });
 
+describe("결과 카드 묶음 — 합계 안 / 밖 (11/18 진단 2회차 P1)", () => {
+  it("위 금액에 넣은 지원과 조건이 맞으면 더 받을 수 있는 지원을 보이는 제목으로 나누고, 공통 설명은 한 번만", async () => {
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "월세", rentOrYearlyAmount: 350000, oneTimeMoveCost: 600000 }));
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    const counted = screen.getByRole("region", { name: /^위 금액에 넣은 지원 \d+개$/ });
+    const extra = screen.getByRole("region", { name: /^조건이 맞으면 더 받을 수 있는 지원 \d+개$/ });
+    expect(within(counted).getAllByRole("article").length).toBeGreaterThan(0);
+    expect(within(extra).getAllByRole("article").length).toBeGreaterThan(0);
+    expect(within(extra).getAllByText(/위 금액에는 넣지 않았어요/)).toHaveLength(1);
+  });
+});
+
 describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 카드를 한 장으로)", () => {
   function 요약카드(): HTMLElement {
     const card = screen.getByText(지원금_라벨).closest("section");
@@ -169,7 +184,7 @@ describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 �
     const supportRows = within(card).getAllByText(/^− .+원$/);
     expect(supportRows.length).toBeGreaterThan(0);
     expect(supportRows[0].closest("details")).toBeNull();
-    expect(within(card).getByText(/^한 달에 약 .+원$/)).toBeTruthy();
+    expect(within(card).getByText(/^매달 약 .+원/)).toBeTruthy();
     expect(within(card).getByText(/계약 당일 필요한 현금/)).toBeTruthy();
   });
 

@@ -58,6 +58,8 @@ export default function ResultPage() {
     card,
     result: summary.results.find((result) => result.policy.id === card.policyId)!,
   }));
+  const countedCards = cardResults.filter(({ card }) => card.amount.countsInTotal);
+  const extraCards = cardResults.filter(({ card }) => !card.amount.countsInTotal);
   const leadState = cards[0]?.state ?? "eligible";
   const leadCards = cards.filter((card) => card.state === leadState);
   const leadDeadlineDays = leadCards
@@ -97,23 +99,46 @@ export default function ResultPage() {
         listing={listing}
         supportAmount={summary.maxSupportAmount}
         finalCost={summary.finalEstimatedHousingCost}
-        included={included}
+        included={included.map((item) => ({
+          ...item,
+          // 한 번 주는 지원(이사비 등) — 영수증이 매달 나가는 돈과 한 번 내는 돈을 나눠 쓴다
+          oneTime: summary.results.find((r) => r.policy.id === item.id)?.policy.benefitType === "lump_sum",
+        }))}
         overlapExcluded={overlapExcluded}
         unknownConditions={unknownConditions}
       />
 
-      <section className="flex flex-col gap-3" aria-labelledby="benefit-cards-heading">
-        <h2 id="benefit-cards-heading" className="sr-only">맞춤 혜택 {cardResults.length}개</h2>
-        {cardResults.map(({ card, result }, index) => (
-          <div
-            key={card.policyId}
-            className="stagger-in"
-            style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}
-          >
-            <BenefitResultCard card={card} result={result} listing={listing} />
+      {/* 11/18 진단 2회차: 합계 안 · 밖이 눈으로 구분되지 않았다 — 보이는 제목으로 나누고, 밖 묶음의 공통 설명은 한 번만 */}
+      {countedCards.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="counted-heading">
+          <h2 id="counted-heading" className="px-1 text-base font-bold text-ink-900">
+            위 금액에 넣은 지원 {countedCards.length}개
+          </h2>
+          {countedCards.map(({ card, result }, index) => (
+            <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}>
+              <BenefitResultCard card={card} result={result} listing={listing} />
+            </div>
+          ))}
+        </section>
+      )}
+
+      {extraCards.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="extra-heading">
+          <div className="px-1">
+            <h2 id="extra-heading" className="text-base font-bold text-ink-900">
+              조건이 맞으면 더 받을 수 있는 지원 {extraCards.length}개
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-ink-600">
+              위 금액에는 넣지 않았어요. 전입 · 재학처럼 계약 조건과 따로 정해지는 지원이라, 자격은 신청 준비에서 확인해요.
+            </p>
           </div>
-        ))}
-      </section>
+          {extraCards.map(({ card, result }, index) => (
+            <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min((countedCards.length + index) * 45, 225)}ms` }}>
+              <BenefitResultCard card={card} result={result} listing={listing} />
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* 대출·보증은 현금 지원이 아니라 합계에 넣지 않는다. 예전엔 7개가 문단째 펼쳐져 화면의 절반을 썼다
           (11/17 결과 화면 정리) — 한 줄로 접고, 펼치면 이름 · 종류 · 확인일만, 상품마다 다시 펼쳐 조건과 신청. */}
