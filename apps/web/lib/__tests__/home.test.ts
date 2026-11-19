@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import { resolveAnswers } from "../age";
 import { groupPolicies, splitByApplicationWindow } from "../discovery";
-import { availableCount, homePose, openPolicies, previewPolicies, savedCards, type SavedCard } from "../home";
+import { availableCount, homePose, openPolicies, previewPolicies, savedCards, sortSavedCards, type SavedCard } from "../home";
 import type { DiscoveryAnswers, PolicyMeta } from "../types";
 import { birthDateForAge } from "./fixtures";
 
@@ -82,5 +82,34 @@ describe("요약 카드 마스코트 포즈 — 위에서부터 먼저 맞는 �
   it("하나라도 덜 됐거나 찜이 없으면 found", () => {
     expect(homePose(4, [card("상시", 3), card("오늘 마감", 2)])).toBe("found");
     expect(homePose(4, [])).toBe("found");
+  });
+});
+
+describe("관심 탭 정렬 (sortSavedCards)", () => {
+  const p = (id: string, applicationStart: string, applicationEnd: string | null) =>
+    ({ id, name: id, applicationStart, applicationEnd } as unknown as PolicyMeta);
+  const card = (policy: PolicyMeta): SavedCard => ({ policy, deadline: "", progress: { kind: "checklist", label: "", done: 0, total: 3 } } as unknown as SavedCard);
+  // 찜한 순서(최근 것이 앞)
+  const cards = [
+    card(p("closed", "2026-01-01", "2026-10-31")),
+    card(p("always", "2026-01-01", null)),
+    card(p("d20", "2026-11-01", "2026-12-07")),
+    card(p("soon", "2026-12-01", "2026-12-20")),
+    card(p("today", "2026-11-01", TODAY)),
+    card(p("always2", "2026-01-01", null)),
+  ];
+
+  it("최근 찜한 순은 찜한 순서 그대로", () => {
+    expect(sortSavedCards(cards, "recent", TODAY).map((c) => c.policy.id)).toEqual(["closed", "always", "d20", "soon", "today", "always2"]);
+  });
+
+  it("마감 가까운 순 — 마감일 있는 접수 중 → 상시 → 신청 예정 → 접수 마감, 같은 칸은 찜한 순서", () => {
+    expect(sortSavedCards(cards, "deadline", TODAY).map((c) => c.policy.id)).toEqual(["today", "d20", "always", "always2", "soon", "closed"]);
+  });
+
+  it("원래 배열은 건드리지 않는다", () => {
+    const before = cards.map((c) => c.policy.id);
+    sortSavedCards(cards, "deadline", TODAY);
+    expect(cards.map((c) => c.policy.id)).toEqual(before);
   });
 });

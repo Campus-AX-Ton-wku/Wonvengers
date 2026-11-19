@@ -7,7 +7,7 @@ import { AppShell, BottomTabBar, DeadlineBadge, Icon3D, LinkButton, TopBar } fro
 import { ChevronRight, FileText, Heart, ICON_MD, ICON_SM, ListChecks } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
-import { isClosedDeadline, savedCards, type SavedCard } from "@/lib/home";
+import { isClosedDeadline, savedCards, sortSavedCards, type SavedCard, type SavedSort } from "@/lib/home";
 import { replacePage } from "@/lib/redirect";
 import { loadChecklist, loadDocumentChecks, loadSaved, onLocalChange } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
@@ -17,12 +17,14 @@ const policies = policiesJson as PolicyMeta[];
 /**
  * 관심 — 찜한 지원금만 모은 화면 (하단 섬 '관심' 탭, 11/20). 예전에 홈 아래에 있던 '찜한 지원금'을 옮겼다.
  * 찜은 로그인한 사람만 쓸 수 있어서(SaveButton) 홈과 같이 로그인 기록이 없으면 온보딩으로 보낸다.
- * 카드 모양 · 순서 · 진행 막대는 홈에 있을 때 그대로다 (lib/home.ts savedCards).
+ * 카드 모양 · 진행 막대는 홈에 있을 때 그대로다 (lib/home.ts savedCards).
+ * 정렬은 '마감 가까운 순'이 기본, '최근 찜한 순'으로 바꿀 수 있다 (sortSavedCards). 고른 정렬은 이 화면에서만 산다.
  */
 export default function SavedPage() {
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
   const [today, setToday] = useState("");
+  const [sort, setSort] = useState<SavedSort>("deadline");
 
   useEffect(() => {
     const leave = () => replacePage("/onboarding");
@@ -62,7 +64,7 @@ export default function SavedPage() {
     );
   }
 
-  const cards = savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks });
+  const cards = sortSavedCards(savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks }), sort, today);
 
   return (
     <AppShell>
@@ -70,18 +72,21 @@ export default function SavedPage() {
       <main className="flex flex-col gap-4 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">관심</h1>
         <section aria-label="찜한 지원금" className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-base font-bold text-ink-700">
-            찜한 지원금
-            {cards.length > 0 && (
-              <>
-                <span className="sr-only"> </span>
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-100 px-2 text-[13px] font-bold text-brand-800">
-                  {cards.length}
-                  <span className="sr-only">건</span>
-                </span>
-              </>
-            )}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-base font-bold text-ink-700">
+              찜한 지원금
+              {cards.length > 0 && (
+                <>
+                  <span className="sr-only"> </span>
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-100 px-2 text-[13px] font-bold text-brand-800">
+                    {cards.length}
+                    <span className="sr-only">건</span>
+                  </span>
+                </>
+              )}
+            </h2>
+            {cards.length > 1 && <SortChips value={sort} onChange={setSort} />}
+          </div>
           {cards.length === 0 ? (
             <EmptySaved />
           ) : (
@@ -95,6 +100,35 @@ export default function SavedPage() {
       </main>
       <BottomTabBar active="saved" />
     </AppShell>
+  );
+}
+
+const SORTS: { value: SavedSort; label: string }[] = [
+  { value: "deadline", label: "마감 가까운 순" },
+  { value: "recent", label: "최근 찜한 순" },
+];
+
+/** 정렬 칩 두 개 — 고른 칩은 진한 남색 면 + aria-pressed. 44px 터치 높이는 칩 바깥 여백으로 채운다. */
+function SortChips({ value, onChange }: { value: SavedSort; onChange: (sort: SavedSort) => void }) {
+  return (
+    <div role="group" aria-label="정렬" className="flex gap-1.5">
+      {SORTS.map((option) => {
+        const on = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(option.value)}
+            className={`focus-ring inline-flex min-h-11 items-center rounded-full px-3.5 text-[13px] font-bold transition-colors ${
+              on ? "bg-ink-900 text-surface" : "bg-surface text-ink-700 shadow-btn-quiet hover:bg-ink-50"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
