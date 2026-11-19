@@ -75,7 +75,7 @@ describe("/account (설계 '화면' 5)", () => {
 
     await user.click(await screen.findByRole("button", { name: "로그아웃" }));
     const dialog = await screen.findByRole("dialog", { name: "저장 안 된 변경이 있어요" });
-    expect(dialog.textContent).toContain("로그아웃하면 이 기기에서 저장하지 못한 변경이 사라져요.");
+    expect(dialog.textContent).toContain("인터넷 연결을 확인하고 '다시 시도'로 먼저 저장할 수 있어요.");
     expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "취소" }));
     await user.click(within(dialog).getByRole("button", { name: "취소" }));
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -107,7 +107,7 @@ describe("/account (설계 '화면' 5)", () => {
 
     expect(withdraw).toHaveBeenCalledTimes(1);
     expect((await screen.findByRole("heading", { level: 1, name: "탈퇴가 끝났어요" })).textContent).toBe("탈퇴가 끝났어요");
-    expect(screen.getByText(/다시 카카오로 로그인하면 새 회원으로 시작해요/)).toBeTruthy();
+    expect(screen.getByText(/저장된 답과 회원 정보를 모두 지웠어요/)).toBeTruthy();
   });
 
   it("탈퇴가 실패하면 알리고 아무것도 바꾸지 않는다", async () => {
