@@ -86,6 +86,8 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     const fixedCard = toBenefitResultCardData(fixed, "2026-09-02", new Set())!;
     render(<BenefitResultCard card={fixedCard} result={fixed} listing={listing} />);
     const article = screen.getByRole("article");
+    // '확인 필요' 주황 배지는 두지 않는다 — 묶음 제목 '조건이 맞으면 더 받을 수 있는 지원'이 이미 말한다 (11/20)
+    expect(within(article).queryByText("확인 필요")).toBeNull();
     expect(within(article).getByText("최대 10만원").className).not.toContain("accent");
     expect(within(article).getByText(/공고상 금액/)).toBeTruthy();
     // 합계 밖이라는 설명 · 자격 확인 안내는 그룹 설명이 한 번만 한다 — 카드마다 되풀이하지 않는다
