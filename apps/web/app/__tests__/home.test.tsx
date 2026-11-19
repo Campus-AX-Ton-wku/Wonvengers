@@ -36,7 +36,7 @@ describe("/home", () => {
   it("로그인 기록이 없으면 온보딩으로 보낸다", async () => {
     enableLogin();
     render(<HomePage />);
-    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/onboarding"));
+    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
   });
 
   it("홈을 열어 둔 사이 로그인이 풀리면(만료 · 다른 탭 로그아웃) 온보딩으로 보낸다", async () => {
@@ -45,7 +45,7 @@ describe("/home", () => {
     await screen.findByRole("heading", { level: 1 });
     expect(replacePage).not.toHaveBeenCalled();
     act(() => signOut({ redirect: false }));
-    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/onboarding"));
+    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
   });
 
   it("다른 탭에서 로그아웃해 로그인 기록이 지워져도 온보딩으로 보낸다", async () => {
@@ -54,7 +54,7 @@ describe("/home", () => {
     await screen.findByRole("heading", { level: 1 });
     window.localStorage.removeItem(AUTH_KEY);
     act(() => { window.dispatchEvent(new StorageEvent("storage", { key: AUTH_KEY })); });
-    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/onboarding"));
+    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
   });
 
   it("제목 · 내 조건 칩 → 조건 수정", async () => {

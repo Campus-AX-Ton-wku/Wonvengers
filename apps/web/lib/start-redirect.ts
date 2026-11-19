@@ -13,5 +13,8 @@
  * 11/17: 로그인 기록(perky.auth)이 있으면 홈으로. perky.auth 는 lib/auth.ts 의 AUTH_KEY 다 —
  * 이 스크립트는 번들보다 먼저 돌아서 import 없이 문자열을 그대로 쓴다. 값이 있으면 만료 여부는 보지 않고
  * 홈으로 보낸다(홈이 알아서 처리한다). 저장소가 막혀 있으면 온보딩.
+ *
+ * 11/20: 소개를 이미 본 비회원(perky.onboarded = lib/storage.ts 의 ONBOARDED_KEY)은 /start — 소개 마지막 장인 시작 화면
+ * ([내 혜택 찾아보기] · [카카오로 로그인])부터. 예전에는 앱을 열 때마다 소개 1장부터 다시 봤다.
  */
-export const START_REDIRECT = `if(location.pathname==="/"){var a=null;try{a=localStorage.getItem("perky.auth")}catch(e){}location.replace(a?"/home":"/onboarding")}`;
+export const START_REDIRECT = `if(location.pathname==="/"){var a=null,o=null;try{a=localStorage.getItem("perky.auth");o=localStorage.getItem("perky.onboarded")}catch(e){}location.replace(a?"/home":o==="1"?"/start":"/onboarding")}`;
