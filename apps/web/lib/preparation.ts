@@ -74,10 +74,10 @@ export function conditionsToConfirm(
   policy: PolicyMeta,
   profile: EligibilityProfile | null,
   asOfISO: string
-): string[] {
+): { label: string; howToConfirm: string | undefined }[] {
   const rule = POLICY_RULES[policy.id];
-  if (!rule) return ["공고 원문의 지원 대상 · 제외 대상"];
+  if (!rule) return [{ label: "공고 원문의 지원 대상 · 제외 대상", howToConfirm: undefined }];
   return rule(profile ?? UNKNOWN_PROFILE, asOfISO)
     .filter((check) => check.result === "unknown" && (profile !== null || check.ask !== undefined))
-    .map((check) => check.label);
+    .map((check) => ({ label: check.label, howToConfirm: check.howToConfirm }));
 }

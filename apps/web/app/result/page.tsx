@@ -190,17 +190,23 @@ export default function ResultPage() {
       <div className="flex gap-2.5 rounded-card bg-ink-100 p-4">
         <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
         <p className="text-xs leading-relaxed text-ink-600">
-        최대 지원 가능액은 입력값을 바탕으로 조건 충족 시 받을 수 있는 상한을 계산한 값입니다. 실제
-        소득인정액, 제출 서류, 예산 상황 등에 따라 지원액이 더 적거나 없을 수 있으며 최종 자격과
-        지급액은 해당 기관이 결정합니다.
+        최대 지원 가능액은 입력한 값으로 조건을 모두 충족할 때 받을 수 있는 상한을 계산한 거예요. 실제
+        소득인정액, 제출 서류, 예산 상황에 따라 더 적거나 없을 수 있고, 최종 자격과 지급액은 해당 기관이
+        정해요.
         <br />
-        결과 기준일: {asOf}
+        결과 기준일 {formatDotDate(asOf)}
         </p>
       </div>
 
-      <Button variant="quiet" onClick={() => router.push("/eligibility?g=1")}>
-        답변 수정하기
-      </Button>
+      {/* 방 두 개를 비교하려면 월세 · 보증금만 바꿔 다시 봐야 한다 — 계약 조건 첫 단계(저장된 값이 채워져 있다) (11/19) */}
+      <div className="flex flex-col gap-2">
+        <Button variant="secondary" onClick={() => router.push("/calculate?s=1")}>
+          다른 방으로 다시 계산하기
+        </Button>
+        <Button variant="quiet" onClick={() => router.push("/eligibility?g=1")}>
+          답변 수정하기
+        </Button>
+      </div>
       </main>
     </AppShell>
   );

@@ -13,7 +13,7 @@
  *  - verifiedAt 은 "팀이 공고 원문과 대조한 날짜"라는 뜻이다. 기계가 값을 바꾸면
  *    이 날짜가 거짓말이 된다.
  *
- * 하는 일은 세 가지다.
+ * 하는 일은 네 가지다.
  *
  *   1) 3자 대조 — 앱 · 온통청년 · 보조금24. 2자 대조는 어긋남을 찾아도 어느 쪽이
  *      낡았는지 모른다. 3자면 앱이 혼자 튀는지 바깥이 튀는지로 우선순위가 갈린다.
@@ -21,6 +21,7 @@
  *      새 사업이 등록되거나 기존 사업 원문이 바뀌면 잡는다. 자유 서술 텍스트는
  *      파싱하지 않고 지문만 비교한다.
  *   3) verifiedAt 낡음 — 대조한 지 오래된 정책을 그냥 알려준다.
+ *   4) 링크 — 앱에 실린 신청 · 출처 · 문의처 주소가 열리는지 (freshness/links.mjs).
  *
  * 종료 코드: 0 = 검토할 것 없음, 10 = 검토 필요, 1 = 실행 실패.
  */
@@ -32,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import { compareField, normalizeName } from "./freshness/compare.mjs";
 import { diffSnapshots, fingerprintRecord } from "./freshness/snapshot.mjs";
 import { withRetry } from "./freshness/retry.mjs";
+import { checkLinks, collectLinks } from "./freshness/links.mjs";
 import { fromGov24, fromYouth, youthCriteriaFingerprint } from "./freshness/sources.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -233,7 +235,11 @@ async function 익산감시() {
 // ── 실행 ────────────────────────────────────────────────────────────────
 
 const today = todayISO();
-const policies = JSON.parse(readFileSync(join(WEB_ROOT, "data", "policies.json"), "utf8"));
+const readData = (file) => JSON.parse(readFileSync(join(WEB_ROOT, "data", file), "utf8"));
+const policies = readData("policies.json");
+const loanProducts = readData("loan-products.json");
+// 워크플로가 검사 전에 Supabase 에서 다시 받는다(fetch-app-data). 못 받았으면 커밋된 옛 스냅숏이다 — 날짜로 드러낸다.
+const dataGeneratedAt = readData("verification.json").generatedAt;
 
 const md = [];
 const w = (s = "") => md.push(s);
@@ -242,6 +248,7 @@ w(`# 정책 데이터 신선도 보고 — ${today}`);
 w();
 w("> 자동 생성. **이 스크립트는 `policies.json` 을 고치지 않는다.**");
 w("> 아래 항목은 팀이 공고 원문을 열어 확인한 뒤 손으로 반영한다.");
+w(`> 앱 데이터 기준: ${dataGeneratedAt} (Supabase 에서 받은 시각)`);
 w();
 
 // 어느 소스를 못 봤는지부터 밝힌다. 조용히 건너뛰면 "확인했는데 문제 없음"으로 읽힌다.
@@ -383,6 +390,32 @@ if (낡음.length === 0) {
       ? `- **${p.name}** — 아직 팀 교차검수 전 (\`verifiedAt: null\`) · ${p.sourceUrl}`
       : `- **${p.name}** — ${p.verifiedAt} 확인, ${경과}일 경과 · ${p.sourceUrl}`);
   }
+}
+w();
+
+// 5) 링크
+w("## 5. 앱에 실린 링크");
+w();
+const 링크 = await checkLinks(collectLinks([...policies, ...loanProducts]));
+const 깨짐 = 링크.filter((l) => l.verdict === "broken");
+const 못열음 = 링크.filter((l) => l.verdict === "unreachable");
+if (깨짐.length === 0) {
+  w(`주소 ${링크.length}개 중 깨진 링크(404 · 410)는 없다.`);
+} else {
+  검토필요 = true;
+  w(`주소 ${링크.length}개 중 **${깨짐.length}개가 깨졌다.** Supabase \`policies\` 에서 고친다(고치면 검수가 초기화된다).`);
+  w();
+  w("| 응답 | 주소 | 쓰인 곳 |");
+  w("|---|---|---|");
+  for (const l of 깨짐) w(`| ${l.status} | ${l.url} | ${l.uses.map((u) => `${u.name} · ${u.field}`).join("<br>")} |`);
+}
+if (못열음.length > 0) {
+  w();
+  w(`<details><summary>열지 못한 주소 ${못열음.length}개 — 해외 서버를 막는 사이트일 수 있어 검토 요청은 하지 않는다</summary>`);
+  w();
+  for (const l of 못열음) w(`- ${l.url} — ${l.detail} (${l.uses.map((u) => u.name).join(", ")})`);
+  w();
+  w("</details>");
 }
 w();
 

@@ -44,18 +44,20 @@ describe("신청 준비에서 확인할 자격 조건 (11/17 — 결과 화면�
 
   it("계산 전(프로필 없음)이면 그 정책만의 조건을 보여 준다", () => {
     expect(conditionsToConfirm(moveIn, null, "2026-11-17")).toEqual([
-      "전입 전 1년 이상 다른 시·군·구에 주민등록",
-      "예전에 익산시 전입 지원을 받은 적 없음",
+      { label: "전입 전 1년 이상 다른 시·군·구에 주민등록", howToConfirm: "주민등록초본의 주소 변동 이력으로 확인하세요." },
+      { label: "예전에 익산시 전입 지원을 받은 적 없음", howToConfirm: "재전입자 중 이미 지원받은 사람은 다시 받을 수 없어요." },
     ]);
   });
 
   it("이미 답한 조건은 빼고 아직 모르는 것만", () => {
     const profile = makeProfile({ selfDeclared: { livedOutsideIksan1YearBeforeMoveIn: true } });
-    expect(conditionsToConfirm(moveIn, profile, "2026-11-17")).toEqual(["예전에 익산시 전입 지원을 받은 적 없음"]);
+    expect(conditionsToConfirm(moveIn, profile, "2026-11-17").map((c) => c.label)).toEqual(["예전에 익산시 전입 지원을 받은 적 없음"]);
   });
 
   it("판정 규칙이 없는 새 정책은 공고 원문의 지원 대상을 확인하라고 한다", () => {
     const fresh = { ...moveIn, id: "brand-new-policy" } as PolicyMeta;
-    expect(conditionsToConfirm(fresh, null, "2026-11-17")).toEqual(["공고 원문의 지원 대상 · 제외 대상"]);
+    expect(conditionsToConfirm(fresh, null, "2026-11-17")).toEqual([
+      { label: "공고 원문의 지원 대상 · 제외 대상", howToConfirm: undefined },
+    ]);
   });
 });
