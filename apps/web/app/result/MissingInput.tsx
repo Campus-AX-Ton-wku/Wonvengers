@@ -15,7 +15,7 @@ export default function MissingInput() {
       <EmptyState
         character="thinking"
         title="계산할 계약 조건이 없어요"
-        description="최종 예상 주거비는 방의 보증금·월세·기간을 넣어야 계산할 수 있습니다. 입력값은 이 브라우저에만 저장되기 때문에, 다른 기기나 시크릿 창에서는 이어지지 않습니다."
+        description="보증금·월세·기간을 넣으면 최종 예상 주거비를 계산해요. 입력값은 이 기기에만 저장돼요."
         action={
           <>
             <LinkButton href="/calculate">계약 조건 입력하기</LinkButton>

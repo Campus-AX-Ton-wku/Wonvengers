@@ -63,6 +63,28 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     );
   });
 
+  it("합계 안 카드가 신청 가능이면 배지를 숨기고, 확인 필요 · 마감 임박은 배지를 둔다 — 스크린리더용 상태 문구는 남는다 (11/20)", () => {
+    const eligible = result();
+    const eligibleCard = toBenefitResultCardData(eligible, "2026-07-01")!;
+    expect(eligibleCard.state).toBe("eligible");
+    const first = render(<BenefitResultCard card={eligibleCard} result={eligible} listing={listing} />);
+    expect(screen.queryByText("신청 가능")).toBeNull();
+    expect(first.container.querySelector(".sr-only")?.textContent).toBe("예상적용");
+    first.unmount();
+
+    const check = result("조건충족시가능");
+    const checkCard = toBenefitResultCardData(check, "2026-07-01")!;
+    expect(checkCard.state).toBe("check");
+    const second = render(<BenefitResultCard card={checkCard} result={check} listing={listing} />);
+    expect(screen.getAllByText("확인 필요").some((el) => el.className.includes("warn"))).toBe(true);
+    second.unmount();
+
+    const urgent = result();
+    const urgentCard = toBenefitResultCardData(urgent, "2026-09-02")!;
+    render(<BenefitResultCard card={urgentCard} result={urgent} listing={listing} />);
+    expect(screen.getByText("마감 임박")).toBeTruthy();
+  });
+
   it("자격 요건 · 지원 형태 · 신청 방식 행과 '조건 N개 일치' 같은 반복을 두지 않는다", () => {
     const policyResult = result();
     const card = toBenefitResultCardData(policyResult, "2026-09-02");
@@ -81,7 +103,7 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     const counted = result();
     const countedCard = toBenefitResultCardData(counted, "2026-09-02", new Set(["real-policy-id"]))!;
     const { unmount } = render(<BenefitResultCard card={countedCard} result={counted} listing={listing} />);
-    expect(screen.getByText("받을 수 있는 예상 금액")).toBeTruthy();
+    expect(screen.getByText("예상 금액")).toBeTruthy();
     expect(screen.getByText("최대 50만원").className).toContain("text-accent-700");
     unmount();
 
