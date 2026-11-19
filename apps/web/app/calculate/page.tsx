@@ -218,7 +218,7 @@ function CalculateSteps() {
   function validate(current: number): string | null {
     if (current === 0) {
       if (!form.region) return "거주 예정 지역을 선택해주세요.";
-      if (!contractTypeChosen) return "계약 형태를 선택해주세요. 월세와 연세는 계산이 다릅니다.";
+      if (!contractTypeChosen) return "계약 형태를 선택해주세요.";
       // 보증금 0(무보증)·관리비 0 은 정상이지만, 월세·연세가 0 이면 계산할 값이 없다.
       if (form.rentOrYearlyAmount <= 0) {
         return form.contractType === "연세"
@@ -272,7 +272,7 @@ function CalculateSteps() {
 
             <Field
               label="거주 예정 지역"
-              hint={regionFromFloor1 ? <CarriedOver>앞에서 고른 지역으로 채웠어요. 바꿔도 됩니다.</CarriedOver> : undefined}
+              hint={regionFromFloor1 ? <CarriedOver>앞에서 골랐어요</CarriedOver> : undefined}
             >
               <select
                 className="input"
@@ -316,7 +316,7 @@ function CalculateSteps() {
                   ))}
                 </div>
                 {contractTypeFromFloor1 && (
-                  <CarriedOver>앞에서 답한 주거 형태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
+                  <CarriedOver>앞에서 골랐어요</CarriedOver>
                 )}
               </FieldGroup>
             )}
@@ -364,7 +364,7 @@ function CalculateSteps() {
               <Field label="이사비·중개보수로 얼마를 쓸 예정인가요? (만원)">
                 <span className="text-xs font-medium text-ink-500">
                   {moveCostPolicy.agency}가 이 비용을 최대{" "}
-                  {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요. 쓴 만큼 계산합니다.
+                  {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요.
                 </span>
                 <MoneyInput
                   placeholder="0"
@@ -432,8 +432,9 @@ function ConfirmedRow({ label, value, onEdit }: { label: string; value: string; 
         <span className="font-bold text-ink-900">{value}</span>
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <span id={noteId}>
-          <CarriedOver>앞에서 답했어요</CarriedOver>
+        {/* 눈에는 보이지 않는다(11/20) — 요약 줄 자체가 앞에서 답한 값을 보여 준다. 스크린리더에는 설명으로 남긴다. */}
+        <span id={noteId} className="sr-only">
+          앞에서 답했어요
         </span>
         <Pencil size={ICON_SM} aria-hidden="true" className="text-ink-300" />
       </span>

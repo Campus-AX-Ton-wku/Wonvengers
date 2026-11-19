@@ -129,7 +129,7 @@ export default function ResultPage() {
               조건이 맞으면 더 받을 수 있는 지원 {extraCards.length}개
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-ink-600">
-              위 금액에는 넣지 않았어요. 전입 · 재학처럼 계약 조건과 따로 정해지는 지원이라, 자격은 신청 준비에서 확인해요.
+              위 금액에는 넣지 않았어요. 전입 · 재학처럼 계약 조건과 따로 정해지는 지원이에요.
             </p>
           </div>
           {extraCards.map(({ card, result }, index) => (
@@ -158,7 +158,7 @@ export default function ResultPage() {
             </summary>
             <div className="px-4 pb-4">
               <p className="text-xs leading-relaxed text-ink-600">
-                이자 절감액은 계산하지 않아요. 자격과 한도는 취급 기관에서 꼭 확인하세요.
+                이자 절감액은 계산하지 않아요.
               </p>
               <ul className="mt-1 divide-y divide-ink-100">
                 {loanProducts.map((product) => (
@@ -189,9 +189,8 @@ export default function ResultPage() {
       <div className="flex gap-2.5 rounded-card bg-ink-100 p-4">
         <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
         <p className="text-xs leading-relaxed text-ink-600">
-        최대 지원 가능액은 입력한 값으로 조건을 모두 충족할 때 받을 수 있는 상한을 계산한 거예요. 실제
-        소득인정액, 제출 서류, 예산 상황에 따라 더 적거나 없을 수 있고, 최종 자격과 지급액은 해당 기관이
-        정해요.
+        최대 지원 가능액은 입력한 값으로 조건을 모두 충족했을 때의 상한이에요. 소득인정액·서류·예산에
+        따라 더 적거나 없을 수 있어요.
         <br />
         결과 기준일 {formatDotDate(asOf)}
         </p>

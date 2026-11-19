@@ -299,7 +299,7 @@ describe("결과 화면 하단", () => {
     renderWithInput();
     await screen.findByText(지원금_라벨);
 
-    const notice = screen.getByText(/최종 자격과 지급액은/);
+    const notice = screen.getByText(/조건을 모두 충족했을 때의 상한이에요/);
     expect(notice.textContent).not.toMatch(/니다/);
     expect(notice.textContent).toMatch(/결과 기준일 \d{4}\.\d{2}\.\d{2}/);
   });

@@ -74,7 +74,7 @@ describe("/calculate 1층 답변 이어받기", () => {
 
     const region = screen.getByRole("combobox") as HTMLSelectElement;
     expect(region.value).toBe("전북특별자치도 익산시");
-    expect(screen.getByText(/앞에서 고른 지역으로 채웠어요/)).toBeTruthy();
+    expect(screen.getAllByText(/앞에서 골랐어요/).length).toBeGreaterThan(0);
   });
 
   it("예전 계산 입력의 지역이 지금 선택지에 없으면 Find 답(익산시)으로 채운다", () => {
@@ -92,7 +92,7 @@ describe("/calculate 1층 답변 이어받기", () => {
 
     const region = screen.getByRole("combobox") as HTMLSelectElement;
     expect(region.value).toBe("전북특별자치도 익산시");
-    expect(screen.getByText(/앞에서 고른 지역으로 채웠어요/)).toBeTruthy();
+    expect(screen.getAllByText(/앞에서 골랐어요/).length).toBeGreaterThan(0);
   });
 
   it("Find 답이 지금 선택지에 없는 지역이면 채우지 않는다 — 지어내지 않는다", () => {
@@ -107,7 +107,7 @@ describe("/calculate 1층 답변 이어받기", () => {
     render(<CalculatePage />);
 
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
-    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
+    expect(screen.queryByText(/앞에서 골랐어요/)).toBeNull();
   });
 
   // 'Calculate 에서 다른 지역으로 바꾼 값이 새로고침 후에도 남는다' 경우는 2026-11-15 에 뺐다 —
@@ -125,13 +125,13 @@ describe("/calculate 1층 답변 이어받기", () => {
     render(<CalculatePage />);
 
     await user.selectOptions(screen.getByRole("combobox"), "선택해주세요");
-    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
+    expect(screen.queryByText(/앞에서 골랐어요/)).toBeNull();
   });
 
   it("1층을 건너뛴 사람에게는 지역이 비어 있다", () => {
     render(<CalculatePage />);
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");
-    expect(screen.queryByText(/앞에서 고른 지역으로 채웠어요/)).toBeNull();
+    expect(screen.queryByText(/앞에서 골랐어요/)).toBeNull();
   });
 });
 

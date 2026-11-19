@@ -53,7 +53,7 @@ export default function BenefitResultCard({
 }) {
   const state = STATE_COPY[card.state];
   const amountText = `${card.amount.isMaximum ? "최대 " : ""}${formatKoreanMoney(card.amount.value)}`;
-  const amountLabel = card.state === "check" ? "확인 후 받을 수 있는 예상 금액" : "받을 수 있는 예상 금액";
+  const amountLabel = card.state === "check" ? "확인 후 받을 수 있는 예상 금액" : "예상 금액";
   const deadlineMeta =
     card.state === "urgent" && card.deadlineAt && card.deadlineDays !== null
       ? `${formatDeadline(card.deadlineAt)} 마감 · ${card.deadlineDays === 0 ? "오늘" : `D-${card.deadlineDays}`}`
@@ -105,7 +105,9 @@ export default function BenefitResultCard({
   return (
     <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
       <div className="flex min-h-[30px] items-center justify-between gap-3">
-        <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
+        {/* 11/20: 합계 안 카드가 '신청 가능'이면 묶음 제목("위 금액에 넣은 지원")이 이미 말한다 —
+            배지는 확인 필요 · 마감 임박일 때만. 상태 문구는 아래 sr-only 로 남는다. */}
+        {card.state === "eligible" ? <span /> : <StatusBadge tone={state.tone}>{state.label}</StatusBadge>}
         <div className="flex items-center gap-1">
           {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
           <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2" />
@@ -135,10 +137,6 @@ export default function BenefitResultCard({
         <p className="mt-1 text-xs text-ink-600">{subText}</p>
       </div>
 
-      {card.state === "check" && (
-        <p className="mt-2 text-xs font-medium text-warn-800">자격 조건은 신청 준비에서 확인해요</p>
-      )}
-
       <DestinationLink
         href={card.primaryAction.href}
         className={`${buttonClass({ variant: "primary", size: "md" })} mt-3 min-h-[50px]`}
@@ -151,7 +149,6 @@ export default function BenefitResultCard({
         <RequirementList title="확인 필요" items={result.unknownLabels} tone="text-warn-800" />
         <RequirementList title="미충족" items={result.failedLabels} tone="text-ink-600" />
         <p className="mt-3 px-1 text-xs leading-relaxed text-ink-600">{benefitFormula(result.policy, listing)}</p>
-        <p className="mt-2 px-1 text-xs text-ink-500">{result.policy.effectiveYear}년 공고 기준</p>
       </Disclosure>
 
       <SourceLink card={card} />

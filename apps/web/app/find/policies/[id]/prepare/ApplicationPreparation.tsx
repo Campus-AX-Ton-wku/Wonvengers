@@ -128,9 +128,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
                 </span>
               ))}
             </span>
-          ) : (
-            "내 정보와 공고의 지원 대상을 다시 대조해요"
-          )
+          ) : undefined
         }
         onChange={(checked) => setChecked("eligibility", checked)}
       />
@@ -197,7 +195,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
               <ChecklistRow
                 checked={checklist.documents}
                 label="준비 서류 확인"
-                support="서류 종류와 발급일은 공식 공고에서 확인해요"
+                support="공식 공고에서 확인해요"
                 onChange={(checked) => setChecked("documents", checked)}
               />
             </>
@@ -209,7 +207,6 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
           <PerkyNote
             state="success"
             title="준비를 모두 마쳤어요"
-            description="이제 공식 신청 사이트에서 신청하면 돼요."
             className="mt-5 rounded-card bg-ok-50 px-4 py-3"
           />
         )}
@@ -280,15 +277,19 @@ function ChecklistRow({
             support
           ))}
       </span>
-      <span
-        className={`inline-flex shrink-0 items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-medium ${
-          checked ? "bg-ok-50 text-ok-700" : "bg-ink-100 text-ink-600"
-        }`}
-        aria-hidden="true"
-      >
-        {checked && <Check size={ICON_SM - 2} strokeWidth={2.5} />}
-        {checked ? "확인함" : "확인 전"}
-      </span>
+      {/* 확인한 줄에만 '확인함'(11/20) — 줄마다 "확인 전"을 붙이면 같은 말이 반복된다. 상태는 checkbox 가 말한다.
+          checkbox 는 sr-only 라, 확인 안 한 줄에는 빈 동그라미를 두어 누를 수 있는 줄로 보이게 한다. */}
+      {checked ? (
+        <span
+          className="inline-flex shrink-0 items-center gap-1 rounded-[10px] bg-ok-50 px-2.5 py-1.5 text-xs font-medium text-ok-700"
+          aria-hidden="true"
+        >
+          <Check size={ICON_SM - 2} strokeWidth={2.5} />
+          확인함
+        </span>
+      ) : (
+        <span data-check-mark="empty" className="size-6 shrink-0 rounded-full border-2 border-ink-300" aria-hidden="true" />
+      )}
     </label>
   );
 }
@@ -314,14 +315,11 @@ function ExternalApplicationHandoff({
         aria-describedby="external-handoff-description"
         className="flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
       >
-        <p className="w-fit rounded-[10px] bg-brand-50 px-2.5 py-1.5 text-xs font-medium text-brand-700">
-          공식 신청 사이트
-        </p>
         <h2 id="external-handoff-title" className="text-2xl font-extrabold leading-[34px] text-ink-900">
           외부 사이트로 이동할게요
         </h2>
         <p id="external-handoff-description" className="text-sm leading-[22px] text-ink-500">
-          Perky는 신청을 대신 접수하지 않아요. 공식 사이트에서 입력 내용을 다시 확인하고 제출해 주세요.
+          Perky는 신청을 대신 접수하지 않아요. 제출은 공식 사이트에서 해 주세요.
         </p>
 
         <dl className="flex flex-col gap-2.5 rounded-control bg-canvas p-3.5">
@@ -329,10 +327,6 @@ function ExternalApplicationHandoff({
           <HandoffRow label="최종 확인" value={policy.verifiedAt ? formatDotDate(policy.verifiedAt) : "제공 정보 없음"} />
         </dl>
         <ContactInfo contact={policy.contact} variant="inline" />
-
-        <p className="rounded-control bg-brand-50 px-3 py-2.5 text-[11px] leading-4 text-brand-700">
-          사이트 주소와 운영기관을 확인한 뒤 개인정보를 입력해 주세요.
-        </p>
 
         <div className="mt-2 flex flex-col gap-2">
           <a

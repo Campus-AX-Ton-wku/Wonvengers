@@ -37,7 +37,7 @@ function statusNote(
   result: TagResult
 ): string | null {
   if (status === "확인 필요") {
-    return `${result.unknownFields.join(" · ")} 조건을 확인하면 받을 수 있는지 정확히 알려드려요.`;
+    return `${result.unknownFields.join(" · ")} 확인 필요`;
   }
   if (status === "접수 마감" && policy.applicationEnd) {
     return `${formatDotDate(policy.applicationEnd)} 접수 마감`;
@@ -63,8 +63,9 @@ export default function PolicyCard({
   const ceiling = benefitCeiling(policy);
   const note = statusNote(status, policy, result);
   const badge = CARD_STATUS_BADGE[status];
-  // 팀이 원문과 대조해 맞다고 확인한 값이면 배지를 하나 더 붙인다 (lib/verification.ts).
-  const verified = verificationBadge(policy);
+  // 원문 대조가 된 정책에는 배지를 달지 않는다(모든 카드에 붙으면 신호가 안 된다).
+  // 아직 대조하지 않은 정책에만 "원문 대조 전"을 단다 (lib/verification.ts).
+  const unverified = !verificationBadge(policy)?.lastConfirmedAt;
 
   return (
     /*
@@ -86,9 +87,9 @@ export default function PolicyCard({
         <StatusBadge tone={badge.tone} icon={badge.icon}>
           {status}
         </StatusBadge>
-        {verified && (
-          <StatusBadge tone="info" icon={ShieldCheck}>
-            {verified.label}
+        {unverified && (
+          <StatusBadge tone="neutral" icon={ShieldCheck}>
+            원문 대조 전
           </StatusBadge>
         )}
       </div>
