@@ -4,6 +4,7 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
+  UserNotFoundException,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { CognitoAccounts, kakaoIdFromIdentities } from "../src/cognito";
 import { A, B } from "./fixtures";
@@ -55,5 +56,47 @@ describe("CognitoAccounts", () => {
       UserPoolId: "pool-1",
       Username: A.username,
     });
+  });
+});
+
+/**
+ * 카카오 연결 해제 웹훅(11/20) — 카카오가 알려 주는 건 회원번호뿐이라 거기서 Cognito 사용자를 찾는다.
+ * 실제 사용자 이름은 `Kakao_<회원번호>`(대문자 K — 11/20 list-users 로 확인. 문서의 `kakao_…` 는 틀렸다).
+ */
+describe("CognitoAccounts.findByKakaoId", () => {
+  it("Kakao_<회원번호> 로 찾고, identities 의 회원번호가 같으면 사용자 이름과 sub 를 돌려준다", async () => {
+    cognito.on(AdminGetUserCommand).resolves({
+      Username: "Kakao_1001",
+      UserAttributes: [
+        { Name: "sub", Value: A.sub },
+        { Name: "identities", Value: identities },
+      ],
+    });
+    expect(await accounts.findByKakaoId("1001")).toEqual({ username: "Kakao_1001", sub: A.sub });
+    expect(cognito.commandCalls(AdminGetUserCommand)[0].args[0].input).toEqual({
+      UserPoolId: "pool-1",
+      Username: "Kakao_1001",
+    });
+  });
+
+  it("그런 사용자가 없으면 null — 로그인만 하고 지운 사람, 이미 탈퇴한 사람", async () => {
+    cognito.on(AdminGetUserCommand).rejects(new UserNotFoundException({ message: "User does not exist.", $metadata: {} }));
+    expect(await accounts.findByKakaoId("1001")).toBeNull();
+  });
+
+  it("identities 의 회원번호가 다르면 null — 다른 사람을 지우지 않는다", async () => {
+    cognito.on(AdminGetUserCommand).resolves({
+      Username: "Kakao_2002",
+      UserAttributes: [
+        { Name: "sub", Value: B.sub },
+        { Name: "identities", Value: identities },
+      ],
+    });
+    expect(await accounts.findByKakaoId("2002")).toBeNull();
+  });
+
+  it("다른 오류는 그대로 던진다", async () => {
+    cognito.on(AdminGetUserCommand).rejects(new Error("throttled"));
+    await expect(accounts.findByKakaoId("1001")).rejects.toThrow("throttled");
   });
 });
