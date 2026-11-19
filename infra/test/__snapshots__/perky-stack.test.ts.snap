@@ -46,6 +46,22 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
         ],
       },
     },
+    "KakaoUnlinkWebhookUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            {
+              "Fn::GetAtt": [
+                "ApiF70053CD",
+                "ApiEndpoint",
+              ],
+            },
+            "/kakao/unlink",
+          ],
+        ],
+      },
+    },
     "NotifierFunctionName": {
       "Value": {
         "Ref": "NotifierFunctionEB33F81B",
@@ -396,6 +412,56 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::IAM::Policy",
     },
+    "ApiGETkakaounlinkApiIntegrationPermission4F01DF3E": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/kakao/unlink",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ApiGETkakaounlinkC5B22099": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "NONE",
+        "RouteKey": "GET /kakao/unlink",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
     "ApiGETmedata4421C2F5": {
       "Properties": {
         "ApiId": {
@@ -472,6 +538,56 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Delete",
+    },
+    "ApiPOSTkakaounlink8E3B24F2": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "NONE",
+        "RouteKey": "POST /kakao/unlink",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
+    "ApiPOSTkakaounlinkApiIntegrationPermissionC5EC2FCC": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/kakao/unlink",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
     },
     "ApiPUTmedata8A3BC482": {
       "Properties": {

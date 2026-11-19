@@ -228,6 +228,9 @@ export class PerkyStack extends Stack {
       integration,
       authorizer,
     });
+    // 카카오 연결 해제 웹훅(11/20) — 카카오 서버가 부르므로 JWT 가 없다. 대신 함수가 `KakaoAK {어드민 키}` 헤더를 확인한다.
+    // 이 주소(출력 KakaoUnlinkWebhookUrl)를 카카오 디벨로퍼스 › 앱 › 웹훅 › 연결 해제 웹훅에 등록한다.
+    api.addRoutes({ path: "/kakao/unlink", methods: [apigw.HttpMethod.GET, apigw.HttpMethod.POST], integration });
 
     // ── 새 정책 알림 (docs/기획/2026-11-16-새-정책-알림-설계.md) ──
     const notifierLogs = new logs.LogGroup(this, "NotifierLogs", {
@@ -338,6 +341,7 @@ export class PerkyStack extends Stack {
     new CfnOutput(this, "CognitoDomain", { value: `${domain.domainName}.auth.${REGION}.amazoncognito.com` });
     new CfnOutput(this, "ApiUrl", { value: api.apiEndpoint });
     new CfnOutput(this, "KakaoRedirectUri", { value: `${domain.baseUrl()}/oauth2/idpresponse` });
+    new CfnOutput(this, "KakaoUnlinkWebhookUrl", { value: `${api.apiEndpoint}/kakao/unlink` });
     new CfnOutput(this, "NotifierFunctionName", { value: notifier.functionName });
     new CfnOutput(this, "GithubDeployRoleArn", { value: deployRole.roleArn });
   }
