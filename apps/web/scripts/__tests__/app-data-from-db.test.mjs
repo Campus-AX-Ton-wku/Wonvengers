@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { REGION_HIERARCHY, policyAppliesToRegion } from "../../lib/region";
-import { PRODUCT_TYPE_BY_KIND, REGION_BY_CODE, formatJson, toAppData, validateRows } from "../app-data/from-db.mjs";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { ICON3D_NAMES, POLICY_ICONS as APP_POLICY_ICONS } from "../../lib/icons3d";
+import { POLICY_ICONS, PRODUCT_TYPE_BY_KIND, REGION_BY_CODE, formatJson, toAppData, validateRows } from "../app-data/from-db.mjs";
 
 /**
  * Supabase public.app_policies() 한 행 (2026-11-16 실제 응답에서 값만 줄인 것).
@@ -13,6 +16,7 @@ const row = (over = {}) => ({
   kind: "현금",
   status: "운영",
   name: "익산형 청년월세 지원사업",
+  icon: "rent",
   summary: "월 최대 20만원 × 최대 12개월",
   source_url: "https://www.iksan.go.kr/a",
   apply_url: "https://www.iksan.go.kr/b",
@@ -54,6 +58,7 @@ const loan = (over = {}) =>
   row({
     policy_no: "youth-btm-jeonse-loan",
     kind: "대출",
+    icon: "loan",
     benefit_type: null,
     monthly_cap: null,
     max_months: null,
@@ -91,7 +96,7 @@ describe("toAppData — 칸 옮기기", () => {
   it("지원금 한 건의 모양 (앱 JSON 과 같은 칸 순서)", () => {
     const [p] = toAppData([row()], at).policies;
     expect(Object.keys(p)).toEqual([
-      "id", "name", "agency", "regionScope", "applicationStart", "applicationEnd", "benefitType", "benefitSummary",
+      "id", "name", "icon", "agency", "regionScope", "applicationStart", "applicationEnd", "benefitType", "benefitSummary",
       "monthlyCap", "maxMonths", "requiredInputs", "exclusiveGroup", "sourceUrl", "applyUrl", "youthPolicyNo",
       "gov24ServiceId", "verifiedAt", "effectiveYear", "notes", "contact", "nextRound", "discovery",
     ]);
@@ -221,5 +226,25 @@ describe("서류 목록 (documents)", () => {
     expect(validateRows([row({ documents: [{ note: "x" }] })]).join("\n")).toContain("서류 목록(documents)");
     expect(validateRows([row({ documents: "a" })]).join("\n")).toContain("서류 목록(documents)");
     expect(validateRows([row({ documents: [{ name: "   " }] })]).join("\n")).toContain("서류 목록(documents)");
+  });
+});
+
+describe("정책 종류 아이콘 (icon)", () => {
+  it("지원금 · 안내 상품 모두 이름 다음에 싣는다", () => {
+    const out = toAppData([row(), loan()], at);
+    expect(out.policies[0].icon).toBe("rent");
+    expect(Object.keys(out.loanProducts[0]).slice(0, 3)).toEqual(["id", "name", "icon"]);
+    expect(out.loanProducts[0].icon).toBe("loan");
+  });
+
+  it("비었거나 앱이 모르는 이름이면 빌드를 멈추고 고칠 칸을 알린다", () => {
+    expect(validateRows([row({ icon: null })]).join("\n")).toContain("아이콘(icon)이 비었다");
+    expect(validateRows([row({ icon: "calculator" })]).join("\n")).toContain("앱이 모르는 아이콘 'calculator'");
+  });
+
+  it("고를 수 있는 이름 = 앱 lib/icons3d.ts 의 정책 종류 = DB enum, 그림 파일이 모두 있다", () => {
+    expect(POLICY_ICONS).toEqual([...APP_POLICY_ICONS]);
+    for (const name of POLICY_ICONS) expect(ICON3D_NAMES).toContain(name);
+    for (const name of ICON3D_NAMES) expect(existsSync(join(__dirname, "..", "..", "public", "icons3d", `${name}.webp`))).toBe(true);
   });
 });

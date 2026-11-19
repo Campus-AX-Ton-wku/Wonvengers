@@ -12,15 +12,14 @@ import {
   Button,
   ContactInfo,
   Disclosure,
+  Icon3D,
   TopBar,
 } from "@/app/components";
 import {
   ChevronDown,
   ExternalLink,
-  ICON_MD,
   ICON_SM,
   Info,
-  Landmark,
 } from "@/app/components/icons";
 import { useResultData } from "./useResultData";
 import MissingInput from "./MissingInput";
@@ -148,9 +147,8 @@ export default function ResultPage() {
           {/* 안쪽 상품 토글(Disclosure)도 group-open 으로 화살표를 돌린다 — 바깥은 이름 붙은 group 으로 따로 둔다 */}
           <details className="group/loans rounded-card bg-surface shadow-card">
             <summary className="focus-ring flex min-h-16 cursor-pointer list-none items-center gap-3 rounded-card px-4 py-3 [&::-webkit-details-marker]:hidden">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-                <Landmark size={ICON_MD} aria-hidden="true" />
-              </span>
+              {/* 묶음의 주제는 3D 그림, 펼치기는 선 화살표 — 같은 줄에서도 할 일이 나뉜다 (lib/icons3d.ts) */}
+              <Icon3D name="loan" size={40} />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-ink-900">현금 지원이 아닌 대출·보증 {loanProducts.length}개</span>
                 <span className="block text-xs text-ink-500">위 금액에는 넣지 않았어요</span>

@@ -35,7 +35,11 @@ describe("홈 계산", () => {
     expect(cards.map((c) => c.policy.id)).toEqual(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
     expect(cards[0].deadline).toBe("상시");
     expect(cards[1].deadline).toBe("접수 마감");
-    expect(cards[0].progress).toMatchObject({ label: "신청 준비 0/3", done: 0, total: 3 });
+    // 주거급여는 서류 목록이 있다(11/17 입력) — 홈 카드는 서류만 센다
+    const docs = cards[0].policy.documents ?? [];
+    expect(docs.length).toBeGreaterThan(0);
+    expect(cards[0].progress).toMatchObject({ label: `서류 0/${docs.length} 준비`, done: 0, total: docs.length });
+    expect(cards[1].progress).toMatchObject({ label: "신청 준비 0/3", done: 0, total: 3 });
   });
 });
 

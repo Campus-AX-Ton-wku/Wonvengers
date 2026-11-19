@@ -93,6 +93,7 @@ export function apiEvent(
 export function policy(over: Partial<PolicyMeta> & { id: string }): PolicyMeta {
   return {
     name: `정책 ${over.id}`,
+    icon: "rent",
     agency: "익산시",
     regionScope: "전북특별자치도 익산시",
     applicationStart: "2026-01-01",

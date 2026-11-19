@@ -9,7 +9,7 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { AUTH_KEY, resetAuthForTests, signOut } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveChecklist, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
+import { saveAnswers, saveChecklist, saveDocumentChecks, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
 import { todayISO } from "@/lib/date";
 import { openPolicies } from "@/lib/home";
@@ -20,6 +20,8 @@ import type { PolicyMeta } from "@/lib/types";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import { birthDateForAge } from "@/lib/__tests__/fixtures";
 import { enableLogin, signInAs } from "@/lib/__tests__/auth-fixtures";
+
+const 주거급여서류 = (policiesJson as PolicyMeta[]).find((p) => p.id === "youth-housing-benefit-split-payment")?.documents ?? [];
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -88,6 +90,10 @@ describe("/home", () => {
     expect(all.getAttribute("href")).toBe("/find/policies");
     expect(within(summary).getByText("실제로 내게 될 돈은 얼마일까요?")).toBeTruthy();
     expect(within(summary).getByRole("link", { name: "내 월세 계산하기" }).getAttribute("href")).toBe("/calculate");
+    // 3D 그림은 계산 권유 칸의 계산기 48px 하나 — 미리 보기 줄에는 두지 않는다(Perky 와 한 카드에 그림이 몰리지 않게, 11/20)
+    const pictures = [...summary.querySelectorAll("img[data-icon3d]")];
+    expect(pictures.map((img) => img.getAttribute("data-icon3d"))).toEqual(["calculator"]);
+    expect(pictures[0].getAttribute("width")).toBe("48");
   });
 
   it("찜이 있으면 미리 보기를 빼고 목록 보기 버튼만", async () => {
@@ -121,7 +127,9 @@ describe("/home", () => {
     const card = within(list).getByRole("link", { name: /청년 주거급여 분리지급/ });
     expect(card.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment/prepare");
     expect(within(card).getByText("상시")).toBeTruthy();
-    expect(within(card).getByText("신청 준비 0/3")).toBeTruthy();
+    expect(within(card).getByText(`서류 0/${주거급여서류.length} 준비`)).toBeTruthy();
+    // 찜 카드도 목록 카드처럼 정책 종류 그림 40px
+    expect([...card.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["housing-benefit"]);
     const closed = within(list).getByRole("link", { name: /청년월세 지원/ });
     expect(within(closed).getByText("접수 마감")).toBeTruthy();
     expect(within(closed).getByText(/다음 공고를 기다려요/)).toBeTruthy();
@@ -156,6 +164,8 @@ describe("/home", () => {
       enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
       saveSavedList(["youth-housing-benefit-split-payment"]);
       saveChecklist("youth-housing-benefit-split-payment", { eligibility: true, period: true, documents: true });
+      // 서류 목록이 있는 정책은 홈 카드가 서류만 센다 — 서류를 모두 챙겨야 '준비 끝'
+      saveDocumentChecks("youth-housing-benefit-split-payment", 주거급여서류.map((d) => d.name));
       render(<HomePage />);
       const summary = await screen.findByRole("region", { name: "내 지원 요약" });
       expect(pose()).toBe("success");

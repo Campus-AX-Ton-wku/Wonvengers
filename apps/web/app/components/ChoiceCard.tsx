@@ -1,6 +1,8 @@
 "use client";
 
+import type { Icon3DName } from "@/lib/icons3d";
 import { Check, ICON_MD } from "./icons";
+import { Icon3D } from "./Icon3D";
 
 /**
  * 세로로 쌓이는 선택 버튼. 가로 3분할보다 터치 타깃이 크다.
@@ -14,31 +16,39 @@ import { Check, ICON_MD } from "./icons";
  *
  * 선택 표시는 색 + 체크 아이콘 둘 다다. 색만으로 상태를 말하지 않는다.
  * aria-pressed 가 스크린리더에 같은 사실을 전한다.
+ *
+ * icon (11/20) — 선택지의 주제를 36px 3D 그림으로 글자 왼쪽에(시안 '3D 아이콘 설계' 2번). 한 질문 안에서는
+ * 모든 선택지에 주거나 모두 빼야 한다 — 몇 개만 있으면 글자 시작선이 들쭉날쭉하다. 그림이 있으면 위아래 여백을
+ * 줄여 카드 높이가 그림 없는 질문과 거의 같게(60px) 둔다.
  */
 export function ChoiceCard({
   active,
   onClick,
   children,
   hint,
+  icon,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   /** 선택지 아래 한 줄 보조 설명. 없으면 그리지 않는다. */
   hint?: string;
+  /** 선택지 주제 3D 아이콘 (36px). */
+  icon?: Icon3DName;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`focus-ring flex w-full items-center justify-between gap-3 rounded-control px-4 py-4 text-left transition-colors ${
+      className={`focus-ring flex w-full items-center justify-between gap-3 rounded-control px-4 text-left transition-colors ${icon ? "py-3" : "py-4"} ${
         active
           ? "bg-brand-50 text-brand-900 ring-2 ring-inset ring-brand-600"
           : "bg-surface text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-brand-50 hover:ring-2 hover:ring-inset hover:ring-brand-200"
       }`}
     >
-      <span className="min-w-0">
+      {icon && <Icon3D name={icon} size={36} className="-my-0.5" />}
+      <span className="min-w-0 flex-1">
         <span className="block text-base font-semibold">{children}</span>
         {hint && (
           <span className={`mt-0.5 block text-xs ${active ? "text-brand-800" : "text-ink-500"}`}>

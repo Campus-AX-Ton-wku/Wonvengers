@@ -3,7 +3,7 @@ import type { DiscoveryCardStatus, PolicyMeta, TagResult } from "@/lib/types";
 import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate } from "@/lib/date";
-import { CARD_STATUS_BADGE, SaveButton, StatusBadge } from "@/app/components";
+import { CARD_STATUS_BADGE, Icon3D, SaveButton, StatusBadge } from "@/app/components";
 import { ChevronRight, ICON_MD, ShieldCheck } from "@/app/components/icons";
 import { verificationBadge } from "@/lib/verification";
 
@@ -93,8 +93,14 @@ export default function PolicyCard({
         )}
       </div>
 
-      <h3 className="mt-2.5 text-base font-bold leading-snug text-ink-900">{policy.name}</h3>
-      <p className="mt-1 text-sm text-ink-500">{policy.agency}</p>
+      {/* 정책 종류 그림 — 이름을 읽기 전에 무슨 지원인지 먼저 보이게(11/20). 금액 줄은 그림 아래 왼쪽 끝에서 시작한다. */}
+      <div className="mt-2.5 flex items-center gap-3">
+        <Icon3D name={policy.icon} size={40} />
+        <div className="min-w-0">
+          <h3 className="text-base font-bold leading-snug text-ink-900">{policy.name}</h3>
+          <p className="mt-0.5 text-sm text-ink-500">{policy.agency}</p>
+        </div>
+      </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         {/* tabular-nums 를 쓰지 않는다. 이 한글 폰트에서는 등폭 숫자가 눈에 띄게

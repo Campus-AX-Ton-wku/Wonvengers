@@ -2,6 +2,7 @@
   {
     "id": "youth-btm-jeonse-loan",
     "name": "청년전용 버팀목 전세자금대출",
+    "icon": "loan",
     "agency": "국토교통부·주택도시보증공사(HUG)",
     "regionScope": "전국",
     "productType": "loan_interest_subsidy",
@@ -22,6 +23,7 @@
   {
     "id": "youth-btm-monthly-rent-loan",
     "name": "청년전용 보증부월세대출",
+    "icon": "loan",
     "agency": "국토교통부·주택도시보증공사(HUG)",
     "regionScope": "전국",
     "productType": "loan_interest_subsidy",
@@ -42,6 +44,7 @@
   {
     "id": "iksan-youth-home-purchase-loan-interest",
     "name": "신혼부부·청년 주택구입 대출이자 지원사업",
+    "icon": "loan",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "productType": "loan_interest_subsidy",
@@ -62,6 +65,7 @@
   {
     "id": "iksan-youth-jeonse-loan-interest",
     "name": "청년 전세자금 대출이자 지원사업",
+    "icon": "loan",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "productType": "loan_interest_subsidy",
@@ -82,6 +86,7 @@
   {
     "id": "iksan-public-rental-deposit-support",
     "name": "신혼부부 및 청년 공공임대주택 임대보증금 지원 사업",
+    "icon": "loan",
     "agency": "전북특별자치도·익산시",
     "regionScope": "전북특별자치도 익산시",
     "productType": "loan_interest_subsidy",
@@ -102,6 +107,7 @@
   {
     "id": "youth-dream-didimdol-loan",
     "name": "청년 주택드림 디딤돌 대출",
+    "icon": "loan",
     "agency": "국토교통부·주택도시기금",
     "regionScope": "전국",
     "productType": "loan_interest_subsidy",
@@ -122,6 +128,7 @@
   {
     "id": "youth-dream-savings-account",
     "name": "청년 주택드림 청약통장",
+    "icon": "bankbook",
     "agency": "국토교통부·주택도시기금",
     "regionScope": "전국",
     "productType": "savings_account",
@@ -136,6 +143,27 @@
       "phone": "1566-9009",
       "url": "https://nhuf.molit.go.kr/FP/FP07/FP0701/FP07010301.jsp",
       "phoneCheckedAt": null
+    },
+    "nextRound": null
+  },
+  {
+    "id": "iksan-newlywed-jeonse-loan-interest",
+    "name": "신혼부부 주택 전세보증금 대출이자 지원사업",
+    "icon": "loan",
+    "agency": "익산시",
+    "regionScope": "전북특별자치도 익산시",
+    "productType": "loan_interest_subsidy",
+    "summary": "익산시에 살거나 살 예정인 무주택 세대주 신혼부부(혼인신고 7년 이내 또는 3개월 안에 결혼할 예비신혼부부, 나이 제한 없음, 부부합산 연소득 8천만원 이하)가 전용 85㎡ 이하·보증금 3억원 이하 주택을 새로 전세 계약할 때, 익산시 협약 전세대출(NH농협·전북은행, 보증금 90%와 2억원 중 적은 금액) 이자를 연 최대 3.0%·연 최대 600만원 지원. 1회 2년, 최대 6년(지원 중 출산 시 최대 10년), 생애 1회. 2026-01-16부터 연중(예산 소진 시까지) 잔금일 30일 전 익산시청 주택과 방문 신청.",
+    "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119bb181f8019bc441ad3948e7",
+    "applyUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119bb181f8019bc441ad3948e7",
+    "verifiedAt": "2026-11-17",
+    "effectiveYear": 2026,
+    "notes": "",
+    "contact": {
+      "department": "익산시 주택과 주거정책계",
+      "phone": "063-859-5558",
+      "url": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119bb181f8019bc441ad3948e7",
+      "phoneCheckedAt": "2026-11-03"
     },
     "nextRound": null
   }

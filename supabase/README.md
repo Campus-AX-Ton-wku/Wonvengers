@@ -41,6 +41,7 @@
 | `migrations/20261115233614_app_fields.sql` | **11/16** 앱이 쓰던 칸 7개 추가(확인일 · 외부 번호 · 다음 회차 · 지급 메모 · 문의처 이름/주소), '보증료'도 지원 형태 허용 |
 | `seed/build-app-fields-sql.mjs` · `seed/app-fields-2026-11-16.sql` · `seed/app-data-2026-11-16/` | **11/16** 앱 JSON → DB 이관(새 칸 채우기 13건 · 전입 지원 2건 앱 값 + '운영'). 한 번만 실행 — 적용 끝 |
 | `tests/app-policies.test.mjs` · `tests/app-fields.test.mjs` | 위 세 가지 검사 (31 · 17개) |
+| `migrations/20261119150917_policy_icon.sql` · `tests/policy-icon.test.mjs` | **11/20** 정책 종류 아이콘 칸 `icon`(목록 9개 중 고름) — 관리칸이라 바꿔도 버전 · 검수 그대로, 지금 정책 16건 채움, `app_policies()` 에 싣기. MCP `apply_migration` 으로 적용 |
 | `migrations/20261114150805_function_search_path.sql` | 함수 8개의 search_path 고정 (Supabase 보안 경고 0011). 11/15 MCP `apply_migration` 으로 적용 — 마이그레이션 기록에 남은 첫 항목 |
 
 표 설명: [`docs/기획/2026-11-09-DB-재설계-5테이블.md`](../docs/기획/2026-11-09-DB-재설계-5테이블.md)
