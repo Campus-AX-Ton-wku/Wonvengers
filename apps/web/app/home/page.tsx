@@ -49,7 +49,8 @@ export default function HomePage() {
   const [costs, setCosts] = useState<{ nominal: number; final: number } | null>(null);
 
   useEffect(() => {
-    const leave = () => replacePage("/onboarding");
+    // 로그인이 풀리면 시작 화면(/start) — 소개 1장부터가 아니라 [내 혜택 찾아보기] · [카카오로 로그인]부터 (11/20)
+    const leave = () => replacePage("/start");
     if (!isLoginAvailable() || !hasStoredLogin()) {
       leave();
       return;
