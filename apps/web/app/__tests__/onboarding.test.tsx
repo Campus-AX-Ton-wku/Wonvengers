@@ -87,6 +87,6 @@ describe("시작 화면 — 소개 마지막 장 (11/20)", () => {
     render(<StartPage />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(마지막장);
     await userEvent.setup().click(screen.getByRole("button", { name: "이전" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/나에게 맞는 혜택/);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/다섯 가지만\s*답하면 돼요/);
   });
 });
