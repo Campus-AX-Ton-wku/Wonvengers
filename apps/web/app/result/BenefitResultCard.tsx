@@ -5,7 +5,7 @@ import { benefitFormula, monthlyBreakdown } from "@/lib/benefit";
 import { formatDeadline, type BenefitResultCardData } from "@/lib/benefit-result";
 import type { ListingInput, PolicyResult } from "@/lib/types";
 import { ExternalLink, ICON_SM } from "@/app/components/icons";
-import { Disclosure, SaveButton, StatusBadge, buttonClass } from "@/app/components";
+import { Disclosure, Icon3D, SaveButton, StatusBadge, buttonClass } from "@/app/components";
 
 const STATE_COPY = {
   eligible: { label: "신청 가능", tone: "ok" as const },
@@ -66,11 +66,15 @@ export default function BenefitResultCard({
             설명이 이미 자격 확인이 남았다고 말한다. 마감 임박만 이름 위에 한 줄. */}
         {deadlineMeta && <p className="text-xs font-bold text-danger-700">{deadlineMeta}</p>}
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 pt-1">
-            <h3 id={`benefit-${card.policyId}`} className="text-base font-extrabold leading-snug text-ink-900">
-              {card.title}
-            </h3>
-            <p className="mt-0.5 text-xs text-ink-500">{card.agency}</p>
+          {/* 정책 종류 그림(11/20) — 목록 · 찜 카드와 같은 자리 */}
+          <div className="flex min-w-0 items-center gap-3 pt-1">
+            <Icon3D name={result.policy.icon} size={40} />
+            <div className="min-w-0">
+              <h3 id={`benefit-${card.policyId}`} className="text-base font-extrabold leading-snug text-ink-900">
+                {card.title}
+              </h3>
+              <p className="mt-0.5 text-xs text-ink-500">{card.agency}</p>
+            </div>
           </div>
           <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2 -mt-1 shrink-0" />
         </div>
@@ -109,11 +113,15 @@ export default function BenefitResultCard({
         <span className="sr-only">{result.status}</span>
       </div>
 
-      <div className="mt-3">
-        <h3 id={`benefit-${card.policyId}`} className="line-clamp-3 text-[19px] font-extrabold leading-[1.4] text-ink-900">
-          {card.title}
-        </h3>
-        <p className="mt-1 text-xs text-ink-500">{card.agency}</p>
+      {/* 정책 종류 그림(11/20) — 목록 · 찜 카드와 같은 자리. 금액 칸에는 붙이지 않는다(숫자가 주인공) */}
+      <div className="mt-3 flex items-center gap-3">
+        <Icon3D name={result.policy.icon} size={40} />
+        <div className="min-w-0">
+          <h3 id={`benefit-${card.policyId}`} className="line-clamp-3 text-[19px] font-extrabold leading-[1.4] text-ink-900">
+            {card.title}
+          </h3>
+          <p className="mt-1 text-xs text-ink-500">{card.agency}</p>
+        </div>
       </div>
 
       <div className="mt-4 rounded-control bg-accent-50 px-4 py-3.5">

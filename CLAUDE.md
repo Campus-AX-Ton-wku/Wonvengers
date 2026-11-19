@@ -39,6 +39,7 @@ DB(`public.app_policies()`)에서 다시 만드는 **생성물**이다 — 손�
 1. **Supabase `policies` 표에 행 추가** (Table Editor, `edited_by`·`edit_note` 필수)
    - 앱에 나오려면 `is_current = true` · `status` 가 '운영' 또는 '예정'
    - 금액 계산 정책(`policies.json`)이면 `benefit_type` 필수, 안내 상품(`loan-products.json`)이면 비운다
+   - `icon`(정책 종류 그림) 필수 — Table Editor 목록에서 고른다(월세 rent · 이사 moving · 전입 move-in · 대출 loan …). 관리칸이라 바꿔도 버전·검수 상태가 그대로다 (11/20, `20261119150917_policy_icon.sql`)
    - `apply_start` 필수(상시 접수면 사업 연도 1월 1일), `apply_url` 필수
    - 지역은 `region_codes` 하나 + `region_label` — `scripts/app-data/from-db.mjs` 의 `REGION_BY_CODE` 대로
    - 검사에 걸리면 빌드가 멈추고 정식 앱은 직전 배포 그대로 남는다(오류 문구가 고칠 칸을 알려 준다)

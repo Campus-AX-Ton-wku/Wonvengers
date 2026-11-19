@@ -9,6 +9,7 @@ const policies = policiesJson as PolicyMeta[];
 const 익산정책: PolicyMeta = {
   id: "test-iksan",
   name: "테스트 익산 월세지원",
+  icon: "rent",
   agency: "익산시",
   regionScope: "전북특별자치도 익산시",
   discovery: {

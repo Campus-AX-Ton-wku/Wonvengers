@@ -6,6 +6,7 @@ import {
   Button,
   SaveButton,
   ContactInfo,
+  Icon3D,
   PerkyNote,
   StickyBottomAction,
   TopBar,
@@ -23,6 +24,7 @@ import {
   saveChecklist,
   saveDocumentChecks,
 } from "@/lib/storage";
+import { documentIcon, type Icon3DName } from "@/lib/icons3d";
 import type { PolicyMeta } from "@/lib/types";
 import type { ChecklistState } from "@/lib/user-data";
 
@@ -171,6 +173,7 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
                 checked={checkedDocs.includes(d.name)}
                 label={d.name}
                 support={d.note}
+                icon={documentIcon(d.name)}
                 onChange={(checked) => toggleDoc(d.name, checked)}
               />
             ))
@@ -217,11 +220,17 @@ function ChecklistRow({
   checked,
   label,
   support,
+  icon,
   onChange,
 }: {
   checked: boolean;
   label: string;
   support?: React.ReactNode;
+  /**
+   * 서류 줄에만 — 서류 종류 3D 그림 32px(시안 '3D 아이콘 설계' 4번). 자격 · 기간 확인 줄은 서류가 아니라 비워 둔다:
+   * 그림 있는 줄이 '챙길 서류', 없는 줄이 '확인할 것'으로 저절로 나뉜다.
+   */
+  icon?: Icon3DName;
   onChange: (checked: boolean) => void;
 }) {
   return (
@@ -232,7 +241,8 @@ function ChecklistRow({
         onChange={(event) => onChange(event.target.checked)}
         className="sr-only"
       />
-      <span className="min-w-0">
+      {icon && <Icon3D name={icon} size={32} />}
+      <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold leading-[22px] text-ink-900">{label}</span>
         {support &&
           (typeof support === "string" ? (

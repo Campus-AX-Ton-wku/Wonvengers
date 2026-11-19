@@ -1,3 +1,5 @@
+import type { PolicyIcon } from "./icons3d";
+
 // 응답 값: 사용자가 판단할 수 없으면 "unknown"을 허용한다 (PRD F2-1).
 export type Answer<T> = T | "unknown";
 
@@ -151,6 +153,8 @@ export interface PolicyMeta {
   id: string;
   discovery: PolicyDiscovery;
   name: string;
+  /** 정책 종류 3D 아이콘 (Supabase policies.icon, 11/20). 목록 · 찜 · 결과 카드와 상세 화면 머리에 그린다. */
+  icon: PolicyIcon;
   agency: string;
   regionScope: string;
   applicationStart: string; // YYYY-MM-DD
@@ -241,6 +245,8 @@ export interface CombinationResult {
 export interface LoanProductMeta {
   id: string;
   name: string;
+  /** 정책 종류 3D 아이콘 (Supabase policies.icon, 11/20). 대출은 loan, 청약통장은 bankbook. */
+  icon: PolicyIcon;
   agency: string;
   regionScope: string;
   // savings_account: 청약저축 등 — 대출도 보증료 지원도 아니지만 "현금 지원금"이

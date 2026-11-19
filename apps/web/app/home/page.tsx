@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, LinkButton, PerkyCharacter, StatusBadge, TopBar, type BadgeTone } from "@/app/components";
+import { AppShell, Icon3D, LinkButton, PerkyCharacter, StatusBadge, TopBar, type BadgeTone } from "@/app/components";
 import {
   Ban,
-  Calculator,
   CalendarDays,
   ChevronRight,
   Clock,
@@ -265,14 +264,15 @@ function CostBox({ costs }: { costs: { nominal: number; final: number } }) {
   );
 }
 
-/** 계산 전 — 다음 할 일을 상자 하나로. 이 화면의 primary 버튼은 이것 하나다. */
+/**
+ * 계산 전 — 다음 할 일을 상자 하나로. 이 화면의 primary 버튼은 이것 하나다.
+ * 그림은 48px 3D 계산기(시안 '3D 아이콘 설계' 5번) — 같은 카드의 Perky(112px)보다 작게 둬서 시선을 뺏지 않는다.
+ */
 function CalculatePrompt() {
   return (
     <div className="flex flex-col gap-3 rounded-control bg-ink-50 p-4 ring-1 ring-inset ring-ink-100">
-      <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface text-brand-700 ring-1 ring-inset ring-ink-200">
-          <Calculator size={ICON_MD} />
-        </span>
+      <div className="flex items-center gap-3">
+        <Icon3D name="calculator" size={48} />
         <div className="flex flex-col gap-0.5">
           <p className="text-[15px] font-bold text-ink-900">실제로 내게 될 돈은 얼마일까요?</p>
           <p className="text-[13px] leading-normal text-ink-600">보증금·월세를 넣으면 지원을 받은 뒤 최종 주거비를 계산해 드려요.</p>
@@ -334,11 +334,17 @@ function SavedCardItem({ card: { policy, deadline, progress } }: { card: SavedCa
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col items-start gap-1">
             <DeadlineBadge label={deadline} />
-            <p className="mt-0.5 text-base font-bold leading-snug text-ink-900">{policy.name}</p>
-            <p className="text-[13px] text-ink-500">
-              {policy.agency}
-              {deadline === "접수 마감" && " · 다음 공고를 기다려요"}
-            </p>
+            {/* 목록 카드(PolicyCard)와 같은 자리 — 이름 · 기관 왼쪽에 정책 종류 그림 */}
+            <div className="mt-0.5 flex items-center gap-3">
+              <Icon3D name={policy.icon} size={40} />
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="text-base font-bold leading-snug text-ink-900">{policy.name}</p>
+                <p className="text-[13px] text-ink-500">
+                  {policy.agency}
+                  {deadline === "접수 마감" && " · 다음 공고를 기다려요"}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <span className={`flex items-center gap-1.5 text-[13px] font-bold ${closed ? "text-ink-600" : "text-brand-700"}`}>

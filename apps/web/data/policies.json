@@ -2,6 +2,7 @@
   {
     "id": "moland-youth-rent-support",
     "name": "청년월세 지원 (2026년 상시사업 전환)",
+    "icon": "rent",
     "agency": "국토교통부",
     "regionScope": "전국",
     "applicationStart": "2026-03-30",
@@ -61,6 +62,7 @@
   {
     "id": "iksan-youth-rent-support",
     "name": "익산형 청년월세 지원사업",
+    "icon": "rent",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "applicationStart": "2026-04-15",
@@ -84,7 +86,7 @@
     "applyUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119d0a838c019d2421dd8e1a76",
     "youthPolicyNo": "20260326005400212297",
     "gov24ServiceId": null,
-    "verifiedAt": "2026-11-03",
+    "verifiedAt": "2026-11-17",
     "effectiveYear": 2026,
     "notes": "",
     "contact": {
@@ -116,6 +118,7 @@
   {
     "id": "jeonbuk-youth-settlement-support",
     "name": "전북청년 지역정착 지원사업",
+    "icon": "settle",
     "agency": "전북특별자치도",
     "regionScope": "전북특별자치도",
     "applicationStart": "2026-03-06",
@@ -136,7 +139,7 @@
     "applyUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=46029",
     "youthPolicyNo": "20250113005400210206",
     "gov24ServiceId": "654000000009",
-    "verifiedAt": "2026-11-03",
+    "verifiedAt": "2026-11-17",
     "effectiveYear": 2026,
     "notes": "",
     "contact": {
@@ -163,6 +166,7 @@
   {
     "id": "iksan-newcomer-moving-cost-support",
     "name": "익산시 전입 청년 이사비·중개보수 지원사업",
+    "icon": "moving",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "applicationStart": "2026-01-02",
@@ -179,7 +183,7 @@
     "applyUrl": "https://youthforest.iksan.go.kr/index.iksan?menuCd=DOM_000000102007002000",
     "youthPolicyNo": null,
     "gov24ServiceId": null,
-    "verifiedAt": "2026-11-03",
+    "verifiedAt": "2026-11-17",
     "effectiveYear": 2026,
     "notes": "",
     "contact": {
@@ -208,6 +212,7 @@
   {
     "id": "youth-housing-benefit-split-payment",
     "name": "청년 주거급여 분리지급",
+    "icon": "housing-benefit",
     "agency": "국토교통부·보건복지부",
     "regionScope": "전국",
     "applicationStart": "2026-01-01",
@@ -215,6 +220,33 @@
     "benefitType": "rent_capped_monthly",
     "benefitSummary": "부모와 주민등록상 시·군을 달리해 사는 미혼 청년에게, 지역 급지별 기준임대료 한도 내 실제 월세만큼 매월 지급 (익산시는 4급지 — 1인 가구 월 최대 21만 2천원)",
     "monthlyCap": 212000,
+    "documents": [
+      {
+        "name": "사회보장급여 제공(변경) 신청서",
+        "note": "행정복지센터 비치"
+      },
+      {
+        "name": "소득 및 재산 신고서",
+        "note": "행정복지센터 비치"
+      },
+      {
+        "name": "금융정보 등 제공동의서",
+        "note": "행정복지센터 비치"
+      },
+      {
+        "name": "임대차(전대차) 계약서 또는 사용대차 확인서"
+      },
+      {
+        "name": "통장사본"
+      },
+      {
+        "name": "신분증"
+      },
+      {
+        "name": "위임장",
+        "note": "대리 신청할 때만 — 수급(권)자 신분증 사본 · 대리인 신분증도"
+      }
+    ],
     "requiredInputs": [
       "birthDate",
       "livesApartFromParents",
@@ -228,7 +260,7 @@
     "applyUrl": "https://www.myhome.go.kr/hws/portal/cont/selectHousingBenefitView.do",
     "youthPolicyNo": "20250617005400110952",
     "gov24ServiceId": null,
-    "verifiedAt": "2026-11-14",
+    "verifiedAt": "2026-11-17",
     "effectiveYear": 2026,
     "notes": "",
     "contact": {
@@ -257,6 +289,7 @@
   {
     "id": "jeonse-return-guarantee-fee-subsidy",
     "name": "전세보증금반환보증 보증료 지원",
+    "icon": "guarantee",
     "agency": "국토교통부",
     "regionScope": "전국",
     "applicationStart": "2026-01-01",
@@ -306,6 +339,7 @@
   {
     "id": "iksan-move-in-household-incentive",
     "name": "전입세대 전입장려금",
+    "icon": "move-in",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "applicationStart": "2026-01-01",
@@ -315,6 +349,28 @@
     "lumpSumCap": 100000,
     "lumpSumBasis": "fixedGrant",
     "payoutNote": "전입 6개월 후 1회 지급 · 익산 지역화폐",
+    "documents": [
+      {
+        "name": "전입세대 전입장려금 신청서",
+        "note": "1부"
+      },
+      {
+        "name": "개인정보 동의서",
+        "note": "지원받는 대상자 전원"
+      },
+      {
+        "name": "행정정보 공동이용 동의서",
+        "note": "지원받는 대상자 전원"
+      },
+      {
+        "name": "전입세대 전입장려금 신청 위임장",
+        "note": "대리 신청할 때만"
+      },
+      {
+        "name": "위임받는 사람 · 위임하는 사람 신분증",
+        "note": "대리 신청할 때만"
+      }
+    ],
     "requiredInputs": [
       "canRegisterResidence"
     ],
@@ -322,7 +378,7 @@
       "iksan-move-in-cash-support"
     ],
     "sourceUrl": "https://plus.gov.kr/portal/benefitV2/benefitTotalSrvcList/benefitSrvcDtl?svcSeq=2128388&bnefType=all&svcId=468100000001",
-    "applyUrl": "https://www.iksan.go.kr/reserve/index.iksan",
+    "applyUrl": "https://www.iksan.go.kr/reserve/index.do?menuUid=ff8080819973cd4701997481e36f03b0",
     "youthPolicyNo": null,
     "gov24ServiceId": "468100000001",
     "verifiedAt": "2026-11-14",
@@ -354,6 +410,7 @@
   {
     "id": "iksan-move-in-student-support",
     "name": "주소전입 학생 지원",
+    "icon": "student",
     "agency": "익산시",
     "regionScope": "전북특별자치도 익산시",
     "applicationStart": "2026-01-01",
@@ -363,6 +420,28 @@
     "lumpSumCap": 1000000,
     "lumpSumBasis": "fixedGrant",
     "payoutNote": "첫 학기 30만원 · 이후 학기마다 10만원",
+    "documents": [
+      {
+        "name": "주소 전입 학생 지원금 신청서",
+        "note": "종이 서식은 익산사랑 신청서(별지 제1호서식) — 주소전입 학생 지원 칸에 표시"
+      },
+      {
+        "name": "통장사본",
+        "note": "1매 · 본인 명의 (미성년자는 부모·법정대리인 관련 서류 첨부 시 대신 가능)"
+      },
+      {
+        "name": "주민등록 등·초본",
+        "note": "최근 5년 · 1매 — 행정정보 공동이용에 동의하면 생략"
+      },
+      {
+        "name": "개인정보이용 동의서 · 행정정보 공동이용 동의서",
+        "note": "각 1부"
+      },
+      {
+        "name": "위임장",
+        "note": "대리 신청할 때만"
+      }
+    ],
     "requiredInputs": [
       "canRegisterResidence"
     ],
@@ -370,7 +449,7 @@
       "iksan-move-in-cash-support"
     ],
     "sourceUrl": "https://plus.gov.kr/portal/benefitV2/benefitTotalSrvcList/benefitSrvcDtl?svcSeq=2167917&bnefType=all&svcId=468100000005",
-    "applyUrl": "https://www.iksan.go.kr/reserve/index.iksan",
+    "applyUrl": "https://www.iksan.go.kr/reserve/index.do?menuUid=ff8080819973cd4701997482034e03b4",
     "youthPolicyNo": null,
     "gov24ServiceId": "468100000005",
     "verifiedAt": "2026-11-14",

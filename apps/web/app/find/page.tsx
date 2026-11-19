@@ -19,6 +19,7 @@ import {
   saveAnsweredKeys,
   type AnsweredKey,
 } from "@/lib/storage";
+import type { Icon3DName } from "@/lib/icons3d";
 import type {
   DiscoveryAnswers,
   DiscoveryStatus,
@@ -60,16 +61,21 @@ import { ICON_SM, TriangleAlert } from "@/app/components/icons";
 
 const brackets = bracketsJson as IncomeBracket[];
 const policies = policiesJson as PolicyMeta[];
-const STATUSES: DiscoveryStatus[] = ["대학생", "재직", "구직"];
+/** 현재 상태. 선택지마다 주제 3D 아이콘(시안 '3D 아이콘 설계' 2번) — 지역 · 소득 질문은 그림 없이 둔다. */
+const STATUSES: { value: DiscoveryStatus; icon: Icon3DName }[] = [
+  { value: "대학생", icon: "student" },
+  { value: "재직", icon: "work" },
+  { value: "구직", icon: "job-seek" },
+];
 /**
  * 주거 형태. 연세는 월세와 따로 둔다 — 대학가의 실제 관행이고 2층이 월 환산해
  * 계산하는 계약이다 (types.ts 의 HousingType 주석). '모름' 버튼은 두지 않는다.
  */
-const HOUSING_TYPES: { value: HousingType; label: string }[] = [
-  { value: "월세", label: "월세" },
-  { value: "연세", label: "연세 (1년치 선납)" },
-  { value: "전세", label: "전세" },
-  { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)" },
+const HOUSING_TYPES: { value: HousingType; label: string; icon: Icon3DName }[] = [
+  { value: "월세", label: "월세", icon: "monthly" },
+  { value: "연세", label: "연세 (1년치 선납)", icon: "yearly" },
+  { value: "전세", label: "전세", icon: "jeonse" },
+  { value: "그 외", label: "그 외 (공공임대 · 기숙사 · 가족과 거주 등)", icon: "other" },
 ];
 
 /**
@@ -330,11 +336,12 @@ function FindSteps() {
           <div className="flex flex-col gap-2">
             {STATUSES.map((s) => (
               <ChoiceCard
-                key={s}
-                active={answers.status === s}
-                onClick={() => update("status", { status: s })}
+                key={s.value}
+                active={answers.status === s.value}
+                onClick={() => update("status", { status: s.value })}
+                icon={s.icon}
               >
-                {s}
+                {s.value}
               </ChoiceCard>
             ))}
           </div>
@@ -361,6 +368,7 @@ function FindSteps() {
                 key={h.value}
                 active={answers.housingType === h.value}
                 onClick={() => update("housingType", { housingType: h.value })}
+                icon={h.icon}
               >
                 {h.label}
               </ChoiceCard>
