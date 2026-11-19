@@ -41,6 +41,18 @@ describe("신청 준비 흐름", () => {
     expect(screen.queryByText(/신청 위치 ·/)).toBeNull();
   });
 
+  it("체크리스트 줄에 '확인 전' 배지를 두지 않고, 확인한 줄에만 '확인함'을 보인다 (11/20)", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationPreparation policy={policy} />);
+    await screen.findByRole("heading", { level: 1, name: policy.name });
+    expect(screen.queryByText("확인 전")).toBeNull();
+    expect(screen.queryByText("확인함")).toBeNull();
+
+    await user.click(screen.getByRole("checkbox", { name: /모집 기간 확인/ }));
+    expect(screen.getAllByText("확인함")).toHaveLength(1);
+    expect(screen.queryByText("확인 전")).toBeNull();
+  });
+
   it("실제 정책 기간을 보여주고 확인 상태를 정책별로 저장한다", async () => {
     const user = userEvent.setup();
     render(<ApplicationPreparation policy={policy} />);
