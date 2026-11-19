@@ -43,6 +43,8 @@ export const ICON3D_NAMES = [
   "form",
   // 안내 칸
   "calculator",
+  // 시안 3번 '결과 화면 섹션 머리'(계산 내역 · 목돈)용. 11/18 결과 화면이 영수증 한 장으로 합쳐지며 그 자리가
+  // '금액 옆 · 결과 요약'(넣지 않는 자리) 안으로 들어가 지금은 쓰는 곳이 없다 — 그림은 남겨 둔다(11/20 결정)
   "receipt",
   "wallet",
 ] as const;
@@ -54,10 +56,11 @@ export type Icon3DSize = 32 | 36 | 40 | 48 | 64;
 /**
  * 서류 이름 → 그림. 팀이 공고 원문 그대로 적은 이름(policies.documents)이라 낱말로 맞춘다.
  * 순서가 중요하다 — '위임받는 사람 신분증'은 신분증, '임대차 계약서'는 계약서. 나머지는 모두 서식(form).
+ * 신분증 이름을 등본보다 먼저 잡는다 — '주민등록증'은 '주민등록'이 들어 있지만 등본이 아니라 신분증이다(11/20 교차검증).
  * 서류 줄마다 그림이 있어야 목록이 들쭉날쭉하지 않다.
  */
 export function documentIcon(name: string): Icon3DName {
-  if (name.includes("신분증")) return "id-card";
+  if (/신분증|주민등록증|운전면허증|여권/.test(name)) return "id-card";
   if (name.includes("통장")) return "bankbook";
   if (/주민등록|등본|초본/.test(name)) return "resident";
   if (name.includes("계약서")) return "contract";

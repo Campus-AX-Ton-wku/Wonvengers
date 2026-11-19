@@ -55,6 +55,9 @@ describe("서류 이름 → 그림", () => {
     expect(documentIcon("통장사본")).toBe("bankbook");
     expect(documentIcon("신분증")).toBe("id-card");
     expect(documentIcon("위임받는 사람 · 위임하는 사람 신분증")).toBe("id-card");
+    // '주민등록'이 들어 있어도 신분증은 신분증 — 등본 규칙보다 먼저 잡는다
+    for (const name of ["주민등록증", "주민등록증 사본", "운전면허증", "여권"]) expect(documentIcon(name), name).toBe("id-card");
+    expect(documentIcon("주민등록등본")).toBe("resident");
     // 맞는 그림이 없는 서류는 서식 하나로 — '금융정보 등 제공동의서'의 '등'은 등본이 아니다
     for (const name of ["전입세대 전입장려금 신청서", "개인정보 동의서", "위임장", "소득 및 재산 신고서", "금융정보 등 제공동의서"]) {
       expect(documentIcon(name), name).toBe("form");
@@ -99,14 +102,29 @@ describe("들어간 자리", () => {
     expect(icons()).toEqual([]);
   });
 
-  it("신청 준비 — 서류 줄마다 32px, 자격 · 기간 확인 줄은 그림 없음", () => {
+  it("신청 준비 — 서류가 있으면 '자격과 기간' · '챙길 서류 N개' 두 묶음, 서류 줄마다 32px", () => {
     const policy = policies.find((p) => p.id === "youth-housing-benefit-split-payment")!;
+    const docs = policy.documents ?? [];
     render(<ApplicationPreparation policy={policy} />);
     const list = screen.getByRole("region", { name: "신청 전 확인 목록" });
-    expect(icons(list)).toEqual((policy.documents ?? []).map((d) => documentIcon(d.name)));
-    const eligibility = screen.getByText("자격 조건 확인").closest("label")!;
-    expect(icons(eligibility)).toEqual([]);
+    expect(icons(list)).toEqual(docs.map((d) => documentIcon(d.name)));
     expect(list.querySelector("img")!.getAttribute("width")).toBe("32");
+    // 그림 없는 확인 줄과 그림 있는 서류 줄이 한 묶음에 섞이지 않는다 — 묶음 안에서는 글자 시작선이 같다
+    const checks = within(list).getByRole("group", { name: "자격과 기간" });
+    const documents = within(list).getByRole("group", { name: `챙길 서류 ${docs.length}개` });
+    expect(within(checks).getAllByRole("checkbox")).toHaveLength(2);
+    expect(icons(checks)).toEqual([]);
+    expect(within(documents).getAllByRole("checkbox")).toHaveLength(docs.length);
+    expect(documents.querySelectorAll("label").length).toBe(documents.querySelectorAll("img[data-icon3d]").length);
+  });
+
+  it("신청 준비 — 서류 목록이 없으면 묶음 없이 확인 3줄, 그림 없음", () => {
+    const policy = policies.find((p) => !p.documents)!;
+    render(<ApplicationPreparation policy={policy} />);
+    const list = screen.getByRole("region", { name: "신청 전 확인 목록" });
+    expect(within(list).queryAllByRole("group")).toHaveLength(0);
+    expect(within(list).getAllByRole("checkbox")).toHaveLength(3);
+    expect(icons(list)).toEqual([]);
   });
 
   it("정책 상세 — 제목 위 64px 타일", () => {

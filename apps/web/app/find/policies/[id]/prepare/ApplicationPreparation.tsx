@@ -111,6 +111,37 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
   }`;
   const progress = pageProgress(policy, checklist, checkedDocs);
   const ceiling = benefitCeiling(policy);
+  // 자격 · 기간 확인 줄 — 서류 목록이 있으면 '자격과 기간' 묶음에, 없으면 '준비 서류 확인' 줄 위에 그대로
+  const checkRows = (
+    <>
+      <ChecklistRow
+        checked={checklist.eligibility}
+        label="자격 조건 확인"
+        support={
+          conditions.length > 0 ? (
+            // 결과 화면이 "신청 준비에서 확인해요"라고 넘긴 조건 — 읽을 수 있는 크기로, 확인 방법과 함께 (11/19)
+            <span role="list" className="mt-1 flex flex-col gap-1.5">
+              {conditions.map((c) => (
+                <span role="listitem" key={c.label} className="block">
+                  <span className="block text-[13px] font-medium leading-5 text-ink-800">{c.label}</span>
+                  {c.howToConfirm && <span className="block text-xs leading-4 text-ink-500">{c.howToConfirm}</span>}
+                </span>
+              ))}
+            </span>
+          ) : (
+            "내 정보와 공고의 지원 대상을 다시 대조해요"
+          )
+        }
+        onChange={(checked) => setChecked("eligibility", checked)}
+      />
+      <ChecklistRow
+        checked={checklist.period}
+        label="모집 기간 확인"
+        support={applicationPeriod}
+        onChange={(checked) => setChecked("period", checked)}
+      />
+    </>
+  );
 
   return (
     <AppShell className="step-in">
@@ -139,51 +170,37 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
           </p>
         </div>
 
-        <section className="mt-3 flex flex-col gap-2" aria-label="신청 전 확인 목록">
-          <ChecklistRow
-            checked={checklist.eligibility}
-            label="자격 조건 확인"
-            support={
-              conditions.length > 0 ? (
-                // 결과 화면이 "신청 준비에서 확인해요"라고 넘긴 조건 — 읽을 수 있는 크기로, 확인 방법과 함께 (11/19)
-                <span role="list" className="mt-1 flex flex-col gap-1.5">
-                  {conditions.map((c) => (
-                    <span role="listitem" key={c.label} className="block">
-                      <span className="block text-[13px] font-medium leading-5 text-ink-800">{c.label}</span>
-                      {c.howToConfirm && <span className="block text-xs leading-4 text-ink-500">{c.howToConfirm}</span>}
-                    </span>
-                  ))}
-                </span>
-              ) : (
-                "내 정보와 공고의 지원 대상을 다시 대조해요"
-              )
-            }
-            onChange={(checked) => setChecked("eligibility", checked)}
-          />
-          <ChecklistRow
-            checked={checklist.period}
-            label="모집 기간 확인"
-            support={applicationPeriod}
-            onChange={(checked) => setChecked("period", checked)}
-          />
+        {/* 서류 목록이 있으면 두 묶음으로 — 그림 있는 서류 줄과 그림 없는 확인 줄이 한 목록에 섞이면 글자 시작선이
+            44px 어긋난다(11/20 교차검증). 묶음마다 줄 모양이 같아 시작선이 맞는다. */}
+        <section className={`mt-3 flex flex-col ${docs.length > 0 ? "gap-5" : "gap-2"}`} aria-label="신청 전 확인 목록">
           {docs.length > 0 ? (
-            docs.map((d) => (
-              <ChecklistRow
-                key={d.name}
-                checked={checkedDocs.includes(d.name)}
-                label={d.name}
-                support={d.note}
-                icon={documentIcon(d.name)}
-                onChange={(checked) => toggleDoc(d.name, checked)}
-              />
-            ))
+            <>
+              <ChecklistGroup id="prepare-checks" title="자격과 기간">
+                {checkRows}
+              </ChecklistGroup>
+              <ChecklistGroup id="prepare-documents" title={`챙길 서류 ${docs.length}개`}>
+                {docs.map((d) => (
+                  <ChecklistRow
+                    key={d.name}
+                    checked={checkedDocs.includes(d.name)}
+                    label={d.name}
+                    support={d.note}
+                    icon={documentIcon(d.name)}
+                    onChange={(checked) => toggleDoc(d.name, checked)}
+                  />
+                ))}
+              </ChecklistGroup>
+            </>
           ) : (
-            <ChecklistRow
-              checked={checklist.documents}
-              label="준비 서류 확인"
-              support="서류 종류와 발급일은 공식 공고에서 확인해요"
-              onChange={(checked) => setChecked("documents", checked)}
-            />
+            <>
+              {checkRows}
+              <ChecklistRow
+                checked={checklist.documents}
+                label="준비 서류 확인"
+                support="서류 종류와 발급일은 공식 공고에서 확인해요"
+                onChange={(checked) => setChecked("documents", checked)}
+              />
+            </>
           )}
         </section>
 
@@ -213,6 +230,18 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
         />
       )}
     </AppShell>
+  );
+}
+
+/** 확인 목록의 한 묶음 — 작은 제목 + 줄들. 스크린리더도 묶음 이름을 함께 읽는다. */
+function ChecklistGroup({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-2">
+      <h3 id={id} className="px-1 text-[13px] font-bold text-ink-600">
+        {title}
+      </h3>
+      {children}
+    </div>
   );
 }
 
