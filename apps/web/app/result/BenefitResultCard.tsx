@@ -62,18 +62,19 @@ export default function BenefitResultCard({
   if (!card.amount.countsInTotal) {
     return (
       <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
-        <div className="flex min-h-[30px] items-center justify-between gap-3">
-          <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
-          <div className="flex items-center gap-1">
-            {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
-            <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2" />
+        {/* 상태 배지('확인 필요' 주황)는 두지 않는다(11/20) — 묶음 제목 '조건이 맞으면 더 받을 수 있는 지원'과
+            설명이 이미 자격 확인이 남았다고 말한다. 마감 임박만 이름 위에 한 줄. */}
+        {deadlineMeta && <p className="text-xs font-bold text-danger-700">{deadlineMeta}</p>}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 pt-1">
+            <h3 id={`benefit-${card.policyId}`} className="text-base font-extrabold leading-snug text-ink-900">
+              {card.title}
+            </h3>
+            <p className="mt-0.5 text-xs text-ink-500">{card.agency}</p>
           </div>
-          <span className="sr-only">{result.status}</span>
+          <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2 -mt-1 shrink-0" />
         </div>
-        <h3 id={`benefit-${card.policyId}`} className="mt-2 text-base font-extrabold leading-snug text-ink-900">
-          {card.title}
-        </h3>
-        <p className="mt-0.5 text-xs text-ink-500">{card.agency}</p>
+        <span className="sr-only">{result.status}</span>
         <p className="mt-2 text-sm leading-relaxed text-ink-600">
           공고상 금액 <strong className="font-extrabold text-ink-900 tabular-nums">{amountText}</strong>
           <span className="block text-xs text-ink-500">{card.amount.period}</span>
