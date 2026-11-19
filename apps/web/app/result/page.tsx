@@ -9,6 +9,7 @@ import { loanProductsForRegion } from "@/lib/region";
 import { formatDotDate } from "@/lib/date";
 import {
   AppShell,
+  BottomTabBar,
   Button,
   ContactInfo,
   Disclosure,
@@ -206,6 +207,8 @@ export default function ResultPage() {
         </Button>
       </div>
       </main>
+      {/* 계산 탭의 첫 화면 — 계산을 마친 사람은 계산 탭이 여기로 온다 (BottomTabBar calcTabHref) */}
+      <BottomTabBar active="calc" />
     </AppShell>
   );
 }

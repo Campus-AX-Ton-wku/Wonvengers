@@ -51,38 +51,37 @@ describe("상단바 오른쪽 자리 (설계 '화면' 4)", () => {
     expect(screen.queryByRole("link", { name: /내 계정/ })).toBeNull();
   });
 
-  it("로그인하면 사람 아이콘이 /account 로 간다", async () => {
+  it("로그인하면 알림 종이 내 계정 › 알림 칸으로 간다 — 알림을 쓸 수 있는 빌드에서만", async () => {
+    enableLogin();
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
+    signInAs();
+    seedSyncMeta();
+    load.mockResolvedValue(remoteItem());
+    render(<TopBar />);
+    const bell = await screen.findByRole("link", { name: "알림 설정" });
+    expect(bell.getAttribute("href")).toBe("/account#notifications");
+  });
+
+  it("알림을 쓸 수 없는 빌드면 종을 그리지 않는다 — 갈 곳이 없다", async () => {
     enableLogin();
     signInAs();
     seedSyncMeta();
     load.mockResolvedValue(remoteItem());
     render(<TopBar />);
-    const link = await screen.findByRole("link", { name: "내 계정" });
-    expect(link.getAttribute("href")).toBe("/account");
+    await waitFor(() => expect(load).toHaveBeenCalled());
+    expect(screen.queryByRole("link", { name: "알림 설정" })).toBeNull();
   });
 
-  it("로그인했으면 [홈]이 /home 으로 간다 (로그인 전에는 없다)", async () => {
+  it("[홈] · [내 계정]은 상단바에 없다 — 하단 섬 탭으로 옮겼다 (11/20)", async () => {
     enableLogin();
-    const { unmount } = render(<TopBar />);
-    expect(screen.queryByRole("link", { name: "홈" })).toBeNull();
-    unmount();
-
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
     signInAs();
     seedSyncMeta();
     load.mockResolvedValue(remoteItem());
     render(<TopBar />);
-    const link = await screen.findByRole("link", { name: "홈" });
-    expect(link.getAttribute("href")).toBe("/home");
-  });
-
-  it("홈 화면에서는 [홈]을 빼고 계정만 둔다 — 자기 자신을 가리키는 버튼이었다", async () => {
-    enableLogin();
-    signInAs();
-    seedSyncMeta();
-    load.mockResolvedValue(remoteItem());
-    render(<TopBar home />);
-    expect(await screen.findByRole("link", { name: "내 계정" })).toBeTruthy();
+    await screen.findByRole("link", { name: "알림 설정" });
     expect(screen.queryByRole("link", { name: "홈" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /내 계정/ })).toBeNull();
   });
 
   it("저장에 실패하면 '저장 안 됨 · 다시 시도', 누르면 다시 시도한다", async () => {
@@ -93,7 +92,6 @@ describe("상단바 오른쪽 자리 (설계 '화면' 4)", () => {
     render(<TopBar />);
 
     const retry = await screen.findByRole("button", { name: "저장 안 됨 · 다시 시도" });
-    expect(screen.getByRole("link", { name: "내 계정 (저장 안 됨)" })).toBeTruthy();
     await userEvent.setup().click(retry);
 
     await waitFor(() => expect(screen.queryByRole("button", { name: "저장 안 됨 · 다시 시도" })).toBeNull());

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AppShell, Button, KakaoButton, LinkButton, Sheet, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, Button, KakaoButton, LinkButton, Sheet, TopBar } from "@/app/components";
 import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/auth";
 import { isPushConfigured } from "@/lib/push";
 import PushSettings from "./PushSettings";
@@ -159,6 +159,8 @@ export default function AccountPage() {
           개인정보 처리방침
         </Link>
       </main>
+      {/* 내 정보 탭의 첫 화면 (BottomTabBar). 상단바 종(알림 설정)은 아래 알림 칸(#notifications)으로 온다. */}
+      <BottomTabBar active="my" />
 
       {confirming && (
         <Sheet
