@@ -39,6 +39,14 @@ jobs:
             echo "지난 스냅샷이 없다 — 이번 실행이 기준선이 된다."
           fi
 
+      # 정책 원본은 Supabase 다(11/16). 커밋된 data/*.json 은 옛 스냅숏이라 검사 전에 정식 앱과 같은 값으로 다시 받는다.
+      # 비밀값이 없으면 아무것도 안 하고 끝나 커밋된 파일로 돈다 — 보고서 머리의 '앱 데이터 기준' 날짜로 드러난다.
+      - name: 앱 데이터 최신으로 (Supabase)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: node apps/web/scripts/fetch-app-data.mjs
+
       - name: 신선도 검사
         id: check
         env:
