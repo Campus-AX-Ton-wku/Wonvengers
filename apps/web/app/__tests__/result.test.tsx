@@ -286,6 +286,30 @@ describe("저가 주택 공급 안내 — 삭제됨", () => {
 });
 
 describe("결과 화면 하단", () => {
+  it("'다른 방으로 다시 계산하기'는 계약 조건 첫 단계로 간다 — 월세만 바꿔 다시 볼 수 있다 (11/19)", async () => {
+    renderWithInput();
+    await userEvent.setup().click(await screen.findByRole("button", { name: "다른 방으로 다시 계산하기" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=1");
+  });
+
+  it("고지문은 해요체이고, 기준일은 다른 날짜와 같은 점 표기다 (11/19)", async () => {
+    renderWithInput();
+    await screen.findByText(지원금_라벨);
+
+    const notice = screen.getByText(/최종 자격과 지급액은/);
+    expect(notice.textContent).not.toMatch(/니다/);
+    expect(notice.textContent).toMatch(/결과 기준일 \d{4}\.\d{2}\.\d{2}/);
+  });
+
+  it("금액 바로 아래에 '최종 금액은 기관이 정한다'는 짧은 고지가 있다 (11/19)", async () => {
+    renderWithInput();
+    await screen.findByText(지원금_라벨);
+
+    const card = screen.getByText(지원금_라벨).closest("section") as HTMLElement;
+    expect(within(card).getByText("최종 금액은 각 기관이 심사해 정해요")).toBeTruthy();
+  });
+
   it("'답변 수정하기' 는 판정 질문 첫 묶음 주소로 간다 — 화살표(뒤로)와 목적지가 다르다", async () => {
     renderWithInput();
     await userEvent.setup().click(await screen.findByRole("button", { name: "답변 수정하기" }));

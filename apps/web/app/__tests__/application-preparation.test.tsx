@@ -13,16 +13,29 @@ const policy = (policiesJson as PolicyMeta[]).find(
 describe("신청 준비 흐름", () => {
   beforeEach(() => window.localStorage.clear());
 
-  it("'자격 조건 확인' 줄은 그 정책에서 아직 확인할 조건을 구체적으로 보여 준다 (11/17)", async () => {
+  it("'자격 조건 확인' 줄은 그 정책에서 아직 확인할 조건을 확인 방법과 함께 목록으로 보여 준다 (11/17 · 11/19)", async () => {
     const moveIn = (policiesJson as PolicyMeta[]).find((item) => item.id === "iksan-move-in-household-incentive")!;
     render(<ApplicationPreparation policy={moveIn} />);
     const row = await screen.findByRole("checkbox", { name: /자격 조건 확인/ });
-    expect(row.closest("label")?.textContent).toContain("전입 전 1년 이상 다른 시·군·구에 주민등록");
+    const label = row.closest("label")!;
+    const items = within(label).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual([
+      "전입 전 1년 이상 다른 시·군·구에 주민등록주민등록초본의 주소 변동 이력으로 확인하세요.",
+      "예전에 익산시 전입 지원을 받은 적 없음재전입자 중 이미 지원받은 사람은 다시 받을 수 없어요.",
+    ]);
+  });
+
+  it("맨 위에 어떤 정책인지(이름 · 공고상 금액 · 지급 방식)를 보여 준다 — 결과에서 넘어와도 맥락이 이어진다 (11/19)", async () => {
+    const moveIn = (policiesJson as PolicyMeta[]).find((item) => item.id === "iksan-move-in-household-incentive")!;
+    render(<ApplicationPreparation policy={moveIn} />);
+    expect(await screen.findByRole("heading", { level: 1, name: "전입세대 전입장려금" })).toBeTruthy();
+    expect(screen.getByText(/공고상 최대 10만원/)).toBeTruthy();
+    expect(screen.queryByText("신청 준비", { selector: "p" })).toBeNull();
   });
 
   it("안내 문구 세 개를 두지 않는다 — 기기 저장 안내 · '제출 전 다시 확인' 상자 · 신청 위치 한 줄 (11/17)", async () => {
     render(<ApplicationPreparation policy={policy} />);
-    await screen.findByRole("heading", { level: 1, name: "필수 확인 사항을 점검해요" });
+    await screen.findByRole("heading", { level: 1, name: policy.name });
     expect(screen.queryByText(/확인한 항목은 이 기기에 저장되어/)).toBeNull();
     expect(screen.queryByText("제출 전 다시 확인해 주세요")).toBeNull();
     expect(screen.queryByText(/신청 위치 ·/)).toBeNull();

@@ -61,6 +61,8 @@ export function ResultReceipt({
         <p className="mt-1 text-4xl font-extrabold leading-tight text-accent-700 tabular-nums">
           {formatKoreanMoney(supportAmount)}
         </p>
+        {/* 자격 미확정 고지는 맨 아래에 전체 문장이 있지만 금액과 2화면 떨어져 있었다(11/19) — 숫자 바로 밑에 한 줄 */}
+        <p className="mt-1 text-xs text-ink-500">최종 금액은 각 기관이 심사해 정해요</p>
       </div>
 
       {/* 영수증 줄 — 내는 돈 위, 받는 지원을 빼고, 굵은 선 아래 실제 부담 */}

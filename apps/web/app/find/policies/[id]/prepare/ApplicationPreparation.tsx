@@ -13,6 +13,7 @@ import {
 } from "@/app/components";
 import { Check, ICON_SM, ShieldCheck } from "@/app/components/icons";
 import { formatDotDate, seoulTodayISO } from "@/lib/date";
+import { benefitCeiling, payoutTiming } from "@/lib/benefit";
 import { conditionsToConfirm, pageProgress } from "@/lib/preparation";
 import {
   EMPTY_CHECKLIST,
@@ -30,7 +31,7 @@ type ChecklistKey = keyof ChecklistState;
 export default function ApplicationPreparation({ policy }: { policy: PolicyMeta }) {
   const [checklist, setChecklist] = useState<ChecklistState>(EMPTY_CHECKLIST);
   const [checkedDocs, setCheckedDocs] = useState<string[]>([]);
-  const [conditions, setConditions] = useState<string[]>([]);
+  const [conditions, setConditions] = useState<{ label: string; howToConfirm: string | undefined }[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const confirmLinkRef = useRef<HTMLAnchorElement>(null);
@@ -107,31 +108,54 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
     policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
   }`;
   const progress = pageProgress(policy, checklist, checkedDocs);
+  const ceiling = benefitCeiling(policy);
 
   return (
     <AppShell className="step-in">
       <TopBar backHref={`/find/policies/${policy.id}`} />
       <main className="flex flex-1 flex-col pb-6 pt-1">
+        {/* 11/19: 결과 화면에서 [신청 준비]로 넘어와도 어떤 정책인지 이어지게 — 제목이 정책 이름이다
+            (예전 '신청 준비' 눈썹 글씨 + '필수 확인 사항을 점검해요'는 어느 정책인지 말하지 않았다) */}
         <header>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold leading-4 text-ink-500">신청 준비</p>
-              <h1 className="mt-1 text-2xl font-extrabold leading-[34px] text-ink-900">
-                필수 확인 사항을 점검해요
-              </h1>
+              <h1 className="text-2xl font-extrabold leading-[34px] text-ink-900">{policy.name}</h1>
+              <p className="mt-1 text-sm leading-relaxed text-ink-600">
+                {policy.agency}
+                {ceiling ? ` · 공고상 ${ceiling.label}` : ""}
+                <span className="block text-xs text-ink-500">{payoutTiming(policy)}</span>
+              </p>
             </div>
             <SaveButton policyId={policy.id} policyName={policy.name} />
           </div>
-          <p className="mt-2 text-xs font-medium text-brand-700" role="status" aria-live="polite">
-            {hydrated ? `${progress.done} / ${progress.total} 확인` : "저장된 확인 상태 불러오는 중"}
-          </p>
         </header>
 
-        <section className="mt-5 flex flex-col gap-2" aria-label="신청 전 확인 목록">
+        <div className="mt-6 flex items-baseline justify-between gap-3">
+          <h2 className="text-base font-bold text-ink-900">신청 전에 확인해요</h2>
+          <p className="shrink-0 text-xs font-medium text-brand-700" role="status" aria-live="polite">
+            {hydrated ? `${progress.done} / ${progress.total} 확인` : "저장된 확인 상태 불러오는 중"}
+          </p>
+        </div>
+
+        <section className="mt-3 flex flex-col gap-2" aria-label="신청 전 확인 목록">
           <ChecklistRow
             checked={checklist.eligibility}
             label="자격 조건 확인"
-            support={conditions.length > 0 ? conditions.join(" · ") : "내 정보와 공고의 지원 대상을 다시 대조해요"}
+            support={
+              conditions.length > 0 ? (
+                // 결과 화면이 "신청 준비에서 확인해요"라고 넘긴 조건 — 읽을 수 있는 크기로, 확인 방법과 함께 (11/19)
+                <span role="list" className="mt-1 flex flex-col gap-1.5">
+                  {conditions.map((c) => (
+                    <span role="listitem" key={c.label} className="block">
+                      <span className="block text-[13px] font-medium leading-5 text-ink-800">{c.label}</span>
+                      {c.howToConfirm && <span className="block text-xs leading-4 text-ink-500">{c.howToConfirm}</span>}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                "내 정보와 공고의 지원 대상을 다시 대조해요"
+              )
+            }
             onChange={(checked) => setChecked("eligibility", checked)}
           />
           <ChecklistRow
@@ -197,7 +221,7 @@ function ChecklistRow({
 }: {
   checked: boolean;
   label: string;
-  support?: string;
+  support?: React.ReactNode;
   onChange: (checked: boolean) => void;
 }) {
   return (
@@ -210,7 +234,12 @@ function ChecklistRow({
       />
       <span className="min-w-0">
         <span className="block text-sm font-bold leading-[22px] text-ink-900">{label}</span>
-        {support && <span className="mt-0.5 block text-[11px] leading-4 text-ink-500">{support}</span>}
+        {support &&
+          (typeof support === "string" ? (
+            <span className="mt-0.5 block text-[11px] leading-4 text-ink-500">{support}</span>
+          ) : (
+            support
+          ))}
       </span>
       <span
         className={`inline-flex shrink-0 items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-medium ${
