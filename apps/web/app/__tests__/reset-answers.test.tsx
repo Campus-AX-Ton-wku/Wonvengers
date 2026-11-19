@@ -164,7 +164,8 @@ describe("로그인 상태", () => {
     resetNavigation("/find/policies", "/find?q=birth");
     const user = userEvent.setup();
     render(<FindPoliciesPage />);
-    await screen.findByRole("link", { name: "내 계정" });
+    // 로그인이 화면에 반영됐다는 신호 — 지원금 목록은 탭의 첫 화면이라 하단 섬이 그려진다
+    await screen.findByRole("link", { name: "내 정보" });
 
     await 다시하기(user);
 

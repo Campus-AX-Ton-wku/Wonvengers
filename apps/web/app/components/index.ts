@@ -9,11 +9,14 @@
  */
 export { AppShell, StickyBottomAction } from "./AppShell";
 export { AnswerSummaryBar } from "./AnswerSummaryBar";
+export { BottomTabBar, calcTabHref } from "./BottomTabBar";
+export type { TabKey } from "./BottomTabBar";
 export type { SummaryItem } from "./AnswerSummaryBar";
 export { Button, LinkButton, buttonClass } from "./Button";
 export type { ButtonSize, ButtonVariant } from "./Button";
 export { CarriedOver } from "./CarriedOver";
 export { Card } from "./Card";
+export { DeadlineBadge } from "./DeadlineBadge";
 export type { CardTone } from "./Card";
 export { ChoiceCard } from "./ChoiceCard";
 export { ContactInfo, telHref } from "./ContactInfo";
@@ -34,5 +37,7 @@ export { SyncConflictSheet } from "./SyncConflictSheet";
 export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";
 export type { BadgeTone } from "./StatusBadge";
 export { StepHeader } from "./StepHeader";
+export { TabIcon } from "./TabIcons";
+export type { TabIconName } from "./TabIcons";
 export { TopBar } from "./TopBar";
 export { Wordmark } from "./Wordmark";

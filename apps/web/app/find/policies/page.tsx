@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
 import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
@@ -187,6 +187,8 @@ export default function FindPoliciesPage() {
         </>
       )}
       </main>
+      {/* 지원금 탭의 첫 화면 — 로그인한 사람에게만 하단 섬이 보인다 (BottomTabBar) */}
+      <BottomTabBar active="benefit" />
       {loginOpen && (
         <LoginSheet
           title="로그인하고 계산해 볼까요?"

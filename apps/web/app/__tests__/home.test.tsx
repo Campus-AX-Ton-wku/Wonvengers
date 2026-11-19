@@ -112,27 +112,15 @@ describe("/home", () => {
     expect(within(summary).getByRole("link", { name: "시작하기" }).getAttribute("href")).toBe("/find");
   });
 
-  it("찜한 지원금 — 비면 안내와 찾아보기, 있으면 건수 · 마감 배지 · 진행 막대", async () => {
+  it("찜한 지원금 목록은 홈에 없다 — 하단 섬 '관심' 탭으로 옮겼다 (11/20)", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
-    const { unmount } = render(<HomePage />);
-    const empty = await screen.findByRole("region", { name: "찜한 지원금" });
-    expect(within(empty).getByText("아직 찜한 지원금이 없어요")).toBeTruthy();
-    expect(within(empty).getByRole("link", { name: "찾아보기" }).getAttribute("href")).toBe("/find/policies");
-    unmount();
-
-    saveSavedList(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
+    saveSavedList(["youth-housing-benefit-split-payment"]);
     render(<HomePage />);
-    const list = await screen.findByRole("region", { name: "찜한 지원금" });
-    expect(within(list).getByRole("heading", { level: 2 }).textContent).toBe("찜한 지원금 2건");
-    const card = within(list).getByRole("link", { name: /청년 주거급여 분리지급/ });
-    expect(card.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment/prepare");
-    expect(within(card).getByText("상시")).toBeTruthy();
-    expect(within(card).getByText(`서류 0/${주거급여서류.length} 준비`)).toBeTruthy();
-    // 찜 카드도 목록 카드처럼 정책 종류 그림 40px
-    expect([...card.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["housing-benefit"]);
-    const closed = within(list).getByRole("link", { name: /청년월세 지원/ });
-    expect(within(closed).getByText("접수 마감")).toBeTruthy();
-    expect(within(closed).getByText(/다음 공고를 기다려요/)).toBeTruthy();
+    await screen.findByRole("region", { name: "내 지원 요약" });
+    expect(screen.queryByRole("region", { name: "찜한 지원금" })).toBeNull();
+    const tabs = screen.getByRole("navigation", { name: "주요 메뉴" });
+    expect(within(tabs).getByRole("link", { name: "홈" }).getAttribute("aria-current")).toBe("page");
+    expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
   it("계산이 끝났으면 최종 예상 주거비 상자와 결과 보기, 계산하기는 숨긴다", async () => {

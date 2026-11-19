@@ -74,7 +74,7 @@ export default function PushSettings() {
 
   const note = NOTE[view];
   return (
-    <section aria-labelledby="push-heading" className="flex flex-col gap-2">
+    <section id="notifications" aria-labelledby="push-heading" className="flex scroll-mt-20 flex-col gap-2">
       <h2 id="push-heading" className="text-base font-bold text-ink-900">
         알림
       </h2>
