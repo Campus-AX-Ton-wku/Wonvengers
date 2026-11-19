@@ -74,7 +74,7 @@ describe("2층 정책 카드", () => {
     expect(source.textContent).toMatch(/\d{4}\.\d{2}\.\d{2} 대조|원문 확인 필요/);
     expect(source.closest("details")).toBeNull();
     expect(within(card).queryByText("검수 상태")).toBeNull();
-    const details = 상세_토글(card, /2026년 공고 기준/);
+    const details = 상세_토글(card, /요건과 계산 방법 보기/);
     expect(details.open).toBe(false);
   });
 
@@ -106,7 +106,7 @@ describe("2층 정책 카드", () => {
     const card = topCards()[0];
 
     expect(within(card).getByText(/^(예상적용|조건충족시가능)$/).closest("details")).toBeNull();
-    expect(within(card).getByText(/받을 수 있는 예상 금액/).closest("details")).toBeNull();
+    expect(within(card).getByText(/^예상 금액$/).closest("details")).toBeNull();
     expect(within(card).getByRole("link", { name: /신청 준비 시작하기|마감 전 신청 준비하기/ }).closest("details")).toBeNull();
     expect(within(card).getByRole("link", { name: /공식 출처 새 창에서 열기/ }).closest("details")).toBeNull();
     expect((within(card).getByText("요건과 계산 방법 보기").closest("details") as HTMLDetailsElement).open).toBe(false);

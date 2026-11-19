@@ -88,7 +88,7 @@ describe("/home", () => {
 
     const all = within(summary).getByRole("link", { name: open.length > 3 ? `${open.length}건 모두 보기` : "지원금 목록 보기" });
     expect(all.getAttribute("href")).toBe("/find/policies");
-    expect(within(summary).getByText("실제로 내게 될 돈은 얼마일까요?")).toBeTruthy();
+    expect(within(summary).getByText("보증금·월세를 넣으면 최종 주거비를 계산해요.")).toBeTruthy();
     expect(within(summary).getByRole("link", { name: "내 월세 계산하기" }).getAttribute("href")).toBe("/calculate");
     // 3D 그림은 계산 권유 칸의 계산기 48px 하나 — 미리 보기 줄에는 두지 않는다(Perky 와 한 카드에 그림이 몰리지 않게, 11/20)
     const pictures = [...summary.querySelectorAll("img[data-icon3d]")];
@@ -157,7 +157,7 @@ describe("/home", () => {
       render(<HomePage />);
       const summary = await screen.findByRole("region", { name: "내 지원 요약" });
       expect(pose()).toBe("success");
-      expect(within(summary).getByText("찜한 지원금 준비를 마쳤어요. 이제 신청만 남았어요.")).toBeTruthy();
+      expect(within(summary).getByText("찜한 지원금 준비를 마쳤어요.")).toBeTruthy();
     });
 
     it("답이 없으면 캐릭터를 두지 않는다", async () => {

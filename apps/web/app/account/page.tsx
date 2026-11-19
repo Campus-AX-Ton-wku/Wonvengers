@@ -92,7 +92,7 @@ export default function AccountPage() {
           <section className="flex flex-col gap-3">
             <h1 className={heading}>탈퇴가 끝났어요</h1>
             <p className={body}>
-              저장된 답과 회원 정보를 모두 지우고 카카오 연결도 끊었어요. 다시 카카오로 로그인하면 새 회원으로 시작해요.
+              저장된 답과 회원 정보를 모두 지웠어요.
             </p>
             <LinkButton href="/find" variant="secondary">
               질문으로 가기

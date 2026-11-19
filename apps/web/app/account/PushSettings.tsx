@@ -83,7 +83,7 @@ export default function PushSettings() {
       {view === "off" && (
         <>
           <p className="text-sm leading-relaxed text-ink-600">
-            새 지원금이 올라오면 내 조건에 맞는지 보고 알려 드려요 (낮 9시~밤 9시)
+            내 조건에 맞는 새 지원금이 올라오면 알려 드려요 (낮 9시~밤 9시)
           </p>
           <Button variant="secondary" size="screen" disabled={busy} onClick={() => void turnOn()}>
             {busy ? "켜는 중…" : "알림 켜기"}

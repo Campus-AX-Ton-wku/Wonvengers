@@ -54,7 +54,7 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
       {loginOpen && (
         <LoginSheet
           title="로그인하고 찜해 둘까요?"
-          description="카카오로 3초 만에 로그인하면 관심 있는 지원금을 모아 두고 신청 준비까지 이어서 볼 수 있어요."
+          description="카카오로 3초 만에 로그인하면 찜한 지원금을 모아 두고 이어서 볼 수 있어요."
           next={`${window.location.pathname}${window.location.search}`}
           onClose={() => setLoginOpen(false)}
         />

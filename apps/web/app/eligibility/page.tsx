@@ -410,7 +410,7 @@ function EligibilitySteps() {
             folded={folded.has(q.key)}
             hint={
               q.key === "isStudentOrEmployed" && statusFromFloor1 ? (
-                <CarriedOver>앞에서 답한 현재 상태로 골랐어요. 바꿔도 됩니다.</CarriedOver>
+                <CarriedOver>앞에서 골랐어요</CarriedOver>
               ) : undefined
             }
             onChange={(v) => answer(q, v, current.questions)}

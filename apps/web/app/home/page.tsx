@@ -163,7 +163,7 @@ function SummaryCard({ open, cards, costs, today }: {
           <span className="text-xl font-bold text-ink-700">건</span>
         </p>
         {pose === "success" && (
-          <p className="text-[13px] leading-normal text-ink-600">찜한 지원금 준비를 마쳤어요. 이제 신청만 남았어요.</p>
+          <p className="text-[13px] leading-normal text-ink-600">찜한 지원금 준비를 마쳤어요.</p>
         )}
       </div>
 
@@ -247,8 +247,7 @@ function CalculatePrompt() {
       <div className="flex items-center gap-3">
         <Icon3D name="calculator" size={48} />
         <div className="flex flex-col gap-0.5">
-          <p className="text-[15px] font-bold text-ink-900">실제로 내게 될 돈은 얼마일까요?</p>
-          <p className="text-[13px] leading-normal text-ink-600">보증금·월세를 넣으면 지원을 받은 뒤 최종 주거비를 계산해 드려요.</p>
+          <p className="text-[15px] font-bold leading-normal text-ink-900">보증금·월세를 넣으면 최종 주거비를 계산해요.</p>
         </div>
       </div>
       <LinkButton href="/calculate" size="screen" full>내 월세 계산하기</LinkButton>

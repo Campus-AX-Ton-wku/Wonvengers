@@ -24,7 +24,7 @@ export const QUESTION_REGISTRY: Record<RequiredInputKey, QuestionDef> = {
   },
   isStudentOrEmployed: {
     key: "isStudentOrEmployed",
-    label: "현재 상태 (재학·재직 등)",
+    label: "현재 상태",
     shortLabel: "현재 상태",
     type: "select",
     options: [

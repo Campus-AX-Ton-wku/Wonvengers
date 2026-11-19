@@ -125,7 +125,7 @@ export default function FindResultPage() {
                     className="amount-reveal text-sm leading-relaxed text-ink-600"
                     style={{ animationDelay: "0.16s" }}
                   >
-                    조건에는 맞지만 이번 회차 접수가 모두 끝났습니다. 다음 모집 공고를 기다려야 합니다.
+                    이번 회차 접수가 모두 끝났어요.
                   </p>
                 )}
               </div>
@@ -136,7 +136,7 @@ export default function FindResultPage() {
             {/* 신청할 수 없는 지원금은 목록에 없으므로(11/17) 받을 게 없으면 목록으로 가는 버튼을 두지 않는다. */}
             {찾음 && (
               <LinkButton href="/find/policies">
-                {`지원금 ${신청가능.length}건 자세히 보기`}
+                자세히 보기
               </LinkButton>
             )}
             {/* 이 화면에는 '조건 수정'이 없다. CTA 를 누르기 전에 처음부터 다시 고를 수 있게 그 아래에 둔다. */}
