@@ -6,7 +6,11 @@
 # 자세한 순서와 주의: docs/기획/2026-11-15-합치기-순서와-주의.md
 #
 # 이 검사를 '통과해야 합칠 수 있게' 하려면 저장소 관리자가 Settings → Branches(또는 Rules) 에서
-# develop · main 의 필수 상태 검사(required status checks)로 아래 두 작업을 지정한다.
+# develop · main 의 필수 상태 검사(required status checks)로 아래 작업들을 지정한다.
+#
+# 작업마다 GitHub 이 빈 가상 컴퓨터를 한 대씩 빌려 동시에 돌린다. 전체 시간은 가장 느린 작업이 정한다.
+# 11/20: 앱 검사를 [타입 · 테스트]와 [빌드] 두 대로 나눴다(예전엔 한 대가 차례로 — 2분 35초). 테스트는
+# 검사 컴퓨터에서만 파일을 동시에 돌린다(apps/web/vitest.config.mts). 공개 저장소라 대수가 늘어도 비용이 없다.
 
 name: PR 검사
 
@@ -24,7 +28,7 @@ concurrency:
 
 jobs:
   web:
-    name: 앱 — 타입 · 테스트 · 빌드
+    name: 앱 — 타입 · 테스트
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,8 +45,25 @@ jobs:
       - run: npm ci
       - name: 타입 검사
         run: node node_modules/typescript/bin/tsc --noEmit
-      - name: 테스트
+      - name: 테스트 (파일 동시 실행 — CI=true)
         run: node node_modules/vitest/vitest.mjs run
+
+  web-build:
+    name: 앱 — 빌드
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
       - name: 빌드
         run: node node_modules/next/dist/bin/next build
 
