@@ -277,8 +277,9 @@ function ChecklistRow({
             support
           ))}
       </span>
-      {/* 확인한 줄에만 표시한다(11/20) — 줄마다 "확인 전"을 붙이면 같은 말이 반복된다. 상태는 checkbox 가 말한다. */}
-      {checked && (
+      {/* 확인한 줄에만 '확인함'(11/20) — 줄마다 "확인 전"을 붙이면 같은 말이 반복된다. 상태는 checkbox 가 말한다.
+          checkbox 는 sr-only 라, 확인 안 한 줄에는 빈 동그라미를 두어 누를 수 있는 줄로 보이게 한다. */}
+      {checked ? (
         <span
           className="inline-flex shrink-0 items-center gap-1 rounded-[10px] bg-ok-50 px-2.5 py-1.5 text-xs font-medium text-ok-700"
           aria-hidden="true"
@@ -286,6 +287,8 @@ function ChecklistRow({
           <Check size={ICON_SM - 2} strokeWidth={2.5} />
           확인함
         </span>
+      ) : (
+        <span data-check-mark="empty" className="size-6 shrink-0 rounded-full border-2 border-ink-300" aria-hidden="true" />
       )}
     </label>
   );

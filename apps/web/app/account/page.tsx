@@ -182,7 +182,7 @@ export default function AccountPage() {
       {confirmingLogout && (
         <Sheet
           title="저장 안 된 변경이 있어요"
-          description="인터넷 연결을 확인하고 '다시 시도'로 먼저 저장할 수 있어요."
+          description="로그아웃하면 이 기기에서 저장하지 못한 변경이 사라져요. 인터넷 연결을 확인하고 '다시 시도'로 먼저 저장할 수 있어요."
           onClose={() => setConfirmingLogout(false)}
         >
           <Button size="screen" variant="danger" onClick={() => void confirmLogout()}>

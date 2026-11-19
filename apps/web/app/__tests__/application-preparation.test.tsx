@@ -53,6 +53,17 @@ describe("신청 준비 흐름", () => {
     expect(screen.queryByText("확인 전")).toBeNull();
   });
 
+  it("확인 안 한 줄에는 빈 동그라미가 있어 누를 수 있는 줄로 보인다 — checkbox 는 화면에서 숨겨져 있다 (11/20)", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationPreparation policy={policy} />);
+    const period = await screen.findByRole("checkbox", { name: /모집 기간 확인/ });
+    const label = period.closest("label")!;
+    expect(label.querySelector("[data-check-mark='empty']")).not.toBeNull();
+
+    await user.click(period);
+    expect(label.querySelector("[data-check-mark='empty']")).toBeNull();
+  });
+
   it("실제 정책 기간을 보여주고 확인 상태를 정책별로 저장한다", async () => {
     const user = userEvent.setup();
     render(<ApplicationPreparation policy={policy} />);

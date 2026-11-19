@@ -75,6 +75,8 @@ describe("/account (설계 '화면' 5)", () => {
 
     await user.click(await screen.findByRole("button", { name: "로그아웃" }));
     const dialog = await screen.findByRole("dialog", { name: "저장 안 된 변경이 있어요" });
+    // 무엇을 잃는지 확인창 안에서 말한다 — 위험한 버튼 바로 위
+    expect(within(dialog).getByText(/로그아웃하면 이 기기에서 저장하지 못한 변경이 사라져요/)).toBeTruthy();
     expect(dialog.textContent).toContain("인터넷 연결을 확인하고 '다시 시도'로 먼저 저장할 수 있어요.");
     expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "취소" }));
     await user.click(within(dialog).getByRole("button", { name: "취소" }));

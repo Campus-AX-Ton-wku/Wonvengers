@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PolicyDetail from "@/app/find/policies/[id]/PolicyDetail";
 import policiesJson from "@/data/policies.json";
@@ -150,7 +150,20 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
     saveAnswers(익산_대학생);
     await render상세(주거급여);
 
-    expect(screen.getByText(/답하지 않은 조건이 있어요/)).toBeTruthy();
+    expect(screen.getByText("확인할 조건")).toBeTruthy();
+  });
+
+  it("확인할 조건은 '왜 추천됐나요?' 한 곳에서 목록으로 말한다 — 같은 말을 하는 주황 상자를 따로 두지 않는다 (11/20)", async () => {
+    saveAnswers(익산_대학생);
+    await render상세(주거급여);
+
+    // 앱이 묻지 않는 조건도 섞여 있어 '답하지 않은'이라고 하지 않는다
+    expect(screen.queryByText(/답하지 않은 조건/)).toBeNull();
+    const box = screen.getByRole("heading", { name: "왜 추천됐나요?" }).closest("section")!;
+    expect(within(box).getAllByRole("listitem").length).toBeGreaterThan(0);
+    // 접수 중이면 하단 '조건 확인하기'가 고치러 가는 길 하나다
+    expect(screen.queryByRole("link", { name: "조건 수정하기" })).toBeNull();
+    expect(screen.getByRole("link", { name: "조건 확인하기" })).toBeTruthy();
   });
 
   it("2층까지 답했으면 결과 화면과 같은 판정을 보여준다", async () => {
@@ -161,7 +174,7 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
     await render상세(주거급여);
 
     // 1층만으로는 소득 구간을 판정할 수 없어 늘 '확인 필요'였던 정책이다.
-    expect(screen.queryByText(/답하지 않은 조건이 있어요/)).toBeNull();
+    expect(screen.queryByText("확인할 조건")).toBeNull();
     expect(screen.getByText("내 조건과 일치해요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "신청 준비하기" })).toBeTruthy();
   });
@@ -190,7 +203,7 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
 
     await render상세(주거급여);
 
-    expect(screen.getByRole("link", { name: "조건 수정하기" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: "조건 확인하기" }).getAttribute("href")).toBe(
       "/eligibility"
     );
   });

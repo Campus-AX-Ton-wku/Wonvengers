@@ -206,10 +206,24 @@ export default function PolicyDetail({ id }: { id: string }) {
               내 조건과 일치해요.
             </p>
           )}
+          {/* 확인할 조건은 이 상자 한 곳에서만 말한다(11/20) — 예전엔 아래 주황 상자가 같은 목록을 한 번 더 말했다.
+              앱이 묻지 않는 조건(전입 이력 등)도 섞여 있어 '답하지 않은'이 아니라 '확인할'이다. */}
           {result.tag === "확인 필요" && (
-            <p className="mt-1 text-[11px] leading-4 text-ink-600">
-              답하지 않은 조건 · {result.unknownFields.join(" · ")}
-            </p>
+            <>
+              <p className="mt-1 text-[11px] font-bold leading-4 text-ink-600">확인할 조건</p>
+              <ul className="mt-1 list-disc pl-4 text-[11px] leading-4 text-ink-600">
+                {result.unknownFields.map((field) => <li key={field}>{field}</li>)}
+              </ul>
+              {/* 접수 중이면 하단 '조건 확인하기'가 같은 곳으로 간다 — 그때는 링크를 두 번 두지 않는다 */}
+              {status !== "확인 필요" && (
+                <Link
+                  href={조건수정링크}
+                  className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
+                >
+                  조건 수정하기
+                </Link>
+              )}
+            </>
           )}
           {result.tag === "해당 없음" && (
             <ul className="mt-1 list-disc pl-4 text-[11px] leading-4 text-ink-600">
@@ -231,21 +245,6 @@ export default function PolicyDetail({ id }: { id: string }) {
           <p className="rounded-control bg-brand-50 p-4 text-sm leading-[22px] text-ink-600">
             <strong className="text-ink-900">{formatDotDate(policy.applicationStart)}부터 접수합니다.</strong>
           </p>
-        )}
-
-        {result.tag === "확인 필요" && (
-          <div className="rounded-control bg-warn-50 p-4">
-            <p className="flex items-start gap-2 text-sm font-bold leading-[22px] text-warn-800">
-              <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <span>답하지 않은 조건이 있어요</span>
-            </p>
-            <Link
-              href={조건수정링크}
-              className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-control text-sm font-bold text-brand-700 underline hover:text-brand-800"
-            >
-              조건 수정하기
-            </Link>
-          </div>
         )}
 
         <Disclosure label="지원 대상 자세히 보기">
