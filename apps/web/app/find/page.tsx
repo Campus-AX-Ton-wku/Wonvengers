@@ -287,15 +287,12 @@ function FindSteps() {
             {/* 대상 연령은 고르기 전부터 말해준다. 자격 조건을 입력 옵션에 얹으면
                 41세가 39세를 고른다 — 받을 수 없는 금액을 받을 수 있다고 믿게 된다. */}
             <p className="text-sm leading-relaxed text-ink-500">
-              지금 담고 있는 정책은 대부분 만 {AGE_MIN}~{POLICY_AGE_MAX}세를 대상으로 합니다.
+              대부분 만 {AGE_MIN}~{POLICY_AGE_MAX}세 대상이에요.
             </p>
             {answers.birthDate !== null && count === 0 && (
               <p className="flex items-start gap-2 rounded-control bg-warn-50 p-4 text-sm leading-relaxed text-warn-800">
                 <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
-                <span>
-                  이 나이로는 해당되는 지원금이 없습니다. 목록에서 정책별로 왜 해당되지
-                  않는지 볼 수 있습니다.
-                </span>
+<span>이 나이에 해당하는 지원금이 없어요.</span>
               </p>
             )}
           </div>

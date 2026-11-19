@@ -75,14 +75,6 @@ export default function Home() {
             )}
           </h1>
 
-          <p
-            className="rise-in text-[15px] leading-relaxed text-ink-600"
-            style={{ animationDelay: "240ms" }}
-          >
-            국가·지자체에 흩어진 정책을 한 화면에 모아
-            <br />
-            내가 받을 수 있는 것만 골라 보여드립니다.
-          </p>
         </div>
 
         <div

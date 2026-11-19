@@ -28,8 +28,7 @@ describe("온보딩 2장", () => {
     render(<OnboardingPage />);
     await userEvent.setup().click(screen.getByRole("button", { name: "2단계 · 안내" }));
 
-    expect(screen.getByText(/다섯 가지만 답하면 됩니다/)).toBeTruthy();
-    expect(screen.getByText(/주거 형태/)).toBeTruthy();
+    expect(screen.getByText(/다섯 가지만\s*답하면 돼요/)).toBeTruthy();
     expect(screen.queryByText(/네 가지/)).toBeNull();
   });
 });

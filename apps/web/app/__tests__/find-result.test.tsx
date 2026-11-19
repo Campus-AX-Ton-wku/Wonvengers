@@ -76,7 +76,7 @@ describe("/find/result", () => {
       await render요약(익산_대학생);
 
       expect(
-        screen.getByRole("link", { name: /지원금 4건 자세히 보기/ }).getAttribute("href")
+        screen.getByRole("link", { name: /^자세히 보기$/ }).getAttribute("href")
       ).toBe("/find/policies");
     });
   });
@@ -97,7 +97,7 @@ describe("/find/result", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "지금 신청할 수 있는 지원금이 없어요"
     );
-    expect(screen.getByText(/다음 모집 공고를 기다려야 합니다/)).toBeTruthy();
+    expect(screen.getByText(/이번 회차 접수가 모두 끝났어요/)).toBeTruthy();
     // 신청할 수 없는 지원금은 목록에 없으므로(11/17) 목록으로 가는 버튼을 두지 않는다 — '처음부터 다시'만
     expect(screen.queryByRole("link", { name: /보기/ })).toBeNull();
     expect(screen.getByRole("button", { name: "처음부터 다시" })).toBeTruthy();

@@ -26,7 +26,6 @@ import { getRequiredQuestions } from "@/lib/questions";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
-import { verificationBadge } from "@/lib/verification";
 import type { DiscoveryAnswers, IncomeBracket, NextRound, PolicyMeta, TagResult } from "@/lib/types";
 
 /**
@@ -135,8 +134,6 @@ export default function PolicyDetail({ id }: { id: string }) {
   const 조건수정링크 = detailed ? "/eligibility" : "/find";
   const status = asOf ? cardStatus(policy, result, asOf) : null;
   const ceiling = benefitCeiling(policy);
-  // 팀 검수 결과(Supabase → data/verification.json). 화면 값과 검수 값이 같을 때만 있다.
-  const verified = verificationBadge(policy);
   const applicationPeriod = `${formatDotDate(policy.applicationStart)} ~ ${
     policy.applicationEnd ? formatDotDate(policy.applicationEnd) : "상시"
   }`;
@@ -152,8 +149,7 @@ export default function PolicyDetail({ id }: { id: string }) {
         <header>
           {/* 정책 종류 타일 64px(11/20) — 이 화면에는 Perky 가 없어 가장 큰 그림을 여기 둔다. 목록 카드에서 본 그림이 이어진다. */}
           <Icon3D name={policy.icon} size={64} className="mb-2" />
-          <p className="text-[11px] font-bold leading-4 text-ink-500">혜택 상세</p>
-          <div className="mt-0.5 flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <h1 className="text-2xl font-extrabold leading-[34px] text-ink-900">{policy.name}</h1>
             <div className="flex min-h-6 shrink-0 items-center gap-1 pt-1">
               <SaveButton policyId={policy.id} policyName={policy.name} />
@@ -165,18 +161,9 @@ export default function PolicyDetail({ id }: { id: string }) {
             </div>
           </div>
           <p className="mt-1 text-xs leading-[18px] text-ink-500">
-            운영 기관 · <span>{policy.agency}</span>
+            <span>{policy.agency}</span>
           </p>
-          {verified && (
-            <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs leading-[18px] text-ink-600">
-              <StatusBadge tone="info" icon={ShieldCheck}>
-                {verified.label}
-              </StatusBadge>
-              <span>
-                팀원 {verified.confirmers}명이 {formatDotDate(verified.lastConfirmedAt)}에 원문과 맞는지 확인했어요
-              </span>
-            </p>
-          )}
+          <p className="mt-1 text-xs leading-[18px] text-ink-500">모집 기간 · {applicationPeriod}</p>
         </header>
 
         <section className="mt-2 rounded-control bg-accent-50 p-4" aria-label="지원 요약">
@@ -216,12 +203,12 @@ export default function PolicyDetail({ id }: { id: string }) {
           </h2>
           {result.tag === "가능성 있음" && (
             <p className="mt-1 text-[11px] leading-4 text-ink-500">
-              입력한 기본 조건이 공고의 지원 대상과 일치해요.
+              내 조건과 일치해요.
             </p>
           )}
           {result.tag === "확인 필요" && (
             <p className="mt-1 text-[11px] leading-4 text-ink-600">
-              {result.unknownFields.join(" · ")} 정보를 확인하면 더 정확히 안내할 수 있어요.
+              답하지 않은 조건 · {result.unknownFields.join(" · ")}
             </p>
           )}
           {result.tag === "해당 없음" && (
@@ -231,23 +218,11 @@ export default function PolicyDetail({ id }: { id: string }) {
           )}
         </section>
 
-        <section className="rounded-control bg-surface px-4 py-3.5 shadow-card" aria-labelledby="before-apply-title">
-          <h2 id="before-apply-title" className="text-sm font-bold leading-[22px] text-ink-900">
-            신청 전 확인
-          </h2>
-          <dl className="mt-2 flex flex-col gap-2.5">
-            <DetailRow label="자격 조건" value={result.tag === "확인 필요" ? "추가 확인 필요" : "내 정보와 대조"} />
-            <DetailRow label="모집 기간" value={applicationPeriod} />
-            <DetailRow label="준비 서류" value="공식 공고 기준" />
-            {!policy.contact && <DetailRow label="신청 방법" value="공식 사이트" />}
-          </dl>
-        </section>
         <ContactInfo contact={policy.contact} variant="block" />
 
         {status === "접수 마감" && policy.applicationEnd && (
           <p className="rounded-control bg-ink-100 p-4 text-sm leading-[22px] text-ink-600">
-            <strong className="text-ink-900">{formatDotDate(policy.applicationEnd)}에 접수가 끝났습니다.</strong>{" "}
-            다음 모집 공고를 기다려야 합니다.
+            <strong className="text-ink-900">{formatDotDate(policy.applicationEnd)}에 접수가 끝났습니다.</strong>
             <NextRoundNote nextRound={policy.nextRound} />
           </p>
         )}
@@ -262,7 +237,7 @@ export default function PolicyDetail({ id }: { id: string }) {
           <div className="rounded-control bg-warn-50 p-4">
             <p className="flex items-start gap-2 text-sm font-bold leading-[22px] text-warn-800">
               <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <span>{result.unknownFields.join(" · ")}을(를) 답하지 않아 판단을 보류했습니다.</span>
+              <span>답하지 않은 조건이 있어요</span>
             </p>
             <Link
               href={조건수정링크}
@@ -285,10 +260,7 @@ export default function PolicyDetail({ id }: { id: string }) {
 
         {남은조건.length > 0 && (
           <Disclosure label={`기관 심사에서 확인할 조건 ${남은조건.length}개`}>
-            <p className="px-1 text-xs leading-relaxed text-ink-500">
-              아래 항목은 입력값만으로 확정하지 않으며 신청 기관이 심사합니다.
-            </p>
-            <ul className="mt-2 list-disc pl-5 text-sm leading-relaxed text-ink-600">
+            <ul className="px-1 list-disc pl-5 text-sm leading-relaxed text-ink-600">
               {남은조건.map((condition) => <li key={condition}>{condition}</li>)}
             </ul>
           </Disclosure>

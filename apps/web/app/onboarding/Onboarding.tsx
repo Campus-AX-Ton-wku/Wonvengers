@@ -43,7 +43,7 @@ type Slide = {
   glow: string;
   eyebrowSr: string;
   title: string;
-  description: string;
+  description?: string;
 };
 
 /* 제목의 줄바꿈은 직접 끊는다. 자동 줄바꿈은 "흩어진 청년 / 혜택을" 처럼
@@ -54,16 +54,12 @@ const SLIDES: Slide[] = [
     glow: "bg-brand-200",
     eyebrowSr: "발견",
     title: "흩어진 청년 혜택을\n한곳에서 찾아드려요",
-    description:
-      "국가·지자체에 나뉘어 있는 주거 지원금을\n한 목록으로 모아 둡니다.",
   },
   {
     character: "guide",
     glow: "bg-brand-200",
     eyebrowSr: "안내",
-    title: "몇 가지 질문으로\n나에게 맞는 혜택을 안내해요",
-    description:
-      "생년월일·사는 곳·현재 상태·소득·주거 형태\n다섯 가지만 답하면 됩니다.",
+    title: "다섯 가지만\n답하면 돼요",
   },
   {
     character: "success",
@@ -71,7 +67,7 @@ const SLIDES: Slide[] = [
     eyebrowSr: "결과",
     title: "받을 수 있는 지원과\n실제 부담을 한눈에 확인해요",
     description:
-      "최대 얼마를 받을 수 있고, 그러면 실제로\n얼마를 내게 되는지까지 계산해 드립니다.",
+      "받을 수 있는 최대 금액과\n실제 부담까지 계산해 드려요.",
   },
 ];
 
@@ -172,12 +168,14 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
             </span>
             {slide.title}
           </h1>
-          <p
-            className="slide-in max-w-[19rem] text-[15px] leading-relaxed text-ink-600"
-            style={{ animationDelay: "0.12s" }}
-          >
-            {slide.description}
-          </p>
+          {slide.description && (
+            <p
+              className="slide-in max-w-[19rem] text-[15px] leading-relaxed text-ink-600"
+              style={{ animationDelay: "0.12s" }}
+            >
+              {slide.description}
+            </p>
+          )}
         </div>
       </main>
 

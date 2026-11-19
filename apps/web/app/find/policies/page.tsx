@@ -108,7 +108,7 @@ export default function FindPoliciesPage() {
           {!isTrustedRegion(resolved.region) && (
             <p className="mt-4 flex items-start gap-2 rounded-control bg-ink-100 p-3.5 text-xs leading-relaxed text-ink-600">
               <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
-              <span>이 지역은 아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요. 신청 전에 공고 원문을 꼭 확인하세요.</span>
+              <span>이 지역은 아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요.</span>
             </p>
           )}
 
@@ -131,11 +131,9 @@ export default function FindPoliciesPage() {
 
           {count === 0 && (
             <p className="mt-4 text-sm leading-relaxed text-ink-600">
-              지금 답변으로는 조건에 맞는 지원금을 찾지 못했습니다.{" "}
               <Link href="/find" className="font-bold text-brand-700 underline">
-                답변을 바꿔
-              </Link>{" "}
-              다시 확인해 보세요.
+                답변 바꾸기
+              </Link>
             </p>
           )}
 
@@ -148,8 +146,7 @@ export default function FindPoliciesPage() {
           {count > 0 &&
             (resolved.housingType === "전세" ? (
               <p className="mt-8 rounded-card bg-ink-100 px-5 py-4 text-sm leading-relaxed text-ink-600">
-                전세 부담이 얼마나 줄어드는지는 아직 계산해드리지 못합니다. 지금은 월세·연세 계약만
-                계산할 수 있어요.
+                전세는 아직 계산할 수 없어요. 월세·연세만 가능해요.
               </p>
             ) : (
               <Link
@@ -175,13 +172,9 @@ export default function FindPoliciesPage() {
           <div className="mt-8 flex gap-2.5 rounded-card bg-ink-100 p-4">
             <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
             <p className="text-xs leading-relaxed text-ink-600">
-              이 화면은 나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과이며,
-              <strong className="font-bold text-ink-900">
-                {" "}
-                신청 자격을 확정하는 것이 아닙니다.
-              </strong>{" "}
-              무주택 여부, 가구 소득, 복지 자격 등 남은 조건과 최종 지원 여부는 각 기관이 심사해
-              결정합니다. 반드시 공식 페이지에서 확인하세요.
+              나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과라
+              <strong className="font-bold text-ink-900"> 신청 자격을 확정하지 않습니다.</strong>{" "}
+              최종 심사는 각 기관이 하니 공식 페이지에서 확인하세요.
             </p>
           </div>
         </>
@@ -192,7 +185,7 @@ export default function FindPoliciesPage() {
       {loginOpen && (
         <LoginSheet
           title="로그인하고 계산해 볼까요?"
-          description="카카오로 3초 만에 로그인하면 지원받은 뒤 내 주거비를 계산하고, 다른 기기에서도 이어 볼 수 있어요."
+          description="카카오로 3초 만에 로그인하면 내 주거비를 계산하고 다른 기기에서도 이어 볼 수 있어요."
           next="/calculate"
           onClose={() => setLoginOpen(false)}
         />

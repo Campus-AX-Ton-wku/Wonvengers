@@ -50,14 +50,14 @@ describe("/find/policies/[id]", () => {
 
     expect(screen.getByText("만 18~39세")).toBeTruthy();
     // 2026년 회차는 2026-05-14 예산 소진으로 마감됐다 (2026-11-03 원문 재대조)
-    expect(screen.getByText("2026.01.02 ~ 2026.05.14")).toBeTruthy();
+    expect(screen.getByText(/2026\.01\.02 ~ 2026\.05\.14/)).toBeTruthy();
   });
 
   it("마감일이 없는 상시 사업은 '상시' 라고 적는다", async () => {
     saveAnswers(익산_대학생);
     await render상세("youth-housing-benefit-split-payment");
 
-    expect(screen.getByText("2026.01.01 ~ 상시")).toBeTruthy();
+    expect(screen.getByText(/2026\.01\.01 ~ 상시/)).toBeTruthy();
   });
 
   it("접수가 끝난 정책은 언제 끝났는지와 다음에 할 일을 말한다", async () => {
@@ -150,7 +150,7 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
     saveAnswers(익산_대학생);
     await render상세(주거급여);
 
-    expect(screen.getByText(/답하지 않아 판단을 보류했습니다/)).toBeTruthy();
+    expect(screen.getByText(/답하지 않은 조건이 있어요/)).toBeTruthy();
   });
 
   it("2층까지 답했으면 결과 화면과 같은 판정을 보여준다", async () => {
@@ -161,8 +161,8 @@ describe("/find/policies/[id] 2층 판정 이어받기", () => {
     await render상세(주거급여);
 
     // 1층만으로는 소득 구간을 판정할 수 없어 늘 '확인 필요'였던 정책이다.
-    expect(screen.queryByText(/답하지 않아 판단을 보류했습니다/)).toBeNull();
-    expect(screen.getByText("입력한 기본 조건이 공고의 지원 대상과 일치해요.")).toBeTruthy();
+    expect(screen.queryByText(/답하지 않은 조건이 있어요/)).toBeNull();
+    expect(screen.getByText("내 조건과 일치해요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "신청 준비하기" })).toBeTruthy();
   });
 
