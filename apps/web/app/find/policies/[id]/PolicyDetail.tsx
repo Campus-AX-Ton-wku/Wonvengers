@@ -9,6 +9,7 @@ import {
   CARD_STATUS_BADGE,
   ContactInfo,
   Disclosure,
+  Icon3D,
   LinkButton,
   SaveButton,
   StatusBadge,
@@ -149,6 +150,8 @@ export default function PolicyDetail({ id }: { id: string }) {
       <TopBar backHref="/find/policies" />
       <main className="flex flex-col gap-3 pb-6 pt-1">
         <header>
+          {/* 정책 종류 타일 64px(11/20) — 이 화면에는 Perky 가 없어 가장 큰 그림을 여기 둔다. 목록 카드에서 본 그림이 이어진다. */}
+          <Icon3D name={policy.icon} size={64} className="mb-2" />
           <p className="text-[11px] font-bold leading-4 text-ink-500">혜택 상세</p>
           <div className="mt-0.5 flex items-start justify-between gap-3">
             <h1 className="text-2xl font-extrabold leading-[34px] text-ink-900">{policy.name}</h1>

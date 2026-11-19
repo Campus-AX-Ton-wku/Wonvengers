@@ -6,6 +6,7 @@ function makePolicyResult(overrides: Partial<PolicyResult> = {}): PolicyResult {
   return {
     policy: {
       id: "test-policy",
+      icon: "settle",
       discovery: { ageMin: 19, ageMax: 34, regions: ["전국"], statuses: null, incomeBracketMin: null, incomeBracketMax: null, housingTypes: null },
       name: "실제 테스트 정책",
       agency: "테스트 기관",

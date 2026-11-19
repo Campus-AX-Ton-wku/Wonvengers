@@ -216,6 +216,8 @@ describe("대출·보증 상품 — 접힘 (11/17 결과 화면 정리)", () => 
     expect(details).not.toBeNull();
     expect(details.open).toBe(false);
     expect(within(details).getByText("위 금액에는 넣지 않았어요")).toBeTruthy();
+    // 묶음 머리의 주제 그림은 3D 대출 하나 — 상품 줄마다 같은 그림을 되풀이하지 않는다 (11/20)
+    expect([...details.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["loan"]);
     // 상품 문단과 신청 링크는 상품마다 다시 접혀 있다
     const product = within(details).getByText("청년전용 버팀목 전세자금대출").closest("li")!;
     expect((within(product).getByText("조건과 신청 방법").closest("details") as HTMLDetailsElement).open).toBe(false);

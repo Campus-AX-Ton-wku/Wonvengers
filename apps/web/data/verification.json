@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T08:45:19+09:00",
+  "generatedAt": "2026-11-20T00:09:46+09:00",
   "source": "Supabase perky — public.app_policies() (공개 상태 정책만)",
   "policies": {
     "moland-youth-rent-support": {
@@ -34,11 +34,13 @@
       }
     },
     "iksan-youth-rent-support": {
-      "trustLevel": "미검수",
+      "trustLevel": "검수",
       "version": 2,
-      "confirmers": 0,
-      "lastConfirmedAt": null,
-      "methods": [],
+      "confirmers": 1,
+      "lastConfirmedAt": "2026-11-17",
+      "methods": [
+        "원문대조"
+      ],
       "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119d0a838c019d2421dd8e1a76",
       "values": {
         "summary": "실제 납부 월세 범위 내 월 최대 20만원 × 최대 12개월 (총 최대 240만원), 2026년 신규 230여 명 (선착순 아님)",
@@ -63,11 +65,13 @@
       }
     },
     "jeonbuk-youth-settlement-support": {
-      "trustLevel": "미검수",
+      "trustLevel": "검수",
       "version": 2,
-      "confirmers": 0,
-      "lastConfirmedAt": null,
-      "methods": [],
+      "confirmers": 1,
+      "lastConfirmedAt": "2026-11-17",
+      "methods": [
+        "원문대조"
+      ],
       "sourceUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=46029",
       "values": {
         "summary": "월 30만원 × 최대 12개월 (총 최대 360만원). 포인트 30% + 익산사랑상품권 70%로 지급 (전액 현금 아님)",
@@ -87,11 +91,13 @@
       }
     },
     "iksan-newcomer-moving-cost-support": {
-      "trustLevel": "미검수",
+      "trustLevel": "검수",
       "version": 2,
-      "confirmers": 0,
-      "lastConfirmedAt": null,
-      "methods": [],
+      "confirmers": 1,
+      "lastConfirmedAt": "2026-11-17",
+      "methods": [
+        "원문대조"
+      ],
       "sourceUrl": "https://youthforest.iksan.go.kr/board/view.iksan?boardId=BBS_0000015&menuCd=DOM_000000105002001000&dataSid=44273",
       "values": {
         "summary": "이사비(최대 30만원) + 부동산 중개보수(최대 20만원) 실비를 1인당 최대 50만원까지 생애 1회 지원",
@@ -114,9 +120,9 @@
     },
     "youth-housing-benefit-split-payment": {
       "trustLevel": "검수",
-      "version": 2,
+      "version": 3,
       "confirmers": 1,
-      "lastConfirmedAt": "2026-11-14",
+      "lastConfirmedAt": "2026-11-17",
       "methods": [
         "원문대조"
       ],
@@ -370,7 +376,7 @@
     },
     "iksan-move-in-household-incentive": {
       "trustLevel": "미검수",
-      "version": 2,
+      "version": 5,
       "confirmers": 0,
       "lastConfirmedAt": null,
       "methods": [],
@@ -396,7 +402,7 @@
     },
     "iksan-move-in-student-support": {
       "trustLevel": "미검수",
-      "version": 3,
+      "version": 5,
       "confirmers": 0,
       "lastConfirmedAt": null,
       "methods": [],
@@ -416,6 +422,36 @@
         "monthlyCap": null,
         "maxMonths": null,
         "lumpSumCap": 1000000
+      }
+    },
+    "iksan-newlywed-jeonse-loan-interest": {
+      "trustLevel": "검수",
+      "version": 1,
+      "confirmers": 1,
+      "lastConfirmedAt": "2026-11-17",
+      "methods": [
+        "원문대조"
+      ],
+      "sourceUrl": "https://www.iksan.go.kr/board/post/view.do?boardUid=ff80808199dd1d7d0199e15235920a20&menuUid=ff80808198eafcbd019902aad8302bfa&postUid=4028a6119bb181f8019bc441ad3948e7",
+      "values": {
+        "summary": "익산시에 살거나 살 예정인 무주택 세대주 신혼부부(혼인신고 7년 이내 또는 3개월 안에 결혼할 예비신혼부부, 나이 제한 없음, 부부합산 연소득 8천만원 이하)가 전용 85㎡ 이하·보증금 3억원 이하 주택을 새로 전세 계약할 때, 익산시 협약 전세대출(NH농협·전북은행, 보증금 90%와 2억원 중 적은 금액) 이자를 연 최대 3.0%·연 최대 600만원 지원. 1회 2년, 최대 6년(지원 중 출산 시 최대 10년), 생애 1회. 2026-01-16부터 연중(예산 소진 시까지) 잔금일 30일 전 익산시청 주택과 방문 신청.",
+        "applyStart": "2026-01-16",
+        "applyEnd": null,
+        "ageMin": null,
+        "ageMax": null,
+        "statuses": [
+          "대학생",
+          "재직",
+          "구직"
+        ],
+        "incomeBracketMin": null,
+        "incomeBracketMax": null,
+        "housingTypes": [
+          "전세"
+        ],
+        "monthlyCap": null,
+        "maxMonths": null,
+        "lumpSumCap": null
       }
     }
   }

@@ -19,6 +19,7 @@ export { ChoiceCard } from "./ChoiceCard";
 export { ContactInfo, telHref } from "./ContactInfo";
 export { Disclosure } from "./Disclosure";
 export { EmptyState } from "./EmptyState";
+export { Icon3D } from "./Icon3D";
 export { Field, FieldError, FieldGroup, MoneyInput, NumberInput } from "./Input";
 export { IconButton, IconLink } from "./IconButton";
 export { KakaoButton } from "./KakaoButton";

@@ -61,6 +61,7 @@ describe("안내 상품 지역 매칭", () => {
   const loan = (id: string, regionScope: string): LoanProductMeta => ({
     id,
     name: id,
+    icon: "loan",
     agency: "테스트기관",
     regionScope,
     productType: "loan_interest_subsidy",

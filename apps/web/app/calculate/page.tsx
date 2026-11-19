@@ -304,6 +304,7 @@ function CalculateSteps() {
                   {(["월세", "연세"] as ContractType[]).map((type) => (
                     <ChoiceCard
                       key={type}
+                      icon={type === "월세" ? "monthly" : "yearly"}
                       active={contractTypeChosen && form.contractType === type}
                       onClick={() => {
                         setContractTypeChosen(true);

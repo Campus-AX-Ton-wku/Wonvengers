@@ -13,6 +13,7 @@ function result(status: PolicyResult["status"] = "예상적용"): PolicyResult {
   return {
     policy: {
       id: "real-policy-id",
+      icon: "moving",
       discovery: { ageMin: 19, ageMax: 39, regions: ["전국"], statuses: null, incomeBracketMin: null, incomeBracketMax: null, housingTypes: null },
       name: "실제 응답 정책명",
       agency: "실제 응답 기관",
@@ -52,6 +53,10 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     render(<BenefitResultCard card={card} result={policyResult} listing={listing} />);
 
     expect(screen.getByText("마감 임박").className).toContain("danger");
+    // 제목 왼쪽에 정책 종류 그림 — 금액 상자에는 붙이지 않는다
+    const pictures = [...document.querySelectorAll("img[data-icon3d]")];
+    expect(pictures.map((img) => img.getAttribute("data-icon3d"))).toEqual([policyResult.policy.icon]);
+    expect(pictures[0].closest("div")!.textContent).toContain(card.title);
     expect(screen.getByText("9월 9일 마감 · D-7")).toBeTruthy();
     expect(screen.getByRole("link", { name: "마감 전 신청 준비하기" }).getAttribute("href")).toBe(
       "/find/policies/real-policy-id/prepare"

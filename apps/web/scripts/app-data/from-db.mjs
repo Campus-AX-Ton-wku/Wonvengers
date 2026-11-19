@@ -17,6 +17,12 @@ export const REGION_BY_CODE = {
   "52140": "전북특별자치도 익산시",
 };
 
+/**
+ * 정책 종류 아이콘 이름 — DB 의 public.policy_icon 종류(20261119150917_policy_icon.sql)와 같다.
+ * 앱 그림은 public/icons3d/<이름>.webp 이고, lib/icons3d.ts 의 POLICY_ICONS 와 같은지 테스트가 확인한다.
+ */
+export const POLICY_ICONS = ["rent", "moving", "move-in", "housing-benefit", "guarantee", "student", "settle", "loan", "bankbook"];
+
 /** 안내 상품 종류 (DB kind → LoanProductMeta.productType) */
 export const PRODUCT_TYPE_BY_KIND = {
   대출: "loan_interest_subsidy",
@@ -45,6 +51,7 @@ function toPolicy(row) {
   const out = {
     id: row.policy_no,
     name: row.name,
+    icon: row.icon,
     agency: row.agency,
     regionScope: row.region_label,
     applicationStart: row.apply_start,
@@ -88,6 +95,7 @@ function toProduct(row) {
   return {
     id: row.policy_no,
     name: row.name,
+    icon: row.icon,
     agency: row.agency,
     regionScope: row.region_label,
     productType: PRODUCT_TYPE_BY_KIND[row.kind],
@@ -153,6 +161,10 @@ export function validateRows(rows) {
     need(!seen.has(r.policy_no), "정책 번호가 두 번 나온다 — 현재 회차(is_current)가 하나인지 확인");
     seen.add(r.policy_no);
     need(typeof r.name === "string" && r.name.trim() !== "", "이름(name)이 비었다");
+    need(POLICY_ICONS.includes(r.icon),
+      r.icon == null
+        ? "아이콘(icon)이 비었다 — Table Editor 에서 정책 종류에 맞는 그림을 고른다(월세 rent · 이사 moving · 전입 move-in · 대출 loan …)"
+        : `앱이 모르는 아이콘 '${r.icon}' — ${POLICY_ICONS.join(" · ")} 중 하나`);
     need(typeof r.summary === "string" && r.summary.trim() !== "", "요약(summary)이 비었다");
     need(typeof r.agency === "string" && r.agency !== "", "시행처(agency_id)가 없다");
     need(URL_RE.test(r.source_url ?? ""), "원문 주소(source_url)가 http 로 시작하지 않는다");

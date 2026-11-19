@@ -6,6 +6,7 @@ function makeResult(overrides: Partial<PolicyMeta> & { status: PolicyResult["sta
   const { status, amount, ...policyOverrides } = overrides;
   const policy: PolicyMeta = {
     id: "p",
+    icon: "rent",
     discovery: {
       ageMin: 19,
       ageMax: 39,

@@ -125,7 +125,8 @@ let nP = 0, nL = 0;
 for (const x of json("policies.json").filter(inScope)) if (await addPolicy(x, "현금")) nP++;
 for (const x of json("loan-products.json").filter(inScope)) if (await addPolicy(x, KIND[x.productType])) nL++;
 const [{ n }] = await q(`select count(*)::int n from policies`);
-ok(`현금 ${nP} · 대출등 ${nL} = ${n}건 들어감`, n === nP + nL && nP === 8 && nL === 7);
+// 11/17: 신혼부부 주택 전세보증금 대출이자 지원(iksan-newlywed-jeonse-loan-interest)을 DB 에 등록 → 대출 8 (11/20 스냅숏에 반영)
+ok(`현금 ${nP} · 대출등 ${nL} = ${n}건 들어감`, n === nP + nL && nP === 8 && nL === 8);
 ok("전세보증료 중복은 한 행으로", (await q(`select count(*)::int n from policies where policy_no = 'jeonse-return-guarantee-fee-subsidy'`))[0].n === 1);
 ok("온통청년·보조금24 번호는 원문 표로", (await q(`select count(*)::int n from policy_raw where external_id is not null`))[0].n > 0);
 ok("처음엔 모두 미검수", (await q(`select count(*)::int n from policies where trust_level <> '미검수'`))[0].n === 0);
