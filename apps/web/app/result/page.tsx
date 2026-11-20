@@ -83,10 +83,11 @@ export default function ResultPage() {
   const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
 
   return (
-    <AppShell className="step-in">
+    <AppShell>
       <TopBar backHref="/eligibility" />
 
-      <main className="flex flex-col gap-5 pb-10 pt-3">
+      {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
+      <main className="step-in flex flex-col gap-5 pb-10 pt-3">
         <header>
           <h1 className="text-[21px] font-extrabold leading-[1.4] text-ink-900">
             {resultHeadline}

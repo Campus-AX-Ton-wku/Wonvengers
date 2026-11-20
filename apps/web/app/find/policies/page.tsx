@@ -66,9 +66,10 @@ export default function FindPoliciesPage() {
   const { 신청가능 } = asOf ? splitByApplicationWindow(groups, asOf) : { 신청가능: [] };
 
   return (
-    <AppShell className="step-in">
+    <AppShell>
       <TopBar backHref="/find/result" />
-      <main className="pb-10">
+      {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
+      <main className="step-in pb-10">
 
       {!loaded || !asOf ? (
         <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>

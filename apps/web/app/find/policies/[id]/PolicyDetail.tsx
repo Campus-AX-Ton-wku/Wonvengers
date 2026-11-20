@@ -143,9 +143,10 @@ export default function PolicyDetail({ id }: { id: string }) {
     .map((q) => q.label);
 
   return (
-    <AppShell className="step-in">
+    <AppShell>
       <TopBar backHref="/find/policies" />
-      <main className="flex flex-col gap-3 pb-6 pt-1">
+      {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
+      <main className="step-in flex flex-col gap-3 pb-6 pt-1">
         <header>
           {/* 정책 종류 타일 64px(11/20) — 이 화면에는 Perky 가 없어 가장 큰 그림을 여기 둔다. 목록 카드에서 본 그림이 이어진다. */}
           <Icon3D name={policy.icon} size={64} className="mb-2" />
