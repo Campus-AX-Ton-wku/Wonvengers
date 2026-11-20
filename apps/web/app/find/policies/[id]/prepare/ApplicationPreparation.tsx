@@ -142,9 +142,10 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
   );
 
   return (
-    <AppShell className="step-in">
+    <AppShell>
       <TopBar backHref={`/find/policies/${policy.id}`} />
-      <main className="flex flex-1 flex-col pb-6 pt-1">
+      {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
+      <main className="step-in flex flex-1 flex-col pb-6 pt-1">
         {/* 11/19: 결과 화면에서 [신청 준비]로 넘어와도 어떤 정책인지 이어지게 — 제목이 정책 이름이다
             (예전 '신청 준비' 눈썹 글씨 + '필수 확인 사항을 점검해요'는 어느 정책인지 말하지 않았다) */}
         <header>
