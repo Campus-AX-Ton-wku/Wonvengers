@@ -114,7 +114,7 @@ export default function AccountPage() {
         ) : (
           <>
             <section className="flex flex-col gap-2">
-              <h1 className={heading}>내 계정</h1>
+              <h1 className={heading}>내 정보</h1>
               <p className="text-sm text-ink-700">카카오로 로그인했어요</p>
               <p className="text-sm text-ink-500">
                 {sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}

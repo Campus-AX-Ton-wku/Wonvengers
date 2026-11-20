@@ -53,6 +53,32 @@ export function savedCards(
   });
 }
 
+export type SavedSort = "deadline" | "recent";
+
+/**
+ * 관심 탭의 정렬 (11/20). "recent"는 찜한 순서 그대로(최근 것이 앞 — lib/saved.ts).
+ * "deadline"은 지금 할 일이 급한 순서:
+ *   1. 마감일이 있는 접수 중 — 남은 날이 적은 순 (오늘 마감 → D-1 → …)
+ *   2. 상시 접수
+ *   3. 신청 예정 — 열리는 날이 가까운 순
+ *   4. 접수 마감
+ * 같은 칸 안에서는 찜한 순서를 지킨다(Array.prototype.sort 는 안정 정렬).
+ */
+export function sortSavedCards(cards: readonly SavedCard[], sort: SavedSort, todayISO: string): SavedCard[] {
+  if (sort === "recent") return [...cards];
+  const rank = ({ policy }: SavedCard): [number, string] => {
+    if (todayISO < policy.applicationStart) return [2, policy.applicationStart];
+    if (policy.applicationEnd === null) return [1, ""];
+    if (todayISO > policy.applicationEnd) return [3, ""];
+    return [0, policy.applicationEnd];
+  };
+  return [...cards].sort((a, b) => {
+    const [ga, ka] = rank(a);
+    const [gb, kb] = rank(b);
+    return ga !== gb ? ga - gb : ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+}
+
 /** 지금은 신청할 수 없는 마감 표시 (lib/preparation.ts deadlineLabel). */
 export function isClosedDeadline(deadline: string): boolean {
   return deadline === "접수 마감" || deadline === "신청 예정";

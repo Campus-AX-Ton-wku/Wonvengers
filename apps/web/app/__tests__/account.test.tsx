@@ -52,7 +52,7 @@ async function 탈퇴창열기(user: ReturnType<typeof userEvent.setup>) {
 describe("/account (설계 '화면' 5)", () => {
   it("로그인 상태, 마지막 저장 시각, 로그아웃·회원 탈퇴, 처리방침 링크", async () => {
     로그인한채로();
-    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 계정");
+    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 정보");
     expect(screen.getByText("카카오로 로그인했어요")).toBeTruthy();
     expect(screen.getByText(/^마지막 저장 \d{4}\.\d{2}\.\d{2} \d{2}:\d{2}$/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeTruthy();
@@ -121,7 +121,7 @@ describe("/account (설계 '화면' 5)", () => {
     expect((await screen.findByRole("alert")).textContent).toBe(
       "탈퇴하지 못했어요. 아무것도 지우지 않았으니 잠시 뒤 다시 시도해 주세요."
     );
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("내 계정");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("내 정보");
   });
 
   it("로그인하지 않았으면 카카오로 로그인할 수 있다", async () => {
@@ -150,7 +150,7 @@ describe("/account (설계 '화면' 5)", () => {
 describe("알림 칸", () => {
   it("공개 키가 없는 빌드에서는 그리지 않는다", async () => {
     로그인한채로();
-    await screen.findByRole("heading", { level: 1, name: "내 계정" });
+    await screen.findByRole("heading", { level: 1, name: "내 정보" });
     expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
   });
 
