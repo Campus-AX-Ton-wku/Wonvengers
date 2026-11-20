@@ -1,16 +1,18 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell, Icon3D, TopBar } from "@/app/components";
-import { ExternalLink, ICON_SM } from "@/app/components/icons";
+import { ChevronRight, ExternalLink, ICON_MD, ICON_SM } from "@/app/components/icons";
 import { formatDotDate } from "@/lib/date";
-import { findGuide, GUIDES } from "@/lib/guides";
+import { findGuide, GUIDES, readMinutes } from "@/lib/guides";
 
-/** 정적 export — 가이드 수만큼 페이지를 미리 만든다. */
+/** 정적 export — 가이드 수만큼 목차 페이지를 미리 만든다. */
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ id: g.id }));
 }
 
 /**
- * 가이드 한 편. 끝에 출처와 확인한 날을 단다 — 제도는 바뀌니까 공식 안내로 다시 확인하라고 같이 말한다.
+ * 가이드 목차 (11/20 ggue — 노션처럼 첫 페이지는 목차, 섹션은 한 장에 하나: ./[step]/page.tsx).
+ * 끝에 출처와 확인한 날을 단다 — 제도는 바뀌니까 공식 안내로 다시 확인하라고 같이 말한다.
  */
 export default async function GuidePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,22 +23,37 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       <TopBar backHref="/guides" />
       <main className="flex flex-col gap-6 pb-10 pt-2.5">
         <header className="flex items-center gap-3.5">
-          <Icon3D name={guide.icon} size={48} />
-          <h1 className="text-2xl font-extrabold leading-snug text-ink-900">{guide.title}</h1>
+          <Icon3D name={guide.icon} size={64} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="text-2xl font-extrabold leading-snug text-ink-900">{guide.title}</h1>
+            <p className="text-[13px] font-medium text-ink-500">
+              {guide.sections.length}장 · 약 {readMinutes(guide)}분
+            </p>
+          </div>
         </header>
-        {guide.sections.map((section) => (
-          <section key={section.heading} className="flex flex-col gap-2.5">
-            <h2 className="text-[17px] font-bold leading-snug text-ink-900">{section.heading}</h2>
-            <ul className="flex flex-col gap-2 rounded-card bg-surface p-4 shadow-card">
-              {section.items.map((item) => (
-                <li key={item} className="flex gap-2.5 text-[15px] leading-relaxed text-ink-700">
-                  <span aria-hidden="true" className="mt-[0.65em] size-1.5 shrink-0 rounded-full bg-brand-600" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+
+        <nav aria-label="목차">
+          <ol className="flex flex-col overflow-hidden rounded-card bg-surface shadow-card">
+            {guide.sections.map((section, i) => (
+              <li key={section.title} className="border-b border-ink-100 last:border-b-0">
+                <Link
+                  href={`/guides/${guide.id}/${i + 1}`}
+                  className="focus-ring flex min-h-14 items-center gap-3.5 px-4 py-3.5"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[13px] font-extrabold text-brand-700"
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-ink-900">{section.title}</span>
+                  <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         <section aria-labelledby="guide-sources" className="flex flex-col gap-2">
           <h2 id="guide-sources" className="text-[15px] font-bold text-ink-700">
             출처
