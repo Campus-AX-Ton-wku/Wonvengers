@@ -1,4 +1,4 @@
--- supabase/migrations/20261120090000_policy_published_at.sql
+-- supabase/migrations/20261120054504_policy_published_at.sql
 -- 정책이 처음 앱에 보인 때 (11/20) — 앱 알림함의 '새 지원금' (docs/기획/2026-11-20-알림함-설계.md)
 --
 -- edited_at 은 고칠 때마다 바뀌어 '올라온 날'이 될 수 없다(11/19 아이콘 작업으로 16건 모두 11/19).

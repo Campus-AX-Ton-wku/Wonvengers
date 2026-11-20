@@ -1,5 +1,5 @@
 // supabase/tests/policy-published-at.test.mjs
-// 처음 앱에 보인 때 published_at (migrations/20261120090000_policy_published_at.sql) — 자동 찍기 · 관리칸 · 공개 함수
+// 처음 앱에 보인 때 published_at (migrations/20261120054504_policy_published_at.sql) — 자동 찍기 · 관리칸 · 공개 함수
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -24,7 +24,7 @@ await db.exec(migration("20261110000000_perky_5tables.sql"));
 await db.exec(readFileSync(join(repo, "supabase", "seed.sql"), "utf8"));
 for (const f of [
   "20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261116233659_documents.sql",
-  "20261119150917_policy_icon.sql", "20261120090000_policy_published_at.sql",
+  "20261119150917_policy_icon.sql", "20261120054504_policy_published_at.sql",
 ]) {
   await db.exec(migration(f));
 }
