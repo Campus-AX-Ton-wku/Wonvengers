@@ -2,7 +2,7 @@ import { formatKoreanMoney } from "@/lib/money";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import type { ListingInput, PolicyMeta } from "@/lib/types";
 import { Disclosure } from "@/app/components";
-import { ICON_SM, TriangleAlert, Wallet } from "@/app/components/icons";
+import { ICON_SM, TriangleAlert } from "@/app/components/icons";
 
 /**
  * 결과 화면 맨 위 돈 요약 — 영수증 한 장 (11/18).
@@ -52,7 +52,6 @@ export function ResultReceipt({
     monthly > 0 || moveNet > 0
       ? `매달 약 ${formatKoreanMoney(monthly)}${moveNet > 0 ? ` + 이사비 ${formatKoreanMoney(moveNet)}(한 번)` : ""}`
       : null;
-  const upfrontCash = listing.deposit + (listing.contractType === "연세" ? listing.rentOrYearlyAmount : 0);
 
   return (
     <section className="amount-in rounded-card border border-ink-200 bg-surface p-5 shadow-card">
@@ -116,16 +115,7 @@ export function ResultReceipt({
         </Disclosure>
       )}
 
-      {/* 목돈 — 월 지원은 계약 당일 필요한 돈을 줄여 주지 않는다 */}
-      <p className="mt-4 flex items-start gap-2 rounded-control bg-ink-50 px-3.5 py-3 text-xs leading-relaxed text-ink-600">
-        <Wallet size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
-        <span>
-          계약 당일 필요한 현금 <strong className="text-ink-900">{formatKoreanMoney(upfrontCash)}</strong> (보증금
-          {listing.contractType === "연세" ? " + 연세 선납액" : ""}) — 지원금은 계약 뒤에 나눠 들어와서 이 돈을 줄여 주지
-          않아요.
-        </span>
-      </p>
-
+      {/* 계약 당일 필요한 현금(보증금) 줄은 11/20 뺐다(ggue) — 계약하는 사람은 보증금을 당일 낸다는 걸 이미 안다 */}
       {unknownConditions.length > 0 && (
         <div className="mt-4 border-t border-ink-100 pt-4 text-xs text-ink-600">
           <p className="flex items-start gap-2 font-bold text-ink-700">
