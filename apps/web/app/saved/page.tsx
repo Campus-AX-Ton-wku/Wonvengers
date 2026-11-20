@@ -71,10 +71,10 @@ export default function SavedPage() {
       <TopBar />
       <main className="flex flex-col gap-4 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">관심</h1>
-        <section aria-label="찜한 지원금" className="flex flex-col gap-3">
+        <section aria-label="관심 지원금" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-bold text-ink-700">
-              찜한 지원금
+              관심 지원금
               {cards.length > 0 && (
                 <>
                   <span className="sr-only"> </span>
@@ -105,7 +105,7 @@ export default function SavedPage() {
 
 const SORTS: { value: SavedSort; label: string }[] = [
   { value: "deadline", label: "마감 가까운 순" },
-  { value: "recent", label: "최근 찜한 순" },
+  { value: "recent", label: "최근 추가한 순" },
 ];
 
 /** 정렬 칩 두 개 — 고른 칩은 진한 남색 면 + aria-pressed. 44px 터치 높이는 칩 바깥 여백으로 채운다. */
@@ -132,21 +132,24 @@ function SortChips({ value, onChange }: { value: SavedSort; onChange: (sort: Sav
   );
 }
 
-/** 390px 아래에서는 버튼을 글 아래 한 줄로 내린다 — 옆에 두면 320px 에서 제목이 두 줄, 설명이 세 줄로 꺾인다. */
+/**
+ * 비었을 때 (시안 '관심 탭 · 비었을 때', 11/20) — 가운데 정렬 카드 하나. 탭 이름은 '관심', 버튼은 하트라서
+ * "하트를 누르면 여기에 모여요"로 둘을 잇는다. 이 화면에서 할 일은 하나뿐이라 버튼은 파랑(primary).
+ */
 function EmptySaved() {
   return (
-    <div className="flex flex-col gap-3 rounded-card border-[1.5px] border-dashed border-brand-300 bg-surface p-4 min-[390px]:flex-row min-[390px]:items-center min-[390px]:gap-3.5">
-      <div className="flex min-w-0 flex-1 items-center gap-3.5">
-        <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <Heart size={ICON_MD} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className="text-[15px] font-bold text-ink-900">아직 찜한 지원금이 없어요</p>
-          <p className="text-[13px] leading-normal text-ink-500">목록에서 하트를 누르면 여기에 모여요</p>
-        </div>
-      </div>
-      <LinkButton href="/find/policies" variant="secondary" size="md" full={false} className="w-full shrink-0 min-[390px]:w-auto">
-        찾아보기
+    <div className="flex flex-col items-center gap-2 rounded-card border border-brand-200 bg-surface px-5 pb-6 pt-7 text-center">
+      <span aria-hidden="true" className="flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+        <Heart size={ICON_MD} />
+      </span>
+      <p className="mt-1 text-base font-bold text-ink-900">아직 관심 지원금이 없어요</p>
+      <p className="text-sm leading-relaxed text-ink-600">
+        지원금 목록에서 하트를 누르면
+        <br />
+        여기에 모여요
+      </p>
+      <LinkButton href="/find/policies" size="screen" full={false} className="mt-3">
+        지원금 보러 가기
       </LinkButton>
     </div>
   );

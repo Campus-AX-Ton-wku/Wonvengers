@@ -230,7 +230,7 @@ describe("runNotifier — 찜한 지원금 마감 알림 (11/20)", () => {
     expect(summary.reminders).toEqual({ outcome: "sent", recipients: 1 });
     expect(summary.devicesSent).toBe(1);
     expect(t.sent).toEqual([
-      { device: "a-d1", message: expect.objectContaining({ title: "찜한 지원금 마감이 다가와요", url: "/find/policies/d7/prepare" }) },
+      { device: "a-d1", message: expect.objectContaining({ title: "관심 지원금 마감이 다가와요", url: "/find/policies/d7/prepare" }) },
     ]);
     expect(t.order).toEqual(["send", "save-reminded"]);
     expect(t.remindedOn()).toBe("2026-11-16");

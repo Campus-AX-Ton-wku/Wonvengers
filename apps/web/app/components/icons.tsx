@@ -14,6 +14,7 @@
  */
 export {
   ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
   Ban,
   CalendarDays,
@@ -40,6 +41,7 @@ export {
   Search,
   Settings,
   ShieldCheck,
+  TrendingDown,
   TriangleAlert,
   UserRound,
   Wallet,

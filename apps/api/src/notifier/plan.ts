@@ -130,14 +130,14 @@ export function composeReminder(reminders: Reminder[]): PushMessage {
   const left = (days: number) => (days === 1 ? "내일 마감이에요" : `마감까지 ${days}일 남았어요`);
   if (reminders.length === 1) {
     return {
-      title: "찜한 지원금 마감이 다가와요",
+      title: "관심 지원금 마감이 다가와요",
       body: `${first.policy.name} — ${left(first.days)}. 신청 준비를 확인해 보세요`,
       url: `/find/policies/${first.policy.id}/prepare`,
       tag: REMINDER_TAG,
     };
   }
   return {
-    title: `찜한 지원금 ${reminders.length}건 마감이 다가와요`,
+    title: `관심 지원금 ${reminders.length}건 마감이 다가와요`,
     body: `${first.policy.name} 외 ${reminders.length - 1}건 — 신청 준비를 확인해 보세요`,
     url: "/saved",
     tag: REMINDER_TAG,

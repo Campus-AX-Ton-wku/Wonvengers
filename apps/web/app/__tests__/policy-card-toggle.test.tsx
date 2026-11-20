@@ -114,7 +114,7 @@ describe("2층 정책 카드", () => {
 
   it("최대 지원 가능액과 조합 목록은 접히지 않는다", async () => {
     await renderResult();
-    expect(screen.getByText("최대 지원 가능액 (12개월 기준)").closest("details")).toBeNull();
+    expect(screen.getByText(/^받을 수 있는 지원$/).closest("details")).toBeNull();
     // 조합은 요약 영수증의 '받는 지원' 줄로 보인다(11/18) — 접지 않는다
     expect(screen.getAllByText(/^− .+원$/)[0].closest("details")).toBeNull();
   });

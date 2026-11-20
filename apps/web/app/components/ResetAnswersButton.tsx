@@ -46,7 +46,7 @@ export function ResetAnswersButton({ onReset }: { onReset?: () => void }) {
       {confirming && (
         <Sheet
           title="처음부터 다시 할까요?"
-          description="찜한 지원금과 서류 준비 체크도 함께 지워져요."
+          description="관심 지원금과 서류 준비 체크도 함께 지워져요."
           onClose={() => setConfirming(false)}
         >
           <Button size="screen" variant="danger" onClick={reset}>

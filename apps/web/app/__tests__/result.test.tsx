@@ -29,8 +29,8 @@ function renderWithInput() {
  * 카드 안의 라벨만 정확히 집는다. '최대 지원 가능액' 만으로 찾으면 h1 에도
  * 걸려 쿼리가 모호해진다. 카드 라벨은 뒤에 괄호가 붙는 것으로 구분한다.
  */
-const 지원금_라벨 = /^최대 지원 가능액 \(/;
-const 주거비_라벨 = /^최종 예상 주거비 \(/;
+const 지원금_라벨 = /^받을 수 있는 지원$/;
+const 주거비_라벨 = /^최종 예상 주거비$/;
 
 /*
  * 글씨 크기를 순위로 읽는다. 특정 클래스명(text-5xl)을 고정하면 크기를 조정할 때마다
@@ -116,12 +116,26 @@ describe("강조 위계", () => {
     expect(글씨크기(amountAfter(지원금_라벨))).toBeGreaterThan(글씨크기(amountAfter(주거비_라벨)));
   });
 
-  it("지원금만 accent 색을 쓴다 — 이 색이 '받는 돈' 신호다", async () => {
+  it("받는 돈만 남색(brand-900)으로 강조한다 — 실제 부담은 잉크색 (11/20 금색 → 남색)", async () => {
     renderWithInput();
     await screen.findByText(지원금_라벨);
 
-    expect(amountAfter(지원금_라벨).className).toContain("accent");
-    expect(amountAfter(주거비_라벨).className).not.toContain("accent");
+    expect(amountAfter(지원금_라벨).className).toContain("text-brand-900");
+    expect(amountAfter(주거비_라벨).className).not.toContain("brand");
+    // 금색은 금액에서 뺐다 — 결과 화면 어디에도 남지 않는다
+    expect(document.querySelector('[class*="accent-"]')).toBeNull();
+  });
+
+  it("요약 카드 — 제목 위 '맞춤 혜택 결과', 금액 옆 개월 칩, 찾은 Perky 하나, 영수증은 '12개월 동안 내 주거비' 상자", async () => {
+    renderWithInput();
+    await screen.findByText(지원금_라벨);
+
+    expect(screen.getByText("맞춤 혜택 결과")).toBeTruthy();
+    expect(screen.getByText(지원금_라벨).textContent).toMatch(/개월 기준$/);
+    expect(document.querySelectorAll("[data-pose]")).toHaveLength(1);
+    expect(document.querySelector("[data-pose]")?.getAttribute("data-pose")).toBe("found");
+    expect(screen.getByText(/^\d+개월 동안 내 주거비$/)).toBeTruthy();
+    expect(screen.getByText(/^지원을 빼고 실제로 낼 돈 · 매달 약 /)).toBeTruthy();
   });
 
   /*
@@ -183,7 +197,7 @@ describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 �
     const supportRows = within(card).getAllByText(/^− .+원$/);
     expect(supportRows.length).toBeGreaterThan(0);
     expect(supportRows[0].closest("details")).toBeNull();
-    expect(within(card).getByText(/^매달 약 .+원/)).toBeTruthy();
+    expect(within(card).getByText(/^지원을 빼고 실제로 낼 돈 · 매달 약 .+원/)).toBeTruthy();
   });
 
   it("조합 · 목돈을 따로 카드로 두지 않고, 제목 아래 금액 줄도 반복하지 않는다", async () => {

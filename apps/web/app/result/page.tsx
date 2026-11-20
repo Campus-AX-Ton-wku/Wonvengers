@@ -89,7 +89,9 @@ export default function ResultPage() {
       {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
       <main className="step-in flex flex-col gap-5 pb-10 pt-3">
         <header>
-          <h1 className="text-[21px] font-extrabold leading-[1.4] text-ink-900">
+          {/* 제목 위 작은 머리글 — 계산 중 · 다시 계산 화면(ResultState)과 같은 말 (시안 '계산 결과', 11/20) */}
+          <p className="text-[13px] font-bold text-ink-500">맞춤 혜택 결과</p>
+          <h1 className="mt-1 text-[21px] font-extrabold leading-[1.4] text-ink-900">
             {resultHeadline}
           </h1>
           {/* 둘째 줄은 마감 임박일 때만 — 금액은 바로 아래 영수증이 말한다(11/18, 같은 금액 반복을 뺐다) */}

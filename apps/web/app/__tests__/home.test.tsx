@@ -117,7 +117,7 @@ describe("/home", () => {
     saveSavedList(["youth-housing-benefit-split-payment"]);
     render(<HomePage />);
     await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(screen.queryByRole("region", { name: "찜한 지원금" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "관심 지원금" })).toBeNull();
     const tabs = screen.getByRole("navigation", { name: "주요 메뉴" });
     expect(within(tabs).getByRole("link", { name: "홈" }).getAttribute("aria-current")).toBe("page");
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
@@ -140,11 +140,28 @@ describe("/home", () => {
     const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, todayISO());
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(within(summary).getByText("최종 예상 주거비")).toBeTruthy();
-    expect(within(summary).getByText(formatKoreanMoney(s.finalEstimatedHousingCost))).toBeTruthy();
-    expect(within(summary).getByText(formatKoreanMoney(s.nominalTotalCost))).toBeTruthy();
-    expect(within(summary).getByRole("link", { name: "결과 보기" }).getAttribute("href")).toBe("/result");
+    // 시안 '홈 · 사용 중'(11/20) — 상자 전체가 결과로 가는 링크 하나, 지원 전 → 지원 후, 줄어든 돈 한 줄
+    const box = within(summary).getByRole("link", { name: /^최종 예상 주거비, 12개월 기준\. 지원 전 .+, 지원 후 .+\. 결과 보기$/ });
+    expect(box.getAttribute("href")).toBe("/result");
+    expect(within(box).getByText("12개월 기준")).toBeTruthy();
+    expect(within(box).getByText(formatKoreanMoney(s.nominalTotalCost))).toBeTruthy();
+    expect(within(box).getByText(formatKoreanMoney(s.finalEstimatedHousingCost)).className).toContain("text-brand-900");
+    expect(within(box).getByText(formatKoreanMoney(s.nominalTotalCost - s.finalEstimatedHousingCost)).parentElement?.textContent).toMatch(/줄었어요$/);
+    expect(box.querySelector('[class*="accent-"]')).toBeNull();
     expect(within(summary).queryByRole("link", { name: "내 월세 계산하기" })).toBeNull();
+  });
+
+  it("지금 신청할 수 있는 게 0건이면 '줄었어요'는 빼고 지원 전 → 지원 후만 (0건인데 줄었다는 말이 되지 않게)", async () => {
+    enableLogin(); signInAs("sub-a");
+    // 만 17세 · 소득 최상위 — 익산에서 지금 신청할 수 있는 게 없다 (11/20 데이터 기준)
+    saveAnswers({ ...익산_재직, birthDate: birthDateForAge(17), incomeBracket: 10 });
+    const listing = makeListing({ region: "전북특별자치도 익산시" });
+    saveListing(listing); saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    expect(within(summary).getByTestId("open-count").textContent).toMatch(/^0/);
+    const box = within(summary).getByRole("link", { name: /^최종 예상 주거비/ });
+    expect(within(box).queryByText(/줄었어요/)).toBeNull();
   });
 
   describe("요약 카드 Perky 포즈", () => {
@@ -166,7 +183,7 @@ describe("/home", () => {
       render(<HomePage />);
       const summary = await screen.findByRole("region", { name: "내 지원 요약" });
       expect(pose()).toBe("success");
-      expect(within(summary).getByText("찜한 지원금 준비를 마쳤어요.")).toBeTruthy();
+      expect(within(summary).getByText("관심 지원금 준비를 마쳤어요.")).toBeTruthy();
     });
 
     it("답이 없으면 캐릭터를 두지 않는다", async () => {
