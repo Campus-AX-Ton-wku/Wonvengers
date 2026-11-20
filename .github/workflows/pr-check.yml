@@ -99,6 +99,8 @@ jobs:
         run: node app-rebuild.test.mjs
       - name: 정책 종류 아이콘 (11/20)
         run: node policy-icon.test.mjs
+      - name: 처음 올라온 때 (11/20)
+        run: node policy-published-at.test.mjs
 
   api-infra:
     name: AWS — api · infra 검사 · 묶기

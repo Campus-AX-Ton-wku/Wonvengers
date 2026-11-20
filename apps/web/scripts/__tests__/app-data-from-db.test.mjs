@@ -248,3 +248,19 @@ describe("정책 종류 아이콘 (icon)", () => {
     for (const name of ICON3D_NAMES) expect(existsSync(join(__dirname, "..", "..", "public", "icons3d", `${name}.webp`))).toBe(true);
   });
 });
+
+describe("처음 올라온 때 (publishedAt, 11/20)", () => {
+  it("있으면 싣고, 없으면 칸을 적지 않는다 — 지금 정책은 비어 있어 스냅숏이 그대로다", () => {
+    const [withDate] = toAppData([row({ published_at: "2026-11-21T01:00:00+00:00" })], at).policies;
+    expect(withDate.publishedAt).toBe("2026-11-21T01:00:00+00:00");
+    const [without] = toAppData([row({ published_at: null })], at).policies;
+    expect("publishedAt" in without).toBe(false);
+    const [missing] = toAppData([row()], at).policies;
+    expect("publishedAt" in missing).toBe(false);
+  });
+
+  it("안내 상품(대출)에는 싣지 않는다 — 알림은 지원금만", () => {
+    const loan = toAppData([row({ kind: "대출", benefit_type: null, icon: "loan", published_at: "2026-11-21T01:00:00+00:00" })], at);
+    expect("publishedAt" in loan.loanProducts[0]).toBe(false);
+  });
+});

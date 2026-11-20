@@ -37,6 +37,7 @@ export {
   Pencil,
   Phone,
   Search,
+  Settings,
   ShieldCheck,
   TriangleAlert,
   UserRound,

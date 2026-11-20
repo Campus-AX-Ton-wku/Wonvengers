@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, DeadlineBadge, Icon3D, TabIcon, TopBar } from "@/app/components";
-import { ChevronRight, ICON_MD, ICON_SM } from "@/app/components/icons";
+import { AppShell, DeadlineBadge, Icon3D, IconLink, TabIcon, TopBar } from "@/app/components";
+import { ChevronRight, ICON_LG, ICON_MD, Settings } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { formatDotDate, seoulTodayISO } from "@/lib/date";
-import { inboxItems, loadInboxSeen, markInboxSeen, type InboxItem } from "@/lib/inbox";
+import { inboxItems, loadInboxSeen, markInboxSeen, seoulDateOf, type InboxItem } from "@/lib/inbox";
 import { deadlineLabel } from "@/lib/preparation";
 import { isPushConfigured } from "@/lib/push";
 import { replacePage } from "@/lib/redirect";
@@ -19,6 +19,7 @@ const policies = policiesJson as PolicyMeta[];
 const SECTIONS: { kind: InboxItem["kind"]; title: string }[] = [
   { kind: "deadline", title: "마감이 다가와요" },
   { kind: "upcoming", title: "곧 신청이 열려요" },
+  { kind: "new", title: "새 지원금이 올라왔어요" },
   { kind: "opened", title: "새로 신청이 열렸어요" },
 ];
 
@@ -64,7 +65,20 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <TopBar backHref="/home" />
+      {/* 오른쪽 위 ⚙ → 알림 설정 (11/20 두 단계 구조 — 당근 · 토스처럼 알림함 안에서 설정으로). 예전에는 맨 아래
+          '폰으로도 알림 받기 · 알림 설정' 이 내 정보(/account#notifications)로 보냈다. 이 화면에 종은 두지 않는다 — 여기가 알림함이다 */}
+      <TopBar
+        backHref="/home"
+        right={
+          isPushConfigured() ? (
+            <IconLink href="/notifications/settings" label="알림 설정">
+              <Settings size={ICON_LG} aria-hidden="true" />
+            </IconLink>
+          ) : (
+            <span className="w-11" aria-hidden="true" />
+          )
+        }
+      />
       <main className="flex flex-col gap-6 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">알림</h1>
         {!ready ? (
@@ -87,15 +101,6 @@ export default function NotificationsPage() {
             );
           })
         )}
-        {ready && isPushConfigured() && (
-          <Link
-            href="/account#notifications"
-            className="focus-ring flex min-h-11 items-center justify-between gap-2 rounded-control bg-surface px-4 text-sm font-semibold text-ink-700 shadow-btn-quiet"
-          >
-            폰으로도 알림 받기 · 알림 설정
-            <ChevronRight size={ICON_SM} strokeWidth={2.25} aria-hidden="true" className="text-ink-500" />
-          </Link>
-        )}
       </main>
     </AppShell>
   );
@@ -107,6 +112,11 @@ function subline(item: InboxItem): string {
       return `찜한 지원금 · ${item.card.progress.label}`;
     case "upcoming":
       return `찜한 지원금 · ${formatDotDate(item.policy.applicationStart)} 신청 시작`;
+    case "new": {
+      // 휴대폰 새 정책 알림과 같은 말 — '가능성 있음'이면 맞을 가능성, '확인 필요'면 확인
+      const [, m, d] = seoulDateOf(item.policy.publishedAt ?? "").split("-");
+      return `${Number(m)}월 ${Number(d)}일 등록 · ${item.tag === "가능성 있음" ? "조건에 맞을 가능성이 있어요" : "조건을 확인해 보세요"}`;
+    }
     case "opened":
       return `${item.policy.agency} · ${formatDotDate(item.policy.applicationStart)}부터 신청`;
   }
