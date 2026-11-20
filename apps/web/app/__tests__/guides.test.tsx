@@ -26,23 +26,26 @@ describe("주거 가이드 화면", () => {
 
 /** 노션처럼 — 가이드 첫 페이지는 목차, 섹션은 한 장에 하나 (11/20 ggue) */
 describe("목차 페이지 /guides/[id]", () => {
-  it("제목 · 몇 장 · 몇 분, 섹션마다 그 장으로 가는 링크", async () => {
+  it("제목과 섹션마다 그 장으로 가는 링크 — '5장 · 약 3분' 같은 글은 두지 않는다 (11/20 ggue)", async () => {
     render(await GuidePage({ params: Promise.resolve({ id: "protect-deposit" }) }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("보증금 지키는 법");
-    expect(screen.getByText(/^5장 · 약 \d+분$/)).toBeTruthy();
+    expect(screen.queryByText(/\d+장/)).toBeNull();
+    expect(screen.queryByText(/약 \d+분/)).toBeNull();
     const toc = screen.getByRole("navigation", { name: "목차" });
     const links = within(toc).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual([1, 2, 3, 4, 5].map((n) => `/guides/protect-deposit/${n}`));
     expect(links[1].textContent).toMatch(/확정일자/);
   });
 
-  it("출처(새 창) · 확인일은 목차 아래에 있다", async () => {
+  it("출처는 목차 아래 — 기관 이름 · 주제 두 줄, 새 창. '~에 확인했어요' 문단은 두지 않는다 (11/20 ggue)", async () => {
     render(await GuidePage({ params: Promise.resolve({ id: "protect-deposit" }) }));
     const sources = screen.getByRole("region", { name: "출처" });
     const first = within(sources).getAllByRole("link")[0];
     expect(first.getAttribute("target")).toBe("_blank");
     expect(first.getAttribute("rel")).toContain("noopener");
-    expect(within(sources).getByText(/2026\.11\.20에 확인했어요/)).toBeTruthy();
+    expect(within(first).getByText("찾기쉬운 생활법령")).toBeTruthy();
+    expect(within(first).getByText("주택임대차(대항력·우선변제권·임차권등기)")).toBeTruthy();
+    expect(screen.queryByText(/확인했어요/)).toBeNull();
   });
 });
 

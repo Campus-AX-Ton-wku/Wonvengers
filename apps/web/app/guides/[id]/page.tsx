@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell, Icon3D, TopBar } from "@/app/components";
 import { ChevronRight, ExternalLink, ICON_MD, ICON_SM } from "@/app/components/icons";
-import { formatDotDate } from "@/lib/date";
-import { findGuide, GUIDES, readMinutes } from "@/lib/guides";
+import { findGuide, GUIDES } from "@/lib/guides";
 
 /** 정적 export — 가이드 수만큼 목차 페이지를 미리 만든다. */
 export function generateStaticParams() {
@@ -24,12 +23,8 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
       <main className="flex flex-col gap-6 pb-10 pt-2.5">
         <header className="flex items-center gap-3.5">
           <Icon3D name={guide.icon} size={64} />
-          <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="text-2xl font-extrabold leading-snug text-ink-900">{guide.title}</h1>
-            <p className="text-[13px] font-medium text-ink-500">
-              {guide.sections.length}장 · 약 {readMinutes(guide)}분
-            </p>
-          </div>
+          {/* '5장 · 약 3분' 줄은 11/20 뺐다(ggue) — 목차가 바로 아래 있어 몇 장인지 보인다 */}
+          <h1 className="min-w-0 text-2xl font-extrabold leading-snug text-ink-900">{guide.title}</h1>
         </header>
 
         <nav aria-label="목차">
@@ -54,29 +49,36 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
           </ol>
         </nav>
 
+        {/* 출처 — 기관 이름(굵게) · 본 내용(작게) 두 줄, 칸으로 나눈 목록 (11/20 ggue: 줄표 · 띄운 가운뎃점이 섞인 긴 링크가 어색했다).
+            '~에 확인했어요' 문단은 뺐다 — 확인일은 lib/guides.ts 의 checkedAt 에 남아 있다 */}
         <section aria-labelledby="guide-sources" className="flex flex-col gap-2">
           <h2 id="guide-sources" className="text-[15px] font-bold text-ink-700">
             출처
           </h2>
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col overflow-hidden rounded-card border border-ink-200 bg-surface">
             {guide.sources.map((source) => (
-              <li key={source.url + source.label}>
+              <li key={source.url + (source.topic ?? "")} className="border-b border-ink-100 last:border-b-0">
                 <a
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="focus-ring inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
+                  className="focus-ring flex min-h-12 items-center gap-3 px-4 py-2.5"
                 >
-                  {source.label}
-                  <ExternalLink size={ICON_SM - 2} aria-hidden="true" />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-sm font-semibold leading-snug text-ink-900">{source.name}</span>
+                    {source.topic && (
+                      <>
+                        <span className="sr-only">, </span>
+                        <span className="text-xs leading-snug text-ink-500">{source.topic}</span>
+                      </>
+                    )}
+                  </span>
+                  <ExternalLink size={ICON_SM} aria-hidden="true" className="shrink-0 text-ink-500" />
                   <span className="sr-only">(새 창)</span>
                 </a>
               </li>
             ))}
           </ul>
-          <p className="text-[13px] leading-relaxed text-ink-500">
-            {formatDotDate(guide.checkedAt)}에 확인했어요. 제도와 절차는 바뀔 수 있으니 계약하거나 신청하기 전에 위 공식 안내를 다시 확인해 주세요.
-          </p>
         </section>
       </main>
     </AppShell>
