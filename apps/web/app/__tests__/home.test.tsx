@@ -123,6 +123,15 @@ describe("/home", () => {
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
+  it("요약 아래 주거 가이드 세 장 — 전체 보기는 /guides", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    render(<HomePage />);
+    const guides = await screen.findByRole("region", { name: "주거 가이드" });
+    expect(within(guides).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/guides");
+    const cards = within(guides).getAllByRole("listitem").map((li) => within(li).getByRole("link").getAttribute("href"));
+    expect(cards).toEqual(["/guides/before-contract", "/guides/protect-deposit", "/guides/where-documents"]);
+  });
+
   it("계산이 끝났으면 최종 예상 주거비 상자와 결과 보기, 계산하기는 숨긴다", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const listing = makeListing({ region: "전북특별자치도 익산시" });
