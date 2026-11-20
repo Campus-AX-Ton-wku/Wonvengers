@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { composeMessage, isSendingHour, kst, matchPolicies, selectNewPolicies, type Match } from "../src/notifier/plan";
+import {
+  composeMessage,
+  composeReminder,
+  deadlineReminders,
+  isSendingHour,
+  kst,
+  matchPolicies,
+  selectNewPolicies,
+  type Match,
+} from "../src/notifier/plan";
 import type { DiscoveryAnswers } from "../../web/lib/types";
 import { policy } from "./fixtures";
 
@@ -109,5 +118,58 @@ describe("composeMessage — 정해진 문구", () => {
 
   it("0건이면 던진다 — 부르는 쪽이 걸러야 한다", () => {
     expect(() => composeMessage([])).toThrow();
+  });
+});
+
+describe("deadlineReminders — 찜한 지원금 마감 7일 전 · 1일 전 (11/20)", () => {
+  const TODAY = "2026-11-20";
+  const d7 = policy({ id: "d7", applicationStart: "2026-11-01", applicationEnd: "2026-11-27" });
+  const d1 = policy({ id: "d1", applicationStart: "2026-11-01", applicationEnd: "2026-11-21" });
+  const d3 = policy({ id: "d3", applicationStart: "2026-11-01", applicationEnd: "2026-11-23" });
+  const always = policy({ id: "always", applicationEnd: null });
+  const later = policy({ id: "later", applicationStart: "2026-11-25", applicationEnd: "2026-11-27" });
+  const closed = policy({ id: "closed", applicationStart: "2026-10-01", applicationEnd: "2026-11-13" });
+  const published = [d7, d1, d3, always, later, closed];
+
+  it("남은 날이 7 또는 1 인 찜만, 남은 날이 적은 것부터", () => {
+    const ids = deadlineReminders(["d7", "d3", "always", "later", "closed", "d1"], published, TODAY).map((r) => `${r.policy.id}:${r.days}`);
+    expect(ids).toEqual(["d1:1", "d7:7"]);
+  });
+
+  it("찜하지 않았거나 목록에서 빠진 정책은 알리지 않는다", () => {
+    expect(deadlineReminders([], published, TODAY)).toEqual([]);
+    expect(deadlineReminders(["gone"], published, TODAY)).toEqual([]);
+  });
+
+  it("아직 신청이 열리지 않았으면 마감이 7일 남아도 알리지 않는다", () => {
+    expect(deadlineReminders(["later"], published, TODAY)).toEqual([]);
+  });
+});
+
+describe("composeReminder — 정해진 문구", () => {
+  const a = policy({ id: "a", name: "익산시 청년월세" });
+  const b = policy({ id: "b", name: "전입장려금" });
+
+  it("한 건 — 남은 날과 준비 화면", () => {
+    expect(composeReminder([{ policy: a, days: 7 }])).toEqual({
+      title: "찜한 지원금 마감이 다가와요",
+      body: "익산시 청년월세 — 마감까지 7일 남았어요. 신청 준비를 확인해 보세요",
+      url: "/find/policies/a/prepare",
+      tag: "deadline",
+    });
+    expect(composeReminder([{ policy: a, days: 1 }]).body).toBe("익산시 청년월세 — 내일 마감이에요. 신청 준비를 확인해 보세요");
+  });
+
+  it("여러 건 — 첫 건 이름 외 n건, 관심 탭으로", () => {
+    expect(composeReminder([{ policy: a, days: 1 }, { policy: b, days: 7 }])).toEqual({
+      title: "찜한 지원금 2건 마감이 다가와요",
+      body: "익산시 청년월세 외 1건 — 신청 준비를 확인해 보세요",
+      url: "/saved",
+      tag: "deadline",
+    });
+  });
+
+  it("빈 목록이면 던진다", () => {
+    expect(() => composeReminder([])).toThrow();
   });
 });

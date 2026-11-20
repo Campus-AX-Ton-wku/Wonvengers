@@ -54,6 +54,10 @@ class MemoryPushStore implements PushStore {
     return null;
   }
   async saveAnnounced() {}
+  async getReminderDate() {
+    return null;
+  }
+  async saveReminderDate() {}
 }
 
 function setup(kakaoImpl?: KakaoUnlinker["unlink"]) {

@@ -5,7 +5,8 @@ import type { StoredDevice } from "../src/push-store";
 import type { StoredItem } from "../src/store";
 import { policy, validPayload } from "./fixtures";
 
-const DAY = new Date("2026-11-16T01:00:00Z"); // 서울 10시
+const DAY = new Date("2026-11-16T02:00:00Z"); // 서울 11시 — 마감 알림(10시 회차)은 돌지 않는다
+const TEN = new Date("2026-11-16T01:00:00Z"); // 서울 10시 — 마감 알림 회차
 const NIGHT = new Date("2026-11-16T14:00:00Z"); // 서울 23시
 
 const device = (userId: string, n: number): StoredDevice => ({
@@ -30,11 +31,14 @@ function setup(opts: {
   reason?: string;
   fetchFails?: boolean;
   now?: Date;
+  /** 마감 알림을 마지막으로 돌린 날 */
+  remindedOn?: string | null;
 }) {
   let announced: Set<string> | null = opts.announced === null ? null : new Set(opts.announced ?? []);
   const sent: { device: string; message: PushMessage }[] = [];
   const removed: string[] = [];
   const order: string[] = [];
+  let remindedOn: string | null = opts.remindedOn ?? null;
   const deps: NotifierDeps = {
     push: {
       listDevices: vi.fn(async () => opts.devices ?? []),
@@ -45,6 +49,11 @@ function setup(opts: {
       saveAnnounced: vi.fn(async (ids: ReadonlySet<string>) => {
         order.push("save");
         announced = new Set(ids);
+      }),
+      getReminderDate: vi.fn(async () => remindedOn),
+      saveReminderDate: vi.fn(async (date: string) => {
+        order.push("save-reminded");
+        remindedOn = date;
       }),
     },
     users: {
@@ -64,7 +73,7 @@ function setup(opts: {
     }),
     now: () => opts.now ?? DAY,
   };
-  return { deps, sent, removed, order, announced: () => announced };
+  return { deps, sent, removed, order, announced: () => announced, remindedOn: () => remindedOn };
 }
 
 const fresh = policy({ id: "fresh", name: "새 정책" });
@@ -120,6 +129,7 @@ describe("runNotifier — 보내기", () => {
       devicesFailed: 0,
       devicesRemoved: 0,
       failures: {},
+      reminders: { outcome: "not-hour", recipients: 0 },
     });
     expect(t.sent.map((s) => s.device)).toEqual(["a-d1", "a-d2"]);
     expect(t.sent[0].message.url).toBe("/find/policies/fresh");
@@ -199,5 +209,92 @@ describe("runNotifier — 보내기", () => {
     expect((await runNotifier(t.deps)).outcome).toBe("no-new");
     expect(t.sent).toEqual([]);
     expect(t.announced()).toEqual(new Set(["closed"]));
+  });
+});
+
+describe("runNotifier — 찜한 지원금 마감 알림 (11/20)", () => {
+  // TEN 은 서울 2026-11-16 10시 — 11/23 마감은 7일, 11/17 마감은 1일 남았다
+  const d7 = policy({ id: "d7", name: "7일 남은 정책", applicationStart: "2026-11-01", applicationEnd: "2026-11-23" });
+  const d1 = policy({ id: "d1", name: "내일 마감 정책", applicationStart: "2026-11-01", applicationEnd: "2026-11-17" });
+
+  it("10시 회차에 찜한 사람의 기기마다 한 통, 보낸 뒤 오늘 날짜를 적는다", async () => {
+    const t = setup({
+      now: TEN,
+      announced: ["d7", "d1"],
+      published: [d7, d1],
+      devices: [device("a", 1), device("b", 1)],
+      users: { a: userItem({ saved: ["d7"] }), b: userItem({ saved: [] }) },
+    });
+    const summary = await runNotifier(t.deps);
+    expect(summary.outcome).toBe("no-new");
+    expect(summary.reminders).toEqual({ outcome: "sent", recipients: 1 });
+    expect(summary.devicesSent).toBe(1);
+    expect(t.sent).toEqual([
+      { device: "a-d1", message: expect.objectContaining({ title: "찜한 지원금 마감이 다가와요", url: "/find/policies/d7/prepare" }) },
+    ]);
+    expect(t.order).toEqual(["send", "save-reminded"]);
+    expect(t.remindedOn()).toBe("2026-11-16");
+  });
+
+  it("같은 날 두 번 보내지 않는다 — 10시 회차가 다시 불려도(재시도)", async () => {
+    const t = setup({
+      now: TEN,
+      announced: ["d7"],
+      published: [d7],
+      devices: [device("a", 1)],
+      users: { a: userItem({ saved: ["d7"] }) },
+      remindedOn: "2026-11-16",
+    });
+    expect((await runNotifier(t.deps)).reminders).toEqual({ outcome: "done-today", recipients: 0 });
+    expect(t.sent).toEqual([]);
+  });
+
+  it("10시가 아니면 돌지 않는다", async () => {
+    const t = setup({ announced: ["d7"], published: [d7], devices: [device("a", 1)], users: { a: userItem({ saved: ["d7"] }) } });
+    expect((await runNotifier(t.deps)).reminders).toEqual({ outcome: "not-hour", recipients: 0 });
+    expect(t.sent).toEqual([]);
+  });
+
+  it("force 면 시각 · 오늘 돌림을 보지 않고 보낸다 (시연)", async () => {
+    const t = setup({
+      now: NIGHT,
+      announced: ["d1"],
+      published: [d1],
+      devices: [device("a", 1)],
+      users: { a: userItem({ saved: ["d1"] }) },
+      remindedOn: "2026-11-16",
+    });
+    const summary = await runNotifier(t.deps, { force: true });
+    expect(summary.reminders).toEqual({ outcome: "sent", recipients: 1 });
+    expect(t.sent[0].message.body).toBe("내일 마감 정책 — 내일 마감이에요. 신청 준비를 확인해 보세요");
+  });
+
+  it("동의 버전이 없으면 찜이 있어도 보내지 않는다", async () => {
+    const t = setup({
+      now: TEN,
+      announced: ["d7"],
+      published: [d7],
+      devices: [device("a", 1)],
+      users: { a: userItem({ saved: ["d7"], consentVersion: "" as never }) },
+    });
+    expect((await runNotifier(t.deps)).reminders).toEqual({ outcome: "none", recipients: 0 });
+    expect(t.sent).toEqual([]);
+  });
+
+  it("새 정책 알림과 같은 회차면 구독 목록은 한 번만 읽고, 끊긴 기기는 두 번째 발송에서 빠진다", async () => {
+    const fresh2 = policy({ id: "fresh2", name: "새 정책" });
+    const t = setup({
+      now: TEN,
+      announced: ["d7"],
+      published: [d7, fresh2],
+      devices: [device("a", 1), device("a", 2)],
+      users: { a: userItem({ saved: ["d7"] }) },
+      outcome: (d) => (d.deviceId === "a-d2" ? "gone" : "sent"),
+    });
+    const summary = await runNotifier(t.deps);
+    expect(t.deps.push.listDevices).toHaveBeenCalledTimes(1);
+    expect(t.sent.map((s) => `${s.device}:${s.message.tag}`)).toEqual(["a-d1:new-policy", "a-d2:new-policy", "a-d1:deadline"]);
+    expect(t.removed).toEqual(["a-d2"]);
+    expect(summary.reminders).toEqual({ outcome: "sent", recipients: 1 });
   });
 });
