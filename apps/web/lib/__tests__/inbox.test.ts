@@ -74,3 +74,35 @@ describe("읽음 표시", () => {
     expect(loadInboxSeen().size).toBe(0);
   });
 });
+
+describe("새 지원금이 올라왔어요 (policies.published_at, 11/20)", () => {
+  const 전입 = policies.find((p) => p.id === "iksan-move-in-household-incentive")!;
+  const fresh = (p: PolicyMeta, publishedAt: string): PolicyMeta => ({ ...p, publishedAt });
+
+  it("올라온 지 30일 안이고 내 조건에 맞으면 — 휴대폰 새 정책 알림과 같은 판정(1층 · 해당 없음 제외)", () => {
+    const items = inboxItems([fresh(전입, "2026-11-21T01:00:00Z")], 익산_대학생, [], "2026-11-24", read);
+    expect(keys(items)).toEqual(["new:iksan-move-in-household-incentive:3"]);
+    const [item] = items;
+    expect(item.kind === "new" && ["가능성 있음", "확인 필요"].includes(item.tag)).toBe(true);
+  });
+
+  it("올라온 날 + 30일째부터 빠지고, 올라온 날이 없는 정책(알림 기준선)은 없다", () => {
+    const p = [fresh(전입, "2026-11-01T01:00:00Z")]; // 서울 11/1
+    expect(keys(inboxItems(p, 익산_대학생, [], "2026-11-30", read))).toEqual(["new:iksan-move-in-household-incentive:29"]);
+    expect(inboxItems(p, 익산_대학생, [], "2026-12-01", read)).toEqual([]);
+    expect(inboxItems(policies, 익산_대학생, [], "2026-11-24", read).filter((i) => i.kind === "new")).toEqual([]);
+  });
+
+  it("사는 곳을 답하지 않았거나 · 다른 지역이거나 · 그 사이 접수가 끝났으면 없다", () => {
+    const p = fresh(전입, "2026-11-21T01:00:00Z");
+    expect(inboxItems([p], { ...익산_대학생, region: null }, [], "2026-11-24", read)).toEqual([]);
+    expect(inboxItems([p], { ...익산_대학생, region: "서울특별시" }, [], "2026-11-24", read)).toEqual([]);
+    expect(inboxItems([{ ...p, applicationEnd: "2026-11-23" }], 익산_대학생, [], "2026-11-24", read)).toEqual([]);
+  });
+
+  it("새 지원금이면 '새로 신청이 열렸어요'에는 다시 나오지 않는다 — 한 정책은 한 번만", () => {
+    // 청년월세(전국)는 3/30에 열렸고, 4/1에 올라왔다고 하면 4/5 에는 둘 다 후보다
+    const items = inboxItems([fresh(청년월세, "2026-04-01T01:00:00Z")], 익산_대학생, [], "2026-04-05", read);
+    expect(items.map((i) => i.kind)).toEqual(["new"]);
+  });
+});

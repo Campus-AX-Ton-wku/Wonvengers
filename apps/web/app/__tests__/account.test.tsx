@@ -147,17 +147,21 @@ describe("/account (설계 '화면' 5)", () => {
   });
 });
 
-describe("알림 칸", () => {
+describe("알림 설정 한 줄 (11/20 두 단계 구조)", () => {
   it("공개 키가 없는 빌드에서는 그리지 않는다", async () => {
     로그인한채로();
     await screen.findByRole("heading", { level: 1, name: "내 정보" });
-    expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /알림 설정/ })).toBeNull();
   });
 
-  it("공개 키가 있으면 알림 칸이 보인다", async () => {
+  it("알림 칸 대신 '알림 설정' 한 줄 — 알림 설정 화면으로, 켜기 버튼은 여기 없다", async () => {
     vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
     로그인한채로();
-    expect(await screen.findByRole("heading", { level: 2, name: "알림" })).toBeTruthy();
+    const link = await screen.findByRole("link", { name: /알림 설정/ });
+    expect(link.getAttribute("href")).toBe("/notifications/settings");
+    expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "알림 켜기" })).toBeNull();
   });
 });
+
 

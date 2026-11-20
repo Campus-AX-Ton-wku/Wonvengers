@@ -1,4 +1,6 @@
 import type { ChecklistState } from "./user-data";
+import { resolveAnswers } from "./age";
+import { tagPolicy } from "./filter";
 import { openPolicies, savedCards, type SavedCard } from "./home";
 import type { DiscoveryAnswers, PolicyMeta } from "./types";
 
@@ -9,16 +11,20 @@ import type { DiscoveryAnswers, PolicyMeta } from "./types";
  * 그때그때 계산한다. 그래서 서버를 고치지 않아도 되고, 화면과 알림함이 어긋나지 않는다.
  * 폰 푸시(새 정책 알림 · 마감 알림)는 서버가 따로 보낸다 — 여기는 앱 안에서 모아 보는 자리다.
  *
- * 세 가지를 모은다. 한 정책은 한 번만 — 위에 있는 칸이 먼저 가져간다.
+ * 네 가지를 모은다. 한 정책은 한 번만 — 위에 있는 칸이 먼저 가져간다.
  *   1. 마감이 다가와요 — 찜한 지원금, 접수 중, 마감까지 7일 이하
  *   2. 곧 신청이 열려요 — 찜한 지원금, 신청 예정, 시작까지 14일 이하
- *   3. 새로 신청이 열렸어요 — 내 조건으로 지금 신청할 수 있는 지원금(홈 '지금 신청할 수 있는'과 같은 목록) 중
+ *   3. 새 지원금이 올라왔어요 — 처음 앱에 올라온 지(Supabase policies.published_at) 30일 이하이고 내 조건에 맞는 정책.
+ *      휴대폰 새 정책 알림(apps/api/src/notifier/plan.ts matchPolicies)과 같은 판정 — 사는 곳을 답해야 하고, '해당 없음'은 뺀다.
+ *      알림 기준선(11/16) 전부터 있던 정책은 올라온 날이 없어 여기 나오지 않는다 (11/20, docs/기획/2026-11-20-알림함-설계.md)
+ *   4. 새로 신청이 열렸어요 — 내 조건으로 지금 신청할 수 있는 지원금(홈 '지금 신청할 수 있는'과 같은 목록) 중
  *      신청이 시작된 지 14일 이하
  */
 
 export const DEADLINE_SOON_DAYS = 7;
 export const UPCOMING_DAYS = 14;
 export const RECENT_OPEN_DAYS = 14;
+export const NEW_POLICY_DAYS = 30;
 
 const DAY = 86_400_000;
 
@@ -26,9 +32,15 @@ function daysBetween(fromISO: string, toISO: string): number {
   return Math.round((Date.parse(toISO) - Date.parse(fromISO)) / DAY);
 }
 
+/** ISO 시각의 서울 날짜(YYYY-MM-DD) */
+export function seoulDateOf(iso: string): string {
+  return new Date(Date.parse(iso) + 9 * 3_600_000).toISOString().slice(0, 10);
+}
+
 export type InboxItem =
   | { kind: "deadline"; key: string; policy: PolicyMeta; days: number; card: SavedCard }
   | { kind: "upcoming"; key: string; policy: PolicyMeta; days: number; card: SavedCard }
+  | { kind: "new"; key: string; policy: PolicyMeta; days: number; tag: "가능성 있음" | "확인 필요" }
   | { kind: "opened"; key: string; policy: PolicyMeta; days: number };
 
 export function inboxItems(
@@ -57,6 +69,23 @@ export function inboxItems(
   upcoming.sort((a, b) => a.days - b.days);
   for (const item of [...deadline, ...upcoming]) taken.add(item.policy.id);
 
+  // 새 지원금 — 사는 곳을 답하지 않았으면 알리지 않는다(휴대폰 새 정책 알림과 같다, 11/08 결정)
+  const added: InboxItem[] = [];
+  if (answers.region) {
+    const resolved = resolveAnswers(answers, todayISO);
+    for (const policy of policies) {
+      if (!policy.publishedAt || taken.has(policy.id)) continue;
+      const days = daysBetween(seoulDateOf(policy.publishedAt), todayISO);
+      if (days < 0 || days >= NEW_POLICY_DAYS) continue;
+      if (policy.applicationEnd !== null && policy.applicationEnd < todayISO) continue;
+      const { tag } = tagPolicy(policy, resolved);
+      if (tag === "해당 없음") continue;
+      added.push({ kind: "new", key: `new:${policy.id}:${policy.publishedAt}`, policy, days, tag });
+    }
+  }
+  added.sort((a, b) => a.days - b.days);
+  for (const item of added) taken.add(item.policy.id);
+
   const opened: InboxItem[] = [];
   for (const policy of openPolicies(policies, answers, todayISO) ?? []) {
     if (taken.has(policy.id)) continue;
@@ -65,7 +94,7 @@ export function inboxItems(
   }
   opened.sort((a, b) => a.days - b.days);
 
-  return [...deadline, ...upcoming, ...opened];
+  return [...deadline, ...upcoming, ...added, ...opened];
 }
 
 // ── 읽음 표시 ──

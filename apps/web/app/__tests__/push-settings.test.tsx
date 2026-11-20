@@ -14,7 +14,7 @@ vi.mock("@/lib/push", () => ({
   unsubscribeThisDevice: vi.fn(async () => {}),
 }));
 
-import PushSettings from "@/app/account/PushSettings";
+import PushSettings from "@/app/notifications/settings/PushSettings";
 import { resetAuthForTests } from "@/lib/auth";
 import { disablePush, enablePush, pushOwner, pushState, pushSupport, refreshPush, unsubscribeThisDevice } from "@/lib/push";
 import { enableLogin, signInAs } from "@/lib/__tests__/auth-fixtures";

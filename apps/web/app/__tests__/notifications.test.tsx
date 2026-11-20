@@ -4,6 +4,13 @@ import { render, screen, within } from "@testing-library/react";
 
 vi.mock("@/lib/redirect", () => ({ goTo: vi.fn(), replacePage: vi.fn(), reloadPage: vi.fn() }));
 vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), deleteAccountRemote: vi.fn() }));
+vi.mock("@/data/policies.json", async (importOriginal) => {
+  const real = ((await importOriginal()) as { default: { id: string }[] }).default;
+  // 시험용 — 전입장려금이 11/21 에 처음 올라온 것으로(지금 데이터는 모두 알림 기준선이라 날짜가 없다)
+  return {
+    default: real.map((p) => (p.id === "iksan-move-in-household-incentive" ? { ...p, publishedAt: "2026-11-21T01:00:00Z" } : p)),
+  };
+});
 
 import NotificationsPage from "@/app/notifications/page";
 import { resetAuthForTests } from "@/lib/auth";
@@ -62,5 +69,26 @@ describe("/notifications — 알림함", () => {
     const row = within(soon).getByRole("link");
     expect(row.getAttribute("href")).toBe("/find/policies/iksan-youth-rent-support/prepare");
     expect(within(row).getByText("D-5")).toBeTruthy();
+  });
+
+  it("새 지원금이 올라왔어요 — 휴대폰 새 정책 알림과 같은 정책, 정책 상세로 (11/20)", async () => {
+    vi.setSystemTime(new Date("2026-11-24T03:00:00Z"));
+    enableLogin(); signInAs("sub-a", { consent: false });
+    saveAnswers(익산_대학생);
+    render(<NotificationsPage />);
+    const added = await screen.findByRole("region", { name: "새 지원금이 올라왔어요" });
+    const row = within(added).getByRole("link", { name: /전입세대 전입장려금/ });
+    expect(row.getAttribute("href")).toBe("/find/policies/iksan-move-in-household-incentive");
+    expect(within(row).getByText(/11월 21일 등록/)).toBeTruthy();
+  });
+
+  it("오른쪽 위 ⚙ 는 알림 설정 화면으로 — 내 정보로 보내지 않는다 (11/20 두 단계 구조)", async () => {
+    vi.setSystemTime(new Date("2026-11-20T03:00:00Z"));
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
+    enableLogin(); signInAs("sub-a", { consent: false });
+    render(<NotificationsPage />);
+    const topBar = await screen.findByTestId("top-bar-row");
+    expect(within(topBar).getByRole("link", { name: "알림 설정" }).getAttribute("href")).toBe("/notifications/settings");
+    expect(document.querySelector('a[href="/account#notifications"]')).toBeNull();
   });
 });
