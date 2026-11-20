@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUIDES, findGuide } from "../guides";
+import { GUIDES, findGuide, readMinutes } from "../guides";
 import { ICON3D_NAMES } from "../icons3d";
 
 describe("주거 가이드 (lib/guides.ts)", () => {
@@ -14,12 +14,25 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     }
   });
 
-  it("확인일 · 그림 · 내용이 비어 있지 않다", () => {
+  it("확인일 · 그림 · 장마다 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
     for (const g of GUIDES) {
       expect(g.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(ICON3D_NAMES).toContain(g.icon);
-      expect(g.sections.every((s) => s.items.length > 0)).toBe(true);
+      for (const s of g.sections) {
+        expect(s.title.length).toBeGreaterThan(0);
+        expect(s.lead.length).toBeGreaterThan(0);
+        expect(s.body.length).toBeGreaterThan(0);
+      }
     }
+  });
+
+  it("비유를 써도 정확한 용어는 '용어 풀이'에 남긴다 — 대항력 · 우선변제권 · 임차권등기 · 근저당", () => {
+    const terms = GUIDES.flatMap((g) => g.sections.flatMap((s) => (s.terms ?? []).map((t) => t.term)));
+    for (const t of ["대항력", "우선변제권", "임차권등기", "근저당"]) expect(terms).toContain(t);
+  });
+
+  it("읽는 시간은 1분 이상", () => {
+    for (const g of GUIDES) expect(readMinutes(g)).toBeGreaterThanOrEqual(1);
   });
 
   it("자주 바뀌는 수수료 금액은 쓰지 않는다 (F0-5)", () => {
