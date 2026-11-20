@@ -94,13 +94,12 @@ describe("금액 표기", () => {
     expect(원단위.map((el) => el.textContent)).toEqual([]);
   });
 
-  /* 캡처에 함께 들어오는 금액이라 카드와 표기가 갈리면 그 자리에서 보인다. */
-  it("계약 당일 필요한 현금도 만 단위로 읽어준다", async () => {
+  /* 11/20 ggue: 계약하는 사람은 보증금을 당일 낸다는 걸 이미 안다 — '계약 당일 필요한 현금' 줄을 뺐다. */
+  it("계약 당일 필요한 현금(보증금) 줄을 두지 않는다", async () => {
     renderWithInput();
     await screen.findByText(지원금_라벨);
 
-    const 현금 = screen.getByText(/계약 당일 필요한 현금/);
-    expect(현금.textContent).not.toMatch(원단위_전체자릿수);
+    expect(screen.queryByText(/계약 당일 필요한 현금/)).toBeNull();
   });
 });
 
@@ -185,7 +184,6 @@ describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 �
     expect(supportRows.length).toBeGreaterThan(0);
     expect(supportRows[0].closest("details")).toBeNull();
     expect(within(card).getByText(/^매달 약 .+원/)).toBeTruthy();
-    expect(within(card).getByText(/계약 당일 필요한 현금/)).toBeTruthy();
   });
 
   it("조합 · 목돈을 따로 카드로 두지 않고, 제목 아래 금액 줄도 반복하지 않는다", async () => {
