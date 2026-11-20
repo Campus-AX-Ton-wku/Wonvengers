@@ -108,7 +108,7 @@ export default function PolicyCard({
             벌어져 '4 80만원' 처럼 읽힌다. */}
         <p
           className={`text-[22px] font-extrabold leading-tight ${
-            받을수있나(status) ? "text-accent-600" : "text-ink-500"
+            받을수있나(status) ? "text-brand-900" : "text-ink-500"
           }`}
         >
           {ceiling ? ceiling.label : "금액 확인 필요"}

@@ -60,10 +60,10 @@ const 마감된_카드 = () => 카드("청년월세 지원 (2026년 상시사업
 const 열린_카드 = () => 카드("청년 주거급여 분리지급");
 
 describe("접수가 끝난 정책", () => {
-  it("공고 상한 금액을 accent 색으로 띄우지 않는다", () => {
+  it("공고 상한 금액을 금액 색(남색)으로 띄우지 않는다", () => {
     render카드("moland-youth-rent-support");
 
-    expect(within(마감된_카드()).getByText("최대 480만원").className).not.toContain("accent");
+    expect(within(마감된_카드()).getByText("최대 480만원").className).not.toContain("brand-900");
   });
 
   /*
@@ -84,10 +84,10 @@ describe("접수가 끝난 정책", () => {
   });
 
   /* 접수 중인 정책은 그대로다 — 마감 처리가 멀쩡한 카드까지 물들이면 안 된다. */
-  it("접수 중인 정책의 금액은 accent 색을 유지한다", () => {
+  it("접수 중인 정책의 금액은 금액 색(남색)을 유지한다", () => {
     render카드("youth-housing-benefit-split-payment");
 
-    expect(within(열린_카드()).getByText("월 최대 21만 2,000원").className).toContain("accent");
+    expect(within(열린_카드()).getByText("월 최대 21만 2,000원").className).toContain("text-brand-900");
     // 분리지급은 원가구 소득을 1층에서 못 가려 배지가 '확인 필요' 다 — 요점은 '접수 마감' 이 아니라는 것.
     expect(within(열린_카드()).queryByText("접수 마감")).toBeNull();
   });

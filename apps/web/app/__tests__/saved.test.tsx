@@ -32,18 +32,20 @@ describe("/saved — 관심 탭", () => {
     expect(replacePage).toHaveBeenCalledWith("/onboarding");
   });
 
-  it("찜한 지원금 — 비면 안내와 찾아보기, 있으면 건수 · 마감 배지 · 진행 막대 (홈에 있던 그대로)", async () => {
+  it("관심 지원금 — 비면 하트 안내와 [지원금 보러 가기], 있으면 건수 · 마감 배지 · 진행 막대 (홈에 있던 그대로)", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const { unmount } = render(<SavedPage />);
-    const empty = await screen.findByRole("region", { name: "찜한 지원금" });
-    expect(within(empty).getByText("아직 찜한 지원금이 없어요")).toBeTruthy();
-    expect(within(empty).getByRole("link", { name: "찾아보기" }).getAttribute("href")).toBe("/find/policies");
+    const empty = await screen.findByRole("region", { name: "관심 지원금" });
+    expect(within(empty).getByText("아직 관심 지원금이 없어요")).toBeTruthy();
+    // 시안 '관심 탭 · 비었을 때' (11/20) — 하트와 관심 지원금을 문장으로 잇는다
+    expect(within(empty).getByText(/지원금 목록에서 하트를 누르면/)).toBeTruthy();
+    expect(within(empty).getByRole("link", { name: "지원금 보러 가기" }).getAttribute("href")).toBe("/find/policies");
     unmount();
 
     saveSavedList(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
     render(<SavedPage />);
-    const list = await screen.findByRole("region", { name: "찜한 지원금" });
-    expect(within(list).getByRole("heading", { level: 2 }).textContent).toBe("찜한 지원금 2건");
+    const list = await screen.findByRole("region", { name: "관심 지원금" });
+    expect(within(list).getByRole("heading", { level: 2 }).textContent).toBe("관심 지원금 2건");
     const card = within(list).getByRole("link", { name: /청년 주거급여 분리지급/ });
     expect(card.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment/prepare");
     expect(within(card).getByText("상시")).toBeTruthy();
@@ -67,11 +69,11 @@ describe("/saved — 관심 탭", () => {
     // 찜한 순서: 마감된 것을 가장 최근에 찜했다
     saveSavedList(["moland-youth-rent-support", "youth-housing-benefit-split-payment"]);
     render(<SavedPage />);
-    const list = await screen.findByRole("region", { name: "찜한 지원금" });
+    const list = await screen.findByRole("region", { name: "관심 지원금" });
     const names = () => within(list).getAllByRole("listitem").map((li) => (/청년 주거급여/.test(li.textContent ?? "") ? "주거급여" : "청년월세"));
     expect(within(list).getByRole("button", { name: "마감 가까운 순" }).getAttribute("aria-pressed")).toBe("true");
     expect(names()).toEqual(["주거급여", "청년월세"]);
-    await userEvent.setup().click(within(list).getByRole("button", { name: "최근 찜한 순" }));
+    await userEvent.setup().click(within(list).getByRole("button", { name: "최근 추가한 순" }));
     expect(names()).toEqual(["청년월세", "주거급여"]);
   });
 });

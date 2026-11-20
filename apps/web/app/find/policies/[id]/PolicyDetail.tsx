@@ -167,7 +167,7 @@ export default function PolicyDetail({ id }: { id: string }) {
           <p className="mt-1 text-xs leading-[18px] text-ink-500">모집 기간 · {applicationPeriod}</p>
         </header>
 
-        <section className="mt-2 rounded-control bg-accent-50 p-4" aria-label="지원 요약">
+        <section className="mt-2 rounded-control bg-brand-50 p-4" aria-label="지원 요약">
           <p className="text-xs font-medium leading-[18px] text-ink-500">예상 지원 또는 절약</p>
           <p className="mt-1 text-[32px] font-black leading-10 text-ok-700">
             {ceiling?.label ?? "공고 기준으로 확인"}

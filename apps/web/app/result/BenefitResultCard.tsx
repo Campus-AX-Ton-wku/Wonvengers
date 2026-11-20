@@ -35,8 +35,8 @@ function DestinationLink({ href, children, className }: { href: string; children
  * 뺀 것: 우상단 "조건 N개 일치/확인", 신청 가능 카드의 "내 조건과 잘 맞아요" 상자,
  * 자격 요건 · 지원 형태 · 신청 방식 행(배지 · 금액 · 버튼과 같은 말), '검수 상태' 토글(출처 줄의 대조일).
  *
- * 금색은 맨 위 합계에 들어간 금액에만 쓴다(PRODUCT.md "accent 는 금액에만"). 합계에 없는 공고 금액을
- * 같은 금색 상자에 두면 카드 금액을 모두 더한 만큼 받는다고 읽힌다 — 그런 금액은 잉크색으로.
+ * 금액 색(남색 brand-900 + 연한 파랑 상자)은 맨 위 합계에 들어간 금액에만 쓴다(11/20 금색 → 남색). 합계에 없는
+ * 공고 금액을 같은 상자에 두면 카드 금액을 모두 더한 만큼 받는다고 읽힌다 — 그런 금액은 잉크색으로.
  *
  * 11/18 (진단 2회차): 매달 주는 지원은 한 달 금액을 크게, 개월 합계를 아래에('254만원 · 매월 지급'이 매달 254만원으로
  * 읽혔다). 합계 밖 지원은 작은 카드 — 이름 · 공고상 금액 · 보조 버튼 · 출처만. "위 합계에 넣지 않았어요 · 자격은
@@ -126,10 +126,10 @@ export default function BenefitResultCard({
         </div>
       </div>
 
-      <div className="mt-4 rounded-control bg-accent-50 px-4 py-3.5">
+      <div className="mt-4 rounded-control bg-brand-50 px-4 py-3.5">
         <p className="text-xs font-bold text-ink-600">{amountLabel}</p>
         <p
-          className="mt-1 text-[26px] font-extrabold leading-tight text-accent-700 tabular-nums"
+          className="mt-1 text-[26px] font-extrabold leading-tight text-brand-900 tabular-nums"
           aria-label={`${amountLabel}, ${bigText}, ${subText}`}
         >
           {bigText}

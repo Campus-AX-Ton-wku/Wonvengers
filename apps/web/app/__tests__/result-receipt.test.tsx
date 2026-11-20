@@ -23,7 +23,7 @@ describe("돈 요약 영수증 — 매달 나가는 돈과 한 번 내는 돈", 
       />
     );
     // (35만 + 3만) × 12 = 456만 − 254만 4천 = 201만 6천 ÷ 12 = 16만 8천
-    expect(screen.getByText("매달 약 16만 8,000원 + 이사비 60만원(한 번)")).toBeTruthy();
+    expect(screen.getByText("지원을 빼고 실제로 낼 돈 · 매달 약 16만 8,000원 + 이사비 60만원(한 번)")).toBeTruthy();
     expect(screen.queryByText(/한 달에 약/)).toBeNull();
   });
 
@@ -39,6 +39,6 @@ describe("돈 요약 영수증 — 매달 나가는 돈과 한 번 내는 돈", 
       />
     );
     // 매달 38만원 그대로, 이사비 60만 − 50만 = 10만원
-    expect(screen.getByText("매달 약 38만원 + 이사비 10만원(한 번)")).toBeTruthy();
+    expect(screen.getByText("지원을 빼고 실제로 낼 돈 · 매달 약 38만원 + 이사비 10만원(한 번)")).toBeTruthy();
   });
 });
