@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, BottomTabBar, DeadlineBadge, Icon3D, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, DeadlineBadge, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
 import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
+import { TodayCard } from "./TodayCard";
+import { todayTodo } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
@@ -27,7 +29,8 @@ type Costs = { nominal: number; final: number; months: number };
 
 /**
  * 홈 — 내 주거지원 현황 (docs/기획/2026-11-17-홈-찜하기-설계.md "2"). 로그인한 사람만.
- * 순서: 제목 + 내 조건 칩 → 내 지원 요약. 찜한 지원금은 11/20 부터 하단 섬의 '관심' 탭(/saved)이 맡는다.
+ * 순서: 제목 + 내 조건 칩 → 오늘 할 일 → 내 지원 요약 → 다가오는 일정 → 주거 가이드 (11/20 홈 보강, docs/기획/2026-11-20-홈-보강-설계.md).
+ * 관심 지원금 목록은 11/20 부터 하단 섬의 '관심' 탭(/saved)이 맡는다.
  * 모양은 2026-11-17 디자인 시안 '홈 · 로그인 직후' · '홈 · 사용 중'을 따른다.
  *
  * 로그인 확인은 처음 열 때 한 번으로 끝나지 않는다. 열어 둔 사이 로그인이 풀리면(갱신 토큰 만료로
@@ -88,6 +91,9 @@ export default function HomePage() {
 
   const open = openPolicies(policies, answers, today);
   const cards = savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks });
+  const read = { checklist: loadChecklist, documents: loadDocumentChecks };
+  // 답 전(시작하기 카드)에는 할 일을 두지 않는다 — '시작하기'가 그 사람의 할 일 하나다
+  const todo = open === null ? null : todayTodo(policies, answers, saved, today, read, costs !== null);
 
   return (
     <AppShell>
@@ -98,6 +104,8 @@ export default function HomePage() {
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">내 주거지원 현황</h1>
           {open !== null && <ConditionChip line={answerLine(resolveAnswers(answers, today))} />}
         </header>
+
+        {todo?.item && <TodayCard item={todo.item} more={todo.more} />}
 
         {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} />}
 
@@ -196,7 +204,7 @@ function SummaryCard({ open, cards, costs, today }: {
         <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="-ml-1" />
       </LinkButton>
 
-      {costs ? <CostBox costs={costs} showCut={count > 0} /> : <CalculatePrompt />}
+      {costs && <CostBox costs={costs} showCut={count > 0} />}
     </section>
   );
 }
@@ -253,24 +261,6 @@ function CostBox({ costs, showCut }: { costs: Costs; showCut: boolean }) {
         </>
       )}
     </Link>
-  );
-}
-
-/**
- * 계산 전 — 다음 할 일을 상자 하나로. 이 화면의 primary 버튼은 이것 하나다.
- * 그림은 48px 3D 계산기(시안 '3D 아이콘 설계' 5번) — 같은 카드의 Perky(112px)보다 작게 둬서 시선을 뺏지 않는다.
- */
-function CalculatePrompt() {
-  return (
-    <div className="flex flex-col gap-3 rounded-control bg-ink-50 p-4 ring-1 ring-inset ring-ink-100">
-      <div className="flex items-center gap-3">
-        <Icon3D name="calculator" size={48} />
-        <div className="flex flex-col gap-0.5">
-          <p className="text-[15px] font-bold leading-normal text-ink-900">보증금·월세를 넣으면 최종 주거비를 계산해요.</p>
-        </div>
-      </div>
-      <LinkButton href="/calculate" size="screen" full>내 월세 계산하기</LinkButton>
-    </div>
   );
 }
 

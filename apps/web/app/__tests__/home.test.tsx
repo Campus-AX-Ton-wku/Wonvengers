@@ -73,7 +73,7 @@ describe("/home", () => {
     expect(screen.queryByRole("link", { name: /Perky/ })).toBeNull();
   });
 
-  it("지원 요약 — 지금 신청할 수 있는 수, 찜이 없으면 목록 앞 3건 미리 보기, 계산 전이면 계산하기", async () => {
+  it("지원 요약 — 지금 신청할 수 있는 수, 찜이 없으면 목록 앞 3건 미리 보기 (계산 권유는 오늘 할 일로)", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const open = openPolicies(policiesJson as PolicyMeta[], 익산_재직, todayISO()) ?? [];
     render(<HomePage />);
@@ -88,12 +88,9 @@ describe("/home", () => {
 
     const all = within(summary).getByRole("link", { name: open.length > 3 ? `${open.length}건 모두 보기` : "지원금 목록 보기" });
     expect(all.getAttribute("href")).toBe("/find/policies");
-    expect(within(summary).getByText("보증금·월세를 넣으면 최종 주거비를 계산해요.")).toBeTruthy();
-    expect(within(summary).getByRole("link", { name: "내 월세 계산하기" }).getAttribute("href")).toBe("/calculate");
-    // 3D 그림은 계산 권유 칸의 계산기 48px 하나 — 미리 보기 줄에는 두지 않는다(Perky 와 한 카드에 그림이 몰리지 않게, 11/20)
-    const pictures = [...summary.querySelectorAll("img[data-icon3d]")];
-    expect(pictures.map((img) => img.getAttribute("data-icon3d"))).toEqual(["calculator"]);
-    expect(pictures[0].getAttribute("width")).toBe("48");
+    // 계산 권유는 11/20 부터 '오늘 할 일'이 맡는다 — 요약 카드에는 계산 상자도 3D 그림도 없다
+    expect(within(summary).queryByRole("link", { name: /계산하기/ })).toBeNull();
+    expect(summary.querySelectorAll("img[data-icon3d]")).toHaveLength(0);
   });
 
   it("찜이 있으면 미리 보기를 빼고 목록 보기 버튼만", async () => {
@@ -191,6 +188,55 @@ describe("/home", () => {
       render(<HomePage />);
       await screen.findByRole("region", { name: "내 지원 요약" });
       expect(pose()).toBeUndefined();
+    });
+  });
+
+  describe("홈 보강 — 오늘 할 일 · 다가오는 일정 (11/20)", () => {
+    beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); });
+    afterEach(() => { vi.useRealTimers(); });
+    /** 서울 정오 — seoulTodayISO() 가 이 날짜를 돌려준다 */
+    const at = (iso: string) => vi.setSystemTime(new Date(`${iso}T03:00:00Z`));
+
+    it("계산 전이면 오늘 할 일이 '계산하기' — 요약보다 위, 3D 계산기, 버튼은 /calculate", async () => {
+      at("2026-11-20");
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      render(<HomePage />);
+      const todo = await screen.findByRole("region", { name: "오늘 할 일" });
+      expect(within(todo).getByText("실제로 내는 돈, 계산해 볼까요?")).toBeTruthy();
+      expect(within(todo).getByRole("link", { name: /계산하기/ }).getAttribute("href")).toBe("/calculate");
+      expect(todo.querySelector("img[data-icon3d]")?.getAttribute("data-icon3d")).toBe("calculator");
+      const summary = screen.getByRole("region", { name: "내 지원 요약" });
+      expect(todo.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("관심 지원금 마감 임박 — D-n, 남은 날 · 준비 진행 문장, [이어서 준비하기] → 신청 준비", async () => {
+      at("2026-09-25");
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      saveSavedList(["iksan-youth-rent-support"]);
+      saveChecklist("iksan-youth-rent-support", { eligibility: true, period: false, documents: false });
+      render(<HomePage />);
+      const todo = await screen.findByRole("region", { name: "오늘 할 일" });
+      expect(within(todo).getByText("D-5")).toBeTruthy();
+      expect(within(todo).getByText("익산형 청년월세 지원사업")).toBeTruthy();
+      expect(within(todo).getByText("마감까지 5일 남았어요. 신청 준비 1/3까지 했어요.")).toBeTruthy();
+      expect(within(todo).getByRole("link", { name: /이어서 준비하기/ }).getAttribute("href")).toBe("/find/policies/iksan-youth-rent-support/prepare");
+    });
+
+    it("할 일이 없으면 블록이 없다 — 계산했고, 급한 일 · 준비 중인 관심 지원금이 없을 때", async () => {
+      at("2026-11-20");
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      saveListing(makeListing({ region: "전북특별자치도 익산시" })); saveProfile(makeProfile());
+      render(<HomePage />);
+      await screen.findByRole("region", { name: "내 지원 요약" });
+      expect(screen.queryByRole("region", { name: "오늘 할 일" })).toBeNull();
+    });
+
+    it("답 전(시작하기 카드)에는 오늘 할 일이 없다", async () => {
+      at("2026-11-20");
+      enableLogin(); signInAs("sub-a");
+      render(<HomePage />);
+      await screen.findByRole("region", { name: "내 지원 요약" });
+      expect(screen.queryByRole("region", { name: "오늘 할 일" })).toBeNull();
     });
   });
 });
