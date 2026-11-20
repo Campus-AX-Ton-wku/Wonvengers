@@ -5,7 +5,7 @@ import type { Icon3DName } from "./icons3d";
  *
  * 청년이 처음 집을 구할 때 놓치기 쉬운 것만 짧게. 법 · 제도를 '해석'하지 않고, 공식 안내가 말하는 순서와
  * 어디서 확인하는지만 옮긴다. 금액 · 수수료 · 보증 한도처럼 자주 바뀌는 숫자는 넣지 않는다(F0-5 —
- * 확인 못 한 값은 쓰지 않는다). 대신 출처를 글마다 달고, 확인한 날을 적는다.
+ * 확인 못 한 값은 쓰지 않는다). 대신 출처를 글마다 단다. 확인한 날은 checkedAt 에 남긴다(화면에는 11/20 부터 적지 않는다).
  * 내용을 고치면 checkedAt 을 바꾸고 sources 를 다시 열어 본다.
  *
  * 11/20 ggue: 사회 초년생 · 대학생에게 어렵다 → 비유로 쉽게, 노션처럼 한 페이지에 한 장(/guides/[id]/[step]).
@@ -36,7 +36,10 @@ export interface GuideSection {
 }
 
 export interface GuideSource {
-  label: string;
+  /** 기관 · 누리집 이름 */
+  name: string;
+  /** 그 안에서 본 내용 (있을 때만, 가운뎃점은 붙여 쓴다) */
+  topic?: string;
   url: string;
 }
 
@@ -118,11 +121,11 @@ export const GUIDES: Guide[] = [
       },
     ],
     sources: [
-      { label: "주택도시보증공사(HUG) 안심전세포털 — 전세사기 피해 예방", url: "https://www.khug.or.kr/jeonse/" },
-      { label: "찾기쉬운 생활법령 — 주택임대차", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629" },
-      { label: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
-      { label: "세움터(건축물대장)", url: "https://www.eais.go.kr" },
-      { label: "국토교통부 실거래가 공개시스템", url: "https://rt.molit.go.kr" },
+      { name: "주택도시보증공사 안심전세포털", topic: "전세사기 피해 예방", url: "https://www.khug.or.kr/jeonse/" },
+      { name: "찾기쉬운 생활법령", topic: "주택임대차", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629" },
+      { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
+      { name: "세움터", topic: "건축물대장", url: "https://www.eais.go.kr" },
+      { name: "국토교통부 실거래가 공개시스템", url: "https://rt.molit.go.kr" },
     ],
   },
   {
@@ -200,11 +203,11 @@ export const GUIDES: Guide[] = [
       },
     ],
     sources: [
-      { label: "찾기쉬운 생활법령 — 주택임대차(대항력 · 우선변제권 · 임차권등기)", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629" },
-      { label: "정책브리핑 — 주택 임대차 신고제 대상 · 방법", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148888172" },
-      { label: "정책브리핑 — 임대차 신고 시 확정일자 자동 · 무료 부여", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148928316" },
-      { label: "주택도시보증공사(HUG) 안심전세포털", url: "https://www.khug.or.kr/jeonse/" },
-      { label: "대법원 인터넷등기소(온라인 확정일자)", url: "https://www.iros.go.kr" },
+      { name: "찾기쉬운 생활법령", topic: "주택임대차(대항력·우선변제권·임차권등기)", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629" },
+      { name: "정책브리핑", topic: "주택 임대차 신고제 대상과 방법", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148888172" },
+      { name: "정책브리핑", topic: "임대차 신고 때 확정일자 자동·무료 부여", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148928316" },
+      { name: "주택도시보증공사 안심전세포털", url: "https://www.khug.or.kr/jeonse/" },
+      { name: "대법원 인터넷등기소", topic: "온라인 확정일자", url: "https://www.iros.go.kr" },
     ],
   },
   {
@@ -240,24 +243,16 @@ export const GUIDES: Guide[] = [
       },
     ],
     sources: [
-      { label: "정부24", url: "https://www.gov.kr" },
-      { label: "대법원 전자가족관계등록시스템", url: "https://efamily.scourt.go.kr" },
-      { label: "국민건강보험공단", url: "https://www.nhis.or.kr" },
-      { label: "국세청 홈택스", url: "https://www.hometax.go.kr" },
-      { label: "세움터", url: "https://www.eais.go.kr" },
-      { label: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
+      { name: "정부24", url: "https://www.gov.kr" },
+      { name: "대법원 전자가족관계등록시스템", url: "https://efamily.scourt.go.kr" },
+      { name: "국민건강보험공단", url: "https://www.nhis.or.kr" },
+      { name: "국세청 홈택스", url: "https://www.hometax.go.kr" },
+      { name: "세움터", url: "https://www.eais.go.kr" },
+      { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
     ],
   },
 ];
 
 export function findGuide(id: string): Guide | undefined {
   return GUIDES.find((g) => g.id === id);
-}
-
-/** 읽는 시간(분) — 한글 1분에 약 500자로 어림한다. 최소 1분. */
-export function readMinutes(guide: Guide): number {
-  const chars = guide.sections
-    .flatMap((s) => [s.title, s.lead, ...s.body, ...(s.where ?? []), s.caution ?? "", ...(s.terms ?? []).map((t) => t.term + t.meaning)])
-    .join("").length;
-  return Math.max(1, Math.round(chars / 500));
 }
