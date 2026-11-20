@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, BottomTabBar, DeadlineBadge, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
-import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
+import { AppShell, BottomTabBar, buttonClass, DeadlineBadge, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
+import { ArrowRight, ChevronDown, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
 import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
@@ -13,8 +13,8 @@ import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
 import { answerLine } from "@/lib/discovery";
-import { homePose, openPolicies, previewPolicies, savedCards, type SavedCard } from "@/lib/home";
-import { formatKoreanMoney } from "@/lib/money";
+import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
+import { formatApproxMoney } from "@/lib/money";
 import { deadlineLabel } from "@/lib/preparation";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
@@ -110,7 +110,7 @@ export default function HomePage() {
 
         {todo?.item && <TodayCard item={todo.item} more={todo.more} />}
 
-        {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} />}
+        {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} hasTodo={Boolean(todo?.item)} />}
 
         {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
         {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
@@ -157,28 +157,44 @@ function StartCard() {
   );
 }
 
-/** Perky 가 카드 위로 몸의 절반쯤 걸터앉는다. 크기 112px — 시안 가이드 '걸치기 112–150px'의 아래 끝. */
-const PERCH = "absolute -top-[62px] right-3 w-28";
-
-function SummaryCard({ open, cards, costs, today }: {
+/**
+ * 내 지원 요약 (시안 '홈 보강', 11/21 조정).
+ * - Perky 는 카드 **안** 오른쪽 위(100px 칸, 높이 96px) + 발밑 옅은 타원 그림자. 예전엔 카드 위로 걸터앉았다(-62px)
+ * - 지금 신청할 수 있는 지원금은 늘 보이던 미리 보기 3줄 대신 [지원금 목록 보기] 펼침 토글 하나 — 펼치면 전부(ggue 11/21).
+ *   0건이면 펼칠 게 없으니 지원금 화면(예정 · 마감 공고) 링크로 둔다
+ */
+function SummaryCard({ open, cards, costs, today, hasTodo }: {
   open: PolicyMeta[];
   today: string;
   cards: SavedCard[];
   costs: Costs | null;
+  /** 위에 오늘 할 일 카드가 있으면 간격을 좁힌다(시안 16 / 24px) */
+  hasTodo: boolean;
 }) {
+  const [listOpen, setListOpen] = useState(false);
   const count = open.length;
   const pose = homePose(count, cards);
-  const preview = previewPolicies(open, cards.length);
-  const listLabel = preview.length > 0 && count > preview.length ? `${count}건 모두 보기` : "지원금 목록 보기";
 
   return (
-    <section aria-label="내 지원 요약" className="relative mt-[58px] flex flex-col gap-4 rounded-card bg-surface px-5 pb-5 pt-[22px] shadow-card">
+    <section
+      aria-label="내 지원 요약"
+      className={`relative flex flex-col gap-4 rounded-card bg-surface px-5 pb-5 pt-[22px] shadow-card ${hasTodo ? "mt-4" : "mt-6"}`}
+    >
       {/* 캐릭터는 상태를 말하는 자리에만, 한 화면에 하나. 같은 뜻을 옆 글자가 늘 함께 말한다(alt=""). */}
-      <span data-pose={pose} aria-hidden="true" className={`${PERCH} pointer-events-none`}>
-        <PerkyCharacter state={pose} size={112} priority className="h-auto w-28" />
+      <span
+        data-perky-spot
+        aria-hidden="true"
+        className="pointer-events-none absolute right-3.5 top-3 flex size-[100px] items-end justify-center"
+      >
+        <span
+          data-perky-shadow
+          className="absolute -bottom-[5px] left-1/2 -ml-[33px] h-3 w-[66px] rounded-[50%]"
+          style={{ background: "radial-gradient(closest-side, rgba(11,42,74,0.2), rgba(11,42,74,0))" }}
+        />
+        <PerkyCharacter state={pose} size={192} priority className="relative h-24 w-auto" />
       </span>
 
-      <div className="flex flex-col gap-1 pr-28">
+      <div className="flex min-h-[100px] flex-col gap-1 pr-28">
         <p className="text-sm font-semibold text-ink-600">지금 신청할 수 있는 지원금</p>
         <p data-testid="open-count" className="flex items-baseline gap-0.5 text-ink-900">
           <span className="text-[46px] font-extrabold leading-[1.15] tracking-[-0.03em]">{count}</span>
@@ -189,26 +205,45 @@ function SummaryCard({ open, cards, costs, today }: {
         )}
       </div>
 
-      {preview.length > 0 && (
-        <ul aria-label="신청할 수 있는 지원금 미리 보기" className="flex flex-col border-t border-ink-100">
-          {preview.map((policy) => (
-            <li key={policy.id} className="border-b border-ink-100 last:border-b-0">
-              <Link href={`/find/policies/${policy.id}`} className="focus-ring flex min-h-[60px] items-center gap-2.5 rounded-control py-2">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[15px] font-bold leading-snug text-ink-900">{policy.name}</span>
-                  <span className="text-xs text-ink-500">{policy.agency}</span>
-                </span>
-                <DeadlineBadge label={deadlineLabel(policy, today)} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {count === 0 ? (
+        <LinkButton href="/find/policies" variant="secondary" size="screen" full>
+          지원금 목록 보기
+          <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="-ml-1" />
+        </LinkButton>
+      ) : (
+        <>
+          <button
+            type="button"
+            aria-expanded={listOpen}
+            aria-controls="open-policy-list"
+            onClick={() => setListOpen((v) => !v)}
+            className={`${buttonClass({ variant: "secondary", size: "screen" })} w-full`}
+          >
+            {listOpen ? "목록 접기" : "지원금 목록 보기"}
+            <ChevronDown
+              size={ICON_MD}
+              strokeWidth={2.25}
+              aria-hidden="true"
+              className={`-ml-1 transition-transform ${listOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {listOpen && (
+            <ul id="open-policy-list" aria-label="지금 신청할 수 있는 지원금" className="-mt-1 flex flex-col border-t border-ink-100">
+              {open.map((policy) => (
+                <li key={policy.id} className="border-b border-ink-100 last:border-b-0">
+                  <Link href={`/find/policies/${policy.id}`} className="focus-ring flex min-h-[60px] items-center gap-2.5 rounded-control py-2">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-[15px] font-bold leading-snug text-ink-900">{policy.name}</span>
+                      <span className="text-xs text-ink-500">{policy.agency}</span>
+                    </span>
+                    <DeadlineBadge label={deadlineLabel(policy, today)} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
-
-      <LinkButton href="/find/policies" variant="secondary" size="screen" full>
-        {listLabel}
-        <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="-ml-1" />
-      </LinkButton>
 
       {costs && <CostBox costs={costs} showCut={count > 0} />}
     </section>
@@ -216,20 +251,27 @@ function SummaryCard({ open, cards, costs, today }: {
 }
 
 /**
- * 최종 예상 주거비 (시안 '홈 · 사용 중', 11/20). 상자 전체가 결과로 가는 링크 하나라 읽는 이름에 요약을 다 담는다.
+ * 최종 예상 주거비 (시안 '홈 · 사용 중', 11/20 · 11/21 조정). 상자 전체가 결과로 가는 링크 하나라 읽는 이름에 요약을 다 담는다.
  * 지원 전 → 지원 후, 그리고 줄어든 돈 한 줄. 금액 색은 남색이다(11/20 금색 → 남색, ggue).
- * 줄어든 돈은 지금 신청할 수 있는 게 있을 때만 — 0건인데 "○○만원 줄었어요"가 나오면 서로 맞지 않는다(11/20 시안 검토).
+ * - 금액은 천 원 단위(formatApproxMoney — 바뀌면 '약'). 연세를 월로 나눈 '159만 9,996원'이 숫자 한가운데서 꺾였다(11/21).
+ *   정확한 값은 결과 화면에 있다. 금액 덩어리는 줄바꿈하지 않고, 정말 좁으면 '지원 후'가 통째로 아랫줄로 간다
+ * - 지원 전 · 후가 같으면(금액에 넣은 지원 없음) 같은 숫자를 화살표로 잇지 않고 금액 하나 + "아직 금액에 넣은 지원이 없어요"
+ * - 줄어든 돈은 지금 신청할 수 있는 게 있을 때만 — 0건인데 "○○만원 줄었어요"가 나오면 서로 맞지 않는다(11/20 시안 검토)
  * tabular-nums 를 쓰지 않는다 — 이 한글 폰트에서는 등폭 숫자가 벌어져 '6 42만원'처럼 읽힌다 (PolicyCard).
  */
 function CostBox({ costs, showCut }: { costs: Costs; showCut: boolean }) {
   const after = Math.max(costs.final, 0);
   const cut = Math.max(costs.nominal - after, 0);
-  const beforeText = formatKoreanMoney(costs.nominal);
-  const afterText = formatKoreanMoney(after);
+  const beforeText = formatApproxMoney(costs.nominal);
+  const afterText = formatApproxMoney(after);
+  const noSupport = cut === 0;
+  const label = noSupport
+    ? `최종 예상 주거비, ${costs.months}개월 기준, ${afterText}. 아직 금액에 넣은 지원이 없어요. 결과 보기`
+    : `최종 예상 주거비, ${costs.months}개월 기준. 지원 전 ${beforeText}, 지원 후 ${afterText}. 결과 보기`;
   return (
     <Link
       href="/result"
-      aria-label={`최종 예상 주거비, ${costs.months}개월 기준. 지원 전 ${beforeText}, 지원 후 ${afterText}. 결과 보기`}
+      aria-label={label}
       className="focus-ring flex flex-col gap-3.5 rounded-control bg-brand-50 px-4 pb-3.5 pt-4 transition-colors hover:bg-brand-100"
     >
       <span className="flex items-center justify-between gap-2">
@@ -241,27 +283,35 @@ function CostBox({ costs, showCut }: { costs: Costs; showCut: boolean }) {
         </span>
         <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="shrink-0 text-ink-500" />
       </span>
-      <span className="flex items-end gap-2.5">
-        <span className="flex shrink-0 flex-col gap-0.5 pb-[3px]">
-          <span className="text-xs font-semibold text-ink-600">지원 전</span>
-          <span className="text-[17px] font-bold text-ink-600">{beforeText}</span>
+      {noSupport ? (
+        <span className="flex flex-col gap-1">
+          <span className="whitespace-nowrap text-2xl font-extrabold leading-tight tracking-[-0.02em] text-brand-900">{afterText}</span>
+          <span className="text-sm text-ink-600">아직 금액에 넣은 지원이 없어요</span>
         </span>
-        <span aria-hidden="true" className="mb-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-brand-800 shadow-[0_2px_6px_-2px_rgba(11,42,74,0.22)]">
-          <ArrowRight size={ICON_SM} strokeWidth={2.5} />
+      ) : (
+        <span className="flex flex-wrap items-end gap-x-2.5 gap-y-2">
+          <span className="flex items-end gap-2.5">
+            <span className="flex flex-col gap-0.5 pb-[3px]">
+              <span className="text-xs font-semibold text-ink-600">지원 전</span>
+              <span className="whitespace-nowrap text-[17px] font-bold text-ink-600">{beforeText}</span>
+            </span>
+            <span aria-hidden="true" className="mb-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-brand-800 shadow-[0_2px_6px_-2px_rgba(11,42,74,0.22)]">
+              <ArrowRight size={ICON_SM} strokeWidth={2.5} />
+            </span>
+          </span>
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs font-bold text-brand-800">지원 후</span>
+            <span className="whitespace-nowrap text-2xl font-extrabold leading-tight tracking-[-0.02em] text-brand-900">{afterText}</span>
+          </span>
         </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-xs font-bold text-brand-800">지원 후</span>
-          {/* break-keep — 좁은 화면에서는 '285만' / '6,000원' 처럼 단위에서만 꺾인다 */}
-          <span className="break-keep text-2xl font-extrabold leading-tight tracking-[-0.02em] text-brand-900">{afterText}</span>
-        </span>
-      </span>
-      {showCut && cut > 0 && (
+      )}
+      {showCut && !noSupport && (
         <>
           <span aria-hidden="true" className="h-px bg-brand-600/15" />
           <span className="-mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <TrendingDown size={ICON_SM} strokeWidth={2.5} aria-hidden="true" className="shrink-0 text-brand-800" />
             <span>
-              <strong className="font-extrabold text-brand-800">{formatKoreanMoney(cut)}</strong> 줄었어요
+              <strong className="whitespace-nowrap font-extrabold text-brand-800">{formatApproxMoney(cut)}</strong> 줄었어요
             </span>
           </span>
         </>

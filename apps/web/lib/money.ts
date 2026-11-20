@@ -20,6 +20,17 @@ export function formatKoreanMoney(amount: number): string {
 }
 
 /**
+ * 홈 요약 상자처럼 좁은 자리에서 쓰는 금액 — 천 원 단위로 반올림한다. 반올림으로 값이 바뀌면 '약'을 붙여 정확한 값이 아님을 밝힌다.
+ * 연세를 월로 나누면 '159만 9,996원'처럼 원 단위가 생겨 줄이 숫자 한가운데서 꺾였다(11/21). 정확한 값은 결과 화면(formatKoreanMoney)에 있다.
+ */
+export function formatApproxMoney(amount: number): string {
+  if (!Number.isFinite(amount) || amount <= 0) return "0원";
+  const rounded = Math.round(amount / 1000) * 1000;
+  const text = formatKoreanMoney(rounded);
+  return rounded === amount ? text : `약 ${text}`;
+}
+
+/**
  * 금액 입력은 만원 단위로 받는다 (3 → 30,000원).
  *
  * 월세·보증금은 자릿수가 길어 "350000" 을 넣다가 0 을 하나 더/덜 치는 실수가 잦다.

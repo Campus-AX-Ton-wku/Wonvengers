@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import policiesJson from "@/data/policies.json";
 import { resolveAnswers } from "../age";
 import { groupPolicies, splitByApplicationWindow } from "../discovery";
-import { availableCount, homePose, openPolicies, previewPolicies, savedCards, sortSavedCards, type SavedCard } from "../home";
+import { availableCount, homePose, openPolicies, savedCards, sortSavedCards, type SavedCard } from "../home";
 import type { DiscoveryAnswers, PolicyMeta } from "../types";
 import { birthDateForAge } from "./fixtures";
 
@@ -40,23 +40,6 @@ describe("홈 계산", () => {
     expect(docs.length).toBeGreaterThan(0);
     expect(cards[0].progress).toMatchObject({ label: `서류 0/${docs.length} 준비`, done: 0, total: docs.length });
     expect(cards[1].progress).toMatchObject({ label: "신청 준비 0/3", done: 0, total: 3 });
-  });
-});
-
-describe("요약 카드 미리 보기", () => {
-  // 순서만 보는 계산이라 실제 데이터의 신청 가능 건수(때마다 바뀐다)에 기대지 않는다.
-  const open = policies.slice(0, 5);
-
-  it("찜이 없으면 목록 순서대로 앞 3건", () => {
-    expect(previewPolicies(open, 0)).toEqual(open.slice(0, 3));
-  });
-
-  it("3건 이하면 전부", () => {
-    expect(previewPolicies(open.slice(0, 2), 0)).toEqual(open.slice(0, 2));
-  });
-
-  it("찜이 하나라도 있으면 보여 주지 않는다 — 아래 찜 목록과 겹친다", () => {
-    expect(previewPolicies(open, 1)).toEqual([]);
   });
 });
 

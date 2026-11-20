@@ -22,17 +22,6 @@ export function availableCount(policies: PolicyMeta[], answers: DiscoveryAnswers
   return openPolicies(policies, answers, todayISO)?.length ?? null;
 }
 
-/** 요약 카드 안 미리 보기 줄 수. 넷 이상이면 카드가 목록이 되어 아래 찜 칸이 화면 밖으로 밀린다. */
-const PREVIEW_MAX = 3;
-
-/**
- * 요약 카드 미리 보기 — 찜이 없을 때만 목록 순서대로 앞 3건.
- * 찜이 생기면 아래 '찜한 지원금'이 정책 이름을 보여 주므로 같은 이름이 두 번 나오지 않게 뺀다.
- */
-export function previewPolicies(open: readonly PolicyMeta[], savedCount: number): PolicyMeta[] {
-  return savedCount > 0 ? [] : open.slice(0, PREVIEW_MAX);
-}
-
 export type SavedCard = { policy: PolicyMeta; deadline: string; progress: ReturnType<typeof homeProgress> };
 
 export function savedCards(
