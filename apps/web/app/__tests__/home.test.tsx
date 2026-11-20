@@ -120,13 +120,15 @@ describe("/home", () => {
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
-  it("요약 아래 주거 가이드 세 장 — 전체 보기는 /guides", async () => {
+  it("요약 아래 주거 가이드 세 장 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 전체 보기는 /guides", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const guides = await screen.findByRole("region", { name: "주거 가이드" });
     expect(within(guides).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/guides");
     const cards = within(guides).getAllByRole("listitem").map((li) => within(li).getByRole("link").getAttribute("href"));
-    expect(cards).toEqual(["/guides/before-contract", "/guides/protect-deposit", "/guides/where-documents"]);
+    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract"]);
+    expect(within(within(guides).getAllByRole("listitem")[0]).getByText("월세라면 먼저")).toBeTruthy();
+    expect(within(within(guides).getAllByRole("listitem")[1]).queryByText(/라면 먼저/)).toBeNull();
   });
 
   it("계산이 끝났으면 최종 예상 주거비 상자와 결과 보기, 계산하기는 숨긴다", async () => {
@@ -237,6 +239,44 @@ describe("/home", () => {
       render(<HomePage />);
       await screen.findByRole("region", { name: "내 지원 요약" });
       expect(screen.queryByRole("region", { name: "오늘 할 일" })).toBeNull();
+    });
+
+    it("관심 지원금 신청 시작이 14일 안이면 다가오는 일정 — 날짜 · 신청 시작 · 상세 링크, 알림함 링크", async () => {
+      at("2026-04-05");
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      saveListing(makeListing({ region: "전북특별자치도 익산시" })); saveProfile(makeProfile());
+      saveSavedList(["iksan-youth-rent-support"]);
+      render(<HomePage />);
+      const schedule = await screen.findByRole("region", { name: "다가오는 일정" });
+      const row = within(schedule).getByRole("link", { name: /익산형 청년월세 지원사업/ });
+      expect(row.getAttribute("href")).toBe("/find/policies/iksan-youth-rent-support");
+      expect(within(row).getByText("4.15")).toBeTruthy();
+      expect(within(row).getByText("수요일")).toBeTruthy();
+      expect(within(row).getByText("신청 시작")).toBeTruthy();
+      expect(within(schedule).getByRole("link", { name: /알림함/ }).getAttribute("href")).toBe("/notifications");
+      // 오늘 할 일은 새로 열린 청년월세(3/30) — 일정의 익산형과 겹치지 않는다. 블록 순서: 요약 → 일정
+      const todo = screen.getByRole("region", { name: "오늘 할 일" });
+      expect(within(todo).getByText("청년월세 지원 (2026년 상시사업 전환)")).toBeTruthy();
+      const summary = screen.getByRole("region", { name: "내 지원 요약" });
+      expect(summary.compareDocumentPosition(schedule) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("오늘 할 일에 오른 정책은 일정에서 빠진다 — 남는 게 없으면 블록째 숨김", async () => {
+      at("2026-09-25"); // 익산형 청년월세 9/30 마감 — 할 일(D-5)에 오른다
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      saveSavedList(["iksan-youth-rent-support"]);
+      render(<HomePage />);
+      await screen.findByRole("region", { name: "오늘 할 일" });
+      expect(screen.queryByRole("region", { name: "다가오는 일정" })).toBeNull();
+    });
+
+    it("11/20 데이터(마감 4 · 상시 4)는 14일 안 일정이 없다 — 블록을 숨긴다", async () => {
+      at("2026-11-20");
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      saveSavedList(["youth-housing-benefit-split-payment", "moland-youth-rent-support"]);
+      render(<HomePage />);
+      await screen.findByRole("region", { name: "내 지원 요약" });
+      expect(screen.queryByRole("region", { name: "다가오는 일정" })).toBeNull();
     });
   });
 });

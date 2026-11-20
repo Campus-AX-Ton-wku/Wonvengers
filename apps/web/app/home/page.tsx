@@ -6,8 +6,9 @@ import policiesJson from "@/data/policies.json";
 import { AppShell, BottomTabBar, DeadlineBadge, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
 import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
+import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
-import { todayTodo } from "@/lib/home-today";
+import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
@@ -18,9 +19,9 @@ import { deadlineLabel } from "@/lib/preparation";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
-import { GUIDES } from "@/lib/guides";
+import { guidesForHousing } from "@/lib/guides";
 import { buildCalculationSummary } from "@/lib/summary";
-import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -94,6 +95,8 @@ export default function HomePage() {
   const read = { checklist: loadChecklist, documents: loadDocumentChecks };
   // 답 전(시작하기 카드)에는 할 일을 두지 않는다 — '시작하기'가 그 사람의 할 일 하나다
   const todo = open === null ? null : todayTodo(policies, answers, saved, today, read, costs !== null);
+  // 오늘 할 일에 오른 정책은 일정에서 뺀다 — 같은 지원금이 한 화면에 두 번 나오지 않게(11/20)
+  const schedule = upcomingSchedule(policies, saved, today, todoPolicyId(todo?.item ?? null));
 
   return (
     <AppShell>
@@ -109,7 +112,10 @@ export default function HomePage() {
 
         {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} />}
 
-        <GuideRow />
+        {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
+        {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
+
+        <GuideRow housingType={answers.housingType} />
       </main>
       <BottomTabBar active="home" />
     </AppShell>
@@ -266,9 +272,10 @@ function CostBox({ costs, showCut }: { costs: Costs; showCut: boolean }) {
 
 /**
  * 주거 가이드 (11/20) — 요약 아래 가로로 넘기는 카드 3장. 세 번째 카드가 살짝 잘려 보여 옆으로 넘길 수 있다는 걸 말한다.
- * 글은 lib/guides.ts (출처 · 확인일과 함께).
+ * 글은 lib/guides.ts (출처 · 확인일과 함께). 첫 카드는 집 형태 답으로 고른다(guidesForHousing, 11/20).
  */
-function GuideRow() {
+function GuideRow({ housingType }: { housingType: HousingType | null }) {
+  const { guides, tag } = guidesForHousing(housingType);
   return (
     <section aria-labelledby="guides-heading" className="mt-8 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
@@ -284,9 +291,9 @@ function GuideRow() {
         </Link>
       </div>
       <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 pt-0.5 [scrollbar-width:none] min-[390px]:-mx-5 min-[390px]:px-5">
-        {GUIDES.map((guide) => (
+        {guides.map((guide, i) => (
           <li key={guide.id} className="flex">
-            <GuideCard guide={guide} compact />
+            <GuideCard guide={guide} compact tag={i === 0 ? tag : null} />
           </li>
         ))}
       </ul>
