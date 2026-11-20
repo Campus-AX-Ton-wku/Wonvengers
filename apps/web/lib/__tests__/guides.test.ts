@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUIDES, findGuide, readMinutes } from "../guides";
+import { GUIDES, findGuide } from "../guides";
 import { ICON3D_NAMES } from "../icons3d";
 
 describe("주거 가이드 (lib/guides.ts)", () => {
@@ -31,8 +31,13 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     for (const t of ["대항력", "우선변제권", "임차권등기", "근저당"]) expect(terms).toContain(t);
   });
 
-  it("읽는 시간은 1분 이상", () => {
-    for (const g of GUIDES) expect(readMinutes(g)).toBeGreaterThanOrEqual(1);
+  it("출처 이름 · 주제에 줄표(—)나 띄운 가운뎃점( · )을 쓰지 않는다 — 기관 이름과 주제를 칸으로 나눈다", () => {
+    for (const g of GUIDES) {
+      for (const s of g.sources) {
+        expect(s.name).not.toMatch(/—| · /);
+        if (s.topic) expect(s.topic).not.toMatch(/—| · /);
+      }
+    }
   });
 
   it("자주 바뀌는 수수료 금액은 쓰지 않는다 (F0-5)", () => {
