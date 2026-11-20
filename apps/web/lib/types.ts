@@ -155,6 +155,11 @@ export interface PolicyMeta {
   name: string;
   /** 정책 종류 3D 아이콘 (Supabase policies.icon, 11/20). 목록 · 찜 · 결과 카드와 상세 화면 머리에 그린다. */
   icon: PolicyIcon;
+  /**
+   * 처음 앱에 보인 때 (Supabase policies.published_at, 11/20). 알림함의 '새 지원금'이 쓴다(lib/inbox.ts).
+   * 알림 서버가 기준선을 잡기 전부터 있던 정책은 없다.
+   */
+  publishedAt?: string;
   agency: string;
   regionScope: string;
   applicationStart: string; // YYYY-MM-DD
