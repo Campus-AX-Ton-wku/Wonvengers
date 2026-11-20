@@ -2,7 +2,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 vi.mock("@/lib/redirect", () => ({ goTo: vi.fn(), replacePage: vi.fn(), reloadPage: vi.fn() }));
 vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), deleteAccountRemote: vi.fn() }));
@@ -74,43 +73,21 @@ describe("/home", () => {
     expect(screen.queryByRole("link", { name: /Perky/ })).toBeNull();
   });
 
-  it("지원 요약 — 지금 신청할 수 있는 수, 목록은 [지원금 목록 보기]를 눌러야 카드 안에 펼쳐진다 (11/21)", async () => {
+  it("지원 요약 — 지금 신청할 수 있는 수와 [지원금 목록 보기] → 지원금 화면 (미리 보기 줄 · 펼침 없음, 11/21)", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const open = openPolicies(policiesJson as PolicyMeta[], 익산_재직, todayISO()) ?? [];
-    expect(open.length).toBeGreaterThan(0);
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });
     expect(within(summary).getByText("지금 신청할 수 있는 지원금")).toBeTruthy();
     expect(within(summary).getByTestId("open-count").textContent).toBe(`${open.length}건`);
     expect(within(summary).queryByText(/공고 기준이에요/)).toBeNull();
-
-    // 처음엔 접혀 있다 — 늘 보이던 미리 보기 줄이 없다
+    // 목록은 지원금 화면이 맡는다 — 홈에는 미리 보기 줄도 펼침 토글도 없다
     expect(within(summary).queryByRole("list")).toBeNull();
-    const toggle = within(summary).getByRole("button", { name: /지원금 목록 보기/ });
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    const user = userEvent.setup();
-    await user.click(toggle);
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(toggle.textContent).toMatch(/목록 접기/);
-    // 펼치면 지금 신청할 수 있는 지원금 전부 — 줄마다 상세로
-    const list = within(summary).getByRole("list", { name: "지금 신청할 수 있는 지원금" });
-    expect(within(list).getAllByRole("link").map((r) => r.getAttribute("href"))).toEqual(open.map((p) => `/find/policies/${p.id}`));
-    await user.click(toggle);
-    expect(within(summary).queryByRole("list")).toBeNull();
-
+    expect(within(summary).queryByRole("button", { name: /목록/ })).toBeNull();
+    expect(within(summary).getByRole("link", { name: /지원금 목록 보기/ }).getAttribute("href")).toBe("/find/policies");
     // 계산 권유는 11/20 부터 '오늘 할 일'이 맡는다 — 요약 카드에는 계산 상자도 3D 그림도 없다
     expect(within(summary).queryByRole("link", { name: /계산하기/ })).toBeNull();
     expect(summary.querySelectorAll("img[data-icon3d]")).toHaveLength(0);
-  });
-
-  it("지금 신청할 수 있는 게 0건이면 펼칠 게 없으니 [지원금 목록 보기]는 지원금 화면 링크 — 예정 · 마감 공고는 거기서", async () => {
-    enableLogin(); signInAs("sub-a");
-    saveAnswers({ ...익산_재직, birthDate: birthDateForAge(17), incomeBracket: 10 });
-    render(<HomePage />);
-    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(within(summary).getByTestId("open-count").textContent).toMatch(/^0/);
-    expect(within(summary).getByRole("link", { name: /지원금 목록 보기/ }).getAttribute("href")).toBe("/find/policies");
-    expect(within(summary).queryByRole("button", { name: /지원금 목록 보기/ })).toBeNull();
   });
 
   it("답 전이면 시작하기", async () => {
