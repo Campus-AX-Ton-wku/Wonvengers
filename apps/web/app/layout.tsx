@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ENTRY_SCRIPT } from "@/lib/entry";
 import { START_REDIRECT } from "@/lib/start-redirect";
+import { APPLE_SPLASH, SPLASH_SCRIPT } from "@/lib/splash";
+import { SplashGate } from "@/app/components/SplashGate";
 import { contentSecurityPolicy } from "@/lib/csp";
 
 /*
@@ -105,9 +107,25 @@ export default function RootLayout({
         {/* 루트 리다이렉트는 lib/start-redirect.ts. 같은 스크립트가 이 탭의 첫 화면 기록 칸에 표도 단다
             (lib/entry.ts). 왼쪽 위 화살표가 "뒤로" 갈지 "정해 둔 상위 화면" 으로 갈지 정하는 표이고,
             React 가 뜨기 전에 달아야 첫 화면이 곧바로 replace(`/find` → `/find?q=birth`)돼도 놓치지 않는다. */}
-        <script dangerouslySetInnerHTML={{ __html: `${START_REDIRECT};${ENTRY_SCRIPT}` }} />
+        {/* 앱 시작 화면(lib/splash.ts)을 띄울지도 그리기 전에 정한다 — 맨 앞에 둔다(/ 에서 넘어가는 동안에도 파랑이 이어지게) */}
+        <script dangerouslySetInnerHTML={{ __html: `${SPLASH_SCRIPT};${START_REDIRECT};${ENTRY_SCRIPT}` }} />
+        {/* 아이폰 시작 이미지 — 기종 화면 크기와 정확히 같은 PNG 를 기종마다(scripts/build-apple-splash.mjs).
+            apple-mobile-web-app-capable 이 있어야 아이폰이 시작 이미지를 쓴다(11/20, docs/기획/2026-11-20-앱-시작-화면-설계.md) */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        {APPLE_SPLASH.map(({ href, media }) => (
+          <link key={href} rel="apple-touch-startup-image" href={href} media={media} />
+        ))}
       </head>
-      <body className="min-h-dvh bg-canvas text-ink-900 antialiased">{children}</body>
+      <body className="min-h-dvh bg-canvas text-ink-900 antialiased">
+        {/* 앱 시작 화면 — html.splash 일 때만 보인다(globals.css). 아이폰 시작 이미지와 같은 한 장: 파랑 + 정가운데 앱 아이콘 */}
+        <div id="splash" role="status" aria-label="Perky를 여는 중">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 번들보다 먼저 그려져야 하는 정적 그림 */}
+          <img src="/icon.png" alt="" width={150} height={150} />
+          <p className="splash-slow">조금 오래 걸리고 있어요</p>
+        </div>
+        <SplashGate />
+        {children}
+      </body>
     </html>
   );
 }

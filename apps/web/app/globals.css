@@ -320,3 +320,62 @@ select.input {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ── 앱 시작 화면 (docs/기획/2026-11-20-앱-시작-화면-설계.md) ──
+   <head> 의 SPLASH_SCRIPT 가 html.splash 를 달면 보이고, SplashGate 가 걷는다. 아이폰 시작 이미지(public/splash)와
+   같은 한 장이라 기기 화면 → 웹 화면으로 넘어가도 아무것도 바뀌지 않는다 — 문구 · 움직임을 두지 않는 이유.
+   "조금 오래 걸리고 있어요"는 3초 뒤 CSS 로만 띄운다(코드가 늦게 받아질 때 필요한 줄이라 JS 타이머로는 안 뜬다). */
+#splash {
+  display: none;
+}
+html.splash {
+  background: var(--color-brand-600);
+}
+html.splash body {
+  overflow: hidden;
+}
+html.splash #splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand-600);
+}
+#splash img {
+  display: block;
+  width: 150px;
+  height: 150px;
+}
+/* 마크는 정가운데 그대로, 줄은 그 아래에 따로 — 줄이 나타나도 마크가 움직이지 않는다 */
+#splash .splash-slow {
+  position: absolute;
+  top: calc(50% + 92px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff; /* brand-600 위 4.78:1 */
+  opacity: 0;
+  animation: splash-slow 0.3s ease-out 3s forwards;
+}
+@keyframes splash-slow {
+  to {
+    opacity: 1;
+  }
+}
+html.splash-out #splash {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  #splash .splash-slow {
+    animation-duration: 0s;
+  }
+  html.splash-out #splash {
+    transition: none;
+  }
+}
