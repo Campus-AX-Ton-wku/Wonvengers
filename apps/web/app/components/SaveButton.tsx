@@ -40,10 +40,9 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
       <button
         type="button"
         aria-pressed={saved}
-        aria-label={`${policyName} 찜하기`}
+        aria-label={`${policyName} 관심 지원금에 담기`}
         onClick={onClick}
-        /* 찜한 하트는 파랑이다. 예전에는 금색(accent)이었는데, 금색은 금액에만 쓰는 색이라
-           "이 색 = 받을 수 있는 돈" 신호가 흐려졌다 (globals.css). 모양도 빈 하트 ↔ 채운 하트로
+        /* 관심 지원금에 담은 하트는 파랑이다(예전 금색 → 9/2 파랑). 모양도 빈 하트 ↔ 채운 하트로
            바뀌어 색만으로 상태를 말하지 않는다. */
         className={`focus-ring inline-flex size-11 items-center justify-center rounded-full transition-colors ${
           saved ? "bg-brand-50 text-brand-600 hover:bg-brand-100" : "text-ink-500 hover:bg-brand-50"
@@ -53,8 +52,8 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
       </button>
       {loginOpen && (
         <LoginSheet
-          title="로그인하고 찜해 둘까요?"
-          description="카카오로 3초 만에 로그인하면 찜한 지원금을 모아 두고 이어서 볼 수 있어요."
+          title="로그인하고 관심 지원금에 담아 둘까요?"
+          description="카카오로 3초 만에 로그인하면 관심 지원금을 모아 두고 이어서 볼 수 있어요."
           next={`${window.location.pathname}${window.location.search}`}
           onClose={() => setLoginOpen(false)}
         />

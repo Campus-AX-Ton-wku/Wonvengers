@@ -95,7 +95,7 @@ export default function FindResultPage() {
                   /* 금색은 '받을 수 있는 돈' 신호다. 이 화면에서 이 색을 쓰는 건
                      이 한 줄뿐이라 눈이 여기로 먼저 간다. */
                   <p
-                    className="amount-reveal mt-2 text-[46px] font-extrabold leading-none text-accent-600"
+                    className="amount-reveal mt-2 text-[46px] font-extrabold leading-none text-brand-900"
                     style={{ animationDelay: "0.12s" }}
                   >
                     {최대상한.label}

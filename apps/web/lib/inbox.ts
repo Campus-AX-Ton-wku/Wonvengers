@@ -28,7 +28,7 @@ export const NEW_POLICY_DAYS = 30;
 
 const DAY = 86_400_000;
 
-function daysBetween(fromISO: string, toISO: string): number {
+export function daysBetween(fromISO: string, toISO: string): number {
   return Math.round((Date.parse(toISO) - Date.parse(fromISO)) / DAY);
 }
 

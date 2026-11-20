@@ -152,7 +152,7 @@ describe("composeReminder — 정해진 문구", () => {
 
   it("한 건 — 남은 날과 준비 화면", () => {
     expect(composeReminder([{ policy: a, days: 7 }])).toEqual({
-      title: "찜한 지원금 마감이 다가와요",
+      title: "관심 지원금 마감이 다가와요",
       body: "익산시 청년월세 — 마감까지 7일 남았어요. 신청 준비를 확인해 보세요",
       url: "/find/policies/a/prepare",
       tag: "deadline",
@@ -162,7 +162,7 @@ describe("composeReminder — 정해진 문구", () => {
 
   it("여러 건 — 첫 건 이름 외 n건, 관심 탭으로", () => {
     expect(composeReminder([{ policy: a, days: 1 }, { policy: b, days: 7 }])).toEqual({
-      title: "찜한 지원금 2건 마감이 다가와요",
+      title: "관심 지원금 2건 마감이 다가와요",
       body: "익산시 청년월세 외 1건 — 신청 준비를 확인해 보세요",
       url: "/saved",
       tag: "deadline",

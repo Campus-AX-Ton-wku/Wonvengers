@@ -5,10 +5,11 @@
 | | |
 |---|---|
 | 크기 | 2048 × 2048 |
-| 배경 | `#2f6bff` (블루) |
+| 배경 | `#1a6bef` (brand-600 — 2026-11-20 `#2f6bff` 에서 바꿈. 웹 시작 화면 · 매니페스트 · 아이폰 시작 이미지와 한 색) |
 | 마크 | `#ffffff` 흰색 소문자 `p` + 새싹 잎 두 장, 카운터(구멍)는 배경색이 비침 |
 | 만든 방법 | Figma `Perky-Design` 의 `App Icon / Blue` (node `12:7`) 를 2× PNG 로 내보낸 뒤, 아트보드 회색(`#f5f5f5`) 모서리를 배경색으로 채워 풀블리드로 만듦 |
-| 확정일 | 2026-09-03 |
+| 확정일 | 2026-09-03 (바탕색 2026-11-20) |
+| 파생 굽기 | `node apps/web/scripts/build-app-icons.mjs` — 바탕색 바꾸기 + `app/icon.png` 512 · `app/apple-icon.png` 180 · `public/icon-192.png` · `public/icon-maskable-512.png`(85%). 아이콘을 바꾸면 `node apps/web/scripts/build-apple-splash.mjs` 로 아이폰 시작 이미지도 다시 굽는다 |
 
 **Figma 에서 다시 받을 때 주의**: 내보낸 PNG 는 둥근 모서리가 그려져 있고 그 바깥이
 아트보드 회색이다. 그대로 구우면 iOS 홈 화면에 회색 모서리가 뜬다. 행마다 좌우

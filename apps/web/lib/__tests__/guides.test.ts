@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUIDES, findGuide } from "../guides";
+import { GUIDES, findGuide, guidesForHousing } from "../guides";
 import { ICON3D_NAMES } from "../icons3d";
 
 describe("주거 가이드 (lib/guides.ts)", () => {
@@ -44,5 +44,28 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     const text = JSON.stringify(GUIDES);
     expect(text).not.toMatch(/\d+\s*원(?!\s*이)/);
     expect(findGuide("nope")).toBeUndefined();
+  });
+});
+
+describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
+  const ids = (h: Parameters<typeof guidesForHousing>[0]) => guidesForHousing(h).guides.map((g) => g.id);
+
+  it("월세 · 연세 — 서류 떼는 곳부터, 꼬리표 '○○라면 먼저'", () => {
+    expect(ids("월세")).toEqual(["where-documents", "protect-deposit", "before-contract"]);
+    expect(guidesForHousing("월세").tag).toBe("월세라면 먼저");
+    expect(ids("연세")).toEqual(["where-documents", "protect-deposit", "before-contract"]);
+    expect(guidesForHousing("연세").tag).toBe("연세라면 먼저");
+  });
+
+  it("전세 — 보증금 지키기부터", () => {
+    expect(ids("전세")).toEqual(["protect-deposit", "before-contract", "where-documents"]);
+    expect(guidesForHousing("전세").tag).toBe("전세라면 먼저");
+  });
+
+  it("그 외 · 안 답함 — 지금 순서 그대로, 꼬리표 없음", () => {
+    for (const h of ["그 외", null] as const) {
+      expect(ids(h)).toEqual(GUIDES.map((g) => g.id));
+      expect(guidesForHousing(h).tag).toBeNull();
+    }
   });
 });

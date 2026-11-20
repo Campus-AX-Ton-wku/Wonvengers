@@ -99,12 +99,12 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     expect(within(article).queryByText(/조건 \d+개 (일치|확인)$/)).toBeNull();
   });
 
-  it("합계에 든 일시금은 금색 상자 — 합계 밖 정액은 작은 카드에 잉크색으로, 보조 버튼 하나만 (11/18)", () => {
+  it("합계에 든 일시금은 남색 금액 상자 — 합계 밖 정액은 작은 카드에 잉크색으로, 보조 버튼 하나만 (11/18)", () => {
     const counted = result();
     const countedCard = toBenefitResultCardData(counted, "2026-09-02", new Set(["real-policy-id"]))!;
     const { unmount } = render(<BenefitResultCard card={countedCard} result={counted} listing={listing} />);
     expect(screen.getByText("예상 금액")).toBeTruthy();
-    expect(screen.getByText("최대 50만원").className).toContain("text-accent-700");
+    expect(screen.getByText("최대 50만원").className).toContain("text-brand-900");
     unmount();
 
     const fixed = result("조건충족시가능");
@@ -115,7 +115,7 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     const article = screen.getByRole("article");
     // '확인 필요' 주황 배지는 두지 않는다 — 묶음 제목 '조건이 맞으면 더 받을 수 있는 지원'이 이미 말한다 (11/20)
     expect(within(article).queryByText("확인 필요")).toBeNull();
-    expect(within(article).getByText("최대 10만원").className).not.toContain("accent");
+    expect(within(article).getByText("최대 10만원").className).not.toContain("brand-900");
     expect(within(article).getByText(/공고상 금액/)).toBeTruthy();
     // 합계 밖이라는 설명 · 자격 확인 안내는 그룹 설명이 한 번만 한다 — 카드마다 되풀이하지 않는다
     expect(within(article).queryByText(/위 합계에는 넣지 않았어요/)).toBeNull();
@@ -132,7 +132,7 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     monthly.estimatedAmount = 2544000;
     const card = toBenefitResultCardData(monthly, "2026-09-02", new Set(["real-policy-id"]))!;
     render(<BenefitResultCard card={card} result={monthly} listing={makeListing({ contractType: "월세", rentOrYearlyAmount: 350000, months: 12 })} />);
-    expect(screen.getByText("월 21만 2,000원").className).toContain("text-accent-700");
+    expect(screen.getByText("월 21만 2,000원").className).toContain("text-brand-900");
     expect(screen.getByText("12개월이면 254만 4,000원")).toBeTruthy();
     expect(screen.queryByText(/거주 기간 동안/)).toBeNull();
   });

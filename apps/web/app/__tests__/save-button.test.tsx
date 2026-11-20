@@ -30,8 +30,8 @@ describe("♡ 찜 버튼", () => {
     enableLogin();
     window.history.replaceState(null, "", "/find/policies/a");
     render(<SaveButton policyId="a" policyName="청년월세" />);
-    await userEvent.setup().click(screen.getByRole("button", { name: "청년월세 찜하기" }));
-    expect(screen.getByRole("dialog", { name: "로그인하고 찜해 둘까요?" })).toBeTruthy();
+    await userEvent.setup().click(screen.getByRole("button", { name: "청년월세 관심 지원금에 담기" }));
+    expect(screen.getByRole("dialog", { name: "로그인하고 관심 지원금에 담아 둘까요?" })).toBeTruthy();
     expect(loadSaved()).toEqual([]);
     await userEvent.setup().click(screen.getByRole("button", { name: "카카오로 계속하기" }));
     expect(signIn).toHaveBeenCalledWith("/find/policies/a");
@@ -42,7 +42,7 @@ describe("♡ 찜 버튼", () => {
     signInAs("sub-a");
     render(<SaveButton policyId="a" policyName="청년월세" />);
     const user = userEvent.setup();
-    const button = screen.getByRole("button", { name: "청년월세 찜하기" });
+    const button = screen.getByRole("button", { name: "청년월세 관심 지원금에 담기" });
     expect(button.getAttribute("aria-pressed")).toBe("false");
     await user.click(button);
     expect(loadSaved()).toEqual(["a"]);
@@ -60,7 +60,7 @@ describe("♡ 찜 버튼", () => {
         <SaveButton policyId="a" policyName="청년월세" />
       </div>
     );
-    await userEvent.setup().click(screen.getByRole("button", { name: "청년월세 찜하기" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "청년월세 관심 지원금에 담기" }));
     expect(onParentClick).not.toHaveBeenCalled();
   });
 });

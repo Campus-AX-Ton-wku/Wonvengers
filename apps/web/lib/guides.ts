@@ -1,4 +1,5 @@
 import type { Icon3DName } from "./icons3d";
+import type { HousingType } from "./types";
 
 /**
  * 주거 가이드 (홈 아래 카드 · /guides, 11/20).
@@ -255,4 +256,19 @@ export const GUIDES: Guide[] = [
 
 export function findGuide(id: string): Guide | undefined {
   return GUIDES.find((g) => g.id === id);
+}
+/**
+ * 홈 가이드 줄의 순서 — 처음 고른 집 형태로 첫 카드를 바꾸고 꼬리표를 단다 (docs/기획/2026-11-20-홈-보강-설계.md 5절).
+ * 월세는 지원금 신청에 낼 서류가 많고, 전세는 지켜야 할 보증금이 커서 그걸 먼저. /guides 전체 목록 순서는 그대로다.
+ */
+const HOUSING_ORDER: Partial<Record<HousingType, string[]>> = {
+  월세: ["where-documents", "protect-deposit", "before-contract"],
+  연세: ["where-documents", "protect-deposit", "before-contract"],
+  전세: ["protect-deposit", "before-contract", "where-documents"],
+};
+
+export function guidesForHousing(housingType: HousingType | null): { guides: Guide[]; tag: string | null } {
+  const order = housingType ? HOUSING_ORDER[housingType] : undefined;
+  if (!order) return { guides: GUIDES, tag: null };
+  return { guides: order.flatMap((id) => findGuide(id) ?? []), tag: `${housingType}라면 먼저` };
 }

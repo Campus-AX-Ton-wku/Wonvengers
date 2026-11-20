@@ -25,11 +25,12 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     /* 브라우저 UI 색. brand-600 — 앱의 기본 액션색과 같은 값을 쓴다. */
     theme_color: "#1a6bef",
-    /* 스플래시 배경. body 지면(canvas)과 같은 값이라 뜰 때 깜빡이지 않는다. */
-    background_color: "#f4f8ff",
+    /* 안드로이드 기기 스플래시 바탕. 앱 아이콘 바탕 · 웹 시작 화면(globals.css #splash) · 아이폰 시작 이미지와 같은 파랑이라
+       기기 화면에서 웹 화면으로 넘어가도 바뀌는 게 없다 (11/20, docs/기획/2026-11-20-앱-시작-화면-설계.md). */
+    background_color: "#1a6bef",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      /* app/icon.png 이 /icon.png 로 나가므로 512 를 따로 두지 않는다 (같은 파일 155KB 중복). */
+      /* app/icon.png 이 /icon.png 로 나가므로 512 를 따로 두지 않는다 (같은 파일 중복). */
       { src: "/icon.png", sizes: "512x512", type: "image/png", purpose: "any" },
       {
         src: "/icon-maskable-512.png",

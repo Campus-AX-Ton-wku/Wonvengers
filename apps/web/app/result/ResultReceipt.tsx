@@ -1,7 +1,7 @@
 import { formatKoreanMoney } from "@/lib/money";
 import { monthlyRentEquivalent } from "@/lib/rent";
 import type { ListingInput, PolicyMeta } from "@/lib/types";
-import { Disclosure } from "@/app/components";
+import { Disclosure, PerkyCharacter } from "@/app/components";
 import { ICON_SM, TriangleAlert } from "@/app/components/icons";
 
 /**
@@ -12,8 +12,12 @@ import { ICON_SM, TriangleAlert } from "@/app/components/icons";
  * 같은 254만원이 네 번 나오고, '명목 지출 − 최대 지원 가능액' 같은 수식이 라벨에 들어 있었다.
  * 그래서 영수증처럼 한 장에 — 내는 돈 − 받는 지원 = 실제 부담, 그리고 한 달 부담.
  *
- * 지켜 온 규칙은 그대로 (예전 ResultSummary 주석):
- * 1. 금색은 받는 돈(맨 위 지원액)에만. 영수증 줄과 최종 주거비는 잉크색이다
+ * 11/20 시안 '계산 결과 · 영수증 한 장': 맨 위 '받을 수 있는 지원' + 개월 칩 + 찾은 Perky, 영수증 줄은
+ * 옅은 회색 상자('N개월 동안 내 주거비') 안에, 최종 예상 주거비는 그 상자의 굵은 선 아래.
+ *
+ * 지켜 온 규칙 (예전 ResultSummary 주석):
+ * 1. 받는 돈(맨 위 지원액)만 금액 색(남색 brand-900). 영수증 줄과 최종 주거비는 잉크색이다
+ *    (11/20 금색 → 남색, ggue 결정 — 시안 전체가 금액을 남색으로 그렸다)
  * 2. 지원액이 최종 주거비보다 큰 글씨다 — 자릿수가 색을 이긴다
  * 3. 금액은 만 · 억 단위로만 (formatKoreanMoney). 이 카드는 캡처되어 공유된다
  * 4. 어떤 지원을 더했는지(F4-5)는 접지 않는다 — '받는 지원' 줄이 그 목록이다
@@ -53,57 +57,75 @@ export function ResultReceipt({
       ? `매달 약 ${formatKoreanMoney(monthly)}${moveNet > 0 ? ` + 이사비 ${formatKoreanMoney(moveNet)}(한 번)` : ""}`
       : null;
 
+  // 한 화면에 Perky 하나 — 받을 지원이 있으면 찾은 얼굴, 없으면 빈손
+  const pose = supportAmount > 0 ? "found" : "empty";
+
   return (
-    <section className="amount-in rounded-card border border-ink-200 bg-surface p-5 shadow-card">
-      <div>
-        <p className="text-xs font-bold text-ink-500">최대 지원 가능액 ({months}개월 기준)</p>
-        <p className="mt-1 text-4xl font-extrabold leading-tight text-accent-700 tabular-nums">
+    <section className="amount-in relative flex flex-col gap-4 rounded-card bg-surface px-5 pb-5 pt-[22px] shadow-card">
+      {/* 캐릭터는 상태를 말하는 자리에만. 같은 뜻을 옆 금액이 말하므로 읽지 않는다(PerkyCharacter 의 alt="") */}
+      <span aria-hidden="true" className="pointer-events-none absolute right-3 top-3 w-[84px]">
+        <PerkyCharacter state={pose} size={168} className="h-auto w-[84px]" />
+      </span>
+
+      <div className="flex min-h-[92px] flex-col gap-1 pr-[92px]">
+        {/* 라벨 글자와 개월 칩이 한 줄. 라벨 <p> 바로 다음 형제가 금액이다(테스트가 nextElementSibling 로 집는다) */}
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ink-600">
+          받을 수 있는 지원
+          <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded-full bg-ink-100 px-2 text-xs font-bold text-ink-600">
+            {months}개월 기준
+          </span>
+        </p>
+        {/* break-keep — 좁은 화면에서는 '254만' / '4,000원' 처럼 단위에서만 꺾인다 */}
+        <p className="break-keep text-3xl font-extrabold leading-tight tracking-[-0.03em] text-brand-900">
           {formatKoreanMoney(supportAmount)}
         </p>
         {/* 자격 미확정 고지는 맨 아래에 전체 문장이 있지만 금액과 2화면 떨어져 있었다(11/19) — 숫자 바로 밑에 한 줄 */}
-        <p className="mt-1 text-xs text-ink-500">최종 금액은 각 기관이 심사해 정해요</p>
+        <p className="text-xs text-ink-500">최종 금액은 각 기관이 심사해 정해요</p>
       </div>
 
-      {/* 영수증 줄 — 내는 돈 위, 받는 지원을 빼고, 굵은 선 아래 실제 부담 */}
-      <dl className="mt-4 flex flex-col gap-1.5 border-t border-ink-100 pt-4 text-sm">
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-ink-600">월세·관리비 {months}개월</dt>
-          <dd className="shrink-0 font-semibold text-ink-900 tabular-nums">{formatKoreanMoney(rentAndFee)}</dd>
-        </div>
-        {listing.oneTimeMoveCost > 0 && (
+      {/* 영수증 — 내는 돈 위, 받는 지원을 빼고, 굵은 선 아래 실제 부담 (시안 '영수증 한 장', 11/20) */}
+      <div className="flex flex-col gap-3 rounded-control bg-ink-50 p-4">
+        <p className="text-[13px] font-bold text-ink-700">{months}개월 동안 내 주거비</p>
+        <dl className="flex flex-col gap-2 text-sm">
           <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-ink-600">이사비</dt>
-            <dd className="shrink-0 font-semibold text-ink-900 tabular-nums">{formatKoreanMoney(listing.oneTimeMoveCost)}</dd>
+            <dt className="text-ink-600">월세·관리비 {months}개월</dt>
+            <dd className="shrink-0 text-[15px] font-bold text-ink-900 tabular-nums">{formatKoreanMoney(rentAndFee)}</dd>
           </div>
-        )}
-        {included.length > 0 ? (
-          included.map((item) => (
-            <div key={item.id} className="flex items-baseline justify-between gap-3">
-              <dt className="min-w-0 text-ink-600">
-                <span className="text-xs text-ink-500">받는 지원 · </span>
-                {item.name}
-              </dt>
-              <dd className="shrink-0 font-semibold text-ink-900 tabular-nums">− {formatKoreanMoney(item.amount)}</dd>
+          {listing.oneTimeMoveCost > 0 && (
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-ink-600">이사비</dt>
+              <dd className="shrink-0 text-[15px] font-bold text-ink-900 tabular-nums">{formatKoreanMoney(listing.oneTimeMoveCost)}</dd>
             </div>
-          ))
-        ) : (
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-ink-600">받는 지원</dt>
-            <dd className="shrink-0 text-xs text-ink-500">합칠 수 있는 지원이 아직 없어요</dd>
-          </div>
-        )}
-      </dl>
+          )}
+          {included.length > 0 ? (
+            included.map((item) => (
+              <div key={item.id} className="flex items-baseline justify-between gap-3">
+                <dt className="min-w-0 text-ink-600">
+                  <span className="text-xs text-ink-500">받는 지원 · </span>
+                  {item.name}
+                </dt>
+                <dd className="shrink-0 text-[15px] font-bold text-ink-900 tabular-nums">− {formatKoreanMoney(item.amount)}</dd>
+              </div>
+            ))
+          ) : (
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-ink-600">받는 지원</dt>
+              <dd className="shrink-0 text-xs text-ink-500">합칠 수 있는 지원이 아직 없어요</dd>
+            </div>
+          )}
+        </dl>
 
-      <div className="mt-3 border-t-2 border-ink-900 pt-3">
-        <p className="text-xs font-bold text-ink-600">최종 예상 주거비 ({months}개월 실제 부담)</p>
-        <p className="mt-1 text-xl font-extrabold leading-tight text-ink-900 tabular-nums">
-          {formatKoreanMoney(finalCost)}
-        </p>
-        {monthlyLine && <p className="mt-1 text-xs text-ink-600">{monthlyLine}</p>}
+        <div className="flex flex-col gap-0.5 border-t-2 border-ink-900 pt-3">
+          <p className="text-sm font-bold text-ink-900">최종 예상 주거비</p>
+          <p className="break-keep text-2xl font-extrabold leading-tight tracking-[-0.02em] text-ink-900">
+            {formatKoreanMoney(finalCost)}
+          </p>
+          {monthlyLine && <p className="text-[13px] leading-normal text-ink-600">지원을 빼고 실제로 낼 돈 · {monthlyLine}</p>}
+        </div>
       </div>
 
       {overlapExcluded.length > 0 && (
-        <Disclosure label={`같이 받을 수 없어 뺀 지원 ${overlapExcluded.length}개`}>
+        <Disclosure className="" label={`같이 받을 수 없어 뺀 지원 ${overlapExcluded.length}개`}>
           <ul className="flex flex-col gap-2 px-1 text-sm leading-relaxed text-ink-600">
             {overlapExcluded.map((x) => (
               <li key={x.policy.id}>
@@ -117,7 +139,7 @@ export function ResultReceipt({
 
       {/* 계약 당일 필요한 현금(보증금) 줄은 11/20 뺐다(ggue) — 계약하는 사람은 보증금을 당일 낸다는 걸 이미 안다 */}
       {unknownConditions.length > 0 && (
-        <div className="mt-4 border-t border-ink-100 pt-4 text-xs text-ink-600">
+        <div className="border-t border-ink-100 pt-4 text-xs text-ink-600">
           <p className="flex items-start gap-2 font-bold text-ink-700">
             <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-px shrink-0 text-warn-800" />
             <span>이 금액에는 아직 확인되지 않은 조건이 들어 있어요</span>

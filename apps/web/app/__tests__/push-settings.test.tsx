@@ -40,7 +40,7 @@ afterEach(() => {
 describe("내 계정 — 알림 칸", () => {
   it("꺼져 있으면 설명과 [알림 켜기], 누르면 켜짐", async () => {
     render(<PushSettings />);
-    expect(await screen.findByText("내 조건에 맞는 새 지원금이 올라오거나, 찜한 지원금 마감이 7일 · 1일 남으면 알려 드려요 (낮 9시~밤 9시)")).toBeTruthy();
+    expect(await screen.findByText("내 조건에 맞는 새 지원금이 올라오거나, 관심 지원금 마감이 7일 · 1일 남으면 알려 드려요 (낮 9시~밤 9시)")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "알림 켜기" }));
     expect(enablePush).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("알림 켜짐")).toBeTruthy();

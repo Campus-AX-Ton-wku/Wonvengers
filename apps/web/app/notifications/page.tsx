@@ -109,9 +109,9 @@ export default function NotificationsPage() {
 function subline(item: InboxItem): string {
   switch (item.kind) {
     case "deadline":
-      return `찜한 지원금 · ${item.card.progress.label}`;
+      return `관심 지원금 · ${item.card.progress.label}`;
     case "upcoming":
-      return `찜한 지원금 · ${formatDotDate(item.policy.applicationStart)} 신청 시작`;
+      return `관심 지원금 · ${formatDotDate(item.policy.applicationStart)} 신청 시작`;
     case "new": {
       // 휴대폰 새 정책 알림과 같은 말 — '가능성 있음'이면 맞을 가능성, '확인 필요'면 확인
       const [, m, d] = seoulDateOf(item.policy.publishedAt ?? "").split("-");
@@ -157,7 +157,7 @@ function EmptyInbox() {
       </span>
       <p className="text-base font-bold text-ink-900">새 소식이 없어요</p>
       <p className="text-sm leading-relaxed text-ink-600">
-        찜한 지원금 마감이 7일 안으로 다가오거나
+        관심 지원금 마감이 7일 안으로 다가오거나
         <br />
         내 조건에 맞는 지원금이 새로 열리면 여기에 모아 드려요.
       </p>

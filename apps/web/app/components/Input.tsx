@@ -104,7 +104,7 @@ export function MoneyInput({
         placeholder={placeholder}
       />
       {value !== null && value > 0 && (
-        <p aria-hidden="true" className="text-xs font-bold text-accent-700">
+        <p aria-hidden="true" className="text-xs font-bold text-brand-800">
           {formatKoreanMoney(value)}
         </p>
       )}
