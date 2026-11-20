@@ -90,3 +90,56 @@ export function composeMessage(matches: Match[]): PushMessage {
     tag: TAG,
   };
 }
+
+// ── 마감 알림 (11/20, docs/기획/2026-11-20-마감-알림-설계.md) ──
+
+/** 찜한 지원금 마감까지 남은 날이 이 중 하나인 날에 알린다 — 7일 전 · 1일 전(내일 마감). */
+export const REMINDER_DAYS: readonly number[] = [7, 1];
+/** 하루 한 번, 서울 10시 회차에 보낸다 (매시 도는 Lambda 중 한 번). */
+export const REMINDER_HOUR = 10;
+
+const DAY_MS = 86_400_000;
+
+export interface Reminder {
+  policy: PolicyMeta;
+  days: number;
+}
+
+/**
+ * 찜한 지원금 중 오늘 알릴 것. 공개 목록에 있고, 접수가 시작됐고, 마감일이 있고, 남은 날이 REMINDER_DAYS 에 든 것.
+ * 남은 날이 적은 것이 앞, 같으면 찜한 순서(최근 것이 앞).
+ */
+export function deadlineReminders(saved: readonly string[], published: PolicyMeta[], today: string): Reminder[] {
+  const byId = new Map(published.map((p) => [p.id, p]));
+  const out: Reminder[] = [];
+  for (const id of saved) {
+    const policy = byId.get(id);
+    if (!policy || policy.applicationEnd === null || today < policy.applicationStart || today > policy.applicationEnd) continue;
+    const days = Math.round((Date.parse(policy.applicationEnd) - Date.parse(today)) / DAY_MS);
+    if (REMINDER_DAYS.includes(days)) out.push({ policy, days });
+  }
+  return out.sort((a, b) => a.days - b.days);
+}
+
+const REMINDER_TAG = "deadline";
+
+/** 잠금 화면에 보이므로 정책 이름과 남은 날만. 한 건이면 그 준비 화면, 여러 건이면 관심 탭으로. */
+export function composeReminder(reminders: Reminder[]): PushMessage {
+  if (reminders.length === 0) throw new Error("composeReminder: no reminders");
+  const [first] = reminders;
+  const left = (days: number) => (days === 1 ? "내일 마감이에요" : `마감까지 ${days}일 남았어요`);
+  if (reminders.length === 1) {
+    return {
+      title: "찜한 지원금 마감이 다가와요",
+      body: `${first.policy.name} — ${left(first.days)}. 신청 준비를 확인해 보세요`,
+      url: `/find/policies/${first.policy.id}/prepare`,
+      tag: REMINDER_TAG,
+    };
+  }
+  return {
+    title: `찜한 지원금 ${reminders.length}건 마감이 다가와요`,
+    body: `${first.policy.name} 외 ${reminders.length - 1}건 — 신청 준비를 확인해 보세요`,
+    url: "/saved",
+    tag: REMINDER_TAG,
+  };
+}

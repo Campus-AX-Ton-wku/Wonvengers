@@ -52,7 +52,7 @@ async function 탈퇴창열기(user: ReturnType<typeof userEvent.setup>) {
 describe("/account (설계 '화면' 5)", () => {
   it("로그인 상태, 마지막 저장 시각, 로그아웃·회원 탈퇴, 처리방침 링크", async () => {
     로그인한채로();
-    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 계정");
+    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 정보");
     expect(screen.getByText("카카오로 로그인했어요")).toBeTruthy();
     expect(screen.getByText(/^마지막 저장 \d{4}\.\d{2}\.\d{2} \d{2}:\d{2}$/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeTruthy();
@@ -121,7 +121,7 @@ describe("/account (설계 '화면' 5)", () => {
     expect((await screen.findByRole("alert")).textContent).toBe(
       "탈퇴하지 못했어요. 아무것도 지우지 않았으니 잠시 뒤 다시 시도해 주세요."
     );
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("내 계정");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("내 정보");
   });
 
   it("로그인하지 않았으면 카카오로 로그인할 수 있다", async () => {
@@ -147,17 +147,21 @@ describe("/account (설계 '화면' 5)", () => {
   });
 });
 
-describe("알림 칸", () => {
+describe("알림 설정 한 줄 (11/20 두 단계 구조)", () => {
   it("공개 키가 없는 빌드에서는 그리지 않는다", async () => {
     로그인한채로();
-    await screen.findByRole("heading", { level: 1, name: "내 계정" });
-    expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
+    await screen.findByRole("heading", { level: 1, name: "내 정보" });
+    expect(screen.queryByRole("link", { name: /알림 설정/ })).toBeNull();
   });
 
-  it("공개 키가 있으면 알림 칸이 보인다", async () => {
+  it("알림 칸 대신 '알림 설정' 한 줄 — 알림 설정 화면으로, 켜기 버튼은 여기 없다", async () => {
     vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
     로그인한채로();
-    expect(await screen.findByRole("heading", { level: 2, name: "알림" })).toBeTruthy();
+    const link = await screen.findByRole("link", { name: /알림 설정/ });
+    expect(link.getAttribute("href")).toBe("/notifications/settings");
+    expect(screen.queryByRole("heading", { level: 2, name: "알림" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "알림 켜기" })).toBeNull();
   });
 });
+
 

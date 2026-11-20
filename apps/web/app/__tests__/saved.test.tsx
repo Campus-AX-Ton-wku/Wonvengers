@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("@/lib/redirect", () => ({ goTo: vi.fn(), replacePage: vi.fn(), reloadPage: vi.fn() }));
 vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), deleteAccountRemote: vi.fn() }));
@@ -59,5 +60,18 @@ describe("/saved — 관심 탭", () => {
     const tabs = await screen.findByRole("navigation", { name: "주요 메뉴" });
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("aria-current")).toBe("page");
     expect(within(tabs).getByRole("link", { name: "홈" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  it("정렬 — 기본은 마감 가까운 순, '최근 찜한 순'을 누르면 찜한 순서", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    // 찜한 순서: 마감된 것을 가장 최근에 찜했다
+    saveSavedList(["moland-youth-rent-support", "youth-housing-benefit-split-payment"]);
+    render(<SavedPage />);
+    const list = await screen.findByRole("region", { name: "찜한 지원금" });
+    const names = () => within(list).getAllByRole("listitem").map((li) => (/청년 주거급여/.test(li.textContent ?? "") ? "주거급여" : "청년월세"));
+    expect(within(list).getByRole("button", { name: "마감 가까운 순" }).getAttribute("aria-pressed")).toBe("true");
+    expect(names()).toEqual(["주거급여", "청년월세"]);
+    await userEvent.setup().click(within(list).getByRole("button", { name: "최근 찜한 순" }));
+    expect(names()).toEqual(["청년월세", "주거급여"]);
   });
 });

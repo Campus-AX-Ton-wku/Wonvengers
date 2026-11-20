@@ -5,6 +5,7 @@ import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import { AppShell, BottomTabBar, DeadlineBadge, Icon3D, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Pencil } from "@/app/components/icons";
+import { GuideCard } from "@/app/guides/GuideCard";
 import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
@@ -15,6 +16,7 @@ import { deadlineLabel } from "@/lib/preparation";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
+import { GUIDES } from "@/lib/guides";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
 
@@ -94,6 +96,8 @@ export default function HomePage() {
         </header>
 
         {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} />}
+
+        <GuideRow />
       </main>
       <BottomTabBar active="home" />
     </AppShell>
@@ -252,5 +256,35 @@ function CalculatePrompt() {
       </div>
       <LinkButton href="/calculate" size="screen" full>내 월세 계산하기</LinkButton>
     </div>
+  );
+}
+
+/**
+ * 주거 가이드 (11/20) — 요약 아래 가로로 넘기는 카드 3장. 세 번째 카드가 살짝 잘려 보여 옆으로 넘길 수 있다는 걸 말한다.
+ * 글은 lib/guides.ts (출처 · 확인일과 함께).
+ */
+function GuideRow() {
+  return (
+    <section aria-labelledby="guides-heading" className="mt-8 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="guides-heading" className="text-lg font-extrabold leading-snug text-ink-900">
+          주거 가이드
+        </h2>
+        <Link
+          href="/guides"
+          className="focus-ring -mr-1.5 inline-flex min-h-11 items-center gap-0.5 px-1.5 text-sm font-semibold text-ink-600"
+        >
+          전체 보기
+          <ChevronRight size={ICON_SM} strokeWidth={2} aria-hidden="true" />
+        </Link>
+      </div>
+      <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 pt-0.5 [scrollbar-width:none] min-[390px]:-mx-5 min-[390px]:px-5">
+        {GUIDES.map((guide) => (
+          <li key={guide.id} className="flex">
+            <GuideCard guide={guide} compact />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

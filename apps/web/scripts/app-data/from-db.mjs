@@ -66,6 +66,8 @@ function toPolicy(row) {
   if (row.lump_sum_basis != null) out.lumpSumBasis = row.lump_sum_basis;
   if (row.payout_note != null) out.payoutNote = row.payout_note;
   if (row.documents != null) out.documents = row.documents.map((d) => (d.note ? { name: d.name, note: d.note } : { name: d.name }));
+  // 처음 앱에 보인 때(11/20) — 알림함 '새 지원금'. 알림 기준선 이전 정책은 비어 있어 칸을 적지 않는다
+  if (row.published_at != null) out.publishedAt = row.published_at;
   Object.assign(out, {
     requiredInputs: row.required_inputs ?? [],
     exclusiveGroup: row.exclusive_groups ?? [],

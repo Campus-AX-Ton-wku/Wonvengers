@@ -1,4 +1,4 @@
-// apps/web/app/account/PushSettings.tsx
+// apps/web/app/notifications/settings/PushSettings.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,8 +16,8 @@ const NOTE: Partial<Record<View, string>> = {
 };
 
 /**
- * 내 계정 › 알림 (docs/기획/2026-11-16-새-정책-알림-설계.md "내 계정 화면 — 알림 칸").
- * 부모(account/page.tsx)가 isPushConfigured() 일 때만 그린다.
+ * 알림 설정 › 휴대폰 알림 (docs/기획/2026-11-16-새-정책-알림-설계.md "내 계정 화면 — 알림 칸" — 11/20 내 정보에서
+ * 알림 설정 화면으로 옮겼다, docs/기획/2026-11-20-알림함-설계.md). 부모(notifications/settings/page.tsx)가 isPushConfigured() 일 때만 그린다.
  */
 export default function PushSettings() {
   const [view, setView] = useState<View>("loading");
@@ -74,16 +74,16 @@ export default function PushSettings() {
 
   const note = NOTE[view];
   return (
-    <section id="notifications" aria-labelledby="push-heading" className="flex scroll-mt-20 flex-col gap-2">
+    <section aria-labelledby="push-heading" className="flex flex-col gap-2">
       <h2 id="push-heading" className="text-base font-bold text-ink-900">
-        알림
+        휴대폰 알림
       </h2>
       {view === "loading" && <p className="text-sm text-ink-500">확인하는 중…</p>}
       {note && <p className="text-sm leading-relaxed text-ink-600">{note}</p>}
       {view === "off" && (
         <>
           <p className="text-sm leading-relaxed text-ink-600">
-            내 조건에 맞는 새 지원금이 올라오면 알려 드려요 (낮 9시~밤 9시)
+            내 조건에 맞는 새 지원금이 올라오거나, 찜한 지원금 마감이 7일 · 1일 남으면 알려 드려요 (낮 9시~밤 9시)
           </p>
           <Button variant="secondary" size="screen" disabled={busy} onClick={() => void turnOn()}>
             {busy ? "켜는 중…" : "알림 켜기"}

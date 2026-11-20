@@ -5,7 +5,7 @@ import { deletePushRemote, putPushRemote } from "./remote";
 
 /**
  * 이 기기의 알림 구독 (docs/기획/2026-11-16-새-정책-알림-설계.md "lib/push.ts").
- * 부르는 쪽: 내 계정 화면(app/account/PushSettings.tsx), 로그아웃 · 탈퇴(lib/sync.ts).
+ * 부르는 쪽: 알림 설정 화면(app/notifications/settings/PushSettings.tsx), 로그아웃 · 탈퇴(lib/sync.ts).
  */
 export const SW_PATH = "/sw.js";
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), deleteAccountRemote: vi.fn() }));
@@ -10,7 +10,10 @@ import { TopBar } from "@/app/components";
 import { resetAuthForTests } from "@/lib/auth";
 import { reloadPage } from "@/lib/redirect";
 import { loadRemote, saveRemote } from "@/lib/remote";
-import { loadAnswers, saveAnswers } from "@/lib/storage";
+import policiesJson from "@/data/policies.json";
+import { inboxItems, markInboxSeen } from "@/lib/inbox";
+import { loadAnswers, saveAnswers, saveSavedList } from "@/lib/storage";
+import type { PolicyMeta } from "@/lib/types";
 import { resetSyncForTests } from "@/lib/sync";
 import { enableLogin, remoteItem, seedSyncMeta, signInAs } from "@/lib/__tests__/auth-fixtures";
 
@@ -51,37 +54,46 @@ describe("상단바 오른쪽 자리 (설계 '화면' 4)", () => {
     expect(screen.queryByRole("link", { name: /내 계정/ })).toBeNull();
   });
 
-  it("로그인하면 알림 종이 내 계정 › 알림 칸으로 간다 — 알림을 쓸 수 있는 빌드에서만", async () => {
-    enableLogin();
-    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
-    signInAs();
-    seedSyncMeta();
-    load.mockResolvedValue(remoteItem());
-    render(<TopBar />);
-    const bell = await screen.findByRole("link", { name: "알림 설정" });
-    expect(bell.getAttribute("href")).toBe("/account#notifications");
-  });
-
-  it("알림을 쓸 수 없는 빌드면 종을 그리지 않는다 — 갈 곳이 없다", async () => {
+  it("로그인하면 알림 종이 알림함(/notifications)으로 간다", async () => {
     enableLogin();
     signInAs();
     seedSyncMeta();
     load.mockResolvedValue(remoteItem());
     render(<TopBar />);
-    await waitFor(() => expect(load).toHaveBeenCalled());
-    expect(screen.queryByRole("link", { name: "알림 설정" })).toBeNull();
+    const bell = await screen.findByRole("link", { name: /^알림/ });
+    expect(bell.getAttribute("href")).toBe("/notifications");
   });
 
   it("[홈] · [내 계정]은 상단바에 없다 — 하단 섬 탭으로 옮겼다 (11/20)", async () => {
     enableLogin();
-    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "BPublicKeyForTests");
     signInAs();
     seedSyncMeta();
     load.mockResolvedValue(remoteItem());
     render(<TopBar />);
-    await screen.findByRole("link", { name: "알림 설정" });
+    await screen.findByRole("link", { name: /^알림/ });
     expect(screen.queryByRole("link", { name: "홈" })).toBeNull();
     expect(screen.queryByRole("link", { name: /내 계정/ })).toBeNull();
+  });
+
+  it("보지 않은 알림이 있으면 종에 점, 알림함을 보면 꺼진다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-25T03:00:00Z")); // 서울 9/25 낮 — 익산 청년월세 마감 D-5
+    try {
+      enableLogin();
+      signInAs("sub-a", { consent: false }); // 동의 전이라 동기화는 돌지 않는다 — 이 기기 찜만 본다
+      saveSavedList(["iksan-youth-rent-support"]);
+      render(<TopBar />);
+      await screen.findByRole("link", { name: "알림 (새 소식 있음)" });
+
+      const items = inboxItems(policiesJson as PolicyMeta[], loadAnswers(), ["iksan-youth-rent-support"], "2026-09-25", {
+        checklist: () => ({ eligibility: false, period: false, documents: false }),
+        documents: () => [],
+      });
+      act(() => markInboxSeen(items));
+      expect(await screen.findByRole("link", { name: "알림" })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("저장에 실패하면 '저장 안 됨 · 다시 시도', 누르면 다시 시도한다", async () => {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AppShell, BottomTabBar, Button, KakaoButton, LinkButton, Sheet, TopBar } from "@/app/components";
 import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/auth";
 import { isPushConfigured } from "@/lib/push";
-import PushSettings from "./PushSettings";
+import { ChevronRight, ICON_MD } from "@/app/components/icons";
 import { flushNow, hasUnsyncedChanges, logout, retrySync, useSyncState, withdraw } from "@/lib/sync";
 
 /** 2026.11.04 18:00 — 이 기기 시간대로. */
@@ -114,7 +114,7 @@ export default function AccountPage() {
         ) : (
           <>
             <section className="flex flex-col gap-2">
-              <h1 className={heading}>내 계정</h1>
+              <h1 className={heading}>내 정보</h1>
               <p className="text-sm text-ink-700">카카오로 로그인했어요</p>
               <p className="text-sm text-ink-500">
                 {sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}
@@ -131,7 +131,16 @@ export default function AccountPage() {
                 </div>
               )}
             </section>
-            {isPushConfigured() && <PushSettings />}
+            {/* 알림 칸은 알림 설정 화면으로 옮겼다(11/20 두 단계 구조 — 종 → 알림함 → ⚙ 알림 설정). 여기는 길 하나만 */}
+            {isPushConfigured() && (
+              <Link
+                href="/notifications/settings"
+                className="focus-ring flex min-h-11 items-center justify-between rounded-control border border-ink-200 bg-surface px-4 py-3 text-sm font-bold text-ink-900"
+              >
+                알림 설정
+                <ChevronRight size={ICON_MD} aria-hidden="true" className="text-ink-300" />
+              </Link>
+            )}
             <div className="flex flex-col gap-2">
               <Button variant="quiet" size="screen" disabled={loggingOut} onClick={() => void requestLogout()}>
                 {loggingOut ? "로그아웃하는 중…" : "로그아웃"}
@@ -159,7 +168,7 @@ export default function AccountPage() {
           개인정보 처리방침
         </Link>
       </main>
-      {/* 내 정보 탭의 첫 화면 (BottomTabBar). 상단바 종(알림 설정)은 아래 알림 칸(#notifications)으로 온다. */}
+      {/* 내 정보 탭의 첫 화면 (BottomTabBar). 상단바 종은 알림함(/notifications)으로 간다(11/20). */}
       <BottomTabBar active="my" />
 
       {confirming && (
