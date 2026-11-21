@@ -67,6 +67,13 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     expect(within(office).getByRole("link", { name: /전화/ }).getAttribute("href")).toBe("tel:0638594808");
   });
 
+  it("장소를 고르면 포커스가 카드로 옮겨 간다", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    await user.click(screen.getByRole("button", { name: /익산시청/ }));
+    expect(document.activeElement).toBe(screen.getByRole("region", { name: "익산시청" }));
+  });
+
   it("내 위치 — 권한이 없으면 알리고, 있으면 가까운 순 + 거리", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);

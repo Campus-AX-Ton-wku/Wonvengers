@@ -41,6 +41,7 @@ export function PlacesView({
   const [notice, setNotice] = useState<string | null>(null);
   const [mapState, setMapState] = useState<MapState>("loading");
   const mapEl = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const mapRef = useRef<{ maps: KakaoMaps; map: KakaoMaps; overlays: KakaoMaps[] } | null>(null);
 
   const shown = useMemo(() => {
@@ -48,6 +49,13 @@ export function PlacesView({
     return me ? [...list].sort((a, b) => distanceKm(me, a) - distanceKm(me, b)) : list;
   }, [places, kind, doc, me]);
   const selected = shown.find((p) => p.id === selectedId) ?? null;
+
+  // 장소를 고르면 카드로 — 지도가 화면을 채워 카드가 밖에 있을 수 있고, 화면 읽기 프로그램에도 알린다
+  useEffect(() => {
+    if (!selectedId) return;
+    cardRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    cardRef.current?.focus({ preventScroll: true });
+  }, [selectedId]);
 
   // 지도 SDK — 장소가 있을 때만
   useEffect(() => {
@@ -77,11 +85,15 @@ export function PlacesView({
       bounds.extend(pos);
       const el = document.createElement("button");
       el.type = "button";
+      el.tabIndex = -1;
       el.setAttribute("aria-label", p.name);
-      el.className =
+      el.className = "grid size-11 place-items-center";
+      const dot = document.createElement("span");
+      dot.className =
         p.kind === "office"
-          ? "size-5 rounded-full border-2 border-white bg-brand-700 shadow-card"
-          : "size-5 rounded-full border-2 border-white bg-warn-800 shadow-card";
+          ? "block size-5 rounded-full border-2 border-white bg-brand-700 shadow-card"
+          : "block size-5 rounded-full border-2 border-white bg-warn-800 shadow-card";
+      el.appendChild(dot);
       el.addEventListener("click", () => setSelectedId(p.id));
       return new m.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, map: m.map });
     });
@@ -181,7 +193,7 @@ export function PlacesView({
         )}
 
         {selected && (
-          <section aria-labelledby="place-card" className="flex flex-col gap-1.5 rounded-card bg-surface p-4 shadow-card">
+          <section ref={cardRef} tabIndex={-1} aria-labelledby="place-card" className="focus-ring flex flex-col gap-1.5 rounded-card bg-surface p-4 shadow-card">
             <p className="text-xs font-bold text-brand-700">{KIND_LABEL[selected.kind]}</p>
             <h2 id="place-card" className="text-lg font-extrabold text-ink-900">{selected.name}</h2>
             <p className="text-sm text-ink-700">{selected.address}</p>
