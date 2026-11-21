@@ -1,5 +1,5 @@
 import type { BenefitType, ListingInput, PolicyMeta } from "./types";
-import { monthlyRentEquivalent } from "./rent";
+import { calcMonths, monthlyRentEquivalent } from "./rent";
 import { formatKoreanMoney } from "./money";
 
 const won = (amount: number) => `${amount.toLocaleString()}원`;
@@ -19,9 +19,13 @@ export function benefitTypeLabel(type: BenefitType, basis?: PolicyMeta["lumpSumB
   return BENEFIT_TYPE_LABEL[type];
 }
 
-/** 정책의 지원 개월 상한과 실제 거주 개월 중 작은 값. */
+/**
+ * 정책의 지원 개월 상한과 계산 기간(거주 예정 개월, 최대 12개월) 중 작은 값.
+ * 주거비(rent.ts nominalTotalCost)와 같은 기간으로 센다 — 기간이 다르면 지원이 주거비보다 커진다(11/21).
+ */
 function supportedMonths(policy: PolicyMeta, listing: ListingInput): number {
-  return Math.min(policy.maxMonths ?? listing.months, listing.months);
+  const months = calcMonths(listing);
+  return Math.min(policy.maxMonths ?? months, months);
 }
 
 /** 정책 하나를 단독으로 받는다고 가정했을 때의 총 예상액. */

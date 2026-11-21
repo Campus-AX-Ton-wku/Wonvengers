@@ -31,11 +31,13 @@ describe("국토부 청년월세 지원", () => {
     expect(result.estimatedAmount).toBe(200000 * 12);
   });
 
-  it("생애 지원 상한 24개월을 넘는 계약 기간이어도 24개월분까지만 계산한다", () => {
+  // 11/21: 전에는 24개월분(480만원)을 셌는데 주거비는 12개월만 세어 지원이 주거비보다 커졌다.
+  // 결과는 주거비와 같은 계산 기간(최대 12개월, PRD F3-C)으로 센다 — lib/rent.ts calcMonths.
+  it("30개월 계약이어도 주거비와 같은 계산 기간 12개월분만 센다", () => {
     const profile = makeProfile();
     const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 200000, months: 30 });
     const result = evaluatePolicy(moland, profile, listing, OPEN_PERIOD_DAY);
-    expect(result.estimatedAmount).toBe(200000 * 24);
+    expect(result.estimatedAmount).toBe(200000 * 12);
   });
 
   it("나이 경계값 19세는 통과, 18세는 탈락한다", () => {
