@@ -8,7 +8,7 @@ describe("contentSecurityPolicy", () => {
     const list = directives(contentSecurityPolicy({}));
     expect(list).toContain("connect-src 'self'");
     expect(list).toContain("default-src 'self'");
-    expect(list).toContain("script-src 'self' 'unsafe-inline'");
+    expect(list).toContain("script-src 'self' 'unsafe-inline' https://dapi.kakao.com https://t1.daumcdn.net");
     expect(list).toContain("object-src 'none'");
     expect(list).toContain("base-uri 'self'");
   });
@@ -25,5 +25,11 @@ describe("contentSecurityPolicy", () => {
 
   it("주소가 아닌 API 값은 넣지 않는다", () => {
     expect(directives(contentSecurityPolicy({ NEXT_PUBLIC_API_URL: "not a url" }))).toContain("connect-src 'self'");
+  });
+
+  it("카카오 지도는 스크립트 · 이미지만 연다 — connect-src 에는 넣지 않는다 (11/22)", () => {
+    const list = directives(contentSecurityPolicy({}));
+    expect(list).toContain("img-src 'self' data: blob: https://*.daumcdn.net https://*.kakao.com");
+    expect(list.find((d) => d.startsWith("connect-src"))).toBe("connect-src 'self'");
   });
 });
