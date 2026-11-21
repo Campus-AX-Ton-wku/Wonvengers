@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, BottomTabBar, buttonClass, DeadlineBadge, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
-import { ArrowRight, ChevronDown, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
+import { AppShell, BottomTabBar, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
+import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
 import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
@@ -15,7 +15,6 @@ import { seoulTodayISO } from "@/lib/date";
 import { answerLine } from "@/lib/discovery";
 import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
 import { formatApproxMoney } from "@/lib/money";
-import { deadlineLabel } from "@/lib/preparation";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
@@ -110,7 +109,7 @@ export default function HomePage() {
 
         {todo?.item && <TodayCard item={todo.item} more={todo.more} />}
 
-        {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} today={today} hasTodo={Boolean(todo?.item)} />}
+        {open === null ? <StartCard /> : <SummaryCard open={open} cards={cards} costs={costs} hasTodo={Boolean(todo?.item)} />}
 
         {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
         {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
@@ -160,18 +159,15 @@ function StartCard() {
 /**
  * 내 지원 요약 (시안 '홈 보강', 11/21 조정).
  * - Perky 는 카드 **안** 오른쪽 위(100px 칸, 높이 96px) + 발밑 옅은 타원 그림자. 예전엔 카드 위로 걸터앉았다(-62px)
- * - 지금 신청할 수 있는 지원금은 늘 보이던 미리 보기 3줄 대신 [지원금 목록 보기] 펼침 토글 하나 — 펼치면 전부(ggue 11/21).
- *   0건이면 펼칠 게 없으니 지원금 화면(예정 · 마감 공고) 링크로 둔다
+ * - 지금 신청할 수 있는 지원금은 미리 보기 줄 없이 [지원금 목록 보기] 버튼 하나 — 지원금 화면으로 간다(ggue 11/21)
  */
-function SummaryCard({ open, cards, costs, today, hasTodo }: {
+function SummaryCard({ open, cards, costs, hasTodo }: {
   open: PolicyMeta[];
-  today: string;
   cards: SavedCard[];
   costs: Costs | null;
   /** 위에 오늘 할 일 카드가 있으면 간격을 좁힌다(시안 16 / 24px) */
   hasTodo: boolean;
 }) {
-  const [listOpen, setListOpen] = useState(false);
   const count = open.length;
   const pose = homePose(count, cards);
 
@@ -205,45 +201,11 @@ function SummaryCard({ open, cards, costs, today, hasTodo }: {
         )}
       </div>
 
-      {count === 0 ? (
-        <LinkButton href="/find/policies" variant="secondary" size="screen" full>
-          지원금 목록 보기
-          <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="-ml-1" />
-        </LinkButton>
-      ) : (
-        <>
-          <button
-            type="button"
-            aria-expanded={listOpen}
-            aria-controls="open-policy-list"
-            onClick={() => setListOpen((v) => !v)}
-            className={`${buttonClass({ variant: "secondary", size: "screen" })} w-full`}
-          >
-            {listOpen ? "목록 접기" : "지원금 목록 보기"}
-            <ChevronDown
-              size={ICON_MD}
-              strokeWidth={2.25}
-              aria-hidden="true"
-              className={`-ml-1 transition-transform ${listOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-          {listOpen && (
-            <ul id="open-policy-list" aria-label="지금 신청할 수 있는 지원금" className="-mt-1 flex flex-col border-t border-ink-100">
-              {open.map((policy) => (
-                <li key={policy.id} className="border-b border-ink-100 last:border-b-0">
-                  <Link href={`/find/policies/${policy.id}`} className="focus-ring flex min-h-[60px] items-center gap-2.5 rounded-control py-2">
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-[15px] font-bold leading-snug text-ink-900">{policy.name}</span>
-                      <span className="text-xs text-ink-500">{policy.agency}</span>
-                    </span>
-                    <DeadlineBadge label={deadlineLabel(policy, today)} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+      {/* 목록은 지원금 화면(/find/policies)이 맡는다 — 홈에서 펼치지 않는다(ggue 11/21: 토글 → 페이지 이동) */}
+      <LinkButton href="/find/policies" variant="secondary" size="screen" full>
+        지원금 목록 보기
+        <ChevronRight size={ICON_MD} strokeWidth={2.25} aria-hidden="true" className="-ml-1" />
+      </LinkButton>
 
       {costs && <CostBox costs={costs} showCut={count > 0} />}
     </section>
