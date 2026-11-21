@@ -9,10 +9,12 @@
  *   우리가 더하는 인라인 스크립트는 layout 의 온보딩·첫 화면 기록 하나뿐이고 새로 늘리지 않는다.
  * - 카카오 지도(11/22, /guides/places): 스크립트(dapi.kakao.com · t1.daumcdn.net)와 지도 그림(*.daumcdn.net · *.kakao.com)만 연다.
  *   connect-src 에는 넣지 않는다 — 실행 중에 카카오 검색을 부르지 않으니 토큰을 밖으로 보낼 길이 늘지 않는다.
+ *   scheme 없이 쓴다: SDK 가 페이지 프로토콜을 따라 불러서, 정식(https)은 https 만 열리고 로컬 http 확인도 된다.
+ *   카카오 SDK 의 eval 은 막아 둔다 — 지도는 그려진다(script-src 에 'unsafe-eval' 을 넣지 않는다).
  * - meta 로는 frame-ancestors 를 줄 수 없다(브라우저가 무시한다).
  */
-export const KAKAO_MAP_SCRIPT_ORIGINS = ["https://dapi.kakao.com", "https://t1.daumcdn.net", "https://t1.kakaocdn.net"];
-export const KAKAO_MAP_IMG_ORIGINS = ["https://*.daumcdn.net", "https://*.kakao.com", "https://*.kakaocdn.net"];
+export const KAKAO_MAP_SCRIPT_ORIGINS = ["dapi.kakao.com", "t1.daumcdn.net", "t1.kakaocdn.net"];
+export const KAKAO_MAP_IMG_ORIGINS = ["*.daumcdn.net", "*.kakao.com", "*.kakaocdn.net"];
 
 export function contentSecurityPolicy(
   env: { NEXT_PUBLIC_COGNITO_DOMAIN?: string; NEXT_PUBLIC_API_URL?: string } = {
