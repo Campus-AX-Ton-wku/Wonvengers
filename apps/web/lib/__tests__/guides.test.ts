@@ -14,16 +14,21 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     }
   });
 
-  it("확인일 · 그림 · 장마다 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
+  it("확인일 · 그림 · 장마다 용어 · 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
     for (const g of GUIDES) {
       expect(g.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(ICON3D_NAMES).toContain(g.icon);
       for (const s of g.sections) {
+        expect(s.keyword.length).toBeGreaterThan(0);
         expect(s.title.length).toBeGreaterThan(0);
         expect(s.lead.length).toBeGreaterThan(0);
         expect(s.body.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it("용어는 윗줄(keyword)로 빠졌으니 제목은 'A = B' · 줄표 꼴로 쓰지 않는다 (11/21 ggue 시안)", () => {
+    for (const g of GUIDES) for (const s of g.sections) expect(s.title).not.toMatch(/ = |—/);
   });
 
   it("비유를 써도 정확한 용어는 '용어 풀이'에 남긴다 — 대항력 · 우선변제권 · 임차권등기 · 근저당", () => {

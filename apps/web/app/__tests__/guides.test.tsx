@@ -34,13 +34,18 @@ describe("목차 페이지 /guides/[id]", () => {
     const toc = screen.getByRole("navigation", { name: "목차" });
     const links = within(toc).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual([1, 2, 3, 4, 5].map((n) => `/guides/protect-deposit/${n}`));
-    expect(links[1].textContent).toMatch(/확정일자/);
+    // 목차 한 줄 = 위에 용어, 아래에 제목 (11/21 ggue 시안 '내용은 크게')
+    expect(within(links[1]).getByText("확정일자")).toBeTruthy();
+    expect(within(links[1]).getByText("계약서에 번호표를 받아 둬요")).toBeTruthy();
   });
 
-  it("출처는 목차 아래 — 기관 이름 · 주제 두 줄, 새 창. '~에 확인했어요' 문단은 두지 않는다 (11/20 ggue)", async () => {
+  it("출처는 목차 아래 '출처 n곳' 한 줄로 접어 둔다 — 펼치면 기관 · 주제, 새 창. '~에 확인했어요' 문단은 두지 않는다 (11/21 ggue 시안)", async () => {
     render(await GuidePage({ params: Promise.resolve({ id: "protect-deposit" }) }));
     const sources = screen.getByRole("region", { name: "출처" });
-    const first = within(sources).getAllByRole("link")[0];
+    const details = sources.querySelector("details");
+    expect(details?.open).toBe(false);
+    expect(within(sources).getByText("출처 5곳")).toBeTruthy();
+    const first = within(sources).getAllByRole("link", { hidden: true })[0];
     expect(first.getAttribute("target")).toBe("_blank");
     expect(first.getAttribute("rel")).toContain("noopener");
     expect(within(first).getByText("찾기쉬운 생활법령")).toBeTruthy();
@@ -50,10 +55,12 @@ describe("목차 페이지 /guides/[id]", () => {
 });
 
 describe("섹션 페이지 /guides/[id]/[step]", () => {
-  it("한 장에 한 섹션 — 비유 제목 · 한 줄 할 일 · 몇 번째 장, ← 는 목차", async () => {
+  it("한 장에 한 섹션 — 윗줄은 용어 · 몇 번째 장, 그 아래 제목 · 한 줄 할 일, ← 는 목차 (11/21 ggue)", async () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "2" }) }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/확정일자/);
-    expect(screen.getByText("보증금 지키는 법 · 2/5")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("계약서에 번호표를 받아 둬요");
+    expect(screen.getByText("확정일자 · 2/5")).toBeTruthy();
+    // 가이드 이름 윗줄은 용어로 바꿨다 — ← 가 그 가이드 목차로 돌아간다
+    expect(screen.queryByText("보증금 지키는 법 · 2/5")).toBeNull();
     expect(screen.getByText("계약서에 확정일자를 받아요.")).toBeTruthy();
     // 정확한 용어 · 뜻은 '용어 풀이'에 남긴다
     expect(within(screen.getByRole("region", { name: "용어 풀이" })).getByText("우선변제권")).toBeTruthy();

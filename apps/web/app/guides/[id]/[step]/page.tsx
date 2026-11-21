@@ -10,7 +10,8 @@ export function generateStaticParams() {
 
 /**
  * 가이드 한 장 (11/20 ggue — 노션처럼 한 페이지에 한 섹션). ← 는 목차(/guides/[id]).
- * 순서: 비유 제목 → 한 줄 할 일(굵게) → 본문 → 어디서 해요 → 조심해요 → 용어 풀이(정확한 뜻) → 이전 · 다음.
+ * 순서: 용어 · 몇 번째 장 → 제목 → 한 줄 할 일(굵게) → 본문 → 어디서 해요 → 조심해요 → 용어 풀이(정확한 뜻) → 이전 · 다음.
+ * 윗줄은 11/21 ggue 결정으로 가이드 이름 대신 용어 — 목차와 똑같이 '용어 → 제목' 두 줄. ← 가 그 가이드 목차로 돌아간다.
  * 출처 · 확인일은 목차 아래 한 곳에 둔다.
  */
 export default async function GuideStepPage({ params }: { params: Promise<{ id: string; step: string }> }) {
@@ -28,7 +29,7 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
       <main className="flex flex-1 flex-col gap-5 pb-10 pt-2.5">
         <header className="flex flex-col gap-2">
           <p className="text-[13px] font-bold text-brand-700">
-            {guide.title} · {n}/{total}
+            {section.keyword} · {n}/{total}
           </p>
           <h1 className="text-[26px] font-extrabold leading-[1.35] text-ink-900">{section.title}</h1>
           <p className="text-[17px] font-bold leading-relaxed text-ink-900">{section.lead}</p>

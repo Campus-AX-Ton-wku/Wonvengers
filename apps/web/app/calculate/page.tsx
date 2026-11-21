@@ -4,7 +4,7 @@ import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
-import { monthlyRentEquivalent } from "@/lib/rent";
+import { YEARLY_RENT_MONTHS, monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
@@ -32,19 +32,12 @@ import { ICON_SM, Pencil } from "@/app/components/icons";
 
 const policies = policiesData as PolicyMeta[];
 
-/**
- * 이 지역에서 일시 지출(이사비·중개보수)을 지원하는 정책. 없으면 null.
- *
- * F1-4 는 "선정 정책이 지원하면" 물으라고 했는데 전에는 항상 물었다. 이 칸을 먹는
- * 정책은 lumpSumBasis 가 "oneTimeMoveCost" 인 것뿐인데, 그런 지원이 있는 줄 모르는
- * 사람은 기본값 0 을 그대로 두고 넘어간다. 그러면 상한이 얼마든 "실제 지출 0원과
- * 상한 중 작은 값 = 0원" 이 되어 지원이 통째로 사라진다 — 정책을 모르는 사용자일수록
- * 못 받는 셈이다. 지원 정책이 있는 지역에서만, 지원한다는 사실을 먼저 말하고 묻는다.
+/*
+ * 이사비·중개보수 칸과 '실제 계약 조건과 일치합니다' 확인은 11/21 뺐다(ggue).
+ * oneTimeMoveCost 는 늘 0 이다 — 예전에 저장된 값도 loadListing 이 0 으로 읽는다.
+ * 그래서 이사비 지원(lumpSumBasis "oneTimeMoveCost")은 합계에 넣지 않고 공고 상한으로만 보인다.
+ * 두 값은 저장 형식(user-data.ts)에 그대로 남겨 둔다 — 형식을 바꾸면 서버 배포가 따라온다.
  */
-function findMoveCostPolicy(region: string): PolicyMeta | null {
-  return policiesForRegion(policies, region).find((p) => p.lumpSumBasis === "oneTimeMoveCost") ?? null;
-}
-
 const EMPTY: ListingInput = {
   region: "",
   contractType: "연세",
@@ -149,11 +142,8 @@ function CalculateSteps() {
     setLoaded(true);
   }, []);
 
-  // 이사비 지원 정책이 있는 지역에서만 일시 지출을 묻는다 (F1-4).
-  const moveCostPolicy = findMoveCostPolicy(form.region);
-
-  const monthlyEquivalent =
-    form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
+  // 연세는 1년 치로 보고 12로 나눈다(11/21) — 거주 개월 수와 무관하다
+  const monthlyEquivalent = form.rentOrYearlyAmount > 0 ? monthlyRentEquivalent(form) : 0;
 
   // 뒤에 이어질 판정질문 스텝 수까지 합쳐 전체 진행률을 보여준다.
   const totalSteps = useMemo(() => {
@@ -206,12 +196,7 @@ function CalculateSteps() {
         saveAnswers({ ...answers, housingType: value as ContractType });
       }
     }
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      // 묻지 않는 칸의 값이 총 주거비에 남으면 안 된다.
-      if (key === "region" && !findMoveCostPolicy(next.region)) next.oneTimeMoveCost = 0;
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   /** 해당 스텝의 입력만 검증한다. 규칙 자체는 기존 handleSubmit 과 동일하다. */
@@ -229,10 +214,7 @@ function CalculateSteps() {
     }
     if (!form.contractStartDate) return "계약 시작일을 입력해주세요.";
     if (form.months <= 0) return "거주 예정 개월 수는 1개월 이상이어야 합니다.";
-    if (form.managementFee < 0 || form.oneTimeMoveCost < 0) return "금액은 0원 이상이어야 합니다.";
-    if (!form.confirmedMatchesActualContract) {
-      return "해당 매물의 실제 계약 조건과 일치하는지 확인해주세요.";
-    }
+    if (form.managementFee < 0) return "금액은 0원 이상이어야 합니다.";
     return null;
   }
 
@@ -360,38 +342,12 @@ function CalculateSteps() {
               />
             </Field>
 
-            {moveCostPolicy && (
-              <Field label="이사비·중개보수로 얼마를 쓸 예정인가요? (만원)">
-                <span className="text-xs font-medium text-ink-500">
-                  {moveCostPolicy.agency}가 이 비용을 최대{" "}
-                  {formatKoreanMoney(moveCostPolicy.lumpSumCap ?? 0)}까지 지원해요.
-                </span>
-                <MoneyInput
-                  placeholder="0"
-                  value={form.oneTimeMoveCost}
-                  onChange={(v) => update("oneTimeMoveCost", v ?? 0)}
-                />
-              </Field>
-            )}
-
             {form.contractType === "연세" && monthlyEquivalent > 0 && (
               <p className="rounded-control bg-brand-50 px-4 py-3 text-sm text-brand-900">
-                연세 {form.rentOrYearlyAmount.toLocaleString()}원 ÷ {form.months}개월 = 월 환산{" "}
+                연세 {form.rentOrYearlyAmount.toLocaleString()}원 ÷ {YEARLY_RENT_MONTHS}개월 = 월 환산{" "}
                 <strong>{monthlyEquivalent.toLocaleString()}원</strong>
               </p>
             )}
-
-            {/* 계산 결과의 신뢰가 이 한 줄에 걸려 있다(PRD F1-10). 다른 입력칸과
-                같은 무게로 두면 습관적으로 지나친다 — 면을 주고 조금 띄워 둔다. */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-control bg-ink-50 px-4 py-4 text-sm font-medium leading-relaxed text-ink-700 transition-colors focus-within:ring-4 focus-within:ring-brand-100 hover:bg-brand-50">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer"
-                checked={form.confirmedMatchesActualContract}
-                onChange={(e) => update("confirmedMatchesActualContract", e.target.checked)}
-              />
-              위 조건은 제가 검토 중인 매물의 실제 계약 조건과 일치합니다.
-            </label>
           </>
         )}
 

@@ -21,6 +21,7 @@ import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
+import { calcMonths } from "@/lib/rent";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 
@@ -65,8 +66,8 @@ export default function HomePage() {
       if (listing && profile) {
         try {
           const s = buildCalculationSummary(policiesForRegion(policies, listing.region), profile, listing, t);
-          // 기간은 12개월까지만 센다 (lib/rent.ts nominalTotalCost 와 같은 셈)
-          setCosts({ nominal: s.nominalTotalCost, final: s.finalEstimatedHousingCost, months: Math.min(listing.months, 12) });
+          // 기간은 lib/rent.ts calcMonths — 주거비 · 지원금과 같은 기간(입력한 거주 개월 수)
+          setCosts({ nominal: s.nominalTotalCost, final: s.finalEstimatedHousingCost, months: calcMonths(listing) });
           // 주거비 달력 입구 한 줄 — 달력 화면과 같은 함수로 센다 (lib/ledger.ts)
           setLedger(ledgerProgress(ledgerMonth(ledgerPlan(listing, s), loadLedger(), monthKeyOf(t))));
         } catch {

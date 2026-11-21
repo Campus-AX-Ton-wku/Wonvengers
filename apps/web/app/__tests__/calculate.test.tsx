@@ -13,12 +13,8 @@ beforeEach(() => {
 
 /**
  * QA체크리스트 "2층 — 정밀 계산" 절의 금액 입력 항목을 자동화한 것.
- *
- * "내가 확인했다"는 체크박스를 앱이 대신 켜주면 앱이 거짓을 말한다 — 그 규칙은
- * 정직성에 직접 걸리므로 여기서 고정한다.
+ * ('실제 계약 조건과 일치합니다' 확인 체크박스는 11/21 뺐다 — ggue)
  */
-
-const 확인체크박스 = () => screen.getByRole("checkbox") as HTMLInputElement;
 
 describe("/calculate 입력 검증", () => {
   it("지역을 고르지 않으면 다음으로 넘어가지 않고 이유를 말한다", async () => {
@@ -193,8 +189,6 @@ describe("/calculate 계약 시작일 (휠 피커)", () => {
     expect(screen.getByText("계약 시작일을 입력해주세요.")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "확인" }));
-    // 저장은 검증을 다 통과해야 일어난다 — '실제 계약과 일치' 확인까지 켠다
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "다음" }));
 
     expect(screen.queryByText("계약 시작일을 입력해주세요.")).toBeNull();
@@ -262,37 +256,33 @@ describe("/calculate 계약 시작일 (휠 피커)", () => {
     expect(within(칸("일")).queryByRole("option", { name: "31일" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "확인" }));
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(loadListing()?.contractStartDate).toBe("2026-02-28");
   });
 });
 
 /**
- * F1-4. 이사비·중개보수 일시 지출은 그걸 지원하는 정책이 있는 지역에서만 묻는다.
- *
- * 전에는 모든 지역에 항상 물었다. 지원 정책이 있는 줄 모르는 사람은 기본값 0 을
- * 그대로 두고 넘어가고, 그러면 상한이 얼마든 0원으로 계산돼 지원이 사라진다.
+ * 11/21 (ggue): 2단계에서 이사비·중개보수 칸과 '실제 계약 조건과 일치합니다' 확인을 뺐다.
+ * 이사비를 묻지 않으므로 예전에 저장된 이사비도 계산에 남지 않아야 한다.
  */
-describe("/calculate 이사비 질문", () => {
-  async function 스텝2로(user: ReturnType<typeof userEvent.setup>, region: string) {
-    render(<CalculatePage />);
-    await user.selectOptions(screen.getByRole("combobox"), region);
-    await user.click(screen.getByRole("button", { name: "월세" }));
-    await user.type(screen.getAllByRole("spinbutton")[1], "35");
-    await user.click(screen.getByRole("button", { name: "다음" }));
-  }
-
-  it("익산에서는 지원한다는 사실을 먼저 말하고 묻는다", async () => {
+describe("/calculate 2단계 — 이사비 · 일치 확인 없음", () => {
+  it("이사비 칸도 확인 체크박스도 없고, 체크 없이 다음으로 넘어간다", async () => {
     const user = userEvent.setup();
-    await 스텝2로(user, "전북특별자치도 익산시");
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractStartDate: "2027-03-01" }));
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
 
-    expect(screen.getByLabelText(/이사비·중개보수로 얼마를/)).toBeTruthy();
-    expect(screen.getByText(/최대 50만원까지 지원해요/)).toBeTruthy();
+    expect(screen.queryByText(/이사비/)).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "다음" }));
+    expect(routerMock.push).toHaveBeenCalledWith("/eligibility");
   });
 
-  // '지원 정책이 없는 지역에는 묻지 않는다' 경우는 2026-11-15 에 뺐다 — 고를 수 있는 지역이
-  // 익산시 하나뿐이고 익산에는 이사비 지원이 있어, 화면에서 그 경우를 만들 수 없다.
+  it("예전에 저장한 이사비는 0 으로 읽는다 — 고칠 칸 없이 합계에 남지 않게", () => {
+    saveListing(makeListing({ oneTimeMoveCost: 300000 }));
+    expect(loadListing()?.oneTimeMoveCost).toBe(0);
+  });
 });
 
 describe("/calculate 단계 주소", () => {

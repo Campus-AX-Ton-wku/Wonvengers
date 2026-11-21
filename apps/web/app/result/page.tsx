@@ -40,7 +40,7 @@ const PRODUCT_TYPE_LABEL: Record<LoanProductMeta["productType"], string> = {
 
 export default function ResultPage() {
   const router = useRouter();
-  const { listing, summary, asOf, status, expiredAt, retry } = useResultData();
+  const { listing, birthDate, summary, asOf, status, expiredAt, retry } = useResultData();
 
   if (status === "loading") return <ResultLoading />;
   if (status === "missing") return <MissingInput />;
@@ -119,7 +119,7 @@ export default function ResultPage() {
           </h2>
           {countedCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
             </div>
           ))}
         </section>
@@ -137,7 +137,7 @@ export default function ResultPage() {
           </div>
           {extraCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min((countedCards.length + index) * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
             </div>
           ))}
         </section>
