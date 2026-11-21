@@ -9,7 +9,7 @@
  */
 export { AppShell, StickyBottomAction } from "./AppShell";
 export { AnswerSummaryBar } from "./AnswerSummaryBar";
-export { BottomTabBar, calcTabHref } from "./BottomTabBar";
+export { BottomTabBar } from "./BottomTabBar";
 export type { TabKey } from "./BottomTabBar";
 export type { SummaryItem } from "./AnswerSummaryBar";
 export { Button, LinkButton, buttonClass } from "./Button";

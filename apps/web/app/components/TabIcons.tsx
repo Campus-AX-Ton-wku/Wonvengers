@@ -4,10 +4,10 @@
  * lucide(icons.tsx)와 같은 규격이다 — 24 격자, 선 2, 둥근 끝. 그래서 옆에 놓여도 굵기가 같다.
  * 탭 아이콘만 따로 그린 이유는 '선택됨' 모양이 필요해서다: 선택한 탭은 같은 모양을 꽉 채우고
  * 안쪽 기호(문 · 체크 · ₩)만 비운다. 색만으로 선택을 말하지 않는다(WCAG 1.4.1).
- * 다른 앱 아이콘을 옮기지 않고 기본 도형(집 · 하트 · 계산기 · 동전 · 사람 · 종)으로 새로 그렸다.
+ * 다른 앱 아이콘을 옮기지 않고 기본 도형(집 · 하트 · 동전 · 달력 · 사람 · 종)으로 새로 그렸다.
  */
 
-export type TabIconName = "home" | "saved" | "calc" | "benefit" | "my" | "bell";
+export type TabIconName = "home" | "saved" | "benefit" | "ledger" | "my" | "bell";
 
 /** 채운 모양 안쪽 기호의 색. 카드·섬 바탕이 흰색이라 흰 기호가 '뚫린 자리'처럼 보인다. */
 const HOLE = "#ffffff";
@@ -23,25 +23,6 @@ const WON_BAR = "M7.6 12.4h8.8";
 const BODY_OPEN = "M4.5 20.5c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6";
 const BODY_CLOSED = "M4.5 20.2c.8-3.4 3.9-5.7 7.5-5.7s6.7 2.3 7.5 5.7a.9.9 0 0 1-.9 1.1H5.4a.9.9 0 0 1-.9-1.1Z";
 const BELL = "M6 10a6 6 0 0 1 12 0v4.1l1.5 2.3a1 1 0 0 1-.8 1.6H5.3a1 1 0 0 1-.8-1.6L6 14.1Z";
-const KEYS: [number, number][] = [
-  [8.5, 12.5],
-  [12, 12.5],
-  [15.5, 12.5],
-  [8.5, 16.5],
-  [12, 16.5],
-  [15.5, 16.5],
-];
-
-function Keys({ color }: { color: string }) {
-  return (
-    <>
-      {KEYS.map(([cx, cy]) => (
-        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={1.15} fill={color} stroke="none" />
-      ))}
-    </>
-  );
-}
-
 function shape(name: TabIconName, filled: boolean) {
   switch (name) {
     case "home":
@@ -55,12 +36,14 @@ function shape(name: TabIconName, filled: boolean) {
       );
     case "saved":
       return <path d={HEART} fill={filled ? "currentColor" : "none"} />;
-    case "calc":
+    case "ledger":
+      // 시안 '하단 섬 · 상단바 설계'(11/21) — 몸통 + 고리 둘 + 체크(달력의 [냈어요] 체크와 같은 뜻)
       return (
         <>
-          <rect x={5} y={2.8} width={14} height={18.4} rx={3} fill={filled ? "currentColor" : "none"} />
-          <path d="M8.7 7.4h6.6" stroke={filled ? HOLE : "currentColor"} />
-          <Keys color={filled ? HOLE : "currentColor"} />
+          <rect x={3.5} y={5} width={17} height={16} rx={3} fill={filled ? "currentColor" : "none"} />
+          <path d="M8 3v4M16 3v4" />
+          <path d="M4.6 10h14.8" stroke={filled ? HOLE : "currentColor"} strokeWidth={filled ? 1.6 : 2} />
+          <path d="m9.2 15.3 2 2 3.8-4" stroke={filled ? HOLE : "currentColor"} />
         </>
       );
     case "benefit":

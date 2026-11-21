@@ -209,8 +209,8 @@ export default function ResultPage() {
         </Button>
       </div>
       </main>
-      {/* 계산 탭의 첫 화면 — 계산을 마친 사람은 계산 탭이 여기로 온다 (BottomTabBar calcTabHref) */}
-      <BottomTabBar active="calc" />
+      {/* 결과는 홈의 하위 화면 — 하단 섬은 '홈'에 불 (11/21 계산 탭을 달력 탭으로 바꿈) */}
+      <BottomTabBar active="home" />
     </AppShell>
   );
 }
