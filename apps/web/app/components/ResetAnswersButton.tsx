@@ -19,7 +19,7 @@ export const RESET_TARGET = "/find?q=birth";
  * lib/sync.ts 가 비운 데이터를 바로 올린다.
  *
  * 확인 창은 '취소' 에 먼저 포커스를 준다 — 열자마자 Enter 한 번에 모두 지워지지 않게.
- * [다시 하기]는 빨간 버튼(danger)이다 — 찜과 서류 체크까지 지우는 동작이라 탈퇴·로그아웃 확인과 같은 급이다.
+ * [다시 하기]는 빨간 버튼(danger)이다 — 찜 · 서류 체크 · 주거비 달력 기록까지 지우는 동작이라 탈퇴·로그아웃 확인과 같은 급이다.
  *
  * onReset: 같은 화면(/find)에 머무는 경우 그 화면의 상태도 비우라고 부른다.
  */
@@ -46,7 +46,7 @@ export function ResetAnswersButton({ onReset }: { onReset?: () => void }) {
       {confirming && (
         <Sheet
           title="처음부터 다시 할까요?"
-          description="관심 지원금과 서류 준비 체크도 함께 지워져요."
+          description="관심 지원금과 서류 준비 체크, 주거비 달력 기록도 함께 지워져요."
           onClose={() => setConfirming(false)}
         >
           <Button size="screen" variant="danger" onClick={reset}>

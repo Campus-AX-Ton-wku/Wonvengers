@@ -14,6 +14,7 @@ import {
   type UserDataContent,
 } from "./user-data";
 import { isSaved, toggleSaved } from "./saved";
+import { emptyLedger, parseLedger, type LedgerRecord } from "./ledger";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -458,5 +459,39 @@ export function writeLocalContent(content: UserDataContent): void {
  */
 export function resetAllAnswers(): void {
   quietly(clearLocalContent);
+  clearLedger();
   notifyLocalChange(true);
+}
+
+// ── 주거비 달력 (docs/기획/2026-11-21-주거비-달력-설계.md §5) ──
+
+const LEDGER_KEY = "perky.ledger";
+
+/**
+ * 주거비 달력 기록. **이 기기에만** 둔다 — SYNCED_KEYS · readLocalContent 에 넣지 않는다.
+ * 저장할 때 notifyLocalChange 를 부르지 않는다: lib/sync.ts 가 그 알림마다 서버에 올리므로 누를 때마다 PUT 이 나간다.
+ * clearLocalContent 에도 넣지 않는다: 그 함수는 로그인하면서 서버 값으로 덮어쓸 때(writeLocalContent)도 불린다.
+ * 지우는 곳은 로그아웃 · 탈퇴(lib/sync.ts)와 '처음부터 다시'(resetAllAnswers).
+ */
+export function loadLedger(): LedgerRecord {
+  if (typeof window === "undefined") return emptyLedger();
+  try {
+    const raw = window.localStorage.getItem(LEDGER_KEY);
+    return raw ? parseLedger(JSON.parse(raw)) : emptyLedger();
+  } catch {
+    return emptyLedger();
+  }
+}
+
+export function saveLedger(record: LedgerRecord): void {
+  writeJSONSafely(LEDGER_KEY, record);
+}
+
+export function clearLedger(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(LEDGER_KEY);
+  } catch {
+    // 지우기가 막혀 있으면 할 수 있는 것이 없다.
+  }
 }
