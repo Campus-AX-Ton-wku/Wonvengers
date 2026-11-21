@@ -249,7 +249,10 @@ export const GUIDES: Guide[] = [
         keyword: "서류 지도",
         title: "어디서 떼요? 한눈에 보기",
         lead: "지원금 신청에 자주 나오는 서류와 떼는 곳이에요.",
-        body: ["대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요."],
+        body: [
+          "대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요.",
+          "무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요. 발급기마다 뗄 수 있는 서류가 달라요.",
+        ],
         documents: [
           { name: "주민등록등본", where: "정부24(온라인), 주민센터, 무인민원발급기", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01" } },
           { name: "가족관계증명서", where: "대법원 전자가족관계등록시스템, 정부24", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=97400000004" } },
@@ -279,6 +282,7 @@ export const GUIDES: Guide[] = [
       { name: "국세청 홈택스", url: "https://www.hometax.go.kr" },
       { name: "세움터", url: "https://www.eais.go.kr" },
       { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
+      { name: "행정안전부 무인민원발급기정보", topic: "익산 발급기 위치, 운영시간, 발급 서류", url: "https://www.data.go.kr/data/15154774/openapi.do" },
     ],
   },
 ];

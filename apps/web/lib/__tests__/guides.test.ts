@@ -92,6 +92,11 @@ describe("서류 떼는 곳 1장 — 서류 단위 (11/22)", () => {
     expect(noLink).toEqual(["임대차계약서 사본"]);
   });
 
+  it("발급기에서도 뗄 수 있다는 줄과 행안부 출처", () => {
+    expect(section.body.join(" ")).toContain("무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요");
+    expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
+  });
+
   it("온라인 링크는 https 이고 확인해 둔 주소다", () => {
     const urls = Object.fromEntries(section.documents!.filter((d) => d.online).map((d) => [d.name, d.online!.url]));
     expect(urls["주민등록등본"]).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01");

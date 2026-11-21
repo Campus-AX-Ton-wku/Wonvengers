@@ -40,4 +40,10 @@ describe("/privacy — 처리방침 초안 (설계 '화면' 6)", () => {
       expect(text).toContain(phrase);
     }
   });
+
+  it("지도 위치는 기기 안에서만 · 카카오맵 연동을 적는다 (11/22)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/'내 위치'를 누르면 기기 위치를 지도 가운데를 맞추고 거리를 재는 데만 써요/)).toBeTruthy();
+    expect(screen.getByText(/연동 서비스 — 카카오맵/)).toBeTruthy();
+  });
 });
