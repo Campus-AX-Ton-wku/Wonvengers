@@ -103,6 +103,11 @@ export function receivedMonthLabel(month: MonthKey, todayMonth: MonthKey): strin
   return month.slice(0, 4) === todayMonth.slice(0, 4) ? monthOnlyLabel(month) : monthLabel(month);
 }
 
+/** 합계 이름 — 이번 달이 아닌 달을 보면 '이번 달'이라 하지 않고 그 달 이름을 쓴다. */
+export function burdenLabel(month: MonthKey, todayMonth: MonthKey): string {
+  return month === todayMonth ? "이번 달 실제 부담" : `${receivedMonthLabel(month, todayMonth)} 실제 부담`;
+}
+
 /** 보고 있는 달이 올해가 아니면 '올해'라고 하지 않는다 — 2027년 1월을 보며 '올해'라면 2026년으로 읽힌다. */
 export function yearTotalLabel(month: MonthKey, todayMonth: MonthKey): string {
   return month.slice(0, 4) === todayMonth.slice(0, 4) ? "올해 누적" : `${Number(month.slice(0, 4))}년 누적`;

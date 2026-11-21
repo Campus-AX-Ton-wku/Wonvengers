@@ -4,6 +4,7 @@ import {
   FEE_KEY,
   RENT_KEY,
   addMonths,
+  burdenLabel,
   emptyLedger,
   ledgerMonth,
   ledgerPlan,
@@ -251,5 +252,13 @@ describe("홈 진행 상태 (ledgerProgress)", () => {
     const all = press(r, "2026-11", FEE_KEY, 급여);
     expect(ledgerProgress(ledgerMonth(월세계획, all, "2026-11"))?.complete).toBe(true);
     expect(ledgerProgress(ledgerMonth(월세계획, r, "2026-08"))).toBeNull();
+  });
+});
+
+describe("합계 이름 (burdenLabel)", () => {
+  it("이번 달이면 '이번 달 실제 부담', 다른 달은 그 달 이름", () => {
+    expect(burdenLabel("2026-11", "2026-11")).toBe("이번 달 실제 부담");
+    expect(burdenLabel("2026-10", "2026-11")).toBe("10월 실제 부담");
+    expect(burdenLabel("2027-01", "2026-11")).toBe("2027년 1월 실제 부담");
   });
 });

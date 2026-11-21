@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, ICON_SM, Pencil } from "@/app/components/icons";
 import {
   addMonths,
+  burdenLabel,
   ledgerMonth,
   monthLabel,
   monthOnlyLabel,
@@ -73,7 +74,7 @@ export function MonthSection({
           {out.length > 0 && <LineGroup title="나가는 돈" lines={out} verb="냈어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
           {out.length > 0 && income.length > 0 && <span aria-hidden="true" className="h-px bg-ink-100" />}
           {income.length > 0 && <LineGroup title="들어오는 돈" lines={income} verb="받았어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
-          <Totals view={view} yearLabel={yearTotalLabel(month, todayMonth)} />
+          <Totals view={view} burdenLabel={burdenLabel(month, todayMonth)} yearLabel={yearTotalLabel(month, todayMonth)} />
         </section>
       ) : (
         <OutOfContract plan={plan} onStart={() => onMonth(plan.start)} />
@@ -159,12 +160,12 @@ function LineGroup({
 }
 
 /** 이번 달 실제 부담 · 예상 · 누적 (설계 §4.4). 음수면 0원 + "지원이 N원 더 많아요". */
-function Totals({ view, yearLabel }: { view: LedgerMonthView; yearLabel: string }) {
+function Totals({ view, burdenLabel, yearLabel }: { view: LedgerMonthView; burdenLabel: string; yearLabel: string }) {
   const more = view.actual < 0 ? -view.actual : 0;
   return (
     <div className="flex flex-col gap-3 border-t-2 border-ink-900 pt-3.5">
       <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-bold text-ink-900">이번 달 실제 부담</span>
+        <span className="text-sm font-bold text-ink-900">{burdenLabel}</span>
         <span data-testid="ledger-actual" className="whitespace-nowrap text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-brand-900">
           {formatKoreanMoney(view.actual)}
         </span>
