@@ -48,6 +48,20 @@ describe("주민센터 — 카카오 검색 결과 고르기", () => {
     expect(pickOffice("신동", [kakao({ place_name: "동산동행정복지센터" })])).toBeNull();
     expect(pickOffice("어양동", [kakao({ address_name: "전북특별자치도 전주시 어양동" })])).toBeNull();
   });
+  it("PO3 하위 장소(별관)는 건너뛰고 그 뒤의 진짜 주민센터를 고른다", () => {
+    const docs = [kakao({ place_name: "어양동행정복지센터 별관" }), kakao()];
+    expect(pickOffice("어양동", docs)?.place_name).toBe("어양동행정복지센터");
+  });
+  it("영등1동 과 영등2동 은 서로 섞이지 않는다", () => {
+    expect(pickOffice("영등1동", [kakao({ place_name: "영등2동행정복지센터" })])).toBeNull();
+    expect(pickOffice("영등1동", [kakao({ place_name: "영등1동행정복지센터" })])?.place_name).toBe("영등1동행정복지센터");
+  });
+  it("'익산시 ' 접두가 붙은 이름도 받는다", () => {
+    expect(pickOffice("어양동", [kakao({ place_name: "익산시 어양동행정복지센터" })])).not.toBeNull();
+  });
+  it("'주민센터' 표기도 받는다", () => {
+    expect(pickOffice("마동", [kakao({ place_name: "마동주민센터" })])).not.toBeNull();
+  });
   it("장소로 바꿀 때 도로명 주소 · 전화 · 좌표", () => {
     expect(toOffice("어양동", kakao())).toEqual({
       id: "office-어양동",

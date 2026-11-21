@@ -25,17 +25,17 @@ export const KIOSK_DOCS = [
 
 const squash = (s) => s.replace(/\s+/g, "");
 
-/** 카카오 키워드 검색 결과 중 그 읍면동 주민센터. 없으면 null — 지어내지 않는다 */
+/**
+ * 카카오 키워드 검색 결과 중 그 읍면동 주민센터. 없으면 null — 지어내지 않는다.
+ * 이름은 공백을 빼고 앞의 '익산(시)'을 뗀 뒤, 정확히 '{읍면동}행정복지센터' 또는 '{읍면동}주민센터'여야 한다
+ * (별관 · 민원실 같은 하위 장소, 영등1동 vs 영등2동 를 거른다).
+ */
 export function pickOffice(emd, docs) {
+  const named = new RegExp(`^${emd}(행정복지센터|주민센터)$`);
   return (
     docs.find((d) => {
       const name = squash(d.place_name).replace(/^익산시?/, "");
-      return (
-        name.startsWith(emd) &&
-        /행정복지센터|주민센터/.test(name) &&
-        d.category_group_code === "PO3" &&
-        d.address_name.includes("익산")
-      );
+      return named.test(name) && d.category_group_code === "PO3" && d.address_name.includes("익산시");
     }) ?? null
   );
 }
