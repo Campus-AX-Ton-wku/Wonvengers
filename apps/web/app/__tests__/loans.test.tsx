@@ -71,6 +71,11 @@ describe("/loans/[id] — 상품 한 장", () => {
     expect(screen.getByRole("link", { name: `문의 전화 ${p.contact!.phone}` })).toBeTruthy();
   });
 
+  it("신청 링크는 스크린리더에 '(새 창)' 을 알린다", async () => {
+    render(await LoanPage({ params: Promise.resolve({ id: products[0].id }) }));
+    expect(screen.getByRole("link", { name: /신청 페이지로 이동\s*\(새 창\)/ })).toBeTruthy();
+  });
+
   it("없는 id 는 404", async () => {
     // 전역 대역은 던지지 않는다 — 진짜 Next 처럼 이 시험에서만 던지게 해 notFound 호출을 직접 확인한다.
     vi.mocked(notFound).mockImplementationOnce(() => {

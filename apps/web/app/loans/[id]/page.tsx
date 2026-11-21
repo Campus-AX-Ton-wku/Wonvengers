@@ -55,6 +55,7 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
           <a href={product.applyUrl} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "primary", size: "screen" })}>
             신청 페이지로 이동
             <ExternalLink size={ICON_SM} aria-hidden="true" />
+            <span className="sr-only">(새 창)</span>
           </a>
           {product.sourceUrl !== product.applyUrl && (
             <a
@@ -65,6 +66,7 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
             >
               공식 출처
               <ExternalLink size={ICON_SM - 2} aria-hidden="true" />
+              <span className="sr-only">(새 창)</span>
             </a>
           )}
         </div>
