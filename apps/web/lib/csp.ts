@@ -11,8 +11,8 @@
  *   connect-src 에는 넣지 않는다 — 실행 중에 카카오 검색을 부르지 않으니 토큰을 밖으로 보낼 길이 늘지 않는다.
  * - meta 로는 frame-ancestors 를 줄 수 없다(브라우저가 무시한다).
  */
-export const KAKAO_MAP_SCRIPT_ORIGINS = ["https://dapi.kakao.com", "https://t1.daumcdn.net"];
-export const KAKAO_MAP_IMG_ORIGINS = ["https://*.daumcdn.net", "https://*.kakao.com"];
+export const KAKAO_MAP_SCRIPT_ORIGINS = ["https://dapi.kakao.com", "https://t1.daumcdn.net", "https://t1.kakaocdn.net"];
+export const KAKAO_MAP_IMG_ORIGINS = ["https://*.daumcdn.net", "https://*.kakao.com", "https://*.kakaocdn.net"];
 
 export function contentSecurityPolicy(
   env: { NEXT_PUBLIC_COGNITO_DOMAIN?: string; NEXT_PUBLIC_API_URL?: string } = {
