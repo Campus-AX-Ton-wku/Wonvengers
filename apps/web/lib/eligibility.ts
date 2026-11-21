@@ -1,7 +1,7 @@
 import type { CheckOutcome, EligibilityProfile, ListingInput, PolicyMeta, PolicyResult, PolicyStatus } from "./types";
 import { POLICY_RULES } from "./policy-rules";
-import { isWithinWindow } from "./date";
-import { estimatePolicyAmount } from "./benefit";
+import { formatDotDate, isWithinWindow } from "./date";
+import { estimatePolicyAmount, supportAgeLimit } from "./benefit";
 
 /**
  * 2층 규칙(lib/policy-rules.ts)이 아직 없는 정책 — Supabase 에만 등록한 새 정책 (2026-11-16 부터).
@@ -55,6 +55,17 @@ export function evaluatePolicy(
   const ruleFn = POLICY_RULES[policy.id];
   const checks = ruleFn ? ruleFn(profile, asOfISO) : [NO_RULES_CHECK];
 
+  // 받는 동안 나이를 따지는 지원인데 계약 시작 때 이미 나이 상한을 넘으면 한 달도 못 받는다 (11/21).
+  // 0원 카드로 두면 '계산하지 않는 지원'처럼 읽히므로 실패한 조건으로 남긴다.
+  const ageLimit = supportAgeLimit(policy, listing, profile.birthDate);
+  if (ageLimit && ageLimit.months === 0) {
+    checks.push({
+      key: "ageDuringSupport",
+      label: `계약 시작일(${formatDotDate(listing.contractStartDate)}) 전에 만 ${ageLimit.ageMax + 1}세가 돼요 — 만 ${ageLimit.ageMax}세까지만 받을 수 있어요`,
+      result: "fail",
+    });
+  }
+
   const failed = checks.filter((c) => c.result === "fail");
   const unknown = checks.filter((c) => c.result === "unknown");
   const passed = checks.filter((c) => c.result === "pass");
@@ -64,7 +75,7 @@ export function evaluatePolicy(
   else if (unknown.length > 0) status = "조건충족시가능";
   else status = "예상적용";
 
-  const estimatedAmount = status === "대상아님" ? 0 : estimatePolicyAmount(policy, listing);
+  const estimatedAmount = status === "대상아님" ? 0 : estimatePolicyAmount(policy, listing, profile.birthDate);
 
   return {
     policy,

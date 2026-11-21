@@ -8,7 +8,10 @@ import {
   benefitFormula,
   benefitTypeLabel,
   estimatePolicyAmount,
+  monthsBeforeAgeLimit,
   payoutTiming,
+  supportAgeLimit,
+  AGE_CHECKED_AT_APPLICATION,
 } from "@/lib/benefit";
 import { nominalTotalCost } from "@/lib/rent";
 import { makeListing } from "./fixtures";
@@ -243,5 +246,51 @@ describe("계산 기간 — 주거비와 지원금은 입력한 개월 수로 �
   it("12개월보다 짧게 살면 그 개월 수로 센다", () => {
     const listing6 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 6 });
     expect(estimatePolicyAmount(housingBenefit, listing6)).toBe(212000 * 6);
+  });
+});
+
+/*
+ * 11/21 (ggue): 입력한 거주 개월 수를 그대로 세면서 나이 상한을 넘는 기간까지 지원이 붙는 문제.
+ * 정책별로 나눈다 — 나이를 '신청할 때 한 번' 보는 지원은 자르지 않고, '받는 동안 계속' 보는 지원
+ * (그리고 구분이 안 된 지원)은 만 (상한+1)세 생일 전까지 다 채운 달만 센다.
+ */
+describe("나이 상한 — 받는 동안 나이를 따지는 지원은 상한을 넘기 전 달까지만 센다", () => {
+  const 시작 = "2026-12-01";
+  const listing36 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 36, contractStartDate: 시작 });
+  const listing24 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 24, contractStartDate: 시작 });
+
+  it("계약 시작부터 만 (상한+1)세 생일 전까지 다 채운 달 수를 센다", () => {
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2026-12-01")).toBe(17); // 2028-05-10 에 만 30세
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2026-12-15")).toBe(16); // 2028-04-15 ~ 05-15 는 다 못 채운다
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2028-06-01")).toBe(0); // 시작 때 이미 넘었다
+  });
+
+  it("청년 주거급여 분리지급(만 30세 미만)은 36개월로 넣어도 만 30세 생일 전까지만 센다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing36, "1998-05-10")).toBe(212000 * 17);
+    expect(monthlyBreakdown(housingBenefit, listing36, "1998-05-10")).toEqual({ monthly: 212000, months: 17 });
+    expect(supportAgeLimit(housingBenefit, listing36, "1998-05-10")).toEqual({ months: 17, ageMax: 29, endDate: "2028-05-10" });
+    expect(benefitFormula(housingBenefit, listing36, "1998-05-10")).toContain("× 17개월");
+    expect(benefitFormula(housingBenefit, listing36, "1998-05-10")).toContain("만 30세가 되는 2028.05.10 전까지");
+  });
+
+  it("상한에 닿지 않으면 입력한 개월 수 그대로다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing24, "2003-08-12")).toBe(212000 * 24);
+    expect(supportAgeLimit(housingBenefit, listing24, "2003-08-12")).toBeNull();
+  });
+
+  it("신청할 때 한 번만 나이를 보는 지원(국토부 청년월세 · 공고 '1991~2007년생')은 자르지 않는다", () => {
+    expect(AGE_CHECKED_AT_APPLICATION.has(moland.id)).toBe(true);
+    // 2027-01-15 에 만 35세가 되지만 신청 때 34세였으면 24개월 다 받는다
+    expect(estimatePolicyAmount(moland, listing24, "1992-01-15")).toBe(200000 * 24);
+    expect(supportAgeLimit(moland, listing24, "1992-01-15")).toBeNull();
+  });
+
+  it("구분이 안 된 새 정책은 받는 동안 나이를 따진다고 보고 자른다 — 금액을 부풀리지 않게", () => {
+    const 새정책 = { ...moland, id: "some-new-policy" };
+    expect(estimatePolicyAmount(새정책, listing24, "1992-01-15")).toBe(200000 * 1);
+  });
+
+  it("생년월일을 모르면 자르지 않는다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing36)).toBe(212000 * 36);
   });
 });
