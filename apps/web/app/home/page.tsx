@@ -9,6 +9,7 @@ import { GuideCard } from "@/app/guides/GuideCard";
 import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
 import { LedgerRow } from "./LedgerRow";
+import { LoanRow } from "./LoanRow";
 import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
@@ -33,7 +34,7 @@ type Costs = { nominal: number; final: number; months: number };
 
 /**
  * 홈 — 내 주거지원 현황 (docs/기획/2026-11-17-홈-찜하기-설계.md "2"). 로그인한 사람만.
- * 순서: 제목 + 내 조건 칩 → 오늘 할 일 → 내 지원 요약 → 다가오는 일정 → 주거 가이드 (11/20 홈 보강, docs/기획/2026-11-20-홈-보강-설계.md).
+ * 순서: 제목 + 내 조건 칩 → 오늘 할 일 → 내 지원 요약 → 다가오는 일정 → 대출 · 보증(11/22) → 주거 가이드 (11/20 홈 보강, docs/기획/2026-11-20-홈-보강-설계.md).
  * 주거비 상자 아래 주거비 달력 입구 한 줄(11/21).
  * 관심 지원금 목록은 11/20 부터 하단 섬의 '관심' 탭(/saved)이 맡는다.
  * 모양은 2026-11-17 디자인 시안 '홈 · 로그인 직후' · '홈 · 사용 중'을 따른다.
@@ -126,6 +127,7 @@ export default function HomePage() {
         {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
         {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
 
+        <LoanRow region={answers.region} housingType={answers.housingType} />
         <GuideRow housingType={answers.housingType} />
       </main>
       <BottomTabBar active="home" />
