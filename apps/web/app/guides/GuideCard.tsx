@@ -3,7 +3,16 @@ import { Icon3D } from "@/app/components";
 import type { Guide } from "@/lib/guides";
 
 /** 가이드 카드 — 홈 가로 줄(compact)과 /guides 목록이 같이 쓴다. tag 를 주면 첫 카드 강조(얇은 파랑 테두리 + 오른쪽 위 꼬리표). */
-export function GuideCard({ guide, compact = false, tag = null }: { guide: Guide; compact?: boolean; tag?: string | null }) {
+export function GuideCard({
+  guide,
+  compact = false,
+  tag = null,
+}: {
+  /** 카드에 필요한 것만 — 집 보러 갈 때 체크리스트(HOUSE_CHECKLIST_CARD, id "checklist")도 같은 카드로 /guides/checklist 에 간다 */
+  guide: Pick<Guide, "id" | "title" | "summary" | "icon">;
+  compact?: boolean;
+  tag?: string | null;
+}) {
   return (
     <Link
       href={`/guides/${guide.id}`}

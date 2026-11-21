@@ -18,6 +18,7 @@ export { CarriedOver } from "./CarriedOver";
 export { Card } from "./Card";
 export { DeadlineBadge } from "./DeadlineBadge";
 export type { CardTone } from "./Card";
+export { ChecklistRow } from "./ChecklistRow";
 export { ChoiceCard } from "./ChoiceCard";
 export { ContactInfo, telHref } from "./ContactInfo";
 export { Disclosure } from "./Disclosure";
