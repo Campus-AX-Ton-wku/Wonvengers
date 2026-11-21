@@ -14,10 +14,11 @@ export function LoanCard({ product, compact = false, tag = null }: { product: Lo
     >
       <Icon3D name={product.icon} size={compact ? 40 : 48} />
       <span className="flex min-w-0 flex-col gap-1">
+        {tag && !compact && <span className="mb-0.5 inline-flex h-[22px] w-fit items-center rounded-full bg-brand-50 px-2 text-xs font-bold text-brand-800">{tag}</span>}
         <span className="text-base font-bold leading-snug text-ink-900">{product.name}</span>
         <span className="text-[13px] leading-normal text-ink-500">{loanMetaLine(product)}</span>
       </span>
-      {tag && (
+      {tag && compact && (
         <span className="absolute right-3 top-3.5 inline-flex h-[22px] items-center rounded-full bg-brand-50 px-2 text-xs font-bold text-brand-800">
           {tag}
         </span>
