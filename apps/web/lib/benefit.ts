@@ -20,7 +20,7 @@ export function benefitTypeLabel(type: BenefitType, basis?: PolicyMeta["lumpSumB
 }
 
 /**
- * 정책의 지원 개월 상한과 계산 기간(거주 예정 개월, 최대 12개월) 중 작은 값.
+ * 정책의 지원 개월 상한과 계산 기간(거주 예정 개월 수) 중 작은 값.
  * 주거비(rent.ts nominalTotalCost)와 같은 기간으로 센다 — 기간이 다르면 지원이 주거비보다 커진다(11/21).
  */
 function supportedMonths(policy: PolicyMeta, listing: ListingInput): number {

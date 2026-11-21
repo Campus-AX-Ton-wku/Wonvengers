@@ -41,7 +41,7 @@ export function ResultReceipt({
   /** 이 금액에 아직 확인되지 않은 조건이 섞여 있으면 그 목록 */
   unknownConditions: { policy: string; label: string }[];
 }) {
-  // lib/rent.ts nominalTotalCost · 지원금과 같은 기간 — 12개월까지만 센다
+  // lib/rent.ts nominalTotalCost · 지원금과 같은 기간 — 입력한 거주 개월 수
   const months = calcMonths(listing);
   const rentAndFee = (monthlyRentEquivalent(listing) + listing.managementFee) * months;
   // 매달 나가는 돈과 한 번 내는 돈을 나눈다(11/18 진단 2회차) — 이사비를 12개월로 나눠 '한 달에 약 …'으로 쓰면

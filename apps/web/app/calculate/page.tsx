@@ -4,7 +4,7 @@ import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
 import type { ContractType, ListingInput, PolicyMeta } from "@/lib/types";
-import { monthlyRentEquivalent } from "@/lib/rent";
+import { YEARLY_RENT_MONTHS, monthlyRentEquivalent } from "@/lib/rent";
 import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
@@ -142,8 +142,8 @@ function CalculateSteps() {
     setLoaded(true);
   }, []);
 
-  const monthlyEquivalent =
-    form.rentOrYearlyAmount > 0 && form.months > 0 ? monthlyRentEquivalent(form) : 0;
+  // 연세는 1년 치로 보고 12로 나눈다(11/21) — 거주 개월 수와 무관하다
+  const monthlyEquivalent = form.rentOrYearlyAmount > 0 ? monthlyRentEquivalent(form) : 0;
 
   // 뒤에 이어질 판정질문 스텝 수까지 합쳐 전체 진행률을 보여준다.
   const totalSteps = useMemo(() => {
@@ -344,7 +344,7 @@ function CalculateSteps() {
 
             {form.contractType === "연세" && monthlyEquivalent > 0 && (
               <p className="rounded-control bg-brand-50 px-4 py-3 text-sm text-brand-900">
-                연세 {form.rentOrYearlyAmount.toLocaleString()}원 ÷ {form.months}개월 = 월 환산{" "}
+                연세 {form.rentOrYearlyAmount.toLocaleString()}원 ÷ {YEARLY_RENT_MONTHS}개월 = 월 환산{" "}
                 <strong>{monthlyEquivalent.toLocaleString()}원</strong>
               </p>
             )}

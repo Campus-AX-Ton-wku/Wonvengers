@@ -62,7 +62,7 @@ export default function HomePage() {
       if (listing && profile) {
         try {
           const s = buildCalculationSummary(policiesForRegion(policies, listing.region), profile, listing, t);
-          // 기간은 12개월까지만 센다 (lib/rent.ts calcMonths — 주거비 · 지원금과 같은 기간)
+          // 기간은 lib/rent.ts calcMonths — 주거비 · 지원금과 같은 기간(입력한 거주 개월 수)
           setCosts({ nominal: s.nominalTotalCost, final: s.finalEstimatedHousingCost, months: calcMonths(listing) });
         } catch {
           setCosts(null);

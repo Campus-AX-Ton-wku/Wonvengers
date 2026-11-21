@@ -36,10 +36,8 @@ describe("benefitFormula", () => {
   });
 
   it("정책의 지원 개월 상한을 넘는 계약이면 상한 개월로 계산한 식을 보여준다", () => {
-    // 계산 기간이 최대 12개월이라(11/21) 상한이 그보다 짧은 정책으로 본다 — 지금 데이터엔 없어 6개월로 만든다
-    const sixMonths = { ...moland, maxMonths: 6 };
     const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 200000, months: 30 });
-    expect(benefitFormula(sixMonths, listing)).toContain("× 6개월");
+    expect(benefitFormula(moland, listing)).toContain("× 24개월");
   });
 
   it("정액형은 실제 월세와 무관한 정액 × 개월 수로 보여준다", () => {
@@ -220,24 +218,26 @@ describe("monthlyBreakdown — 매달 주는 지원의 한 달 금액 (11/18 결
 
 /*
  * 11/21 (ggue 실기기): 거주 24개월로 넣었더니 주거비는 12개월(월세·관리비 480만원)로, 청년 주거급여
- * 분리지급은 24개월(21만 2천원 × 24 = 508만 8천원)로 세어 지원이 주거비보다 커졌다. PRD F3-C 는
- * '기본 결과는 최대 12개월 기준' — 주거비(rent.ts)만 12개월로 자르고 지원 개월 수는 안 잘랐다.
+ * 분리지급은 24개월(21만 2천원 × 24 = 508만 8천원)로 세어 지원이 주거비보다 커졌다. 처음엔 둘 다 12개월로
+ * 맞췄는데, ggue 결정으로 '최대 12개월' 규칙을 없애고 둘 다 입력한 개월 수 그대로 센다.
  */
-describe("계산 기간 — 주거비와 지원금은 같은 개월 수로 센다", () => {
+describe("계산 기간 — 주거비와 지원금은 입력한 개월 수로 같이 센다", () => {
   const listing24 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, managementFee: 100000, months: 24 });
 
-  it("지급 기간 상한이 없는 지원(청년 주거급여)도 계산 기간 12개월까지만 센다", () => {
-    expect(estimatePolicyAmount(housingBenefit, listing24)).toBe(212000 * 12);
-    expect(monthlyBreakdown(housingBenefit, listing24)).toEqual({ monthly: 212000, months: 12 });
-    expect(benefitFormula(housingBenefit, listing24)).toContain("× 12개월");
+  it("지급 기간 상한이 없는 지원(청년 주거급여)은 입력한 24개월을 센다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing24)).toBe(212000 * 24);
+    expect(monthlyBreakdown(housingBenefit, listing24)).toEqual({ monthly: 212000, months: 24 });
+    expect(benefitFormula(housingBenefit, listing24)).toContain("× 24개월");
   });
 
-  it("지급 기간이 24개월인 지원(국토부 청년월세)도 12개월까지만 센다", () => {
-    expect(estimatePolicyAmount(moland, listing24)).toBe(200000 * 12);
-  });
-
-  it("월 지원이 월세보다 작으면 지원 합계가 같은 기간 주거비를 넘지 않는다", () => {
+  it("주거비도 같은 24개월로 세어, 월 지원이 월세보다 작으면 지원이 주거비를 넘지 않는다", () => {
+    expect(nominalTotalCost(listing24)).toBe((300000 + 100000) * 24);
     expect(estimatePolicyAmount(housingBenefit, listing24)).toBeLessThanOrEqual(nominalTotalCost(listing24));
+  });
+
+  it("정책의 지급 기간 상한(국토부 청년월세 24개월)은 그대로 지킨다", () => {
+    const listing36 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 36 });
+    expect(estimatePolicyAmount(moland, listing36)).toBe(200000 * 24);
   });
 
   it("12개월보다 짧게 살면 그 개월 수로 센다", () => {
