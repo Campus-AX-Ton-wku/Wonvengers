@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { notFound } from "next/navigation";
+import { renderToString } from "react-dom/server";
 import { render, screen, within } from "@testing-library/react";
 import loanProductsData from "@/data/loan-products.json";
 import LoansPage from "@/app/loans/page";
@@ -17,15 +18,22 @@ const NOTICE = "현금 지원이 아니라서 지원금 합계에는 넣지 않�
 beforeEach(() => window.localStorage.clear());
 
 describe("/loans — 대출 · 보증 전체", () => {
-  it("답이 없으면 전부 데이터 순서, 카드는 이름 · 종류 · 지역, 누르면 상세", () => {
+  it("답이 없으면 전부 데이터 순서, 카드는 이름 · 종류 · 지역, 누르면 상세", async () => {
     render(<LoansPage />);
     expect(screen.getByRole("heading", { level: 1, name: "대출 · 보증" })).toBeTruthy();
     expect(screen.getByText(NOTICE)).toBeTruthy();
-    const links = within(screen.getByRole("list")).getAllByRole("link");
+    const links = within(await screen.findByRole("list")).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(products.map((p) => `/loans/${p.id}`));
     expect(within(links[0]).getByText(products[0].name)).toBeTruthy();
     expect(within(links[0]).getByText(loanMetaLine(products[0]))).toBeTruthy();
     expect(links[0].querySelector("img[data-icon3d]")?.getAttribute("data-icon3d")).toBe(products[0].icon);
+  });
+
+  it("답을 읽기 전(첫 렌더)에는 목록을 그리지 않는다 — 순서가 바뀌며 카드가 뒤섞이지 않게", () => {
+    const html = renderToString(<LoansPage />);
+    expect(html).toContain("대출 · 보증");
+    expect(html).toContain("불러오는 중");
+    expect(html).not.toContain("<ul");
   });
 
   it("이 기기의 답이 전세면 버팀목 전세가 맨 앞 + '전세라면 먼저'", async () => {

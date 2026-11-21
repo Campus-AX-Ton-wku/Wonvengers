@@ -16,7 +16,11 @@ const products = loanProductsData as LoanProductMeta[];
  */
 export default function LoansPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
-  useEffect(() => setAnswers(loadAnswers()), []);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setAnswers(loadAnswers());
+    setReady(true);
+  }, []);
   const { loans, tag } = orderedLoans(products, { region: answers.region, housingType: answers.housingType });
   return (
     <AppShell>
@@ -24,13 +28,17 @@ export default function LoansPage() {
       <main className="flex flex-col gap-4 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">대출 · 보증</h1>
         <p className="text-[15px] leading-relaxed text-ink-600">현금 지원이 아니라서 지원금 합계에는 넣지 않아요. 이자 절감액은 계산하지 않아요.</p>
-        <ul className="flex flex-col gap-3">
-          {loans.map((product, i) => (
-            <li key={product.id}>
-              <LoanCard product={product} tag={i === 0 ? tag : null} />
-            </li>
-          ))}
-        </ul>
+        {ready ? (
+          <ul className="flex flex-col gap-3">
+            {loans.map((product, i) => (
+              <li key={product.id}>
+                <LoanCard product={product} tag={i === 0 ? tag : null} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-6 text-center text-sm text-ink-500">불러오는 중…</p>
+        )}
       </main>
     </AppShell>
   );
