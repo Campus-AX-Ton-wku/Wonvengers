@@ -36,6 +36,16 @@ describe("/loans — 대출 · 보증 전체", () => {
     expect(html).not.toContain("<ul");
   });
 
+  it("태그가 있는 카드도 링크 이름은 상품 이름부터 읽는다", async () => {
+    saveAnswers({ birthDate: birthDateForAge(25), region: "전북특별자치도 익산시", status: "재직", incomeBracket: 1, housingType: "전세" });
+    render(<LoansPage />);
+    await screen.findByText("전세라면 먼저");
+    const first = within(screen.getByRole("list")).getAllByRole("link")[0];
+    const name = products.find((x) => x.id === "youth-btm-jeonse-loan")!.name;
+    expect(first.getAttribute("href")).toBe("/loans/youth-btm-jeonse-loan");
+    expect(screen.getByRole("link", { name: new RegExp(`^${name}`) })).toBe(first);
+  });
+
   it("이 기기의 답이 전세면 버팀목 전세가 맨 앞 + '전세라면 먼저'", async () => {
     saveAnswers({ birthDate: birthDateForAge(25), region: "전북특별자치도 익산시", status: "재직", incomeBracket: 1, housingType: "전세" });
     render(<LoansPage />);

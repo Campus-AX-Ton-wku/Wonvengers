@@ -14,8 +14,9 @@ export function LoanCard({ product, compact = false, tag = null }: { product: Lo
     >
       <Icon3D name={product.icon} size={compact ? 40 : 48} />
       <span className="flex min-w-0 flex-col gap-1">
-        {tag && !compact && <span className="mb-0.5 inline-flex h-[22px] w-fit items-center rounded-full bg-brand-50 px-2 text-xs font-bold text-brand-800">{tag}</span>}
         <span className="text-base font-bold leading-snug text-ink-900">{product.name}</span>
+        {/* DOM 은 이름 → 태그(읽는 순서), 화면은 order-first 로 태그가 이름 위 */}
+        {tag && !compact && <span className="order-first mb-0.5 inline-flex h-[22px] w-fit items-center rounded-full bg-brand-50 px-2 text-xs font-bold text-brand-800">{tag}</span>}
         <span className="text-[13px] leading-normal text-ink-500">{loanMetaLine(product)}</span>
       </span>
       {tag && compact && (
