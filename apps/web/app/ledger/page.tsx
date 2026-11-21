@@ -23,7 +23,9 @@ type Calculated = { plan: LedgerPlan; oneTime: OneTimeSupport[] };
  * 주거비 달력 — 계산한 값이 미리 적힌 체크표 (docs/기획/2026-11-21-주거비-달력-설계.md, 하단 섬 '달력' 탭).
  * 로그인한 사람만(관심 화면과 같은 방식). 기록은 이 기기에만(lib/storage.ts loadLedger · saveLedger).
  * 보고 있는 달은 화면 상태로만 둔다 — 주소에 남기면 뒤로 가기가 달을 하나씩 되짚는다.
- * 계산값이 바뀌면(onLocalChange — 다른 탭에서 다시 계산 · 서버 값 받기) 계획을 다시 만든다. 기록은 그대로.
+ * 같은 탭에서 계산값이 바뀌면(onLocalChange) 계획을 다시 만든다. 서버 값 받기는 조용히 저장하고 화면을 다시 불러오므로 여기까지 오지 않는다.
+ * 다른 탭의 변경은 storage 이벤트로 듣는다 — 기록(perky.ledger)은 다시 읽고, 계산값(listing · profile)은 계획을 다시 만든다.
+ * 안 그러면 이 탭에서 누른 순간 낡은 기록으로 덮어써 다른 탭의 기록을 잃는다.
  */
 export default function LedgerPage() {
   const [ready, setReady] = useState(false);
@@ -64,6 +66,8 @@ export default function LedgerPage() {
     // 다른 탭의 로그아웃은 lib/auth.ts 의 알림이 오지 않는다 — 브라우저의 storage 이벤트로 듣는다 (관심 화면과 같다).
     const onStorage = (event: StorageEvent) => {
       if (event.key === AUTH_KEY || event.key === null) checkLogin();
+      else if (event.key === "perky.ledger") setRecord(loadLedger());
+      else if (event.key === "housing-benefit:listing" || event.key === "housing-benefit:profile") read();
     };
     window.addEventListener("storage", onStorage);
     const offAuth = onAuthChange(checkLogin);

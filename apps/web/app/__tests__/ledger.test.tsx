@@ -10,10 +10,10 @@ import LedgerPage from "@/app/ledger/page";
 import policiesJson from "@/data/policies.json";
 import { resetAuthForTests } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
-import { addMonths, monthKeyOf, monthLabel, monthOnlyLabel, oneTimeSupports } from "@/lib/ledger";
+import { addMonths, emptyLedger, monthKeyOf, monthLabel, monthOnlyLabel, oneTimeSupports, toggleLine } from "@/lib/ledger";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
-import { loadLedger, saveListing, saveProfile } from "@/lib/storage";
+import { loadLedger, saveLedger, saveListing, saveProfile } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { PolicyMeta } from "@/lib/types";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
@@ -126,6 +126,16 @@ describe("/ledger — 주거비 달력", () => {
     await user.click(within(section).getByRole("button", { name: `${first.name} 받았어요` }));
     expect(within(section).getByText(`${monthOnlyLabel(thisMonth)}에 받음`)).toBeTruthy();
     expect(loadLedger().oneTime).toEqual({ [first.id]: thisMonth });
+  });
+
+  it("다른 탭이 기록을 바꾸면(storage 이벤트) 이 화면도 따라간다 — 덮어써서 잃지 않게", async () => {
+    calculated();
+    render(<LedgerPage />);
+    const before = await screen.findByRole("button", { name: "월세 냈어요" });
+    expect(before.getAttribute("aria-pressed")).toBe("false");
+    saveLedger(toggleLine(emptyLedger(), thisMonth, "rent", 400_000)); // 다른 탭이 저장한 것처럼
+    fireEvent(window, new StorageEvent("storage", { key: "perky.ledger" }));
+    expect((await screen.findByRole("button", { name: "월세 냈어요" })).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("한 번 받는 지원 — 조건충족시가능은 '확인 필요' 태그, 가능성 있음(예상적용)엔 없다", async () => {
