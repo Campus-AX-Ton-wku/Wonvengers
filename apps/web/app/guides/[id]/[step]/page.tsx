@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { AppShell, LinkButton, TopBar } from "@/app/components";
-import { ChevronLeft, ChevronRight, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
+import { AppShell, TopBar } from "@/app/components";
+import { ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
+import { StepNav } from "./StepNav";
 
 /** 정적 export — 모든 가이드의 모든 장을 미리 만든다. */
 export function generateStaticParams() {
@@ -9,7 +10,7 @@ export function generateStaticParams() {
 }
 
 /**
- * 가이드 한 장 (11/20 ggue — 노션처럼 한 페이지에 한 섹션). ← 는 목차(/guides/[id]).
+ * 가이드 한 장 (11/20 ggue — 노션처럼 한 페이지에 한 섹션). ← 는 목차(/guides/[id]) — 장 넘기기가 기록을 안 쌓아서 늘 목차다.
  * 순서: 용어 · 몇 번째 장 → 제목 → 한 줄 할 일(굵게) → 본문 → 어디서 해요 → 조심해요 → 용어 풀이(정확한 뜻) → 이전 · 다음.
  * 윗줄은 11/21 ggue 결정으로 가이드 이름 대신 용어 — 목차와 똑같이 '용어 → 제목' 두 줄. ← 가 그 가이드 목차로 돌아간다.
  * 출처 · 확인일은 목차 아래 한 곳에 둔다.
@@ -86,24 +87,8 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
           </section>
         )}
 
-        <nav aria-label="장 이동" className="mt-auto flex gap-2 pt-4">
-          {n > 1 && (
-            <LinkButton href={`${base}/${n - 1}`} variant="secondary" size="md" className="flex-1">
-              <ChevronLeft size={ICON_MD} aria-hidden="true" />
-              이전
-            </LinkButton>
-          )}
-          {n < total ? (
-            <LinkButton href={`${base}/${n + 1}`} size="md" className="flex-1">
-              다음
-              <ChevronRight size={ICON_MD} aria-hidden="true" />
-            </LinkButton>
-          ) : (
-            <LinkButton href={base} size="md" className="flex-1">
-              목차로
-            </LinkButton>
-          )}
-        </nav>
+        {/* 장 넘기기는 기록을 쌓지 않는다 — ← 가 늘 목차로 (./StepNav.tsx, 11/21 ggue) */}
+        <StepNav base={base} n={n} total={total} />
       </main>
     </AppShell>
   );
