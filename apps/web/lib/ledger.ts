@@ -294,6 +294,8 @@ export interface OneTimeSupport {
   policy: PolicyMeta;
   /** "10만원" · "최대 50만원". 공고 금액이 없으면 null (추정 금지) */
   amountText: string | null;
+  /** 결과 화면의 판정 — 조건충족시가능이면 달력에서 '확인 필요' 태그 */
+  status: "예상적용" | "조건충족시가능";
 }
 
 /**
@@ -306,7 +308,7 @@ export function oneTimeSupports(summary: CalculationSummary): OneTimeSupport[] {
     .map((r) => {
       const cap = r.policy.lumpSumCap;
       const amountText = cap == null || cap <= 0 ? null : r.policy.lumpSumBasis === "fixedGrant" ? formatKoreanMoney(cap) : `최대 ${formatKoreanMoney(cap)}`;
-      return { policy: r.policy, amountText };
+      return { policy: r.policy, amountText, status: r.status as OneTimeSupport["status"] };
     });
 }
 

@@ -237,10 +237,10 @@ describe("한 번 받는 지원 (oneTimeSupports)", () => {
       [result(주거급여), result(전입장려금, "조건충족시가능"), result(이사비), result(보증료, "조건충족시가능"), result({ ...이사비, id: "x" }, "대상아님"), result({ ...이사비, id: "y" }, "신청불가")],
       [주거급여.id]
     );
-    expect(oneTimeSupports(s).map((o) => [o.policy.id, o.amountText])).toEqual([
-      [전입장려금.id, "10만원"],
-      [이사비.id, "최대 50만원"],
-      [보증료.id, null],
+    expect(oneTimeSupports(s).map((o) => [o.policy.id, o.amountText, o.status])).toEqual([
+      [전입장려금.id, "10만원", "조건충족시가능"],
+      [이사비.id, "최대 50만원", "예상적용"],
+      [보증료.id, null, "조건충족시가능"],
     ]);
   });
 });

@@ -31,14 +31,21 @@ export function OneTimeSection({
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {supports.map(({ policy, amountText }) => {
+          {supports.map(({ policy, amountText, status }) => {
             const got = record.oneTime[policy.id];
             return (
               <li key={policy.id} className="flex items-center gap-3 rounded-card bg-surface px-[18px] py-4 shadow-card">
                 <Icon3D name={policy.icon} size={40} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-[15px] font-bold leading-snug text-ink-900">{policy.name}</span>
-                  {amountText && <span className="text-[13px] leading-snug text-ink-600">{amountText}</span>}
+                  {(amountText || status === "조건충족시가능") && (
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {amountText && <span className="text-[13px] leading-snug text-ink-600">{amountText}</span>}
+                      {status === "조건충족시가능" && (
+                        <span className="inline-flex h-5 items-center rounded-full bg-ink-100 px-1.5 text-xs font-bold text-ink-600">확인 필요</span>
+                      )}
+                    </span>
+                  )}
                 </div>
                 <span className="flex shrink-0 flex-col items-end gap-0.5">
                   <CheckButton pressed={got !== undefined} label={`${policy.name} 받았어요`} onClick={() => onChange(toggleOneTime(record, policy.id, month))}>

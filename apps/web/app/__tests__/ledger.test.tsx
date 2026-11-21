@@ -128,6 +128,22 @@ describe("/ledger — 주거비 달력", () => {
     expect(loadLedger().oneTime).toEqual({ [first.id]: thisMonth });
   });
 
+  it("한 번 받는 지원 — 조건충족시가능은 '확인 필요' 태그, 가능성 있음(예상적용)엔 없다", async () => {
+    calculated();
+    const summary = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, seoulTodayISO());
+    const expected = oneTimeSupports(summary);
+    const check = expected.filter((o) => o.status === "조건충족시가능");
+    // 11/21 데이터: 익산 재직 프로필에 학생 전용 일시금이 '조건충족시가능'으로 나온다. 0건이 되면 기준 데이터를 다시 고를 것
+    expect(check.length).toBeGreaterThan(0);
+    render(<LedgerPage />);
+    const section = await screen.findByRole("region", { name: "한 번 받는 지원" });
+    expect(within(section).getAllByText("확인 필요")).toHaveLength(check.length);
+    for (const { policy, status } of expected) {
+      const item = within(section).getByText(policy.name).closest("li") as HTMLElement;
+      expect(within(item).queryByText("확인 필요") !== null).toBe(status === "조건충족시가능");
+    }
+  });
+
   it("연세 + 관리비 0원 — 계약 2개월째 이후엔 나가는 돈 칸이 없어 '나가는 돈' 묶음을 그리지 않는다", async () => {
     // 연세는 계약 1개월째에만 낸다 (설계 §4.2) — 관리비도 0이면 이 달 나가는 돈은 0건
     saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 4_800_000, managementFee: 0, contractStartDate: `${start}-01`, months: 12 }));
