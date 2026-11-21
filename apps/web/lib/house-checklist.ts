@@ -10,28 +10,28 @@ import { findGuide, type Guide, type GuideSource } from "./guides";
  * 서류 다섯 줄은 '계약 전에 꼭 볼 것' 장의 용어 · 한 줄 할 일을 그대로 쓴다(글을 두 곳에 두지 않는다).
  */
 
-export type ChecklistSourceKey = "A" | "B" | "C" | "D" | "F" | "G" | "H";
+export type HouseChecklistSourceKey = "A" | "B" | "C" | "D" | "F" | "G" | "H";
 
-export interface ChecklistItem {
-  /** 기록(perky.checklist)에 남는 이름 — 바꾸면 그 줄 체크가 사라진다 */
+export interface HouseChecklistItem {
+  /** 기록(perky.house-checklist)에 남는 이름 — 바꾸면 그 줄 체크가 사라진다 */
   id: string;
   label: string;
   /** 어떻게 봐요 — 한두 문장 */
   how: string;
   /** 받쳐 주는 출처 (서류 줄은 가이드 출처를 따라 비운다) */
-  sources: ChecklistSourceKey[];
+  sources: HouseChecklistSourceKey[];
 }
 
-export interface ChecklistGroup {
+export interface HouseChecklistGroup {
   id: string;
   title: string;
-  items: ChecklistItem[];
+  items: HouseChecklistItem[];
   /** 무리 아래 '자세히' 한 줄 — 체크 줄 안에 링크를 넣으면 누르기가 겹쳐서 밖에 둔다 */
   more?: { href: string; label: string };
 }
 
 /** 원문 대조 11/22. G 는 휴대폰에서 화면에 안 뜨고 PDF 로 내려받아진다 */
-export const CHECKLIST_SOURCES: (GuideSource & { key: ChecklistSourceKey })[] = [
+export const HOUSE_CHECKLIST_SOURCES: (GuideSource & { key: HouseChecklistSourceKey })[] = [
   {
     key: "A",
     name: "정책브리핑",
@@ -78,7 +78,7 @@ export const CHECKLIST_SOURCES: (GuideSource & { key: ChecklistSourceKey })[] = 
 
 const contract = findGuide("before-contract");
 
-export const CHECKLIST_GROUPS: ChecklistGroup[] = [
+export const HOUSE_CHECKLIST_GROUPS: HouseChecklistGroup[] = [
   {
     id: "inside",
     title: "집 안",
@@ -147,10 +147,10 @@ export const CHECKLIST_GROUPS: ChecklistGroup[] = [
   },
 ];
 
-export const CHECKLIST_ITEM_IDS: string[] = CHECKLIST_GROUPS.flatMap((g) => g.items.map((i) => i.id));
+export const HOUSE_CHECKLIST_ITEM_IDS: string[] = HOUSE_CHECKLIST_GROUPS.flatMap((g) => g.items.map((i) => i.id));
 
 /** 가이드 카드 모양 — id 가 'checklist' 라 GuideCard 가 /guides/checklist 로 보낸다 */
-export const CHECKLIST_CARD: Pick<Guide, "id" | "title" | "summary" | "icon"> = {
+export const HOUSE_CHECKLIST_CARD: Pick<Guide, "id" | "title" | "summary" | "icon"> = {
   id: "checklist",
   title: "집 보러 갈 때 체크리스트",
   summary: "수압부터 밤길까지 하나씩",
@@ -158,8 +158,8 @@ export const CHECKLIST_CARD: Pick<Guide, "id" | "title" | "summary" | "icon"> = 
 };
 
 /** 저장된 값을 체크한 id 목록으로 — 모르는 id(항목이 바뀐 뒤) · 겹침 · 깨진 값은 버린다 */
-export function parseChecklist(raw: unknown): string[] {
+export function parseHouseChecklist(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  const known = new Set(CHECKLIST_ITEM_IDS);
+  const known = new Set(HOUSE_CHECKLIST_ITEM_IDS);
   return [...new Set(raw.filter((id): id is string => typeof id === "string" && known.has(id)))];
 }
