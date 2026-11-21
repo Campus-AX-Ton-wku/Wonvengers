@@ -91,6 +91,28 @@ describe("섹션 페이지 /guides/[id]/[step]", () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
     expect(screen.getByRole("heading", { level: 2, name: "어디서 해요" })).toBeTruthy();
   });
+
+  it("'어디서' 칸 — 바로가기가 있는 곳은 새 창 링크, 없는 곳('새 주소의 주민센터')은 글자만 (11/22 ggue)", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
+    const where = screen.getByRole("region", { name: "어디서 해요" });
+    const links = within(where).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016");
+    expect(links[0].getAttribute("target")).toBe("_blank");
+    expect(links[0].getAttribute("rel")).toContain("noopener");
+    expect(links[0].textContent).toMatch(/정부24 전입신고.*\(새 창\)/);
+    expect(within(where).getByText("새 주소의 주민센터")).toBeTruthy();
+  });
+
+  it("서류 지도 — 서류마다 발급 화면으로, 다른 곳은 작은 글씨로 함께", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
+    const where = screen.getByRole("region", { name: "어디서 떼요" });
+    const 등본 = within(where).getByRole("link", { name: /주민등록등본/ });
+    expect(등본.getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015");
+    expect(within(등본).getByText("정부24(온라인) · 주민센터 · 무인민원발급기")).toBeTruthy();
+    // 내 계약서는 떼는 곳이 아니라 링크가 없다
+    expect(within(where).queryByRole("link", { name: /임대차계약서/ })).toBeNull();
+  });
 });
 
 /**

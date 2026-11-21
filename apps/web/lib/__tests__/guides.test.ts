@@ -14,6 +14,23 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     }
   });
 
+  it("'어디서' 바로가기도 출처와 같은 규칙 — https 공공 주소만, 이름은 비어 있지 않다 (11/22 ggue)", () => {
+    const places = GUIDES.flatMap((g) => g.sections.flatMap((s) => s.where ?? []));
+    expect(places.filter((p) => p.url).length).toBeGreaterThanOrEqual(15);
+    for (const p of places) {
+      expect(p.name.length).toBeGreaterThan(0);
+      if (p.url) expect(p.url).toMatch(/^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/);
+    }
+  });
+
+  it("바로가기 예 — 시세는 실거래가 지도 네 종류, 전입신고 · 임대차 신고는 정부24 서비스 화면", () => {
+    const where = (id: string, step: number) => findGuide(id)!.sections[step - 1].where ?? [];
+    expect(where("before-contract", 1).map((p) => p.name)).toEqual(["아파트", "연립·다세대", "단독·다가구", "오피스텔"]);
+    expect(where("before-contract", 1)[3].url).toBe("https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=D&mobileAt=");
+    expect(where("protect-deposit", 1)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016");
+    expect(where("protect-deposit", 3)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=16130000132");
+  });
+
   it("확인일 · 그림 · 장마다 용어 · 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
     for (const g of GUIDES) {
       expect(g.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
