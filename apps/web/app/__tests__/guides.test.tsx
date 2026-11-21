@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { isEntryPage } from "@/lib/entry";
+import { resetNavigation, routerMock } from "./navigation-mock";
 import GuidesPage from "@/app/guides/page";
 import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
 import GuideStepPage, { generateStaticParams as stepParams } from "@/app/guides/[id]/[step]/page";
@@ -87,5 +90,62 @@ describe("섹션 페이지 /guides/[id]/[step]", () => {
     docs.unmount();
     render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
     expect(screen.getByRole("heading", { level: 2, name: "어디서 해요" })).toBeTruthy();
+  });
+});
+
+/**
+ * 장 넘기기와 뒤로가기 (11/21 ggue — 장에서 ← 를 누르면 그 가이드 목차로).
+ * ← 는 휴대폰 뒤로가기와 같아서(lib/navigation.ts useBack) 기록을 한 칸 되짚는다. 예전에는 [이전] · [다음] 이
+ * 기록을 쌓아 ← 가 직전 장으로 갔다(1장 → 다음 → 2장 ← = 1장). 이제 장 넘기기는 지금 칸을 바꿔 끼워
+ * 기록이 '목차 → 지금 장' 두 칸뿐이다.
+ */
+describe("장 넘기기 — 기록을 쌓지 않는다", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("[다음] · [이전]은 지금 칸을 바꿔 끼운다(replace) — 몇 장을 넘겨도 ← 는 목차로", async () => {
+    resetNavigation("/guides/protect-deposit/2", "/guides/protect-deposit");
+    const length = window.history.length;
+    const user = userEvent.setup();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "2" }) }));
+
+    await user.click(screen.getByRole("link", { name: /다음/ }));
+    expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit/3");
+    await user.click(screen.getByRole("link", { name: /이전/ }));
+    expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit/1");
+    expect(routerMock.push).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(length);
+  });
+
+  it("[목차로]는 ← 와 같다 — 앞 칸이 목차면 한 칸 되돌아간다(목차에서 ← 가 다시 마지막 장으로 오지 않게)", async () => {
+    resetNavigation("/guides/protect-deposit/5", "/guides/protect-deposit");
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "5" }) }));
+
+    await user.click(screen.getByRole("link", { name: "목차로" }));
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(routerMock.push).not.toHaveBeenCalled();
+    expect(routerMock.replace).not.toHaveBeenCalled();
+  });
+
+  it("주소로 장을 바로 열었으면(이 탭 첫 화면) 장을 넘겨도 첫 화면 표가 따라간다 — ← 가 앱 밖이 아니라 목차로", async () => {
+    resetNavigation("/guides/protect-deposit/1");
+    const user = userEvent.setup();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
+
+    await user.click(screen.getByRole("link", { name: /다음/ }));
+    expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit/2");
+    expect(isEntryPage()).toBe(true);
+  });
+
+  it("주소로 마지막 장을 바로 열었으면 [목차로]는 목차로 바꿔 끼운다", async () => {
+    resetNavigation("/guides/protect-deposit/5");
+    const user = userEvent.setup();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "5" }) }));
+
+    await user.click(screen.getByRole("link", { name: "목차로" }));
+    expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit");
   });
 });
