@@ -331,7 +331,7 @@ describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
     // 이번 달 칸을 화면과 같은 함수로 만들어 전부 누른다 — 들어오는 지원이 몇 건이든(데이터에 따라) 결과가 같다
     const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], 이번달시작.region), profile, 이번달시작, seoulTodayISO());
     let record = emptyLedger();
-    for (const line of ledgerMonth(ledgerPlan(이번달시작, s), record, thisMonth).lines) record = toggleLine(record, thisMonth, line.key, line.amount);
+    for (const line of ledgerMonth(ledgerPlan(이번달시작, s, profile.birthDate), record, thisMonth).lines) record = toggleLine(record, thisMonth, line.key, line.amount);
     saveLedger(record);
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });

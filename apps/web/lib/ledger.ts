@@ -136,14 +136,14 @@ export interface LedgerPlan {
 }
 
 /** 들어오는 돈 = 결과 합계(최선 조합)에 든 월 지원. 일시금은 따로(oneTimeSupports). */
-export function ledgerPlan(listing: ListingInput, summary: CalculationSummary): LedgerPlan {
+export function ledgerPlan(listing: ListingInput, summary: CalculationSummary, birthDate?: string): LedgerPlan {
   const start = monthKeyOf(listing.contractStartDate);
   const months = Math.max(1, listing.months);
   const included = new Set(summary.bestCombination.includedPolicyIds);
   const incomes: LedgerIncome[] = [];
   for (const result of summary.results) {
     if (!included.has(result.policy.id)) continue;
-    const breakdown = monthlyBreakdown(result.policy, listing);
+    const breakdown = monthlyBreakdown(result.policy, listing, birthDate);
     if (breakdown && breakdown.monthly > 0) incomes.push({ policy: result.policy, monthly: breakdown.monthly, months: breakdown.months });
   }
   return {

@@ -46,7 +46,7 @@ export default function LedgerPage() {
       if (listing && profile) {
         try {
           const summary = buildCalculationSummary(policiesForRegion(policies, listing.region), profile, listing, today);
-          next = { plan: ledgerPlan(listing, summary), oneTime: oneTimeSupports(summary) };
+          next = { plan: ledgerPlan(listing, summary, profile.birthDate), oneTime: oneTimeSupports(summary) };
         } catch {
           next = null;
         }

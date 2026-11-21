@@ -82,6 +82,19 @@ describe("계획 (ledgerPlan)", () => {
     expect(plan).toMatchObject({ start: "2026-09", end: "2027-08", months: 12, contractType: "월세", rent: 400_000, fee: 50_000 });
     expect(plan.incomes.map((i) => [i.policy.id, i.monthly, i.months])).toEqual([[주거급여.id, 212_000, 12]]);
   });
+
+  it("생년월일을 넘기면 나이 상한으로 잘린 개월 수 — 결과 화면과 같다", () => {
+    const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 300_000, managementFee: 0, contractStartDate: "2026-12-01", months: 36 });
+    const s = summary([result(주거급여)], [주거급여.id]);
+    const cut = ledgerPlan(listing, s, "1998-05-10");
+    expect(cut.incomes.map((i) => [i.policy.id, i.monthly, i.months])).toEqual([[주거급여.id, 212_000, 17]]);
+    const key = policyLineKey(주거급여.id);
+    const has = (month: string) => ledgerMonth(cut, emptyLedger(), month).lines.some((l) => l.key === key);
+    expect(has(addMonths("2026-12", 16))).toBe(true); // 17번째 달
+    expect(has(addMonths("2026-12", 17))).toBe(false); // 18번째 달
+    // 생년월일이 없으면 자르지 않는다 — 인자가 필요한 이유
+    expect(ledgerPlan(listing, s).incomes[0].months).toBe(36);
+  });
 });
 
 describe("한 달 (ledgerMonth) — 시안 예시 값", () => {

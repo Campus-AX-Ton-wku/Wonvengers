@@ -69,7 +69,7 @@ export default function HomePage() {
           // 기간은 lib/rent.ts calcMonths — 주거비 · 지원금과 같은 기간(입력한 거주 개월 수)
           setCosts({ nominal: s.nominalTotalCost, final: s.finalEstimatedHousingCost, months: calcMonths(listing) });
           // 주거비 달력 입구 한 줄 — 달력 화면과 같은 함수로 센다 (lib/ledger.ts)
-          setLedger(ledgerProgress(ledgerMonth(ledgerPlan(listing, s), loadLedger(), monthKeyOf(t))));
+          setLedger(ledgerProgress(ledgerMonth(ledgerPlan(listing, s, profile.birthDate), loadLedger(), monthKeyOf(t))));
         } catch {
           setCosts(null);
           setLedger(null);
