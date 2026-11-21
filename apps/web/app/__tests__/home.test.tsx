@@ -109,13 +109,13 @@ describe("/home", () => {
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
-  it("요약 아래 주거 가이드 세 장 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 전체 보기는 /guides", async () => {
+  it("요약 아래 주거 가이드 세 장 + 체크리스트 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 체크리스트는 맨 끝, 전체 보기는 /guides", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const guides = await screen.findByRole("region", { name: "주거 가이드" });
     expect(within(guides).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/guides");
     const cards = within(guides).getAllByRole("listitem").map((li) => within(li).getByRole("link").getAttribute("href"));
-    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract"]);
+    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract", "/guides/checklist"]);
     expect(within(within(guides).getAllByRole("listitem")[0]).getByText("월세라면 먼저")).toBeTruthy();
     expect(within(within(guides).getAllByRole("listitem")[1]).queryByText(/라면 먼저/)).toBeNull();
   });
@@ -356,5 +356,20 @@ describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
     render(<HomePage />);
     const summary = await screen.findByRole("region", { name: "내 지원 요약" });
     expect(within(summary).queryByRole("link", { name: /^이번 달 주거비/ })).toBeNull();
+  });
+});
+
+describe("/home — 대출 · 보증 (11/22)", () => {
+  it("주거 가이드 위에 세 장 — 월세면 보증부월세대출부터 · 꼬리표, 카드는 상세로, 전체 보기는 /loans", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    render(<HomePage />);
+    const loans = await screen.findByRole("region", { name: "대출 · 보증" });
+    const cards = within(loans).getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/loans/"));
+    expect(cards).toHaveLength(3);
+    expect(cards[0].getAttribute("href")).toBe("/loans/youth-btm-monthly-rent-loan");
+    expect(within(cards[0]).getByText("월세라면 먼저")).toBeTruthy();
+    expect(within(loans).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/loans");
+    const guides = screen.getByRole("region", { name: "주거 가이드" });
+    expect(loans.compareDocumentPosition(guides) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

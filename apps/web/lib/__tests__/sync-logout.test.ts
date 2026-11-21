@@ -15,7 +15,7 @@ import { AUTH_KEY, CONSENT_KEY, getSession, resetAuthForTests } from "@/lib/auth
 import { goTo } from "@/lib/redirect";
 import { REMOTE_TIMEOUT_MS } from "@/lib/remote";
 import { emptyLedger, toggleLine } from "@/lib/ledger";
-import { saveAnswers, saveLedger } from "@/lib/storage";
+import { saveAnswers, saveHouseChecklist, saveLedger } from "@/lib/storage";
 import { SYNC_META_KEY, logout, resetSyncForTests } from "@/lib/sync";
 import { TEST_LOGOUT_URL, enableLogin, seedSyncMeta, signInAs } from "./auth-fixtures";
 
@@ -57,16 +57,18 @@ describe("로그아웃 — 서버가 답하지 않을 때", () => {
   });
 });
 
-describe("로그아웃 — 주거비 달력 기록", () => {
+describe("로그아웃 — 이 기기에만 있는 기록(주거비 달력 · 체크리스트)", () => {
   it("동기화 기록 · 동의 기록이 없어도 달력 기록은 지운다 — 이 기기에만 있는 기록이라 공용 기기 보호", async () => {
     vi.useFakeTimers();
     window.localStorage.removeItem(CONSENT_KEY);
     saveLedger(toggleLine(emptyLedger(), "2026-11", "rent", 400_000));
+    saveHouseChecklist(["water"]);
 
     const pending = logout();
     await vi.advanceTimersByTimeAsync(REMOTE_TIMEOUT_MS);
     await pending;
 
     expect(window.localStorage.getItem("perky.ledger")).toBeNull();
+    expect(window.localStorage.getItem("perky.house-checklist")).toBeNull();
   });
 });

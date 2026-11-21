@@ -9,10 +9,11 @@ import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
 import GuideStepPage, { generateStaticParams as stepParams } from "@/app/guides/[id]/[step]/page";
 
 describe("주거 가이드 화면", () => {
-  it("목록 — 세 편이 각 글의 목차로 간다", () => {
+  it("목록 — 맨 위 집 보러 갈 때 체크리스트, 그 아래 세 편이 각 글의 목차로 간다 (11/22 ggue)", () => {
     render(<GuidesPage />);
     const links = screen.getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/guides/"));
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/guides/checklist",
       "/guides/before-contract",
       "/guides/protect-deposit",
       "/guides/where-documents",
@@ -57,6 +58,16 @@ describe("목차 페이지 /guides/[id]", () => {
   });
 });
 
+describe("체크리스트로 이어 주기", () => {
+  it("'계약 전에 꼭 볼 것' 목차에만 체크리스트 바로가기 (11/22 ggue)", async () => {
+    const contract = render(await GuidePage({ params: Promise.resolve({ id: "before-contract" }) }));
+    expect(screen.getByRole("link", { name: /집 보러 갈 때 체크리스트/ }).getAttribute("href")).toBe("/guides/checklist");
+    contract.unmount();
+    render(await GuidePage({ params: Promise.resolve({ id: "protect-deposit" }) }));
+    expect(screen.queryByRole("link", { name: /집 보러 갈 때 체크리스트/ })).toBeNull();
+  });
+});
+
 describe("섹션 페이지 /guides/[id]/[step]", () => {
   it("한 장에 한 섹션 — 윗줄은 용어 · 몇 번째 장, 그 아래 제목 · 한 줄 할 일, ← 는 목차 (11/21 ggue)", async () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "2" }) }));
@@ -92,16 +103,26 @@ describe("섹션 페이지 /guides/[id]/[step]", () => {
     expect(screen.getByRole("heading", { level: 2, name: "어디서 해요" })).toBeTruthy();
   });
 
-  it("서류 떼는 곳 1장 — 서류마다 [온라인으로 떼기 ↗] 새 창 링크, 아래에 지도 버튼 (11/22)", async () => {
-    render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
-    const list = screen.getByRole("region", { name: "어디서 떼요" });
-    const links = within(list).getAllByRole("link", { name: /온라인으로 떼기/ });
-    expect(links).toHaveLength(6);
-    expect(links[0].getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01");
+  it("'어디서' 칸 — 바로가기가 있는 곳은 새 창 링크, 없는 곳('새 주소의 주민센터')은 글자만 (11/22 ggue)", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
+    const where = screen.getByRole("region", { name: "어디서 해요" });
+    const links = within(where).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016");
     expect(links[0].getAttribute("target")).toBe("_blank");
     expect(links[0].getAttribute("rel")).toContain("noopener");
-    expect(within(list).getByText("임대차계약서 사본")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /가까운 주민센터 · 무인민원발급기 지도 보기/ }).getAttribute("href")).toBe("/guides/places");
+    expect(links[0].textContent).toMatch(/정부24 전입신고.*\(새 창\)/);
+    expect(within(where).getByText("새 주소의 주민센터")).toBeTruthy();
+  });
+
+  it("서류 지도 — 서류마다 발급 화면으로, 다른 곳은 작은 글씨로 함께", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
+    const where = screen.getByRole("region", { name: "어디서 떼요" });
+    const 등본 = within(where).getByRole("link", { name: /주민등록등본/ });
+    expect(등본.getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015");
+    expect(within(등본).getByText("정부24(온라인) · 주민센터 · 무인민원발급기")).toBeTruthy();
+    // 내 계약서는 떼는 곳이 아니라 링크가 없다
+    expect(within(where).queryByRole("link", { name: /임대차계약서/ })).toBeNull();
   });
 });
 
@@ -159,5 +180,13 @@ describe("장 넘기기 — 기록을 쌓지 않는다", () => {
 
     await user.click(screen.getByRole("link", { name: "목차로" }));
     expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit");
+  });
+
+  it("서류 떼는 곳 1장 — 지도 버튼이 있고, 다른 장에는 없다 (11/22)", async () => {
+    const { unmount } = render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
+    expect(screen.getByRole("link", { name: "가까운 주민센터 · 무인민원발급기 지도 보기" }).getAttribute("href")).toBe("/guides/places");
+    unmount();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
+    expect(screen.queryByRole("link", { name: /지도 보기/ })).toBeNull();
   });
 });

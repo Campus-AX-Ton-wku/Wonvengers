@@ -14,6 +14,23 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     }
   });
 
+  it("'어디서' 바로가기도 출처와 같은 규칙 — https 공공 주소만, 이름은 비어 있지 않다 (11/22 ggue)", () => {
+    const places = GUIDES.flatMap((g) => g.sections.flatMap((s) => s.where ?? []));
+    expect(places.filter((p) => p.url).length).toBeGreaterThanOrEqual(15);
+    for (const p of places) {
+      expect(p.name.length).toBeGreaterThan(0);
+      if (p.url) expect(p.url).toMatch(/^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/);
+    }
+  });
+
+  it("바로가기 예 — 시세는 실거래가 지도 네 종류, 전입신고 · 임대차 신고는 정부24 서비스 화면", () => {
+    const where = (id: string, step: number) => findGuide(id)!.sections[step - 1].where ?? [];
+    expect(where("before-contract", 1).map((p) => p.name)).toEqual(["아파트", "연립·다세대", "단독·다가구", "오피스텔"]);
+    expect(where("before-contract", 1)[3].url).toBe("https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=D&mobileAt=");
+    expect(where("protect-deposit", 1)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016");
+    expect(where("protect-deposit", 3)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=16130000132");
+  });
+
   it("확인일 · 그림 · 장마다 용어 · 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
     for (const g of GUIDES) {
       expect(g.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -75,36 +92,22 @@ describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
   });
 });
 
-describe("서류 떼는 곳 1장 — 서류 단위 (11/22)", () => {
+describe("서류 떼는 곳 1장 — 지도 버튼 (11/22)", () => {
   const section = findGuide("where-documents")!.sections[0];
 
-  it("서류 7개, 계약서 사본만 온라인 링크가 없다", () => {
-    expect(section.documents?.map((d) => d.name)).toEqual([
-      "주민등록등본",
-      "가족관계증명서",
-      "건강보험 자격득실확인서",
-      "소득금액증명",
-      "임대차계약서 사본",
-      "건축물대장",
-      "등기부등본",
-    ]);
-    const noLink = section.documents!.filter((d) => !d.online).map((d) => d.name);
-    expect(noLink).toEqual(["임대차계약서 사본"]);
+  it("placesMap 은 이 장 1번 섹션에만 있다", () => {
+    expect(section.placesMap).toBe(true);
+    const marked = GUIDES.flatMap((g) => g.sections.map((s, i) => ({ id: g.id, i, on: s.placesMap })))
+      .filter((x) => x.on)
+      .map((x) => `${x.id}/${x.i}`);
+    expect(marked).toEqual(["where-documents/0"]);
   });
 
-  it("발급기에서도 뗄 수 있다는 줄과 행안부 출처", () => {
+  it("발급기에서도 뗄 수 있다는 줄", () => {
     expect(section.body.join(" ")).toContain("무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요");
+  });
+
+  it("행안부 출처", () => {
     expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
-  });
-
-  it("온라인 링크는 https 이고 확인해 둔 주소다", () => {
-    const urls = Object.fromEntries(section.documents!.filter((d) => d.online).map((d) => [d.name, d.online!.url]));
-    expect(urls["주민등록등본"]).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01");
-    expect(urls["소득금액증명"]).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12100000021");
-    for (const url of Object.values(urls)) expect(url).toMatch(/^https:\/\//);
-  });
-
-  it("글 목록(where)은 이 장에서 쓰지 않는다 — 서류 칸과 두 번 나오지 않게", () => {
-    expect(section.where).toBeUndefined();
   });
 });

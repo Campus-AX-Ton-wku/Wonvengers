@@ -6,6 +6,9 @@ import ResultPage from "@/app/result/page";
 import { saveListing, saveProfile } from "@/lib/storage";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import { routerMock } from "./navigation-mock";
+import loanProductsData from "@/data/loan-products.json";
+import { loanProductsForRegion } from "@/lib/region";
+import type { LoanProductMeta } from "@/lib/types";
 
 /**
  * 결과 화면의 금액 표기와 강조 위계.
@@ -212,62 +215,35 @@ describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 �
 });
 
 /**
- * "이용 가능한 대출·보증 상품" 섹션이 loan-products.json 을 지역 구분 없이
- * 통째로 보여주던 버그의 회귀 테스트. lib/__tests__/region.test.ts 의
- * loanProductsForRegion 단위 테스트와 짝이다 — 여기서는 실제 데이터
- * (data/loan-products.json)로 화면에 실제로 걸러져 나오는지까지 본다.
+ * 대출 · 보증은 11/22 부터 홈 '대출 · 보증' · /loans 가 맡는다. 결과 화면엔 개수와 '합계에 안 넣었다'는 한 줄 링크만.
+ * 개수는 계약 지역으로 거른 수다(loanProductsForRegion) — 지역 거르기 회귀는 lib/__tests__/region.test.ts · loans.test.ts 가 본다.
  */
-describe("대출·보증 상품 — 접힘 (11/17 결과 화면 정리)", () => {
-  it("현금 지원이 아닌 대출·보증은 닫힌 한 줄로 접혀 있고, 위 금액에 넣지 않았다고 밝힌다", async () => {
-    saveListing(makeListing({ region: "전북특별자치도 익산시", oneTimeMoveCost: 600000 }));
+describe("대출·보증 상품 — 한 줄 링크 (11/22)", () => {
+  const allLoans = loanProductsData as LoanProductMeta[];
+
+  it("/loans 로 가는 한 줄 — 개수 · '위 금액에는 넣지 않았어요' · 3D 대출 그림, 상품은 펼치지 않는다", async () => {
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
     saveProfile(makeProfile());
     render(<ResultPage />);
     await screen.findByText(지원금_라벨);
 
-    const summary = screen.getByText(/^현금 지원이 아닌 대출·보증 \d+개$/);
-    const details = summary.closest("details") as HTMLDetailsElement;
-    expect(details).not.toBeNull();
-    expect(details.open).toBe(false);
-    expect(within(details).getByText("위 금액에는 넣지 않았어요")).toBeTruthy();
-    // 묶음 머리의 주제 그림은 3D 대출 하나 — 상품 줄마다 같은 그림을 되풀이하지 않는다 (11/20)
-    expect([...details.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["loan"]);
-    // 상품 문단과 신청 링크는 상품마다 다시 접혀 있다
-    const product = within(details).getByText("청년전용 버팀목 전세자금대출").closest("li")!;
-    expect((within(product).getByText("조건과 신청 방법").closest("details") as HTMLDetailsElement).open).toBe(false);
-    expect(within(product).getByRole("link", { name: /신청 페이지로 이동/ }).closest("details")).not.toBeNull();
-    // 팀의 설계 이유를 사용자에게 설명하던 긴 문단은 없다
-    expect(screen.queryByText(/실제보다 많이 받는 것처럼 보일 수 있기 때문입니다/)).toBeNull();
-  });
-});
-
-describe("대출·보증 상품 — 지역 필터", () => {
-  it("익산 사용자에게는 익산 전용 대출상품이 보인다", async () => {
-    saveListing(makeListing({ region: "전북특별자치도 익산시", oneTimeMoveCost: 600000 }));
-    saveProfile(makeProfile());
-    render(<ResultPage />);
-    await screen.findByText(지원금_라벨);
-
-    expect(screen.getByText("신혼부부·청년 주택구입 대출이자 지원사업")).toBeTruthy();
+    const n = loanProductsForRegion(allLoans, "전북특별자치도 익산시").length;
+    const link = screen.getByRole("link", { name: new RegExp(`현금 지원이 아닌 대출·보증 ${n}개`) });
+    expect(link.getAttribute("href")).toBe("/loans");
+    expect(within(link).getByText("위 금액에는 넣지 않았어요")).toBeTruthy();
+    expect([...link.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["loan"]);
+    expect(screen.queryByText("청년전용 버팀목 전세자금대출")).toBeNull();
+    expect(screen.queryByRole("link", { name: /신청 페이지로 이동/ })).toBeNull();
   });
 
-  it("익산과 무관한 지역 사용자에게는 익산·군산 전용 대출상품이 안 보인다", async () => {
-    saveListing(makeListing({ region: "그 외 지역", oneTimeMoveCost: 600000 }));
-    saveProfile(makeProfile());
-    render(<ResultPage />);
-    await screen.findByText(지원금_라벨);
-
-    expect(screen.queryByText("신혼부부·청년 주택구입 대출이자 지원사업")).toBeNull();
-    expect(screen.queryByText("신혼부부 주거자금 대출이자 지원사업")).toBeNull();
-  });
-
-  it("전국 대출상품(버팀목 전세자금대출 등)은 지역과 무관하게 항상 보인다 — 여기서 회귀가 나면 안 된다", async () => {
-    for (const region of ["전북특별자치도 익산시", "전북특별자치도", "그 외 지역"] as const) {
-      saveListing(makeListing({ region, oneTimeMoveCost: 600000 }));
+  it("개수는 계약 지역으로 거른 수 — 익산 밖이면 전국 상품만 센다", async () => {
+    for (const region of ["전북특별자치도 익산시", "그 외 지역"] as const) {
+      saveListing(makeListing({ region }));
       saveProfile(makeProfile());
       const { unmount } = render(<ResultPage />);
       await screen.findByText(지원금_라벨);
-
-      expect(screen.getByText("청년전용 버팀목 전세자금대출")).toBeTruthy();
+      const n = loanProductsForRegion(allLoans, region).length;
+      expect(screen.getByRole("link", { name: new RegExp(`대출·보증 ${n}개`) })).toBeTruthy();
       unmount();
     }
   });
