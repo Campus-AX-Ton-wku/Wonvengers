@@ -127,3 +127,10 @@ export function decideWrite({ offices, kiosks, committedCount }) {
   }
   return { write: true, reason: "ok" };
 }
+
+/** data.go.kr totalCount 가 쓸 만한 값(양의 유한수)이면 그 수, 아니면 null (null · "" · 문자 · 0 은 모름) */
+export function usableTotal(raw) {
+  if (raw == null || String(raw).trim() === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}

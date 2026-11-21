@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { IKSAN_EMD, IKSAN_GROUP_CD, JEONBUK_CTPV_CD, decideWrite, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice } from "./civil-places/build.mjs";
+import { IKSAN_EMD, IKSAN_GROUP_CD, JEONBUK_CTPV_CD, decideWrite, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice, usableTotal } from "./civil-places/build.mjs";
 
 const WEB_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(WEB_ROOT, "data", "civil-places.json");
@@ -75,11 +75,11 @@ async function allRows(op, cond) {
     url.searchParams.set("returnType", "json");
     for (const [k, v] of Object.entries(cond)) url.searchParams.set(k, v);
     const body = (await getJson(url)).response?.body;
-    return { items: [].concat(body?.items?.item ?? []), total: Number(body?.totalCount) };
+    return { items: [].concat(body?.items?.item ?? []), total: usableTotal(body?.totalCount) };
   };
   const first = await page(1);
   const rows = [...first.items];
-  if (Number.isFinite(first.total)) {
+  if (first.total !== null) {
     const pages = Math.min(Math.ceil(first.total / ROWS), 199);
     const rest = await mapLimit(Array.from({ length: Math.max(pages - 1, 0) }, (_, i) => i + 2), async (n) => (await page(n)).items);
     return rows.concat(...rest);
@@ -124,7 +124,8 @@ async function main() {
       const hit = pickOffice(emd, documents);
       if (hit) return toOffice(emd, hit);
       log(`주민센터를 못 찾음: ${emd} (카카오 후보: ${documents.map((d) => `${d.place_name}/${d.category_group_code}/${d.address_name}`).join(" | ") || "없음"})`);
-    } catch {
+    } catch (err) {
+      if (deadline.aborted) throw err;
       log(`주민센터 검색 실패: ${emd}`);
     }
     return null;
@@ -139,13 +140,18 @@ async function main() {
     try {
       const { documents = [] } = await kakao("address", { query: geocodeQuery(r.INSTL_PLC_ADDR) });
       if (documents[0]) coords.set(r.MNG_NO, { lat: Number(documents[0].y), lng: Number(documents[0].x) });
-    } catch {
+    } catch (err) {
+      if (deadline.aborted) throw err;
       log(`주소 검색 실패: ${r.MNG_NO} ${r.ISSUMCHN_NM}`);
     }
   });
   const { places: kiosks, skipped } = toKiosks(install, certs, coords);
   for (const s of skipped) log(`발급기 뺌: ${s}`);
 
+  if (deadline.aborted) {
+    log("전체 90초 제한 초과 — 덮어쓰지 않는다");
+    return;
+  }
   const decision = decideWrite({ offices: offices.length, kiosks: kiosks.length, committedCount: before });
   if (!decision.write) {
     log(`덮어쓰지 않는다 — ${decision.reason} (주민센터 ${offices.length} · 발급기 ${kiosks.length} · 커밋 ${before})`);

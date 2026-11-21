@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KIOSK_DOCS as APP_DOCS } from "../../lib/places";
-import { IKSAN_EMD, KIOSK_DOCS, decideWrite, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice } from "../civil-places/build.mjs";
+import { IKSAN_EMD, KIOSK_DOCS, decideWrite, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice, usableTotal } from "../civil-places/build.mjs";
 
 /** 설치정보 한 행 (2026-11-22 실제 응답에서 값만 줄인 것) */
 const install = (over = {}) => ({
@@ -150,5 +150,17 @@ describe("decideWrite", () => {
   });
   it("커밋이 빈 스냅숏이면 29+26 → 쓴다", () => {
     expect(decideWrite({ offices: 29, kiosks: 26, committedCount: 0 }).write).toBe(true);
+  });
+});
+
+describe("usableTotal", () => {
+  it("null · 빈 문자 · 문자 · 0 은 모름, 양수만 그 수", () => {
+    expect(usableTotal(null)).toBeNull();
+    expect(usableTotal(undefined)).toBeNull();
+    expect(usableTotal("")).toBeNull();
+    expect(usableTotal("abc")).toBeNull();
+    expect(usableTotal("0")).toBeNull();
+    expect(usableTotal("2506")).toBe(2506);
+    expect(usableTotal(2506)).toBe(2506);
   });
 });
