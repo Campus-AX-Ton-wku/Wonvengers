@@ -64,6 +64,13 @@ describe("/loans/[id] — 상품 한 장", () => {
     expect(screen.queryByRole("link", { name: /공식 출처/ })).toBeNull();
   });
 
+  it("문의 주소가 신청 주소와 같으면 '문의 페이지' 링크를 또 두지 않고 전화는 남긴다", async () => {
+    const p = products.find((x) => x.contact?.url && x.contact.url === x.applyUrl && x.contact.phone)!;
+    render(await LoanPage({ params: Promise.resolve({ id: p.id }) }));
+    expect(screen.queryByRole("link", { name: /문의 페이지/ })).toBeNull();
+    expect(screen.getByRole("link", { name: `문의 전화 ${p.contact!.phone}` })).toBeTruthy();
+  });
+
   it("없는 id 는 404", async () => {
     // 전역 대역은 던지지 않는다 — 진짜 Next 처럼 이 시험에서만 던지게 해 notFound 호출을 직접 확인한다.
     vi.mocked(notFound).mockImplementationOnce(() => {

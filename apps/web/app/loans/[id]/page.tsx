@@ -22,6 +22,8 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
   const product = findLoan(products, id);
   if (!product) notFound();
   const checked = product.verifiedAt ? `${formatDotDate(product.verifiedAt)} 확인` : "원문 확인 필요";
+  // 문의 주소가 신청 주소와 같으면 파란 버튼과 겹치므로 표시만 뺀다(데이터는 그대로).
+  const contact = product.contact && product.contact.url === product.applyUrl ? { ...product.contact, url: null } : product.contact;
   return (
     <AppShell>
       <TopBar backHref="/loans" />
@@ -67,7 +69,7 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
           )}
         </div>
 
-        <ContactInfo contact={product.contact} variant="block" />
+        <ContactInfo contact={contact} variant="block" />
       </main>
     </AppShell>
   );
