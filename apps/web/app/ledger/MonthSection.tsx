@@ -69,13 +69,10 @@ export function MonthSection({
               {monthLabel(plan.start)} 시작 · {plan.months}개월
             </span>
           </div>
-          <LineGroup title="나가는 돈" lines={out} verb="냈어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />
-          {income.length > 0 && (
-            <>
-              <span aria-hidden="true" className="h-px bg-ink-100" />
-              <LineGroup title="들어오는 돈" lines={income} verb="받았어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />
-            </>
-          )}
+          {view.lines.length === 0 && <p className="text-sm text-ink-600">이 달엔 적을 칸이 없어요.</p>}
+          {out.length > 0 && <LineGroup title="나가는 돈" lines={out} verb="냈어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
+          {out.length > 0 && income.length > 0 && <span aria-hidden="true" className="h-px bg-ink-100" />}
+          {income.length > 0 && <LineGroup title="들어오는 돈" lines={income} verb="받았어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
           <Totals view={view} yearLabel={yearTotalLabel(month, todayMonth)} />
         </section>
       ) : (

@@ -8,10 +8,13 @@ import type { LedgerProgress } from "@/lib/ledger";
  */
 export function LedgerRow({ progress }: { progress: LedgerProgress }) {
   const { outDone, outTotal, inDone, inTotal, complete } = progress;
-  const text = complete ? "이번 달 다 적었어요" : [`낸 돈 ${outDone}/${outTotal}`, inTotal > 0 ? `받은 지원 ${inDone}/${inTotal}` : null].filter(Boolean).join(" · ");
-  const spoken = complete
-    ? "이번 달 다 적었어요"
-    : `낸 돈 ${outTotal}개 중 ${outDone}개${inTotal > 0 ? `, 받은 지원 ${inTotal}개 중 ${inDone}개` : ""} 기록`;
+  // 보이는 글과 읽어 주는 글을 같은 목록에서 만든다 — 칸이 0개인 쪽은 뺀다
+  const parts = [
+    outTotal > 0 ? { visible: `낸 돈 ${outDone}/${outTotal}`, spoken: `낸 돈 ${outTotal}개 중 ${outDone}개` } : null,
+    inTotal > 0 ? { visible: `받은 지원 ${inDone}/${inTotal}`, spoken: `받은 지원 ${inTotal}개 중 ${inDone}개` } : null,
+  ].filter((part) => part !== null);
+  const text = complete ? "이번 달 다 적었어요" : parts.map((part) => part.visible).join(" · ");
+  const spoken = complete ? "이번 달 다 적었어요" : `${parts.map((part) => part.spoken).join(", ")} 기록`;
   return (
     <Link
       href="/ledger"

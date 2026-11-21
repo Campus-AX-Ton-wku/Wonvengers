@@ -128,6 +128,26 @@ describe("/ledger — 주거비 달력", () => {
     expect(loadLedger().oneTime).toEqual({ [first.id]: thisMonth });
   });
 
+  it("연세 + 관리비 0원 — 계약 2개월째 이후엔 나가는 돈 칸이 없어 '나가는 돈' 묶음을 그리지 않는다", async () => {
+    // 연세는 계약 1개월째에만 낸다 (설계 §4.2) — 관리비도 0이면 이 달 나가는 돈은 0건
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 4_800_000, managementFee: 0, contractStartDate: `${start}-01`, months: 12 }));
+    saveProfile(profile);
+    render(<LedgerPage />);
+    const card = await screen.findByRole("region", { name: `${monthOnlyLabel(thisMonth)} 주거비` });
+    expect(within(card).queryByText("나가는 돈")).toBeNull();
+    expect(within(card).getByRole("heading", { name: "계약 3개월째" })).toBeTruthy();
+  });
+
+  it("들어오는 지원이 없는 달엔 '들어오는 돈' 묶음을 그리지 않는다", async () => {
+    // 나이 상한을 한참 넘긴 생년월일이면 어느 지역이든 월 지원이 합계에 들지 않는다 — 결정적으로 들어오는 돈 줄 0건
+    saveListing(listing);
+    saveProfile(makeProfile({ birthDate: "1975-01-01" }));
+    render(<LedgerPage />);
+    const card = await screen.findByRole("region", { name: `${monthOnlyLabel(thisMonth)} 주거비` });
+    expect(within(card).queryByText("들어오는 돈")).toBeNull();
+    expect(within(card).getByText("나가는 돈")).toBeTruthy();
+  });
+
   it("맨 아래 안내 한 줄, 하단 섬은 '달력'에 불", async () => {
     calculated();
     render(<LedgerPage />);

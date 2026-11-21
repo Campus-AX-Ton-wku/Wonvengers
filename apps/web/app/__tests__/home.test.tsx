@@ -324,6 +324,17 @@ describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
     expect(within(row).getByText(/^낸 돈 1\/2/)).toBeTruthy();
   });
 
+  it("연세 + 관리비 0원, 계약 2개월째 이후 — '낸 돈 0/0' 대신 낸 돈 부분을 뺀다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 4_800_000, managementFee: 0, contractStartDate: `${addMonths(thisMonth, -2)}-01`, months: 12 }));
+    saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비/ });
+    expect(row.textContent).not.toContain("낸 돈");
+    expect(row.getAttribute("aria-label")).not.toContain("낸 돈");
+  });
+
   it("이번 달 칸을 다 누르면 초록 '이번 달 다 적었어요'", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const profile = makeProfile();
