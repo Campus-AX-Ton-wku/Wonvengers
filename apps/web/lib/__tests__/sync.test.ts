@@ -15,6 +15,7 @@ import {
   saveAnswers,
   saveAnsweredKeys,
   saveChecklist,
+  saveLedger,
   saveSavedList,
 } from "@/lib/storage";
 import {
@@ -31,6 +32,7 @@ import {
   stopSync,
   withdraw,
 } from "@/lib/sync";
+import { emptyLedger, toggleLine } from "@/lib/ledger";
 import { TEST_LOGOUT_URL, enableLogin, remoteItem, seedSyncMeta, signInAs } from "./auth-fixtures";
 
 const 답 = {
@@ -235,10 +237,12 @@ describe("페이지를 다시 열 때", () => {
   it("다른 기기에서 탈퇴해 서버 항목이 없어졌으면 이 기기도 로그아웃하고 사본을 지운다", async () => {
     seedSyncMeta("sub-a", { baseUpdatedAt: T0 });
     saveAnswers(답);
+    saveLedger(toggleLine(emptyLedger(), "2026-11", "rent", 400_000));
     load.mockResolvedValueOnce(null);
     startSync();
     await vi.waitFor(() => expect(window.localStorage.getItem(AUTH_KEY)).toBeNull());
     expect(loadAnswers()).toEqual(EMPTY_ANSWERS);
+    expect(window.localStorage.getItem("perky.ledger")).toBeNull();
     expect(save).not.toHaveBeenCalled();
   });
 });
@@ -265,10 +269,12 @@ describe("로그아웃·탈퇴", () => {
   it("탈퇴하면 서버를 지운 뒤 사본·동의·로그인을 지우고, Cognito 로그아웃으로는 보내지 않는다", async () => {
     await bootSynced();
     saveAnswers(답);
+    saveLedger(toggleLine(emptyLedger(), "2026-11", "rent", 400_000));
     vi.mocked(deleteAccountRemote).mockResolvedValueOnce(undefined);
 
     await withdraw();
 
+    expect(window.localStorage.getItem("perky.ledger")).toBeNull();
     expect(deleteAccountRemote).toHaveBeenCalledTimes(1);
     expect(save).not.toHaveBeenCalled();
     expect(window.localStorage.getItem("perky.answers")).toBeNull();
