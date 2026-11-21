@@ -51,8 +51,19 @@ describe("benefitFormula", () => {
     );
   });
 
+  it("이사비가 0 이면 '0원과 상한 중 작은 값 = 0원' 대신 계산하지 않는다고 말한다 (11/21 이사비 칸 삭제)", () => {
+    const listing = makeListing({ oneTimeMoveCost: 0 });
+    const 이사비지원 = policies.filter((p) => p.lumpSumBasis === "oneTimeMoveCost");
+    expect(이사비지원.length).toBeGreaterThan(0);
+    for (const policy of 이사비지원) {
+      expect(estimatePolicyAmount(policy, listing)).toBe(0);
+      expect(benefitFormula(policy, listing), policy.id).toContain("계산하지 않습니다");
+    }
+  });
+
   it("식의 결과는 실제 계산 금액과 항상 같다", () => {
-    const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 4800000, months: 12 });
+    // 이사비는 화면이 더는 받지 않지만, 값이 들어오면 식과 금액이 맞는지는 계속 본다
+    const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 4800000, months: 12, oneTimeMoveCost: 300000 });
     // 계약 화면이 그 지출을 받지 않는 정책은 예상액을 내지 않는다. 식 대신 왜
     // 계산하지 않는지를 말한다 (types.ts 의 lumpSumBasis).
     const 계산하는것 = policies.filter(

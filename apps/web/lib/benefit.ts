@@ -81,7 +81,8 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput): strin
   if (policy.lumpSumBasis === "fixedGrant") {
     return `계약 조건과 무관하게 공고가 정한 금액을 주는 지원이라 예상액에 넣지 않습니다 (공고 금액 최대 ${won(policy.lumpSumCap ?? 0)})`;
   }
-  if (policy.lumpSumBasis !== "oneTimeMoveCost") {
+  // 이사비는 11/21 부터 입력받지 않아 늘 0 이다 — '0원과 상한 중 작은 값 = 0원'이라고 쓰면 못 받는 돈처럼 읽힌다
+  if (policy.lumpSumBasis !== "oneTimeMoveCost" || listing.oneTimeMoveCost <= 0) {
     return `이 화면은 이 지원금이 보는 지출을 입력받지 않아 예상액을 계산하지 않습니다 (공고 상한 ${won(policy.lumpSumCap ?? 0)})`;
   }
   return `실제 일시 지출 ${won(listing.oneTimeMoveCost)}과 상한 ${won(policy.lumpSumCap ?? 0)} 중 작은 값 = ${won(total)}`;
