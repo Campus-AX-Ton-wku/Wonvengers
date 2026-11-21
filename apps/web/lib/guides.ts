@@ -23,6 +23,15 @@ export interface GuideTerm {
   meaning: string;
 }
 
+/** 서류 떼는 곳 1장의 한 줄 — 서류 · 떼는 곳 · 온라인 발급 화면 (11/22) */
+export interface GuideDocument {
+  name: string;
+  /** 떼는 곳 (글) */
+  where: string;
+  /** 온라인으로 떼는 화면. 주소는 열어서 제목을 확인한 것만 — 직접 화면을 못 찾으면 그 기관 첫 화면 */
+  online?: { label: string; url: string };
+}
+
 export interface GuideSection {
   /** 목차 · 장 윗줄에 작게 붙는 용어 (예: '등기부등본'). 아래 terms(용어 풀이)와는 다른 칸이다 */
   keyword: string;
@@ -34,6 +43,8 @@ export interface GuideSection {
   body: string[];
   /** 어디서 해요 */
   where?: string[];
+  /** 서류 단위 목록 — 있으면 where 대신 이걸 그린다 (서류 떼는 곳 1장) */
+  documents?: GuideDocument[];
   /** where 칸 제목 — 기본 '어디서 해요'. 서류는 '어디서 떼요', 시세는 '어디서 봐요' */
   whereLabel?: string;
   /** 조심해요 (있을 때만) */
@@ -232,21 +243,21 @@ export const GUIDES: Guide[] = [
     title: "서류 떼는 곳 모음",
     summary: "어디서 떼는지 한눈에",
     icon: "resident",
-    checkedAt: "2026-11-20",
+    checkedAt: "2026-11-22",
     sections: [
       {
         keyword: "서류 지도",
         title: "어디서 떼요? 한눈에 보기",
         lead: "지원금 신청에 자주 나오는 서류와 떼는 곳이에요.",
         body: ["대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요."],
-        where: [
-          "주민등록등본 — 정부24(온라인), 주민센터, 무인민원발급기",
-          "가족관계증명서 — 대법원 전자가족관계등록시스템, 정부24",
-          "건강보험 자격득실확인서 — 국민건강보험공단 누리집 · 앱, 정부24",
-          "소득금액증명 — 국세청 홈택스 · 손택스, 정부24",
-          "임대차계약서 사본 — 내 계약서. 확정일자가 찍힌 면까지 함께",
-          "건축물대장 — 정부24, 세움터",
-          "등기부등본 — 대법원 인터넷등기소",
+        documents: [
+          { name: "주민등록등본", where: "정부24(온라인), 주민센터, 무인민원발급기", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01" } },
+          { name: "가족관계증명서", where: "대법원 전자가족관계등록시스템, 정부24", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=97400000004" } },
+          { name: "건강보험 자격득실확인서", where: "국민건강보험공단 누리집 · 앱, 정부24", online: { label: "국민건강보험공단", url: "https://www.nhis.or.kr/nhis/index.do" } },
+          { name: "소득금액증명", where: "국세청 홈택스 · 손택스, 정부24", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12100000021" } },
+          { name: "임대차계약서 사본", where: "내 계약서. 확정일자가 찍힌 면까지 함께" },
+          { name: "건축물대장", where: "정부24, 세움터", online: { label: "정부24", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=15000000098" } },
+          { name: "등기부등본", where: "대법원 인터넷등기소", online: { label: "인터넷등기소", url: "https://www.iros.go.kr/index.jsp" } },
         ],
         whereLabel: "어디서 떼요",
       },

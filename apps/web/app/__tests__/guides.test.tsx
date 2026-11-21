@@ -91,6 +91,18 @@ describe("섹션 페이지 /guides/[id]/[step]", () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
     expect(screen.getByRole("heading", { level: 2, name: "어디서 해요" })).toBeTruthy();
   });
+
+  it("서류 떼는 곳 1장 — 서류마다 [온라인으로 떼기 ↗] 새 창 링크, 아래에 지도 버튼 (11/22)", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
+    const list = screen.getByRole("region", { name: "어디서 떼요" });
+    const links = within(list).getAllByRole("link", { name: /온라인으로 떼기/ });
+    expect(links).toHaveLength(6);
+    expect(links[0].getAttribute("href")).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01");
+    expect(links[0].getAttribute("target")).toBe("_blank");
+    expect(links[0].getAttribute("rel")).toContain("noopener");
+    expect(within(list).getByText("임대차계약서 사본")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /가까운 주민센터 · 무인민원발급기 지도 보기/ }).getAttribute("href")).toBe("/guides/places");
+  });
 });
 
 /**

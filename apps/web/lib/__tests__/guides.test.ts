@@ -74,3 +74,32 @@ describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
     }
   });
 });
+
+describe("서류 떼는 곳 1장 — 서류 단위 (11/22)", () => {
+  const section = findGuide("where-documents")!.sections[0];
+
+  it("서류 7개, 계약서 사본만 온라인 링크가 없다", () => {
+    expect(section.documents?.map((d) => d.name)).toEqual([
+      "주민등록등본",
+      "가족관계증명서",
+      "건강보험 자격득실확인서",
+      "소득금액증명",
+      "임대차계약서 사본",
+      "건축물대장",
+      "등기부등본",
+    ]);
+    const noLink = section.documents!.filter((d) => !d.online).map((d) => d.name);
+    expect(noLink).toEqual(["임대차계약서 사본"]);
+  });
+
+  it("온라인 링크는 https 이고 확인해 둔 주소다", () => {
+    const urls = Object.fromEntries(section.documents!.filter((d) => d.online).map((d) => [d.name, d.online!.url]));
+    expect(urls["주민등록등본"]).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010001&CappBizCD=13100000015&tp_seq=01");
+    expect(urls["소득금액증명"]).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12100000021");
+    for (const url of Object.values(urls)) expect(url).toMatch(/^https:\/\//);
+  });
+
+  it("글 목록(where)은 이 장에서 쓰지 않는다 — 서류 칸과 두 번 나오지 않게", () => {
+    expect(section.where).toBeUndefined();
+  });
+});

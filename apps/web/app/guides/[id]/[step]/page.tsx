@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppShell, TopBar } from "@/app/components";
-import { ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
+import { AppShell, buttonClass, TopBar } from "@/app/components";
+import { ArrowUpRight, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
 import { StepNav } from "./StepNav";
 
@@ -59,6 +60,42 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
               ))}
             </ul>
           </section>
+        )}
+
+        {section.documents && (
+          <section aria-labelledby="guide-where" className="flex flex-col gap-2 rounded-card bg-surface p-4 shadow-card">
+            <h2 id="guide-where" className="flex items-center gap-1.5 text-sm font-bold text-ink-900">
+              <MapPin size={ICON_SM} aria-hidden="true" className="text-brand-600" />
+              {section.whereLabel ?? "어디서 해요"}
+            </h2>
+            <ul className="flex flex-col divide-y divide-ink-100">
+              {section.documents.map((d) => (
+                <li key={d.name} className="flex flex-col gap-1 py-2.5 first:pt-1 last:pb-0">
+                  <p className="text-[15px] font-bold text-ink-900">{d.name}</p>
+                  <p className="text-sm leading-relaxed text-ink-600">{d.where}</p>
+                  {d.online && (
+                    <a
+                      href={d.online.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${d.name} 온라인으로 떼기 — ${d.online.label} (새 창)`}
+                      className="focus-ring inline-flex w-fit items-center gap-1 text-sm font-bold text-brand-700 underline-offset-2 hover:underline"
+                    >
+                      온라인으로 떼기 · {d.online.label}
+                      <ArrowUpRight size={ICON_SM} aria-hidden="true" />
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {section.documents && (
+          <Link href="/guides/places" className={buttonClass({ variant: "secondary", size: "md", full: true })}>
+            <MapPin size={ICON_MD} aria-hidden="true" />
+            가까운 주민센터 · 무인민원발급기 지도 보기
+          </Link>
         )}
 
         {section.caution && (
