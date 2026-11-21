@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { notFound } from "next/navigation";
 import { render, screen, within } from "@testing-library/react";
 import loanProductsData from "@/data/loan-products.json";
 import LoansPage from "@/app/loans/page";
@@ -64,6 +65,11 @@ describe("/loans/[id] — 상품 한 장", () => {
   });
 
   it("없는 id 는 404", async () => {
-    await expect(LoanPage({ params: Promise.resolve({ id: "nope" }) })).rejects.toThrow();
+    // 전역 대역은 던지지 않는다 — 진짜 Next 처럼 이 시험에서만 던지게 해 notFound 호출을 직접 확인한다.
+    vi.mocked(notFound).mockImplementationOnce(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    });
+    await expect(LoanPage({ params: Promise.resolve({ id: "nope" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFound).toHaveBeenCalled();
   });
 });
