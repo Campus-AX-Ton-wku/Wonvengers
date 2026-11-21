@@ -57,7 +57,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     await user.click(screen.getByRole("button", { name: /익산시청/ }));
     const card = screen.getByRole("region", { name: "익산시청" });
     expect(within(card).getByText("평일 24시간")).toBeTruthy();
-    expect(within(card).getByText("주민등록등본 · 가족관계증명서")).toBeTruthy();
+    expect(within(card).getByText("뗄 수 있는 서류: 주민등록등본 · 가족관계증명서")).toBeTruthy();
     const go = within(card).getByRole("link", { name: /길찾기/ });
     expect(go.getAttribute("href")).toBe(`https://map.kakao.com/link/to/${encodeURIComponent("익산시청")},35.9483,126.9577`);
     expect(go.getAttribute("target")).toBe("_blank");
@@ -90,7 +90,50 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     const list = screen.getByRole("list", { name: "장소 목록" });
     const first = within(list).getAllByRole("button")[0];
     expect(first.textContent).toContain("익산역");
-    expect(first.textContent).toContain("0m");
+    expect(first.textContent).toContain("직선 0m");
+  });
+
+  it("내 위치 — 익산에서 먼 곳이면 알리고 목록은 그대로", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: 37.5665, longitude: 126.978 } } as GeolocationPosition) },
+    });
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    await user.click(screen.getByRole("button", { name: "내 위치" }));
+    expect(screen.getByRole("status").textContent).toBe("지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요");
+    expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(3);
+  });
+
+  it("내 위치 — 가까우면 알림 영역에 안내, 시간 초과 같은 오류는 다른 문구", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: 35.9405, longitude: 126.9466 } } as GeolocationPosition) },
+    });
+    const { unmount } = render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    expect(screen.getByRole("status").textContent).toBe("");
+    await user.click(screen.getByRole("button", { name: "내 위치" }));
+    expect(screen.getByRole("status").textContent).toBe("가까운 순으로 바꿨어요");
+    unmount();
+
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition: (_ok: PositionCallback, err: PositionErrorCallback) => err({ code: 3 } as GeolocationPositionError) },
+    });
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    await user.click(screen.getByRole("button", { name: "내 위치" }));
+    expect(screen.getByRole("status").textContent).toBe("위치를 찾지 못해 익산 전체를 보여 드려요");
+  });
+
+  it("서류 칩은 데이터에 있는 서류만 — 칩 묶음에 이름이 있다", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    expect(screen.getByRole("group", { name: "장소 종류" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "무인민원발급기" }));
+    const docs = within(screen.getByRole("group", { name: "서류" }));
+    expect(docs.getByRole("button", { name: "주민등록등본" })).toBeTruthy();
+    expect(docs.queryByRole("button", { name: "등기부등본" })).toBeNull();
   });
 
   it("장소가 없으면 안내 + 가이드 1장 링크", () => {
@@ -101,6 +144,6 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
 
   it("출처를 적는다", () => {
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
-    expect(screen.getByText(/행정안전부 무인민원발급기정보 · 카카오 장소 검색 · 2026-11-22 기준/)).toBeTruthy();
+    expect(screen.getByText(/행정안전부 무인민원발급기정보 · 카카오 장소 · 주소 검색 · 2026-11-22 기준/)).toBeTruthy();
   });
 });

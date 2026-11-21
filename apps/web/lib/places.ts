@@ -44,15 +44,6 @@ export interface CivilPlacesSnapshot {
   places: CivilPlace[];
 }
 
-/** API 운영시간 두 칸 → 한 줄. '2400' 은 24:00, 00:00~24:00 은 24시간. 한쪽이라도 비면 null */
-export function formatHours(begin: string, end: string): string | null {
-  const b = begin.trim();
-  const e = end.trim() === "2400" ? "24:00" : end.trim();
-  if (!b || !e) return null;
-  if (b === "00:00" && e === "24:00") return "24시간";
-  return `${b}~${e}`;
-}
-
 export function filterPlaces(
   places: CivilPlace[],
   { kind, doc }: { kind: "all" | PlaceKind; doc: KioskDocKey | null }
@@ -72,6 +63,14 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
   const dLng = rad(b.lng - a.lng);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** 내 위치가 '익산 안'이라고 볼 거리(km). 이보다 멀면 지도를 내 위치로 옮기지 않는다 */
+export const NEAR_KM = 30;
+
+/** 내 위치에서 km 안에 있는 장소가 하나라도 있는지 */
+export function isNearAny(me: { lat: number; lng: number }, places: CivilPlace[], km: number): boolean {
+  return places.some((p) => distanceKm(me, p) <= km);
 }
 
 export function formatDistance(km: number): string {

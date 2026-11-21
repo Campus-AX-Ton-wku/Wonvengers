@@ -80,7 +80,9 @@ async function allRows(op, cond) {
   const first = await page(1);
   const rows = [...first.items];
   if (first.total !== null) {
-    const pages = Math.min(Math.ceil(first.total / ROWS), 199);
+    const needed = Math.ceil(first.total / ROWS);
+    if (needed > 199) throw new Error(`쪽 수 상한(199)을 넘었어요: ${op} ${needed}쪽`);
+    const pages = needed;
     const rest = await mapLimit(Array.from({ length: Math.max(pages - 1, 0) }, (_, i) => i + 2), async (n) => (await page(n)).items);
     return rows.concat(...rest);
   }
@@ -91,6 +93,7 @@ async function allRows(op, cond) {
     rows.push(...items);
     last = items.length;
   }
+  if (last >= ROWS) throw new Error(`쪽 수 상한(199)까지 끝나지 않았어요: ${op}`);
   return rows;
 }
 
@@ -139,7 +142,12 @@ async function main() {
   await mapLimit(targets, async (r) => {
     try {
       const { documents = [] } = await kakao("address", { query: geocodeQuery(r.INSTL_PLC_ADDR) });
-      if (documents[0]) coords.set(r.MNG_NO, { lat: Number(documents[0].y), lng: Number(documents[0].x) });
+      if (!documents[0]) return;
+      if (!String(documents[0].address_name ?? "").includes("익산시")) {
+        log(`주소 검색 결과가 익산이 아님: ${r.MNG_NO} ${r.ISSUMCHN_NM}`);
+        return;
+      }
+      coords.set(r.MNG_NO, { lat: Number(documents[0].y), lng: Number(documents[0].x) });
     } catch (err) {
       if (deadline.aborted) throw err;
       log(`주소 검색 실패: ${r.MNG_NO} ${r.ISSUMCHN_NM}`);

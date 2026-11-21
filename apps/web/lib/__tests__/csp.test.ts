@@ -31,7 +31,9 @@ describe("contentSecurityPolicy", () => {
     const list = directives(contentSecurityPolicy({}));
     expect(list).toContain("img-src 'self' data: blob: *.daumcdn.net *.kakao.com *.kakaocdn.net");
     expect(list.find((d) => d.startsWith("connect-src"))).toBe("connect-src 'self'");
-    const scriptSources = list.find((d) => d.startsWith("script-src"))!.split(" ").slice(1);
-    expect(scriptSources.filter((src) => src.startsWith("http:"))).toEqual([]);
+    for (const name of ["script-src", "img-src"]) {
+      const sources = list.find((d) => d.startsWith(name))!.split(" ").slice(1);
+      expect(sources.filter((src) => src.includes("://"))).toEqual([]);
+    }
   });
 });

@@ -77,6 +77,7 @@ function hours(begin, end) {
 export function toKiosks(installRows, certRows, coords) {
   const docsByNo = new Map();
   for (const c of certRows) {
+    if (c.OPN_ATMY_GRP_CD !== IKSAN_GROUP_CD) continue;
     const doc = KIOSK_DOCS.find((d) => d.api === c.CVLCPT_OFCWORK_CLSF_NM);
     if (!doc) continue;
     if (!docsByNo.has(c.ISSUMCHN_NO)) docsByNo.set(c.ISSUMCHN_NO, new Set());

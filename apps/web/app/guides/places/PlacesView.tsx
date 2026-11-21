@@ -10,7 +10,9 @@ import {
   distanceKm,
   filterPlaces,
   formatDistance,
+  isNearAny,
   KIOSK_DOCS,
+  NEAR_KM,
   type CivilPlace,
   type KioskDocKey,
   type PlaceKind,
@@ -48,6 +50,9 @@ export function PlacesView({
     const list = filterPlaces(places, { kind, doc });
     return me ? [...list].sort((a, b) => distanceKm(me, a) - distanceKm(me, b)) : list;
   }, [places, kind, doc, me]);
+  // 내 위치가 익산에서 멀면 지도를 옮기지 않는다 (서울에서 누르면 점 하나만 보이므로)
+  const meFar = useMemo(() => (me ? !isNearAny(me, places, NEAR_KM) : false), [me, places]);
+  const docChips = useMemo(() => KIOSK_DOCS.filter((d) => places.some((p) => p.documents.includes(d.key))), [places]);
   const selected = shown.find((p) => p.id === selectedId) ?? null;
 
   // 장소를 고르면 카드로 — 지도가 화면을 채워 카드가 밖에 있을 수 있고, 화면 읽기 프로그램에도 알린다
@@ -95,9 +100,9 @@ export function PlacesView({
           : "block size-5 rounded-full border-2 border-white bg-warn-800 shadow-card";
       el.appendChild(dot);
       el.addEventListener("click", () => setSelectedId(p.id));
-      return new m.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, map: m.map });
+      return new m.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, clickable: true, map: m.map });
     });
-    if (me) {
+    if (me && !meFar) {
       const dot = document.createElement("span");
       dot.className = "block size-4 rounded-full border-2 border-white bg-ok-600 shadow-card";
       m.overlays.push(new m.maps.CustomOverlay({ position: new m.maps.LatLng(me.lat, me.lng), content: dot, yAnchor: 0.5, map: m.map }));
@@ -106,7 +111,7 @@ export function PlacesView({
     } else if (shown.length > 0) {
       m.map.setBounds(bounds);
     }
-  }, [mapState, shown, me]);
+  }, [mapState, shown, me, meFar]);
 
   function locate() {
     const geo = typeof navigator !== "undefined" ? navigator.geolocation : undefined;
@@ -116,10 +121,14 @@ export function PlacesView({
     }
     geo.getCurrentPosition(
       (pos) => {
-        setNotice(null);
-        setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setNotice(
+          isNearAny(here, places, NEAR_KM) ? "가까운 순으로 바꿨어요" : "지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요"
+        );
+        setMe(here);
       },
-      () => setNotice("위치 권한이 없어 익산 전체를 보여 드려요"),
+      (err) =>
+        setNotice(err?.code === 1 ? "위치 권한이 없어 익산 전체를 보여 드려요" : "위치를 찾지 못해 익산 전체를 보여 드려요"),
       { timeout: 8_000, maximumAge: 60_000 }
     );
   }
@@ -148,7 +157,7 @@ export function PlacesView({
       <main className="flex flex-1 flex-col gap-3 pb-10 pt-2.5">
         <h1 className="text-[26px] font-extrabold text-ink-900">서류 떼는 곳 지도</h1>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div role="group" aria-label="장소 종류" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {(["all", "office", "kiosk"] as const).map((k) => (
             <button
               key={k}
@@ -165,8 +174,8 @@ export function PlacesView({
           ))}
         </div>
         {kind === "kiosk" && (
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-            {KIOSK_DOCS.map((d) => (
+          <div role="group" aria-label="서류" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {docChips.map((d) => (
               <button key={d.key} type="button" aria-pressed={doc === d.key} className={chip(doc === d.key)} onClick={() => setDoc(doc === d.key ? null : d.key)}>
                 {d.label}
               </button>
@@ -184,7 +193,7 @@ export function PlacesView({
             내 위치
           </button>
         </div>
-        {notice && <p className="text-sm text-ink-600">{notice}</p>}
+        <p role="status" aria-live="polite" className="text-sm text-ink-600">{notice}</p>
 
         {mapState === "failed" ? (
           <p className="rounded-card bg-ink-50 p-4 text-sm text-ink-700">지도를 불러오지 못했어요 — 목록으로 보여 드려요</p>
@@ -202,7 +211,7 @@ export function PlacesView({
             {selected.holiday && <p className="text-sm text-ink-700">공휴일 {selected.holiday}</p>}
             {selected.hoursNote && <p className="text-xs text-ink-500">{selected.hoursNote}</p>}
             {selected.documents.length > 0 && (
-              <p className="text-sm text-ink-700">{selected.documents.map(docLabel).join(" · ")}</p>
+              <p className="text-sm text-ink-700">뗄 수 있는 서류: {selected.documents.map(docLabel).join(" · ")}</p>
             )}
             <div className="mt-2 flex gap-2">
               <a
@@ -224,6 +233,7 @@ export function PlacesView({
           </section>
         )}
 
+        {shown.length === 0 && <p className="text-sm text-ink-700">조건에 맞는 곳이 없어요</p>}
         <ul aria-label="장소 목록" className="flex flex-col gap-2">
           {shown.map((p) => (
             <li key={p.id}>
@@ -238,7 +248,7 @@ export function PlacesView({
                   <span className="text-[15px] font-bold text-ink-900">{p.name}</span>
                   <span className="text-xs text-ink-600">
                     {KIND_LABEL[p.kind]}
-                    {me && ` · ${formatDistance(distanceKm(me, p))}`}
+                    {me && ` · 직선 ${formatDistance(distanceKm(me, p))}`}
                   </span>
                 </span>
               </button>
@@ -247,7 +257,7 @@ export function PlacesView({
         </ul>
 
         <p className="text-xs text-ink-500">
-          출처: 행정안전부 무인민원발급기정보 · 카카오 장소 검색{generatedAt ? ` · ${generatedAt} 기준` : ""}
+          출처: 행정안전부 무인민원발급기정보 · 카카오 장소 · 주소 검색{generatedAt ? ` · ${generatedAt} 기준` : ""}
         </p>
       </main>
     </AppShell>

@@ -118,6 +118,16 @@ describe("무인민원발급기 — 설치정보 + 발급제증명", () => {
     expect(skipped).toEqual(["997 익산시청 — 좌표를 못 찾음"]);
   });
 
+  it("다른 지자체 코드의 발급제증명 행은 무시 · 코드가 없는 행도 건너뛴다", () => {
+    const certs = [
+      cert("405", "주민등록표(등본)"),
+      { ...cert("405", "가족관계증명서"), OPN_ATMY_GRP_CD: "4500000" },
+      { ISSUMCHN_NO: "405", CVLCPT_OFCWORK_CLSF_NM: "건축물대장" },
+    ];
+    const { places } = toKiosks([install()], certs, new Map([["405", { lat: 1, lng: 2 }]]));
+    expect(places[0].documents).toEqual(["resident"]);
+  });
+
   it("공휴일 칸이 비면 null", () => {
     const { places } = toKiosks([install({ LHLDY_OPER_BGNG_TM: "", LHLDY_OPER_END_TM: "" })], [], new Map([["405", { lat: 1, lng: 2 }]]));
     expect(places[0].holiday).toBeNull();

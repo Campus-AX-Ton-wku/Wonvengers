@@ -5,7 +5,8 @@ import {
   distanceKm,
   filterPlaces,
   formatDistance,
-  formatHours,
+  isNearAny,
+  NEAR_KM,
   type CivilPlace,
 } from "@/lib/places";
 
@@ -23,19 +24,6 @@ const place = (over: Partial<CivilPlace> = {}): CivilPlace => ({
   hoursNote: null,
   documents: ["resident", "family"],
   ...over,
-});
-
-describe("formatHours — 데이터 값을 지어내지 않고 읽기 좋게만", () => {
-  it("00:00~2400 은 24시간", () => expect(formatHours("00:00", "2400")).toBe("24시간"));
-  it("2400 은 24:00 으로만 고쳐 쓴다", () => expect(formatHours("09:00", "2400")).toBe("09:00~24:00"));
-  it("나머지는 그대로", () => {
-    expect(formatHours("03:00", "23:50")).toBe("03:00~23:50");
-    expect(formatHours("23:50", "03:00")).toBe("23:50~03:00");
-  });
-  it("값이 없으면 null — '운영 안 함'으로 짐작하지 않는다", () => {
-    expect(formatHours("", "")).toBeNull();
-    expect(formatHours("09:00", "")).toBeNull();
-  });
 });
 
 describe("filterPlaces", () => {
@@ -82,4 +70,11 @@ describe("서류 이름표", () => {
       "등기부등본",
     ]);
   });
+});
+
+describe("isNearAny — 내 위치가 장소 가까이인지", () => {
+  const all = [place()];
+  it("익산역 근처는 true", () => expect(isNearAny({ lat: 35.9405, lng: 126.9466 }, all, NEAR_KM)).toBe(true));
+  it("서울은 false", () => expect(isNearAny({ lat: 37.5665, lng: 126.978 }, all, NEAR_KM)).toBe(false));
+  it("장소가 없으면 false", () => expect(isNearAny({ lat: 35.9405, lng: 126.9466 }, [], NEAR_KM)).toBe(false));
 });
