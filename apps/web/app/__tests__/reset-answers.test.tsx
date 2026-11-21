@@ -60,7 +60,7 @@ function 답심기(): void {
 async function 다시하기(user: ReturnType<typeof userEvent.setup>): Promise<void> {
   await user.click(await screen.findByRole("button", { name: "처음부터 다시" }));
   const sheet = screen.getByRole("dialog", { name: "처음부터 다시 할까요?" });
-  expect(within(sheet).getByText("관심 지원금과 서류 준비 체크도 함께 지워져요.")).toBeTruthy();
+  expect(within(sheet).getByText("관심 지원금과 서류 준비 체크, 주거비 달력 기록도 함께 지워져요.")).toBeTruthy();
   await user.click(within(sheet).getByRole("button", { name: "다시 하기" }));
 }
 

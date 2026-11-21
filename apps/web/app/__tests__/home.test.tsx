@@ -9,9 +9,10 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { AUTH_KEY, resetAuthForTests, signOut } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveChecklist, saveDocumentChecks, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
+import { saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
-import { todayISO } from "@/lib/date";
+import { seoulTodayISO, todayISO } from "@/lib/date";
+import { addMonths, emptyLedger, ledgerMonth, ledgerPlan, monthKeyOf, toggleLine } from "@/lib/ledger";
 import { openPolicies } from "@/lib/home";
 import { formatApproxMoney } from "@/lib/money";
 import { policiesForRegion } from "@/lib/region";
@@ -305,5 +306,55 @@ describe("/home", () => {
       await screen.findByRole("region", { name: "내 지원 요약" });
       expect(screen.queryByRole("region", { name: "다가오는 일정" })).toBeNull();
     });
+  });
+});
+
+describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
+  const thisMonth = monthKeyOf(seoulTodayISO());
+  const 이번달시작 = makeListing({ region: "전북특별자치도 익산시", contractType: "월세", rentOrYearlyAmount: 400_000, managementFee: 50_000, contractStartDate: `${thisMonth}-01`, months: 12 });
+
+  it("주거비 상자 아래 '이번 달 주거비 · 낸 돈 1/2 …' → /ledger", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing(이번달시작); saveProfile(makeProfile());
+    saveLedger(toggleLine(emptyLedger(), thisMonth, "rent", 400_000));
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비, 낸 돈 2개 중 1개/ });
+    expect(row.getAttribute("href")).toBe("/ledger");
+    expect(within(row).getByText(/^낸 돈 1\/2/)).toBeTruthy();
+  });
+
+  it("연세 + 관리비 0원, 계약 2개월째 이후 — '낸 돈 0/0' 대신 낸 돈 부분을 뺀다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 4_800_000, managementFee: 0, contractStartDate: `${addMonths(thisMonth, -2)}-01`, months: 12 }));
+    saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비/ });
+    expect(row.textContent).not.toContain("낸 돈");
+    expect(row.getAttribute("aria-label")).not.toContain("낸 돈");
+  });
+
+  it("이번 달 칸을 다 누르면 초록 '이번 달 다 적었어요'", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    const profile = makeProfile();
+    saveListing(이번달시작); saveProfile(profile);
+    // 이번 달 칸을 화면과 같은 함수로 만들어 전부 누른다 — 들어오는 지원이 몇 건이든(데이터에 따라) 결과가 같다
+    const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], 이번달시작.region), profile, 이번달시작, seoulTodayISO());
+    let record = emptyLedger();
+    for (const line of ledgerMonth(ledgerPlan(이번달시작, s, profile.birthDate), record, thisMonth).lines) record = toggleLine(record, thisMonth, line.key, line.amount);
+    saveLedger(record);
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비, 이번 달 다 적었어요/ });
+    expect(within(row).getByText("이번 달 다 적었어요").className).toContain("text-ok-700");
+  });
+
+  it("이번 달이 계약 기간 밖이면 한 줄이 없다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing({ ...이번달시작, contractStartDate: `${addMonths(thisMonth, 1)}-01` }); saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    expect(within(summary).queryByRole("link", { name: /^이번 달 주거비/ })).toBeNull();
   });
 });
