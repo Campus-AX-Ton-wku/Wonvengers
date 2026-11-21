@@ -9,10 +9,11 @@ import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
 import GuideStepPage, { generateStaticParams as stepParams } from "@/app/guides/[id]/[step]/page";
 
 describe("주거 가이드 화면", () => {
-  it("목록 — 세 편이 각 글의 목차로 간다", () => {
+  it("목록 — 맨 위 집 보러 갈 때 체크리스트, 그 아래 세 편이 각 글의 목차로 간다 (11/22 ggue)", () => {
     render(<GuidesPage />);
     const links = screen.getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/guides/"));
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/guides/checklist",
       "/guides/before-contract",
       "/guides/protect-deposit",
       "/guides/where-documents",
@@ -54,6 +55,16 @@ describe("목차 페이지 /guides/[id]", () => {
     expect(within(first).getByText("찾기쉬운 생활법령")).toBeTruthy();
     expect(within(first).getByText("주택임대차(대항력·우선변제권·임차권등기)")).toBeTruthy();
     expect(screen.queryByText(/확인했어요/)).toBeNull();
+  });
+});
+
+describe("체크리스트로 이어 주기", () => {
+  it("'계약 전에 꼭 볼 것' 목차에만 체크리스트 바로가기 (11/22 ggue)", async () => {
+    const contract = render(await GuidePage({ params: Promise.resolve({ id: "before-contract" }) }));
+    expect(screen.getByRole("link", { name: /집 보러 갈 때 체크리스트/ }).getAttribute("href")).toBe("/guides/checklist");
+    contract.unmount();
+    render(await GuidePage({ params: Promise.resolve({ id: "protect-deposit" }) }));
+    expect(screen.queryByRole("link", { name: /집 보러 갈 때 체크리스트/ })).toBeNull();
   });
 });
 
