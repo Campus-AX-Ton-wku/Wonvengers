@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell, TopBar } from "@/app/components";
-import { ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
+import { ExternalLink, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
 import { StepNav } from "./StepNav";
 
@@ -50,13 +50,44 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
               <MapPin size={ICON_SM} aria-hidden="true" className="text-brand-600" />
               {section.whereLabel ?? "어디서 해요"}
             </h2>
-            <ul className="flex flex-col gap-1.5">
-              {section.where.map((w) => (
-                <li key={w} className="flex gap-2.5 text-[15px] leading-relaxed text-ink-700">
-                  <span aria-hidden="true" className="mt-[0.65em] size-1.5 shrink-0 rounded-full bg-brand-600" />
-                  <span>{w}</span>
-                </li>
-              ))}
+            {/* 11/22 ggue — 바로가기가 있는 곳은 누르면 그 서비스 화면이 새 창으로(이름은 링크 파랑 + ↗). 없는 곳은 글자만.
+                덧말(다른 곳에서도 할 수 있음)은 작게 아래 줄. 줄은 가는 선으로 나눠 누르는 칸(48px)이 보이게 */}
+            <ul className="flex flex-col divide-y divide-ink-100">
+              {section.where.map((place) => {
+                const text = (
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span
+                      className={`text-[15px] leading-snug ${place.url ? "font-semibold text-brand-700" : "text-ink-700"}`}
+                    >
+                      {place.name}
+                    </span>
+                    {place.note && (
+                      <>
+                        <span className="sr-only">, </span>
+                        <span className="text-[13px] leading-snug text-ink-500">{place.note}</span>
+                      </>
+                    )}
+                  </span>
+                );
+                return (
+                  <li key={place.name}>
+                    {place.url ? (
+                      <a
+                        href={place.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="focus-ring flex min-h-12 items-center gap-3 py-2.5"
+                      >
+                        {text}
+                        <ExternalLink size={ICON_SM} aria-hidden="true" className="shrink-0 text-brand-600" />
+                        <span className="sr-only">(새 창)</span>
+                      </a>
+                    ) : (
+                      <div className="flex min-h-12 items-center py-2.5">{text}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}

@@ -33,13 +33,27 @@ export interface GuideSection {
   /** 짧은 문단 */
   body: string[];
   /** 어디서 해요 */
-  where?: string[];
-  /** where 칸 제목 — 기본 '어디서 해요'. 서류는 '어디서 떼요', 시세는 '어디서 봐요' */
+  where?: GuidePlace[];
+  /** where 칸 제목 — 기본 '어디서 해요'. 서류는 '어디서 떼요', 시세는 '실거래가 공개시스템에서 봐요' */
   whereLabel?: string;
   /** 조심해요 (있을 때만) */
   caution?: string;
   /** 용어 풀이 — 비유 대신 정확한 뜻 */
   terms?: GuideTerm[];
+}
+
+/**
+ * '어디서 해요' 한 줄 (11/22 ggue — 누르면 그 일을 하는 화면으로 바로).
+ * url 은 그 서비스 화면(정부24 민원 안내 · 실거래가 지도 …)을 직접 열어 제목을 확인한 주소만 쓴다. 화면을 스크립트로만 그려
+ * 주소로 바로 갈 수 없는 곳(인터넷등기소)은 첫 화면. 정부24 는 plus.gov.kr 로 옮기는 중이라 /mw/ 주소가 끊길 수 있다 — 고치면 checkedAt 도.
+ */
+export interface GuidePlace {
+  /** 기관 · 서비스 이름 */
+  name: string;
+  /** 바로가기 — https 공공 주소만 (lib/__tests__/guides.test.ts) */
+  url?: string;
+  /** 작은 글씨 덧말 — 다른 곳에서도 할 수 있으면 함께 적는다 */
+  note?: string;
 }
 
 export interface GuideSource {
@@ -68,7 +82,7 @@ export const GUIDES: Guide[] = [
     title: "계약 전에 꼭 볼 것",
     summary: "집의 이력서부터 떼 봐요",
     icon: "contract",
-    checkedAt: "2026-11-20",
+    checkedAt: "2026-11-22",
     sections: [
       {
         keyword: "시세 확인",
@@ -78,8 +92,13 @@ export const GUIDES: Guide[] = [
           "국토교통부 실거래가 공개시스템에서 같은 동네 비슷한 집의 최근 매매가와 전세가를 찾아볼 수 있어요.",
           "보증금이 집값에 바짝 붙어 있으면 위험해요. 나중에 집이 팔려도 그 돈으로 내 보증금을 다 돌려받지 못할 수 있거든요. 보증금과 집값 사이에 '안전거리'가 있는지 봐요.",
         ],
-        where: ["국토교통부 실거래가 공개시스템"],
-        whereLabel: "어디서 봐요",
+        where: [
+          { name: "아파트", url: "https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=A&mobileAt=" },
+          { name: "연립·다세대", url: "https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=B&mobileAt=" },
+          { name: "단독·다가구", url: "https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=C&mobileAt=" },
+          { name: "오피스텔", url: "https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=D&mobileAt=" },
+        ],
+        whereLabel: "실거래가 공개시스템에서 봐요",
       },
       {
         keyword: "등기부등본",
@@ -90,7 +109,7 @@ export const GUIDES: Guide[] = [
           "갑구는 '주인 칸'이에요. 지금 집주인이 누구인지 보고, 나와 계약하는 사람과 같은 사람인지 확인해요.",
           "을구는 '빚 칸'이에요. 근저당처럼 내 보증금보다 먼저 돌려받는 권리가 있는지, 얼마인지 봐요.",
         ],
-        where: ["대법원 인터넷등기소"],
+        where: [{ name: "대법원 인터넷등기소", url: "https://www.iros.go.kr/" }],
         whereLabel: "어디서 떼요",
         caution: "계약하는 날과 잔금 치르는 날, 한 번 더 떼서 그 사이 바뀐 게 없는지 확인해요.",
         terms: [
@@ -107,7 +126,10 @@ export const GUIDES: Guide[] = [
         body: [
           "건축물대장은 건물의 건강검진표예요. 여기에 '위반건축물'이라고 적혀 있지 않은지, 용도가 주택이 맞는지 봐요.",
         ],
-        where: ["정부24", "세움터"],
+        where: [
+          { name: "정부24 건축물대장 발급", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=15000000098" },
+          { name: "세움터", url: "https://www.eais.go.kr/" },
+        ],
         whereLabel: "어디서 떼요",
         caution: "위반건축물이면 보증금 보험(전세보증금 반환보증) 가입이 막힐 수 있어요.",
       },
@@ -129,7 +151,13 @@ export const GUIDES: Guide[] = [
           "보증금 보험(전세보증금 반환보증)은 계약이 끝났는데 보증금을 못 돌려받을 때 보증기관이 대신 돌려주는 상품이에요.",
           "모든 집이 가입되는 건 아니에요. 계약서에 도장 찍기 전에 보증기관에 이 집이 가입할 수 있는지 물어봐요.",
         ],
-        where: ["주택도시보증공사(HUG) 안심전세포털"],
+        where: [
+          {
+            name: "주택도시보증공사(HUG) 안심전세 앱",
+            url: "https://www.khug.or.kr/jeonse/web/s01/s010102.jsp",
+            note: "가입할 수 있는 집인지 앱에서 확인해요",
+          },
+        ],
       },
     ],
     sources: [
@@ -145,7 +173,7 @@ export const GUIDES: Guide[] = [
     title: "보증금 지키는 법",
     summary: "깃발(전입신고)과 번호표(확정일자)",
     icon: "guarantee",
-    checkedAt: "2026-11-20",
+    checkedAt: "2026-11-22",
     sections: [
       {
         keyword: "전입신고",
@@ -155,7 +183,7 @@ export const GUIDES: Guide[] = [
           "전입신고는 새 집에 '나 여기 살아요' 깃발을 꽂는 일이에요.",
           "실제로 들어가 살면서 깃발까지 꽂으면, 다음 날 0시부터 '대항력'이 생겨요. 집주인이 바뀌어도 계약한 대로 계속 살 수 있는 힘이에요.",
         ],
-        where: ["정부24(온라인)", "새 주소의 주민센터"],
+        where: [{ name: "정부24 전입신고", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016" }, { name: "새 주소의 주민센터" }],
         caution:
           "깃발은 다음 날부터 힘이 생겨요. 잔금 날 집주인이 은행 대출(근저당)을 새로 잡으면 은행이 나보다 앞줄에 설 수 있어요. 잔금 직전에 등기부를 한 번 더 봐요.",
         terms: [
@@ -174,7 +202,10 @@ export const GUIDES: Guide[] = [
           "깃발(이사 + 전입신고)과 번호표(확정일자)를 둘 다 가지면, 나보다 뒤 순서인 사람보다 먼저 보증금을 받아요.",
           "다음 장의 임대차 신고를 하면 이 번호표가 저절로, 무료로 붙어요.",
         ],
-        where: ["주민센터(계약서에 받기)", "대법원 인터넷등기소(온라인)"],
+        where: [
+          { name: "주민센터", note: "계약서에 받기" },
+          { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr/", note: "온라인" },
+        ],
         terms: [
           {
             term: "우선변제권",
@@ -190,6 +221,7 @@ export const GUIDES: Guide[] = [
           "보증금이 6천만 원을 넘거나 월세가 30만 원을 넘는 계약은 계약한 날부터 30일 안에 신고해야 해요.",
           "신고할 때 계약서를 함께 내면, 확정일자(앞 장의 번호표)를 따로 신청하지 않아도 무료로 붙어요.",
         ],
+        where: [{ name: "정부24 주택 임대차신고", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=16130000132" }],
         caution: "신고 대상 지역이 정해져 있어요. 내 지역이 대상인지는 국토교통부 안내에서 확인해요.",
       },
       {
@@ -200,7 +232,7 @@ export const GUIDES: Guide[] = [
           "계약이 끝났는데 집주인이 보증금을 못 돌려주면, 보증기관이 대신 돌려주는 상품이에요. 사고가 났을 때를 대비하는 보험과 같아요.",
           "가입 기한과 조건이 있어요. 계약하고 나면 바로 가입할 수 있는지 확인해요.",
         ],
-        where: ["주택도시보증공사(HUG) 안심전세포털"],
+        where: [{ name: "주택도시보증공사(HUG) 보증가입", url: "https://www.khug.or.kr/jeonse/web/s04/s040201.jsp" }],
       },
       {
         keyword: "임차권등기",
@@ -232,21 +264,22 @@ export const GUIDES: Guide[] = [
     title: "서류 떼는 곳 모음",
     summary: "어디서 떼는지 한눈에",
     icon: "resident",
-    checkedAt: "2026-11-20",
+    checkedAt: "2026-11-22",
     sections: [
       {
         keyword: "서류 지도",
         title: "어디서 떼요? 한눈에 보기",
         lead: "지원금 신청에 자주 나오는 서류와 떼는 곳이에요.",
         body: ["대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요."],
+        // 누르면 정부24 발급 화면(본문: 대부분 정부24에서 한 번에). 덧말은 떼는 곳 전부 — 링크가 여는 곳을 맨 앞에
         where: [
-          "주민등록등본 — 정부24(온라인), 주민센터, 무인민원발급기",
-          "가족관계증명서 — 대법원 전자가족관계등록시스템, 정부24",
-          "건강보험 자격득실확인서 — 국민건강보험공단 누리집 · 앱, 정부24",
-          "소득금액증명 — 국세청 홈택스 · 손택스, 정부24",
-          "임대차계약서 사본 — 내 계약서. 확정일자가 찍힌 면까지 함께",
-          "건축물대장 — 정부24, 세움터",
-          "등기부등본 — 대법원 인터넷등기소",
+          { name: "주민등록등본", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015", note: "정부24(온라인) · 주민센터 · 무인민원발급기" },
+          { name: "가족관계증명서", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=97400000004", note: "정부24 · 대법원 전자가족관계등록시스템" },
+          { name: "건강보험 자격득실확인서", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=PG4CADM0107", note: "정부24 · 국민건강보험공단 누리집·앱" },
+          { name: "소득금액증명", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12100000021", note: "정부24 · 국세청 홈택스·손택스" },
+          { name: "임대차계약서 사본", note: "내 계약서. 확정일자가 찍힌 면까지 함께" },
+          { name: "건축물대장", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=15000000098", note: "정부24 · 세움터" },
+          { name: "등기부등본", url: "https://www.iros.go.kr/", note: "대법원 인터넷등기소" },
         ],
         whereLabel: "어디서 떼요",
       },
