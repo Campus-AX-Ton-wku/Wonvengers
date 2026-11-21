@@ -282,7 +282,7 @@ export const GUIDES: Guide[] = [
       { name: "국세청 홈택스", url: "https://www.hometax.go.kr" },
       { name: "세움터", url: "https://www.eais.go.kr" },
       { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
-      { name: "행정안전부 무인민원발급기정보", topic: "익산 발급기 위치, 운영시간, 발급 서류", url: "https://www.data.go.kr/data/15154774/openapi.do" },
+      { name: "행정안전부 무인민원발급기정보", topic: "익산 발급기 위치·운영시간·발급 서류", url: "https://www.data.go.kr/data/15154774/openapi.do" },
     ],
   },
 ];
