@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KIOSK_DOCS as APP_DOCS } from "../../lib/places";
-import { IKSAN_EMD, KIOSK_DOCS, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice } from "../civil-places/build.mjs";
+import { IKSAN_EMD, KIOSK_DOCS, decideWrite, formatSnapshot, geocodeQuery, pickOffice, toKiosks, toOffice } from "../civil-places/build.mjs";
 
 /** 설치정보 한 행 (2026-11-22 실제 응답에서 값만 줄인 것) */
 const install = (over = {}) => ({
@@ -127,5 +127,28 @@ describe("무인민원발급기 — 설치정보 + 발급제증명", () => {
 describe("formatSnapshot", () => {
   it("2칸 들여쓰기 + 끝 줄바꿈", () => {
     expect(formatSnapshot({ generatedAt: "x", places: [] })).toBe('{\n  "generatedAt": "x",\n  "places": []\n}\n');
+  });
+});
+
+describe("decideWrite", () => {
+  it("29+26 vs 커밋 55 → 쓴다", () => {
+    expect(decideWrite({ offices: 29, kiosks: 26, committedCount: 55 }).write).toBe(true);
+  });
+  it("주민센터 0 → 안 쓴다", () => {
+    expect(decideWrite({ offices: 0, kiosks: 26, committedCount: 55 }).write).toBe(false);
+  });
+  it("발급기 0 → 안 쓴다", () => {
+    expect(decideWrite({ offices: 29, kiosks: 0, committedCount: 55 }).write).toBe(false);
+  });
+  it("40 vs 커밋 55 (44 미만) → 안 쓴다", () => {
+    const r = decideWrite({ offices: 20, kiosks: 20, committedCount: 55 });
+    expect(r.write).toBe(false);
+    expect(r.reason).toContain("80%");
+  });
+  it("44 vs 커밋 55 → 쓴다", () => {
+    expect(decideWrite({ offices: 24, kiosks: 20, committedCount: 55 }).write).toBe(true);
+  });
+  it("커밋이 빈 스냅숏이면 29+26 → 쓴다", () => {
+    expect(decideWrite({ offices: 29, kiosks: 26, committedCount: 0 }).write).toBe(true);
   });
 });

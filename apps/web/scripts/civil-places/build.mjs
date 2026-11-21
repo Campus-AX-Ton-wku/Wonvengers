@@ -113,3 +113,17 @@ export function toKiosks(installRows, certRows, coords) {
 export function formatSnapshot(snapshot) {
   return `${JSON.stringify(snapshot, null, 2)}\n`;
 }
+
+/**
+ * 받은 결과로 스냅숏을 덮어쓸지. 부분 실패(발급기 API 가 빔 · 카카오 일부 실패)로
+ * 멀쩡한 스냅숏을 줄이지 않는다 — 커밋된 곳 수의 80% 아래면 쓰지 않는다.
+ */
+export function decideWrite({ offices, kiosks, committedCount }) {
+  if (offices === 0) return { write: false, reason: "주민센터가 0곳" };
+  if (kiosks === 0) return { write: false, reason: "발급기가 0대" };
+  const min = Math.ceil(committedCount * 0.8);
+  if (committedCount > 0 && offices + kiosks < min) {
+    return { write: false, reason: `${offices + kiosks}곳은 커밋된 ${committedCount}곳의 80%(${min}곳) 미만` };
+  }
+  return { write: true, reason: "ok" };
+}
