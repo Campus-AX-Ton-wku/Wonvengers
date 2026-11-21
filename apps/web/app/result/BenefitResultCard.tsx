@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatDotDate } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
-import { benefitFormula, monthlyBreakdown } from "@/lib/benefit";
+import { ageLimitReason, benefitFormula, monthlyBreakdown, supportAgeLimit } from "@/lib/benefit";
 import { formatDeadline, type BenefitResultCardData } from "@/lib/benefit-result";
 import type { ListingInput, PolicyResult } from "@/lib/types";
 import { ExternalLink, ICON_SM } from "@/app/components/icons";
@@ -46,10 +46,13 @@ export default function BenefitResultCard({
   card,
   result,
   listing,
+  birthDate,
 }: {
   card: BenefitResultCardData;
   result: PolicyResult;
   listing: ListingInput;
+  /** 받는 동안 나이를 따지는 지원을 나이 상한 전까지만 세려고 쓴다(11/21). 판정과 같은 값이어야 금액이 맞는다 */
+  birthDate?: string;
 }) {
   const state = STATE_COPY[card.state];
   const amountText = `${card.amount.isMaximum ? "최대 " : ""}${formatKoreanMoney(card.amount.value)}`;
@@ -98,9 +101,11 @@ export default function BenefitResultCard({
   }
 
   // 매달 주는 지원은 한 달 금액을 크게 — 개월 합계는 아래 한 줄
-  const perMonth = monthlyBreakdown(result.policy, listing);
+  const perMonth = monthlyBreakdown(result.policy, listing, birthDate);
   const bigText = perMonth ? `월 ${formatKoreanMoney(perMonth.monthly)}` : amountText;
   const subText = perMonth ? `${perMonth.months}개월이면 ${formatKoreanMoney(card.amount.value)}` : card.amount.period;
+  // 입력한 거주 개월보다 적게 셌으면 이유를 금액 바로 밑에 — 안 적으면 '24개월 산다고 했는데 왜 17개월?'이 된다
+  const ageLimit = supportAgeLimit(result.policy, listing, birthDate);
 
   return (
     <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
@@ -135,6 +140,7 @@ export default function BenefitResultCard({
           {bigText}
         </p>
         <p className="mt-1 text-xs text-ink-600">{subText}</p>
+        {ageLimit && <p className="mt-0.5 text-xs text-ink-600">{ageLimitReason(ageLimit)}만 셌어요</p>}
       </div>
 
       <DestinationLink
@@ -148,7 +154,7 @@ export default function BenefitResultCard({
         <RequirementList title="충족" items={result.passedLabels} tone="text-ok-700" />
         <RequirementList title="확인 필요" items={result.unknownLabels} tone="text-warn-800" />
         <RequirementList title="미충족" items={result.failedLabels} tone="text-ink-600" />
-        <p className="mt-3 px-1 text-xs leading-relaxed text-ink-600">{benefitFormula(result.policy, listing)}</p>
+        <p className="mt-3 px-1 text-xs leading-relaxed text-ink-600">{benefitFormula(result.policy, listing, birthDate)}</p>
       </Disclosure>
 
       <SourceLink card={card} />

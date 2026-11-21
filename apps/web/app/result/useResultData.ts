@@ -79,5 +79,6 @@ export function useResultData() {
     setRevision((value) => value + 1);
   };
 
-  return { listing: saved?.listing ?? null, summary, asOf, status: resolvedStatus, expiredAt, retry };
+  // 생년월일은 결과 카드가 판정과 같은 나이 상한으로 개월 수를 다시 셀 때 쓴다(11/21, lib/benefit.ts supportAgeLimit)
+  return { listing: saved?.listing ?? null, birthDate: saved?.profile.birthDate, summary, asOf, status: resolvedStatus, expiredAt, retry };
 }

@@ -1,5 +1,5 @@
 import { formatKoreanMoney } from "@/lib/money";
-import { monthlyRentEquivalent } from "@/lib/rent";
+import { calcMonths, monthlyRentEquivalent } from "@/lib/rent";
 import type { ListingInput, PolicyMeta } from "@/lib/types";
 import { Disclosure, PerkyCharacter } from "@/app/components";
 import { ICON_SM, TriangleAlert } from "@/app/components/icons";
@@ -41,8 +41,8 @@ export function ResultReceipt({
   /** 이 금액에 아직 확인되지 않은 조건이 섞여 있으면 그 목록 */
   unknownConditions: { policy: string; label: string }[];
 }) {
-  // lib/rent.ts nominalTotalCost 와 같은 셈 — 기간은 12개월까지만 센다
-  const months = Math.min(listing.months, 12);
+  // lib/rent.ts nominalTotalCost · 지원금과 같은 기간 — 입력한 거주 개월 수
+  const months = calcMonths(listing);
   const rentAndFee = (monthlyRentEquivalent(listing) + listing.managementFee) * months;
   // 매달 나가는 돈과 한 번 내는 돈을 나눈다(11/18 진단 2회차) — 이사비를 12개월로 나눠 '한 달에 약 …'으로 쓰면
   // 실제로 매달 나가는 돈보다 크게 읽힌다. 한 번 주는 지원은 이사비에서 먼저 빼고, 남으면 매달 쪽에서 뺀다.

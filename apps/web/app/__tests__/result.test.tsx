@@ -192,7 +192,8 @@ describe("돈 요약 영수증 (11/18 — 헤더 · 요약 · 조합 · 목돈 �
     const card = 요약카드();
 
     expect(within(card).getByText(/^월세·관리비 \d+개월$/)).toBeTruthy();
-    expect(within(card).getByText("이사비")).toBeTruthy();
+    // 이사비는 11/21 부터 묻지 않는다 — 저장된 60만원이 있어도 읽을 때 0 이라 이사비 줄이 없다
+    expect(within(card).queryByText("이사비")).toBeNull();
     // 받는 지원은 합계에 든 정책 이름과 빼는 금액으로 — 어떤 지원을 더했는지(F4-5)가 접히지 않고 보인다
     const supportRows = within(card).getAllByText(/^− .+원$/);
     expect(supportRows.length).toBeGreaterThan(0);

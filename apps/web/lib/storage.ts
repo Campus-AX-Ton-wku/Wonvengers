@@ -67,7 +67,11 @@ export function saveListing(listing: ListingInput): void {
 }
 
 export function loadListing(): ListingInput | null {
-  return readJSON<ListingInput>(LISTING_KEY);
+  const listing = readJSON<ListingInput>(LISTING_KEY);
+  if (!listing) return null;
+  // 이사비·중개보수는 11/21 부터 묻지 않는다. 예전에 넣어 둔 값이 남아 있으면 고칠 칸도 없이
+  // 영수증 '이사비' 줄과 이사비 지원 합계에 계속 들어간다 — 읽을 때 0 으로 둔다.
+  return { ...listing, oneTimeMoveCost: 0 };
 }
 
 export function saveProfile(profile: EligibilityProfile): void {
