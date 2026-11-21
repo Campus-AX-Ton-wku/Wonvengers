@@ -109,13 +109,13 @@ describe("/home", () => {
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
-  it("요약 아래 주거 가이드 세 장 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 전체 보기는 /guides", async () => {
+  it("요약 아래 주거 가이드 세 장 + 체크리스트 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 체크리스트는 맨 끝, 전체 보기는 /guides", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const guides = await screen.findByRole("region", { name: "주거 가이드" });
     expect(within(guides).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/guides");
     const cards = within(guides).getAllByRole("listitem").map((li) => within(li).getByRole("link").getAttribute("href"));
-    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract"]);
+    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract", "/guides/checklist"]);
     expect(within(within(guides).getAllByRole("listitem")[0]).getByText("월세라면 먼저")).toBeTruthy();
     expect(within(within(guides).getAllByRole("listitem")[1]).queryByText(/라면 먼저/)).toBeNull();
   });

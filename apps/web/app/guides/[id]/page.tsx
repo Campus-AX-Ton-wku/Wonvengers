@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { AppShell, Icon3D, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
+import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
+import { GuideCard } from "../GuideCard";
 import { SourceList } from "../SourceList";
 
 /** 정적 export — 가이드 수만큼 목차 페이지를 미리 만든다. */
@@ -56,6 +58,9 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
             ))}
           </ol>
         </nav>
+
+        {/* 계약 전 단계라 집 보러 갈 때 체크리스트로 이어 준다(11/22 ggue) — 다른 가이드에는 두지 않는다 */}
+        {guide.id === "before-contract" && <GuideCard guide={HOUSE_CHECKLIST_CARD} />}
 
         <SourceList sources={guide.sources} />
       </main>

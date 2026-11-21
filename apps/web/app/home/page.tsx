@@ -21,6 +21,7 @@ import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
+import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
 import { calcMonths } from "@/lib/rent";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
@@ -297,7 +298,7 @@ function CostBox({ costs, showCut }: { costs: Costs; showCut: boolean }) {
 }
 
 /**
- * 주거 가이드 (11/20) — 요약 아래 가로로 넘기는 카드 3장. 세 번째 카드가 살짝 잘려 보여 옆으로 넘길 수 있다는 걸 말한다.
+ * 주거 가이드 (11/20) — 요약 아래 가로로 넘기는 카드 3장 + 맨 끝 집 보러 갈 때 체크리스트(11/22). 세 번째 카드가 살짝 잘려 보여 옆으로 넘길 수 있다는 걸 말한다.
  * 글은 lib/guides.ts (출처 · 확인일과 함께). 첫 카드는 집 형태 답으로 고른다(guidesForHousing, 11/20).
  */
 function GuideRow({ housingType }: { housingType: HousingType | null }) {
@@ -322,6 +323,10 @@ function GuideRow({ housingType }: { housingType: HousingType | null }) {
             <GuideCard guide={guide} compact tag={i === 0 ? tag : null} />
           </li>
         ))}
+        {/* 집 보러 갈 때 체크리스트(11/22) — 맨 끝. '○○라면 먼저' 첫 카드 규칙은 그대로 둔다 */}
+        <li className="flex">
+          <GuideCard guide={HOUSE_CHECKLIST_CARD} compact />
+        </li>
       </ul>
     </section>
   );
