@@ -43,11 +43,11 @@ describe("시작 화면 — 소개 마지막 장 (11/20)", () => {
     expect(screen.getByRole("button", { name: "내 혜택 찾아보기" })).toBeTruthy();
   });
 
-  it("로그인을 쓸 수 있으면 마지막 장에만 [카카오로 로그인] — 파랑 버튼 아래", async () => {
+  it("로그인을 쓸 수 있으면 1장부터 [카카오로 로그인] — 파랑 버튼 아래 (11/22)", async () => {
     enableLogin();
     const user = userEvent.setup();
     render(<OnboardingPage />);
-    expect(screen.queryByRole("button", { name: /카카오로 로그인/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /카카오로 로그인/ })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "건너뛰기" }));
     const kakao = screen.getByRole("button", { name: /카카오로 로그인/ });
     const start = screen.getByRole("button", { name: "내 혜택 찾아보기" });
