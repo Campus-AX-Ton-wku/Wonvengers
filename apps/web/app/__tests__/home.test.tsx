@@ -360,7 +360,7 @@ describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
 });
 
 describe("/home — 대출 · 보증 (11/22)", () => {
-  it("주거 가이드 위에 세 장 — 월세면 보증부월세대출부터 · 꼬리표, 카드는 상세로, 전체 보기는 /loans", async () => {
+  it("주거 가이드 아래에 세 장 (11/22 순서 바꿈) — 월세면 보증부월세대출부터 · 꼬리표, 카드는 상세로, 전체 보기는 /loans", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const loans = await screen.findByRole("region", { name: "대출 · 보증" });
@@ -370,6 +370,6 @@ describe("/home — 대출 · 보증 (11/22)", () => {
     expect(within(cards[0]).getByText("월세라면 먼저")).toBeTruthy();
     expect(within(loans).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/loans");
     const guides = screen.getByRole("region", { name: "주거 가이드" });
-    expect(loans.compareDocumentPosition(guides) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(guides.compareDocumentPosition(loans) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

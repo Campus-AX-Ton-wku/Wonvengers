@@ -8,7 +8,7 @@ import type { HousingType, LoanProductMeta } from "@/lib/types";
 const products = loanProductsData as LoanProductMeta[];
 
 /**
- * 대출 · 보증 (11/22 ggue) — 주거 가이드 위, 같은 모양의 가로 카드 3장. 현금 지원이 아니라 결과 합계에는 넣지 않는다.
+ * 대출 · 보증 (11/22 ggue) — 주거 가이드 아래, 같은 모양의 가로 카드 3장. 현금 지원이 아니라 결과 합계에는 넣지 않는다.
  * 고르기 · 순서는 /loans 와 같다(lib/loans.ts orderedLoans). 고른 게 없으면 줄째 숨긴다.
  */
 export function LoanRow({ region, housingType }: { region: string | null; housingType: HousingType | null }) {
