@@ -18,8 +18,8 @@ afterEach(() => {
   root().remove("splash", "splash-out");
 });
 
-describe("앱 시작 화면 걷기 (SplashGate — 최소 1초, 11/21)", () => {
-  it("문서를 연 지 1초가 안 됐으면 남은 시간만큼 보여 준 뒤 0.3초 흐려지며 걷는다 — 이번 실행에 봤다고 바로 적는다", () => {
+describe("앱 시작 화면 걷기 (SplashGate — 최소 1.4초, 11/22)", () => {
+  it("문서를 연 지 1.4초가 안 됐으면 남은 시간만큼 보여 준 뒤 0.3초 흐려지며 걷는다 — 이번 실행에 봤다고 바로 적는다", () => {
     root().add("splash");
     vi.spyOn(performance, "now").mockReturnValue(200);
     render(<SplashGate />);
@@ -34,7 +34,7 @@ describe("앱 시작 화면 걷기 (SplashGate — 최소 1초, 11/21)", () => {
     expect(root().contains("splash-out")).toBe(false);
   });
 
-  it("이미 1초가 지났으면(느린 연결) 바로 흐려지기 시작한다", () => {
+  it("이미 1.4초가 지났으면(느린 연결) 바로 흐려지기 시작한다", () => {
     root().add("splash");
     vi.spyOn(performance, "now").mockReturnValue(1500);
     render(<SplashGate />);
@@ -44,7 +44,7 @@ describe("앱 시작 화면 걷기 (SplashGate — 최소 1초, 11/21)", () => {
     expect(root().contains("splash")).toBe(false);
   });
 
-  it("움직임 줄이기면 1초는 보여 주되 흐려짐 없이 걷는다", () => {
+  it("움직임 줄이기면 1.4초는 보여 주되 흐려짐 없이 걷는다", () => {
     root().add("splash");
     vi.spyOn(performance, "now").mockReturnValue(0);
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: q === "(prefers-reduced-motion: reduce)" }));
