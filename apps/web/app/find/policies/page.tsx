@@ -159,7 +159,7 @@ export default function FindPoliciesPage() {
                     setLoginOpen(true);
                   }
                 }}
-                className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-700 active:bg-brand-800"
+                className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-press active:bg-brand-press"
               >
                 <span className="text-balance text-left text-lg font-bold leading-snug text-white">
                   {ctaLabel(resolved.housingType)}

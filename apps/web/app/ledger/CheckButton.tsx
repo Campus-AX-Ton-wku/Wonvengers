@@ -24,7 +24,7 @@ export function CheckButton({
       onClick={onClick}
       className={`focus-ring inline-flex h-11 min-w-24 shrink-0 items-center justify-center gap-1 rounded-[14px] px-3 text-sm font-bold transition-colors ${
         pressed
-          ? "bg-brand-600 text-white shadow-[inset_0_-2px_0_rgba(10,58,128,0.35)] hover:bg-brand-700"
+          ? "bg-brand-600 text-white shadow-[inset_0_-2px_0_rgba(10,58,128,0.35)] hover:bg-brand-press"
           : "bg-surface text-brand-700 shadow-[inset_0_0_0_1.5px_var(--color-brand-200)] hover:bg-brand-50"
       }`}
     >

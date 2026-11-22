@@ -7,6 +7,7 @@ import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/au
 import { isPushConfigured } from "@/lib/push";
 import { ChevronRight, ICON_MD } from "@/app/components/icons";
 import { flushNow, hasUnsyncedChanges, logout, retrySync, useSyncState, withdraw } from "@/lib/sync";
+import { ThemeSetting } from "./ThemeSetting";
 
 /** 2026.11.04 18:00 — 이 기기 시간대로. */
 function formatSavedAt(iso: string): string {
@@ -163,6 +164,9 @@ export default function AccountPage() {
             )}
           </>
         )}
+
+        {/* 화면 모드(다크 모드, 11/22) — 로그인과 상관없는 이 기기 설정이라 상태 갈래 밖에 둔다 */}
+        {ready && <ThemeSetting />}
 
         <Link href="/privacy" className="focus-ring inline-flex min-h-11 w-fit items-center text-sm font-bold text-brand-700 underline">
           개인정보 처리방침

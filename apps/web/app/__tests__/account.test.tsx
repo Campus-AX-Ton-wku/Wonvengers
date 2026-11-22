@@ -59,6 +59,18 @@ describe("/account (설계 '화면' 5)", () => {
     expect(screen.getByRole("link", { name: "개인정보 처리방침" }).getAttribute("href")).toBe("/privacy");
   });
 
+  it("'화면 모드'는 로그인했든 안 했든 보인다 — 이 기기 설정 (11/22 다크 모드)", async () => {
+    로그인한채로();
+    expect(await screen.findByRole("group", { name: "화면 모드" })).toBeTruthy();
+  });
+
+  it("로그인하지 않아도 '화면 모드'를 바꿀 수 있다", async () => {
+    enableLogin();
+    render(<AccountPage />);
+    expect(await screen.findByText("로그인하지 않았어요")).toBeTruthy();
+    expect(screen.getByRole("group", { name: "화면 모드" })).toBeTruthy();
+  });
+
   it("로그아웃을 누르면 로그아웃한다", async () => {
     로그인한채로();
     await userEvent.setup().click(await screen.findByRole("button", { name: "로그아웃" }));

@@ -255,7 +255,7 @@ function ExternalApplicationHandoff({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink-900/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center">
       <section
         ref={dialogRef}
         role="dialog"

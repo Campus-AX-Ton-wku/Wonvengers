@@ -9,9 +9,7 @@
 
 export type TabIconName = "home" | "saved" | "benefit" | "ledger" | "my" | "bell";
 
-/** 채운 모양 안쪽 기호의 색. 카드·섬 바탕이 흰색이라 흰 기호가 '뚫린 자리'처럼 보인다. */
-const HOLE = "#ffffff";
-
+/** 채운 모양 안쪽 기호는 카드 · 섬 바탕색(surface)이다 — 다크에서도 뚫린 자리처럼 보인다. */
 const HOUSE = "M4 10.6c0-.6.3-1.2.8-1.6l6.4-5.2a1.3 1.3 0 0 1 1.6 0l6.4 5.2c.5.4.8 1 .8 1.6V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z";
 /** 채운 집은 문 자리를 비운 한 줄 윤곽이다 — 흰 문을 덧그리지 않아 섬의 연한 파랑 바탕이 그대로 비친다. */
 const HOUSE_WITH_DOOR =
@@ -42,16 +40,16 @@ function shape(name: TabIconName, filled: boolean) {
         <>
           <rect x={3.5} y={5} width={17} height={16} rx={3} fill={filled ? "currentColor" : "none"} />
           <path d="M8 3v4M16 3v4" />
-          <path d="M4.6 10h14.8" stroke={filled ? HOLE : "currentColor"} strokeWidth={filled ? 1.6 : 2} />
-          <path d="m9.2 15.3 2 2 3.8-4" stroke={filled ? HOLE : "currentColor"} />
+          <path d="M4.6 10h14.8" className={filled ? "stroke-surface" : undefined} strokeWidth={filled ? 1.6 : 2} />
+          <path d="m9.2 15.3 2 2 3.8-4" className={filled ? "stroke-surface" : undefined} />
         </>
       );
     case "benefit":
       return (
         <>
           <circle cx={12} cy={12} r={9} fill={filled ? "currentColor" : "none"} />
-          <path d={WON} stroke={filled ? HOLE : "currentColor"} />
-          <path d={WON_BAR} stroke={filled ? HOLE : "currentColor"} />
+          <path d={WON} className={filled ? "stroke-surface" : undefined} />
+          <path d={WON_BAR} className={filled ? "stroke-surface" : undefined} />
         </>
       );
     case "my":

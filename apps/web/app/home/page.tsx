@@ -201,7 +201,7 @@ function SummaryCard({ open, cards, costs, ledger, hasTodo }: {
         <span
           data-perky-shadow
           className="absolute -bottom-[5px] left-1/2 -ml-[33px] h-3 w-[66px] rounded-[50%]"
-          style={{ background: "radial-gradient(closest-side, rgba(11,42,74,0.2), rgba(11,42,74,0))" }}
+          style={{ background: "radial-gradient(closest-side, var(--color-floor), transparent)" }}
         />
         <PerkyCharacter state={pose} size={192} priority className="relative h-24 w-auto" />
       </span>
