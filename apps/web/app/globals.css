@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 다크 모드는 기기 설정만이 아니라 '내 정보'에서 고른 값도 따른다 — data-theme 기준 */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /*
  * Perky 디자인 토큰 — 단독 출처.
  *
@@ -59,6 +62,12 @@
   --color-danger-600: #b3261e; /* danger-50 위 5.72:1 */
   --color-danger-50: #fdecec;
 
+  /* ── 바탕 전용 · 막 — 다크에서 글씨 토큰(brand-700 · ink-900)은 밝아지므로 바탕으로 쓰는 색은 따로 둔다 ── */
+  --color-brand-press: #1257d1; /* 파랑 버튼 hover · active 바탕 — 다크에서도 그대로(흰 글씨 6.35:1). brand-700 은 글씨용이라 다크에서 밝아진다 */
+  --color-danger-press: #a11f18; /* 빨강 버튼 hover · active 바탕 — 다크에서도 그대로 */
+  --color-scrim: #0b2a4a; /* 시트 뒤 막(bg-scrim/45). ink-900 은 다크에서 밝아져 흰 막이 된다 */
+  --color-floor: rgba(11, 42, 74, 0.2); /* 홈 마스코트 발밑 그림자 */
+
   /* ── 지면 ──
      페이지는 아주 옅은 블루, 카드는 흰색이다. 예전에는 둘 다 흰색이라 카드가
      지면과 구분되지 않아 hairline 으로만 나눌 수 있었다. */
@@ -73,31 +82,104 @@
   /* ── 깊이 ──
      offset 과 blur 를 함께 준다. 그림자 색은 검정이 아니라 ink 다 — 파란 지면 위
      중성 회색 그림자는 탁하게 뜬다. */
-  --shadow-card: 0 1px 2px rgba(11, 42, 74, 0.04), 0 10px 28px -14px rgba(11, 42, 74, 0.18);
-  --shadow-raised: 0 2px 4px rgba(11, 42, 74, 0.06), 0 18px 40px -20px rgba(11, 42, 74, 0.28);
-  --shadow-sticky: 0 -8px 24px -18px rgba(11, 42, 74, 0.35);
+  --shadow-card: var(--elev-card);
+  --shadow-raised: var(--elev-raised);
+  --shadow-sticky: var(--elev-sticky);
   /* 하단 섬 탭 (BottomTabBar) — 윗면 빛 1px + 얇은 테두리 + 아래로 퍼지는 그림자. 카드보다 한 단계 위. */
-  --shadow-island: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(11, 42, 74, 0.06),
-    0 12px 32px -12px rgba(11, 42, 74, 0.35);
+  --shadow-island: var(--elev-island);
 
   /* ── 버튼 재질 (2026-11-17 디자인 시안 '말랑하게 눌리는 버튼') ──
      Perky 는 둥글고 폭신한 3D 캐릭터라 버튼도 같은 재질로 만든다. 윗면에 얇은 빛 1px,
      아랫면에 립 3px(면이 옅은 버튼은 2px). 누르면 립이 1px 로 줄고 버튼이 2px 내려앉는다
      (Button.tsx). 립 색도 검정이 아니라 brand-900 · ink 다. */
-  --shadow-btn-primary: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(10, 58, 128, 0.38),
-    0 1px 2px rgba(11, 42, 74, 0.08), 0 10px 20px -12px rgba(10, 58, 128, 0.55);
-  --shadow-btn-primary-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(10, 58, 128, 0.42),
-    0 1px 1px rgba(11, 42, 74, 0.1);
-  --shadow-btn-secondary: inset 0 -2px 0 rgba(18, 87, 209, 0.16);
-  --shadow-btn-secondary-pressed: inset 0 -1px 0 rgba(18, 87, 209, 0.16);
+  --shadow-btn-primary: var(--elev-btn-primary);
+  --shadow-btn-primary-pressed: var(--elev-btn-primary-pressed);
+  --shadow-btn-secondary: var(--elev-btn-secondary);
+  --shadow-btn-secondary-pressed: var(--elev-btn-secondary-pressed);
   /* quiet 의 테두리도 그림자로 그린다 — border 를 쓰면 립과 따로 놀고 크기가 2px 달라진다. */
-  --shadow-btn-quiet: inset 0 0 0 1px #dbe3ec, inset 0 -2px 0 rgba(11, 42, 74, 0.07);
-  --shadow-btn-quiet-pressed: inset 0 0 0 1px #a8b9cc, inset 0 -1px 0 rgba(11, 42, 74, 0.07);
-  --shadow-btn-quiet-disabled: inset 0 0 0 1px #eef3f9;
-  --shadow-btn-danger: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -3px 0 rgba(90, 12, 8, 0.4),
-    0 1px 2px rgba(11, 42, 74, 0.08), 0 10px 20px -12px rgba(161, 31, 24, 0.5);
-  --shadow-btn-danger-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(90, 12, 8, 0.45),
-    0 1px 1px rgba(11, 42, 74, 0.1);
+  --shadow-btn-quiet: var(--elev-btn-quiet);
+  --shadow-btn-quiet-pressed: var(--elev-btn-quiet-pressed);
+  --shadow-btn-quiet-disabled: var(--elev-btn-quiet-disabled);
+  --shadow-btn-danger: var(--elev-btn-danger);
+  --shadow-btn-danger-pressed: var(--elev-btn-danger-pressed);
+}
+
+/* ── 그림자 값 (밝게) ──
+   Tailwind 는 그림자 클래스를 만들 때 값을 그대로 박아 넣는다(색 클래스와 달리 변수를 거치지 않음).
+   그래서 @theme 의 --shadow-* 는 이 --elev-* 를 가리키게 두고, 다크 덮개는 --elev-* 를 덮는다. */
+:root {
+  --elev-card: 0 1px 2px rgba(11, 42, 74, 0.04), 0 10px 28px -14px rgba(11, 42, 74, 0.18);
+  --elev-raised: 0 2px 4px rgba(11, 42, 74, 0.06), 0 18px 40px -20px rgba(11, 42, 74, 0.28);
+  --elev-sticky: 0 -8px 24px -18px rgba(11, 42, 74, 0.35);
+  --elev-island: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(11, 42, 74, 0.06), 0 12px 32px -12px rgba(11, 42, 74, 0.35);
+  --elev-btn-primary: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -3px 0 rgba(10, 58, 128, 0.38), 0 1px 2px rgba(11, 42, 74, 0.08), 0 10px 20px -12px rgba(10, 58, 128, 0.55);
+  --elev-btn-primary-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(10, 58, 128, 0.42), 0 1px 1px rgba(11, 42, 74, 0.1);
+  --elev-btn-secondary: inset 0 -2px 0 rgba(18, 87, 209, 0.16);
+  --elev-btn-secondary-pressed: inset 0 -1px 0 rgba(18, 87, 209, 0.16);
+  --elev-btn-quiet: inset 0 0 0 1px var(--color-ink-200), inset 0 -2px 0 rgba(11, 42, 74, 0.07);
+  --elev-btn-quiet-pressed: inset 0 0 0 1px var(--color-ink-300), inset 0 -1px 0 rgba(11, 42, 74, 0.07);
+  --elev-btn-quiet-disabled: inset 0 0 0 1px var(--color-ink-100);
+  --elev-btn-danger: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -3px 0 rgba(90, 12, 8, 0.4), 0 1px 2px rgba(11, 42, 74, 0.08), 0 10px 20px -12px rgba(161, 31, 24, 0.5);
+  --elev-btn-danger-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(90, 12, 8, 0.45), 0 1px 1px rgba(11, 42, 74, 0.1);
+}
+
+
+/* ── 다크 모드 (docs/기획/2026-11-22-다크-모드-설계.md §2) ──
+   lib/theme.ts 가 <html data-theme="dark"> 를 단다. @theme 변수는 layer 안이라 이 덩어리가 이긴다.
+   대비는 lib/__tests__/theme-contrast.test.ts 가 이 파일을 읽어 잰다 — 값을 바꾸면 시험이 다시 잰다.
+   brand-600 · danger-600 · *-press · accent-400 은 버튼 바탕 · 면이라 밝게와 같은 값(흰 글씨 대비 유지). */
+[data-theme="dark"] {
+  --color-ink-900: #edf3fa; /* 제목   surface 14.4:1 */
+  --color-ink-700: #cfdae6; /* 강조   surface 11.4:1 */
+  --color-ink-600: #b4c4d6; /* 본문   surface 9.1:1 */
+  --color-ink-500: #93a8bf; /* 보조   surface 6.6:1 · canvas 7.5:1 */
+  --color-ink-300: #5a7390; /* 아이콘 surface 3.3:1 · 텍스트 금지 */
+  --color-ink-200: #2c405a; /* 보더 */
+  --color-ink-100: #1f3042; /* 옅은 면 */
+  --color-ink-50: #1a2938; /* 카드 안 보조면 */
+
+  --color-brand-900: #c3d8ff; /* 금액 글씨 surface 11.2:1 · brand-50 9.4:1 */
+  --color-brand-800: #a9c7ff; /* brand-50 위 글씨 7.9:1 */
+  --color-brand-700: #86b4ff; /* 링크 · 포커스 surface 7.7:1 */
+  --color-brand-300: #4673b8;
+  --color-brand-200: #2e5591;
+  --color-brand-100: #1e3b68;
+  --color-brand-50: #172e52;
+
+  --color-accent-700: #ffd27a;
+  --color-accent-600: #f2bd4b;
+  --color-accent-100: #3b2f12;
+  --color-accent-50: #2a2210;
+
+  --color-ok-700: #6fd3a3;
+  --color-ok-600: #3fbf86;
+  --color-ok-200: #1f5a40;
+  --color-ok-50: #123024;
+  --color-warn-800: #ffb487;
+  --color-warn-200: #6b3a1d;
+  --color-warn-50: #33200f;
+  --color-danger-700: #ff9a92;
+  --color-danger-50: #3a1715;
+
+  --color-canvas: #0c1620;
+  --color-surface: #152230;
+  --color-scrim: #000000;
+  --color-floor: rgba(0, 0, 0, 0.45);
+
+  /* 그림자 — 남색 대신 검정 바탕으로. 어두운 지면에선 그림자보다 테두리 빛이 층을 나눈다 */
+  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -14px rgba(0, 0, 0, 0.6);
+  --elev-raised: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -20px rgba(0, 0, 0, 0.7);
+  --elev-sticky: 0 -8px 24px -18px rgba(0, 0, 0, 0.7);
+  --elev-island: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  --elev-btn-primary: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 10px 20px -12px rgba(0, 0, 0, 0.6);
+  --elev-btn-primary-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  --elev-btn-secondary: inset 0 -2px 0 rgba(134, 180, 255, 0.18);
+  --elev-btn-secondary-pressed: inset 0 -1px 0 rgba(134, 180, 255, 0.18);
+  --elev-btn-quiet: inset 0 0 0 1px var(--color-ink-200), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  --elev-btn-quiet-pressed: inset 0 0 0 1px var(--color-ink-300), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  --elev-btn-quiet-disabled: inset 0 0 0 1px var(--color-ink-100);
+  --elev-btn-danger: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.4), 0 10px 20px -12px rgba(0, 0, 0, 0.6);
+  --elev-btn-danger-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
 
 @layer base {
@@ -169,6 +251,10 @@ select.input {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233d5875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-position: right 0.875rem center;
   background-size: 1.25rem;
+}
+
+[data-theme="dark"] select.input {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23b4c4d6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* ── 모션 ──

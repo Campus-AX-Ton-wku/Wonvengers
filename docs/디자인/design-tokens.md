@@ -424,3 +424,27 @@ Gothic, 맥·iOS 는 Apple SD Gothic Neo. 셋 다 멀쩡한 고딕이지만 자�
   `public/icon-maskable-512.png`)은 이전 팔레트로 구운 래스터다. 매니페스트의
   `theme_color`·`background_color` 만 새 값으로 고쳤다. 아이콘 시안(Perky 의 얼굴 +
   'P')으로 다시 구워야 한다 — `docs/디자인/아이콘/README.md` 의 안전원 규격을 지킬 것
+
+---
+
+## 다크 모드 (11/22)
+
+`lib/theme.ts` 가 `<html data-theme="dark">` 를 달면 `globals.css` 의 `[data-theme="dark"] { … }`
+덮개가 `@theme` 의 색 · 그림자 토큰을 같은 이름으로 덮는다. 컴포넌트는 토큰 이름만 쓰므로
+클래스를 바꿀 일이 거의 없다. 값 표와 근거는 `docs/기획/2026-11-22-다크-모드-설계.md` §2.
+대비는 `lib/__tests__/theme-contrast.test.ts` 가 `globals.css` 를 읽어 밝게 · 어둡게 둘 다 잰다.
+
+새 토큰 네 개 (밝게 값은 예전에 박혀 있던 색 그대로):
+
+| 토큰 | 밝게 | 어둡게 | 쓰임 |
+|---|---|---|---|
+| `brand-press` | `#1257d1` | 그대로 | 파랑 버튼 hover · active 바탕 |
+| `danger-press` | `#a11f18` | 그대로 | 빨강 버튼 hover · active 바탕 |
+| `scrim` | `#0b2a4a` | `#000000` | 시트 뒤 막 (`bg-scrim/45`) |
+| `floor` | `rgba(11,42,74,.2)` | `rgba(0,0,0,.45)` | 홈 마스코트 발밑 그림자 |
+
+**바탕 용도 · 글씨 용도를 나눈 이유.** `brand-700` · `ink-900` 은 글씨 색이라 다크에서는 밝아져야
+어두운 지면 위에서 읽힌다. 그런데 예전에는 같은 토큰이 버튼 hover 바탕이나 시트 막으로도 쓰였다.
+그대로 두면 다크에서 파랑 버튼이 hover 할 때 밝아져 흰 글씨가 안 읽히고, 막은 흰 막이 된다.
+그래서 바탕 · 막으로 쓰는 색은 글씨 토큰과 분리해 다크에서도 값을 지킨다
+(`brand-600` · `danger-600` · `accent-400` 도 같은 이유로 밝게와 같은 값).

@@ -29,14 +29,14 @@ export type ButtonSize = "lg" | "md" | "screen";
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-600 text-white shadow-btn-primary hover:bg-brand-700 active:bg-brand-700 active:shadow-btn-primary-pressed disabled:bg-ink-200 disabled:shadow-none disabled:text-ink-500",
+    "bg-brand-600 text-white shadow-btn-primary hover:bg-brand-press active:bg-brand-press active:shadow-btn-primary-pressed disabled:bg-ink-200 disabled:shadow-none disabled:text-ink-500",
   secondary:
     "bg-brand-50 text-brand-800 shadow-btn-secondary hover:bg-brand-100 active:bg-brand-100 active:shadow-btn-secondary-pressed disabled:bg-ink-100 disabled:shadow-none disabled:text-ink-500",
   quiet:
     "bg-surface text-ink-700 shadow-btn-quiet hover:bg-ink-50 active:bg-ink-50 active:shadow-btn-quiet-pressed disabled:text-ink-300 disabled:shadow-btn-quiet-disabled",
   text: "bg-transparent text-ink-600 hover:bg-ink-50 active:bg-ink-100 active:text-ink-700 disabled:text-ink-300",
   danger:
-    "bg-danger-600 text-white shadow-btn-danger hover:bg-danger-700 active:bg-danger-700 active:shadow-btn-danger-pressed disabled:bg-ink-200 disabled:shadow-none disabled:text-ink-500",
+    "bg-danger-600 text-white shadow-btn-danger hover:bg-danger-press active:bg-danger-press active:shadow-btn-danger-pressed disabled:bg-ink-200 disabled:shadow-none disabled:text-ink-500",
 };
 
 /** 립이 있는 변주만 눌렸을 때 내려앉는다. */
