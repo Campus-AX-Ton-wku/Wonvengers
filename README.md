@@ -171,13 +171,13 @@ npm run build    # 정적 빌드 (output: "export")
 
 ## 기여
 
-작업 흐름은 `feature/*` → `develop` → `main` 입니다.
+작업 흐름은 `feature/*` → `main` 입니다. (2026-11-22 부터 기본 브랜치가 `main` — `develop` 은 쓰지 않습니다.)
 
 ```bash
-git checkout develop && git pull
+git checkout main && git pull
 git checkout -b feature/기능이름
 # 작업 후
-git push -u origin feature/기능이름   # develop 대상으로 PR
+git push -u origin feature/기능이름   # main 대상으로 PR
 ```
 
-`develop` 과 `main` 은 보호되어 있어 직접 푸시할 수 없습니다. PR 로만 반영됩니다.
+`main` 은 보호되어 있어 직접 푸시할 수 없습니다. PR 로만 반영되고, 합치면 정식 앱(Vercel)이 바로 바뀝니다.

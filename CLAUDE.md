@@ -12,6 +12,7 @@
 열어 확인한다. 원문을 못 찾았으면 `verifiedAt: null` + `notes`에 "미검증 초안"으로 명시한다.
 
 **브랜치.** 작업은 피처 브랜치에서. **명시적으로 요청받기 전에는 push·PR 금지.** 로컬 커밋만.
+흐름은 `feature/*` → `main` (2026-11-22 부터 기본 브랜치 `main`, `develop` 은 쓰지 않는다). main 에 합치면 정식 앱이 바로 바뀐다.
 
 **손대지 말 것.** Benefit Result Card 리디자인(`apps/web/app/result/BenefitResultCard.tsx`,
 `apps/web/lib/benefit-result.ts`, `apps/web/app/result/ResultState.tsx` 등)은 다른 사람 작업이다.
