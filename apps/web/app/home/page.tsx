@@ -127,8 +127,9 @@ export default function HomePage() {
         {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
         {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
 
-        <LoanRow region={answers.region} housingType={answers.housingType} />
+        {/* 주거 가이드 → 대출 · 보증 순서 (11/22 ggue) */}
         <GuideRow housingType={answers.housingType} />
+        <LoanRow region={answers.region} housingType={answers.housingType} />
       </main>
       <BottomTabBar active="home" />
     </AppShell>
