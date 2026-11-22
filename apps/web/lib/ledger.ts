@@ -192,6 +192,11 @@ export interface LedgerMonthView {
   pending: boolean;
   /** 그 해 1월 ~ 이 달의 actual 합. 음수 그대로. */
   yearTotal: number;
+  /**
+   * 총 누적 — 계약 시작 달 ~ 이 달의 actual 합(11/22). 계약이 이 해에 시작했으면 yearTotal 과 같아서 null
+   * (화면에 같은 숫자를 두 줄로 보이지 않는다).
+   */
+  contractTotal: number | null;
 }
 
 function linesFor(plan: LedgerPlan, record: LedgerRecord, month: MonthKey): LedgerLine[] {
@@ -226,10 +231,12 @@ function actualOf(lines: LedgerLine[]): number {
 export function ledgerMonth(plan: LedgerPlan, record: LedgerRecord, month: MonthKey): LedgerMonthView {
   const contractMonth = monthsBetween(plan.start, month) + 1;
   const lines = linesFor(plan, record, month);
-  let yearTotal = 0;
-  for (let m = `${month.slice(0, 4)}-01`; monthsBetween(m, month) >= 0; m = addMonths(m, 1)) {
-    yearTotal += actualOf(linesFor(plan, record, m));
-  }
+  const totalFrom = (from: MonthKey) => {
+    let total = 0;
+    for (let m = from; monthsBetween(m, month) >= 0; m = addMonths(m, 1)) total += actualOf(linesFor(plan, record, m));
+    return total;
+  };
+  const yearStart = `${month.slice(0, 4)}-01`;
   return {
     month,
     inContract: contractMonth >= 1 && contractMonth <= plan.months,
@@ -238,7 +245,8 @@ export function ledgerMonth(plan: LedgerPlan, record: LedgerRecord, month: Month
     actual: actualOf(lines),
     expected: lines.reduce((sum, l) => sum + sign(l) * l.planned, 0),
     pending: lines.some((l) => !l.done),
-    yearTotal,
+    yearTotal: totalFrom(yearStart),
+    contractTotal: monthsBetween(plan.start, yearStart) > 0 ? totalFrom(plan.start) : null,
   };
 }
 
