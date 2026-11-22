@@ -20,6 +20,7 @@ import {
 import { isSaved, toggleSaved } from "./saved";
 import { emptyLedger, parseLedger, type LedgerRecord } from "./ledger";
 import { parseHouseChecklist } from "./house-checklist";
+import { GUIDES } from "./guides";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -536,7 +537,7 @@ export function loadLedger(): LedgerRecord {
 }
 
 export function saveLedger(record: LedgerRecord): void {
-  writeJSONSafely(LEDGER_KEY, record);
+  if (writeJSONSafely(LEDGER_KEY, record)) notifyDeviceRecordChange();
 }
 
 export function clearLedger(): void {
@@ -583,4 +584,63 @@ export function clearHouseChecklist(): void {
 export function clearDeviceRecords(): void {
   clearLedger();
   clearHouseChecklist();
+  removeQuietly(GUIDES_READ_KEY);
+  removeQuietly(BADGES_SEEN_KEY);
+}
+
+function removeQuietly(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // 지우기가 막혀 있으면 할 수 있는 것이 없다.
+  }
+}
+
+// ── 이 기기에만 있는 기록의 알림 (11/22 배지) ──
+// 주거비 달력 · 가이드 읽음은 동기화 알림(onLocalChange)을 쓰지 않는다 — 그 알림은 서버로 올린다.
+// 배지 판정(BadgeWatcher)이 다시 볼 수 있게 따로 알린다.
+const DEVICE_RECORD_EVENT = "perky:device-record";
+
+function notifyDeviceRecordChange(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(DEVICE_RECORD_EVENT));
+}
+
+export function onDeviceRecordChange(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(DEVICE_RECORD_EVENT, listener);
+  return () => window.removeEventListener(DEVICE_RECORD_EVENT, listener);
+}
+
+// ── 가이드 읽음 · 배지 처음 판정 (docs/기획/2026-11-22-내-프로필-설계.md §7) — 이 기기에만 ──
+const GUIDES_READ_KEY = "perky.guides-read";
+const BADGES_SEEN_KEY = "perky.badges-seen";
+
+/** 끝 장까지 연 가이드 id. 모르는 id 는 버린다 */
+export function loadGuidesRead(): string[] {
+  const v = readJSON<unknown>(GUIDES_READ_KEY);
+  if (!Array.isArray(v)) return [];
+  const known = new Set(GUIDES.map((g) => g.id));
+  return [...new Set(v.filter((x): x is string => typeof x === "string" && known.has(x)))];
+}
+
+export function markGuideRead(id: string): void {
+  const read = loadGuidesRead();
+  if (read.includes(id)) return;
+  if (writeJSONSafely(GUIDES_READ_KEY, [...read, id])) notifyDeviceRecordChange();
+}
+
+/** 이 기기에서 배지를 한 번이라도 판정했는가 — 처음 판정은 창 없이 조용히 기록한다 */
+export function badgesSeen(): boolean {
+  return readRaw(BADGES_SEEN_KEY) === "1";
+}
+
+export function markBadgesSeen(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BADGES_SEEN_KEY, "1");
+  } catch {
+    // 못 적으면 다음에 또 조용히 판정할 뿐이다.
+  }
 }

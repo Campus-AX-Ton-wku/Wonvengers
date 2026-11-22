@@ -11,7 +11,7 @@ import policiesJson from "@/data/policies.json";
 import { resetAuthForTests } from "@/lib/auth";
 import { emptyLedger, toggleLine } from "@/lib/ledger";
 import { loadRemote, saveRemote } from "@/lib/remote";
-import { loadProfileCard, saveAnswers, saveChecklist, saveLedger, saveSavedList } from "@/lib/storage";
+import { loadProfileCard, saveAnswers, saveBadges, saveChecklist, saveLedger, saveSavedList } from "@/lib/storage";
 import { resetSyncForTests } from "@/lib/sync";
 import type { PolicyMeta } from "@/lib/types";
 import { enableLogin, remoteItem, seedSyncMeta, signInAs } from "@/lib/__tests__/auth-fixtures";
@@ -113,5 +113,47 @@ describe("/account 내 정보 — 내 기록", () => {
     expect(within(records).getByRole("link", { name: /신청 준비 중\s*\d개/ }).getAttribute("href")).toBe("/saved");
     expect(within(records).getByRole("link", { name: /달력 기록\s*1달/ }).getAttribute("href")).toBe("/ledger");
     expect(records.textContent).not.toMatch(/\d\s*(만\s*)?원/); // 금액(… 원)은 없다 — "지원금"의 원은 아니다
+  });
+});
+
+describe("/account 내 정보 — 배지 (11/22 내 프로필 ②)", () => {
+  it("배지 n/8 — 받은 칸은 받은 날, 아직인 칸은 진행(0/5) 또는 '아직'", async () => {
+    saveBadges({ first_calc: "2026-11-18" });
+    로그인한채로();
+    const section = await screen.findByRole("region", { name: /배지 1\/8/ });
+    const cell = (label: string) => within(section).getByText(label).closest("li")!;
+    expect(cell("첫 계산").textContent).toContain("11.18");
+    expect(cell("첫 계산").querySelector("[data-earned='yes']")).not.toBeNull();
+    expect(cell("관심 5개").textContent).toContain("0/5");
+    expect(cell("관심 5개").querySelector("[data-earned='no']")).not.toBeNull();
+    expect(cell("첫 관심").textContent).toContain("아직");
+  });
+
+  it("대표 배지 — 꾸미기 창에서 받은 배지 중 하나를 걸면 그림 오른쪽 아래에 붙는다, [없음]으로 뗀다", async () => {
+    saveBadges({ first_calc: "2026-11-18" });
+    로그인한채로();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "프로필 꾸미기" }));
+    let sheet = screen.getByRole("dialog", { name: "프로필 꾸미기" });
+    const pins = within(sheet).getByRole("group", { name: /대표 배지/ });
+    expect(within(pins).getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.closest("label")?.textContent)).toEqual(["없음", "첫 계산"]);
+    await user.click(within(pins).getByRole("radio", { name: "첫 계산" }));
+    await user.click(within(sheet).getByRole("button", { name: "저장" }));
+    expect(loadProfileCard()?.pinnedBadge).toBe("first_calc");
+    expect(screen.getByRole("region", { name: "내 프로필" }).querySelector("[data-badge='first_calc']")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "프로필 꾸미기" }));
+    sheet = screen.getByRole("dialog", { name: "프로필 꾸미기" });
+    await user.click(within(within(sheet).getByRole("group", { name: /대표 배지/ })).getByRole("radio", { name: "없음" }));
+    await user.click(within(sheet).getByRole("button", { name: "저장" }));
+    expect(loadProfileCard()?.pinnedBadge).toBeNull();
+  });
+
+  it("받은 배지가 없으면 대표 배지 줄은 안내만", async () => {
+    로그인한채로();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "프로필 꾸미기" }));
+    const sheet = screen.getByRole("dialog", { name: "프로필 꾸미기" });
+    expect(within(sheet).getByText("배지를 받으면 여기서 걸 수 있어요.")).toBeTruthy();
   });
 });

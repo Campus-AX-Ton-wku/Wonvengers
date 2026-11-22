@@ -1,10 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, Icon3D, Sheet } from "@/app/components";
+import { BadgeMedal, Button, Icon3D, Sheet } from "@/app/components";
+import { badgeOf } from "@/lib/badges";
 import { Check } from "@/app/components/icons";
 import { PROFILE_COLORS, PROFILE_ICONS, normalizeProfileName } from "@/lib/profile-card";
-import { MAX_PROFILE_NAME, type ProfileCardData } from "@/lib/user-data";
+import { MAX_PROFILE_NAME, type BadgeId, type ProfileCardData } from "@/lib/user-data";
 
 /**
  * 프로필 꾸미기 창 (내 프로필 설계 §4, 시안 Profile · sheet '프로필 꾸미기') — 이름 · 그림 6 · 색 6.
@@ -14,10 +15,13 @@ import { MAX_PROFILE_NAME, type ProfileCardData } from "@/lib/user-data";
 export function ProfileSheet({
   card,
   defaultName,
+  earnedBadges,
   onSave,
   onClose,
 }: {
   card: ProfileCardData;
+  /** 받은 배지 — 대표 배지로 고를 수 있는 것 */
+  earnedBadges: readonly BadgeId[];
   /** 비우면 쓰는 이름 — 자리 글자로 보여 준다 */
   defaultName: string;
   onSave: (next: ProfileCardData) => void;
@@ -26,6 +30,9 @@ export function ProfileSheet({
   const [name, setName] = useState(card.name ?? "");
   const [icon, setIcon] = useState(card.icon);
   const [color, setColor] = useState(card.color);
+  const [pinned, setPinned] = useState<BadgeId | null>(
+    card.pinnedBadge && earnedBadges.includes(card.pinnedBadge) ? card.pinnedBadge : null
+  );
   const nameId = useId();
   const count = [...name].length;
 
@@ -103,10 +110,38 @@ export function ProfileSheet({
         </div>
       </fieldset>
 
+      <fieldset className="mt-2 flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-bold text-ink-900">
+          대표 배지 <span className="font-normal text-ink-500">— 받은 것 중 하나를 그림 옆에 걸어요</span>
+        </legend>
+        {earnedBadges.length === 0 ? (
+          <p className="text-xs text-ink-500">배지를 받으면 여기서 걸 수 있어요.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {[null, ...earnedBadges].map((id) => (
+              <label
+                key={id ?? "none"}
+                className="focus-within:ring-brand-500 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-ink-200 bg-surface py-1 pl-1.5 pr-3.5 text-[13px] font-semibold text-ink-700 focus-within:ring-2 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-800"
+              >
+                <input
+                  type="radio"
+                  name="profile-pin"
+                  checked={pinned === id}
+                  onChange={() => setPinned(id)}
+                  className="sr-only"
+                />
+                {id ? <BadgeMedal id={id} size="pin" /> : <span aria-hidden="true" className="w-1.5" />}
+                {id ? badgeOf(id).label : "없음"}
+              </label>
+            ))}
+          </div>
+        )}
+      </fieldset>
+
       <Button
         size="screen"
         className="mt-3"
-        onClick={() => onSave({ ...card, icon, color, name: normalizeProfileName(name) })}
+        onClick={() => onSave({ ...card, icon, color, name: normalizeProfileName(name), pinnedBadge: pinned })}
       >
         저장
       </Button>

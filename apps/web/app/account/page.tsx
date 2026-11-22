@@ -17,13 +17,18 @@ import {
   loadChecklist,
   loadDocumentChecks,
   loadLedger,
+  loadBadges,
   loadProfileCard,
   loadSaved,
+  onDeviceRecordChange,
   onLocalChange,
 } from "@/lib/storage";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
-import type { ProfileCardData } from "@/lib/user-data";
+import type { BadgeId, ProfileCardData } from "@/lib/user-data";
 import { MyRecords } from "./MyRecords";
+import { BadgeSection } from "./BadgeSection";
+import { badgeStatuses, type BadgeStatus } from "@/lib/badges";
+import { readBadgeFacts } from "@/lib/badge-facts";
 import { ProfileCardSection } from "./ProfileCardSection";
 
 const POLICIES = policiesJson as PolicyMeta[];
@@ -34,10 +39,12 @@ interface Mine {
   saved: number;
   preparing: number;
   ledgerMonths: number;
+  badgeStatuses: BadgeStatus[];
+  earned: Partial<Record<BadgeId, string>>;
 }
 
 /** 내 기록 · 프로필에 쓰는 이 기기 값. 신청 준비 중 = 관심 지원금 중 하나라도 체크했지만 다 마치지 않은 것 */
-function readMine(): Mine {
+function readMine(today: string): Mine {
   const saved = loadSaved();
   const preparing = saved.filter((id) => {
     const policy = POLICIES.find((x) => x.id === id);
@@ -46,7 +53,15 @@ function readMine(): Mine {
     return done > 0 && done < total;
   }).length;
   const ledgerMonths = Object.values(loadLedger().months).filter((m) => Object.keys(m.done).length > 0).length;
-  return { answers: loadAnswers(), card: loadProfileCard(), saved: saved.length, preparing, ledgerMonths };
+  return {
+    answers: loadAnswers(),
+    card: loadProfileCard(),
+    saved: saved.length,
+    preparing,
+    ledgerMonths,
+    badgeStatuses: badgeStatuses(readBadgeFacts(today)),
+    earned: loadBadges(),
+  };
 }
 
 /** 2026.11.04 18:00 — 이 기기 시간대로. */
@@ -77,15 +92,28 @@ export default function AccountPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const sync = useSyncState();
-  const [mine, setMine] = useState<Mine>({ answers: EMPTY_ANSWERS, card: null, saved: 0, preparing: 0, ledgerMonths: 0 });
+  const [mine, setMine] = useState<Mine>({
+    answers: EMPTY_ANSWERS,
+    card: null,
+    saved: 0,
+    preparing: 0,
+    ledgerMonths: 0,
+    badgeStatuses: [],
+    earned: {},
+  });
   const [today, setToday] = useState("");
 
   // 프로필 · 내 기록은 이 기기 사본에서 — 다른 기기에서 바꾼 값이 동기화로 들어오면 다시 읽는다
   useEffect(() => {
-    const read = () => setMine(readMine());
+    const read = () => setMine(readMine(seoulTodayISO()));
     read();
     setToday(seoulTodayISO());
-    return onLocalChange(read);
+    const offLocal = onLocalChange(read);
+    const offDevice = onDeviceRecordChange(read);
+    return () => {
+      offLocal();
+      offDevice();
+    };
   }, []);
 
   useEffect(() => {
@@ -170,8 +198,10 @@ export default function AccountPage() {
               card={mine.card}
               answers={mine.answers}
               today={today}
+              earnedBadges={mine.badgeStatuses.map((s) => s.id).filter((id) => mine.earned[id])}
               onSaved={(card) => setMine((m) => ({ ...m, card }))}
             />
+            <BadgeSection statuses={mine.badgeStatuses} earned={mine.earned} />
             <MyRecords saved={mine.saved} preparing={mine.preparing} ledgerMonths={mine.ledgerMonths} />
             <Settings showNotifications={isPushConfigured()} />
             <section aria-labelledby="account-heading" className="flex flex-col gap-2.5">

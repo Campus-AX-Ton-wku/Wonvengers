@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { DEFAULT_PROFILE_CARD, profileColor, profileIcon } from "@/lib/profile-card";
 import type { ProfileCardData } from "@/lib/user-data";
+import { BadgeMedal } from "./BadgeMedal";
 import { Icon3D } from "./Icon3D";
 
 /**
@@ -32,6 +33,12 @@ export function ProfileAvatar({
       }`}
     >
       <Icon3D name={icon.icon} size={size === "lg" ? 64 : 26} />
+      {/* 대표 배지 — 오른쪽 아래에 작게(②). 36px 홈 인사 그림에는 너무 작아 붙이지 않는다 */}
+      {size === "lg" && c.pinnedBadge && (
+        <span className="absolute -bottom-0.5 -right-0.5">
+          <BadgeMedal id={c.pinnedBadge} size="pin" />
+        </span>
+      )}
       {children}
     </span>
   );
