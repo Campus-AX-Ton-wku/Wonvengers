@@ -106,29 +106,38 @@ export default function BenefitResultCard({
   const subText = perMonth ? `${perMonth.months}개월이면 ${formatKoreanMoney(card.amount.value)}` : card.amount.period;
   // 입력한 거주 개월보다 적게 셌으면 이유를 금액 바로 밑에 — 안 적으면 '24개월 산다고 했는데 왜 17개월?'이 된다
   const ageLimit = supportAgeLimit(result.policy, listing, birthDate);
+  // 배지(확인 필요 · 마감 임박)가 있을 때만 윗줄을 둔다 — 마감일 표시는 마감 임박일 때만 있으니 배지와 같이 간다
+  const hasStatusRow = card.state !== "eligible";
 
   return (
     <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
-      <div className="flex min-h-[30px] items-center justify-between gap-3">
-        {/* 11/20: 합계 안 카드가 '신청 가능'이면 묶음 제목("위 금액에 넣은 지원")이 이미 말한다 —
-            배지는 확인 필요 · 마감 임박일 때만. 상태 문구는 아래 sr-only 로 남는다. */}
-        {card.state === "eligible" ? <span /> : <StatusBadge tone={state.tone}>{state.label}</StatusBadge>}
-        <div className="flex items-center gap-1">
-          {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
-          <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2" />
+      {/* 상태 문구는 화면에 배지가 없어도 스크린리더에 남긴다 */}
+      <span className="sr-only">{result.status}</span>
+      {/* 11/20: 합계 안 카드가 '신청 가능'이면 묶음 제목("위 금액에 넣은 지원")이 이미 말한다 — 배지는 확인 필요 · 마감 임박일 때만.
+          11/22 ggue: 배지가 없는 카드에 배지 줄을 남기면 빈 칸 + ♡(44px)만 한 줄을 차지해 이름 위가 휑했다 —
+          그때는 윗줄 없이 ♡ 를 이름 줄 오른쪽 위에 붙인다(합계 밖 작은 카드와 같은 자리). */}
+      {hasStatusRow && (
+        <div className="flex min-h-[30px] items-center justify-between gap-3">
+          <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
+          <div className="flex items-center gap-1">
+            {deadlineMeta && <p className="text-right text-xs font-bold text-danger-700">{deadlineMeta}</p>}
+            <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2" />
+          </div>
         </div>
-        <span className="sr-only">{result.status}</span>
-      </div>
+      )}
 
       {/* 정책 종류 그림(11/20) — 목록 · 찜 카드와 같은 자리. 금액 칸에는 붙이지 않는다(숫자가 주인공) */}
-      <div className="mt-3 flex items-center gap-3">
-        <Icon3D name={result.policy.icon} size={40} />
-        <div className="min-w-0">
-          <h3 id={`benefit-${card.policyId}`} className="line-clamp-3 text-[19px] font-extrabold leading-[1.4] text-ink-900">
-            {card.title}
-          </h3>
-          <p className="mt-1 text-xs text-ink-500">{card.agency}</p>
+      <div className={`flex items-start justify-between gap-2 ${hasStatusRow ? "mt-3" : ""}`}>
+        <div className="flex min-w-0 items-center gap-3 pt-1">
+          <Icon3D name={result.policy.icon} size={40} />
+          <div className="min-w-0">
+            <h3 id={`benefit-${card.policyId}`} className="line-clamp-3 text-[19px] font-extrabold leading-[1.4] text-ink-900">
+              {card.title}
+            </h3>
+            <p className="mt-1 text-xs text-ink-500">{card.agency}</p>
+          </div>
         </div>
+        {!hasStatusRow && <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2 -mt-1 shrink-0" />}
       </div>
 
       <div className="mt-4 rounded-control bg-brand-50 px-4 py-3.5">
