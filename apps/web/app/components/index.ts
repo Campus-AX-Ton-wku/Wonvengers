@@ -38,6 +38,7 @@ export { SyncConflictSheet } from "./SyncConflictSheet";
 export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";
 export type { BadgeTone } from "./StatusBadge";
 export { StepHeader } from "./StepHeader";
+export { ThemeWatcher } from "./ThemeWatcher";
 export { TabIcon } from "./TabIcons";
 export type { TabIconName } from "./TabIcons";
 export { TopBar } from "./TopBar";
