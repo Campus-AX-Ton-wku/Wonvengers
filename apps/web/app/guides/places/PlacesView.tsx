@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, buttonClass, telHref, TopBar } from "@/app/components";
-import { ArrowUpRight, Compass, ICON_SM, MapPin, Phone } from "@/app/components/icons";
+import { ArrowUpRight, Compass, ICON_SM, MapPin, Phone, Search, X } from "@/app/components/icons";
 import { loadKakaoMaps, type KakaoMaps } from "@/lib/kakao-map";
 import {
   directionsUrl,
   distanceKm,
   filterPlaces,
   formatDistance,
+  isCityCenter,
   isNearAny,
   KIOSK_DOCS,
+  matchesQuery,
+  MIN_MAP_LEVEL,
   NEAR_KM,
   type CivilPlace,
   type KioskDocKey,
@@ -22,6 +25,21 @@ const KIND_LABEL: Record<PlaceKind, string> = { office: "주민센터", kiosk: "
 const docLabel = (key: KioskDocKey) => KIOSK_DOCS.find((d) => d.key === key)!.label;
 
 type MapState = "loading" | "ready" | "failed";
+
+/** 겹친 표시를 묶은 숫자 원 — 카카오가 이 객체를 인라인 CSS 로 그대로 입힌다 (Tailwind 클래스 아님) */
+const CLUSTER_STYLE = {
+  width: "44px",
+  height: "44px",
+  lineHeight: "44px",
+  borderRadius: "22px",
+  background: "rgba(18, 87, 209, 0.92)", // brand-700 #1257d1
+  color: "#fff",
+  textAlign: "center",
+  fontWeight: "800",
+  fontSize: "15px",
+  border: "2px solid #fff",
+  boxShadow: "0 2px 6px rgba(15, 23, 42, 0.25)",
+};
 
 /**
  * 서류 떼는 곳 지도 (11/22 ggue). 지도는 카카오 SDK, 같은 데이터를 목록으로도 — 화면 읽기 프로그램은 지도를 못 쓴다.
@@ -40,16 +58,20 @@ export function PlacesView({
   const [doc, setDoc] = useState<KioskDocKey | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
+  const [query, setQuery] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [mapState, setMapState] = useState<MapState>("loading");
   const mapEl = useRef<HTMLDivElement>(null);
+  const searchEl = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLElement>(null);
-  const mapRef = useRef<{ maps: KakaoMaps; map: KakaoMaps; overlays: KakaoMaps[] } | null>(null);
+  const mapRef = useRef<{ maps: KakaoMaps; map: KakaoMaps; clusterer: KakaoMaps; meDot: KakaoMaps | null } | null>(null);
 
   const shown = useMemo(() => {
-    const list = filterPlaces(places, { kind, doc });
+    const list = filterPlaces(places, { kind, doc }).filter((p) => matchesQuery(p, query));
     return me ? [...list].sort((a, b) => distanceKm(me, a) - distanceKm(me, b)) : list;
-  }, [places, kind, doc, me]);
+  }, [places, kind, doc, query, me]);
+  const narrowed = kind !== "all" || doc !== null || query.trim() !== "";
+  const searching = query.trim() !== "";
   // 내 위치가 익산에서 멀면 지도를 옮기지 않는다 (서울에서 누르면 점 하나만 보이므로)
   const meFar = useMemo(() => (me ? !isNearAny(me, places, NEAR_KM) : false), [me, places]);
   const docChips = useMemo(() => KIOSK_DOCS.filter((d) => places.some((p) => p.documents.includes(d.key))), [places]);
@@ -70,12 +92,27 @@ export function PlacesView({
       .then((maps) => {
         if (!alive || !mapEl.current) return;
         const map = new maps.Map(mapEl.current, { center: new maps.LatLng(35.9483, 126.9577), level: 7 });
-        mapRef.current = { maps, map, overlays: [] };
+        // 숫자 묶음: 장소 표시를 지도 대신 묶음에 맡긴다. 스타일이 하나뿐이라 calculator 는 두지 않는다
+        // (카카오는 calculator 없이도 모든 묶음에 styles[0]을 입힌다 — 실제 SDK 로 확인)
+        const clusterer = new maps.MarkerClusterer({
+          map,
+          averageCenter: true,
+          minLevel: 6,
+          gridSize: 48,
+          disableClickZoom: false,
+          styles: [CLUSTER_STYLE],
+        });
+        mapRef.current = { maps, map, clusterer, meDot: null };
         setMapState("ready");
       })
       .catch(() => alive && setMapState("failed"));
     return () => {
       alive = false;
+      // 다시 그릴 때(places 바뀜 · 다시 열림) 지난 표시가 남지 않게
+      const m = mapRef.current;
+      m?.clusterer.clear();
+      m?.meDot?.setMap(null);
+      mapRef.current = null;
     };
   }, [jsKey, places.length]);
 
@@ -83,11 +120,11 @@ export function PlacesView({
   useEffect(() => {
     const m = mapRef.current;
     if (mapState !== "ready" || !m) return;
-    for (const o of m.overlays) o.setMap(null);
-    const bounds = new m.maps.LatLngBounds();
-    m.overlays = shown.map((p) => {
+    m.meDot?.setMap(null);
+    m.meDot = null;
+    m.clusterer.clear();
+    const overlays = shown.map((p) => {
       const pos = new m.maps.LatLng(p.lat, p.lng);
-      bounds.extend(pos);
       const el = document.createElement("button");
       el.type = "button";
       el.tabIndex = -1;
@@ -100,18 +137,26 @@ export function PlacesView({
           : "block size-5 rounded-full border-2 border-white bg-warn-800 shadow-card";
       el.appendChild(dot);
       el.addEventListener("click", () => setSelectedId(p.id));
-      return new m.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, clickable: true, map: m.map });
+      return new m.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, clickable: true });
     });
+    m.clusterer.addMarkers(overlays);
     if (me && !meFar) {
       const dot = document.createElement("span");
       dot.className = "block size-4 rounded-full border-2 border-white bg-ok-600 shadow-card";
-      m.overlays.push(new m.maps.CustomOverlay({ position: new m.maps.LatLng(me.lat, me.lng), content: dot, yAnchor: 0.5, map: m.map }));
+      m.meDot = new m.maps.CustomOverlay({ position: new m.maps.LatLng(me.lat, me.lng), content: dot, yAnchor: 0.5, map: m.map });
       m.map.setCenter(new m.maps.LatLng(me.lat, me.lng));
       m.map.setLevel(5);
     } else if (shown.length > 0) {
+      // 처음 화면(걸러진 게 없을 때)은 익산 시내만 — 읍 · 면까지 넣으면 시내가 점으로 뭉친다
+      const center = narrowed ? shown : shown.filter(isCityCenter);
+      const fit = center.length > 0 ? center : shown;
+      const bounds = new m.maps.LatLngBounds();
+      for (const p of fit) bounds.extend(new m.maps.LatLng(p.lat, p.lng));
       m.map.setBounds(bounds);
+      // 결과 한두 곳이 길거리 수준으로 확대되지 않게
+      if (narrowed && m.map.getLevel() < MIN_MAP_LEVEL) m.map.setLevel(MIN_MAP_LEVEL);
     }
-  }, [mapState, shown, me, meFar]);
+  }, [mapState, shown, me, meFar, narrowed]);
 
   function locate() {
     const geo = typeof navigator !== "undefined" ? navigator.geolocation : undefined;
@@ -157,6 +202,35 @@ export function PlacesView({
       <main className="flex flex-1 flex-col gap-3 pb-10 pt-2.5">
         <h1 className="text-[26px] font-extrabold text-ink-900">서류 떼는 곳 지도</h1>
 
+        <form role="search" onSubmit={(e) => e.preventDefault()} className="relative">
+          <label htmlFor="place-search" className="sr-only">장소나 동 이름으로 찾기</label>
+          <Search size={ICON_SM} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-500" />
+          <input
+            id="place-search"
+            ref={searchEl}
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="예: 어양동, 시청, 익산역"
+            className="focus-ring min-h-12 w-full rounded-control bg-surface py-2 pl-10 pr-12 text-base text-ink-900 shadow-card placeholder:text-ink-500 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query !== "" && (
+            <button
+              type="button"
+              aria-label="검색어 지우기"
+              onClick={() => {
+                setQuery("");
+                searchEl.current?.focus();
+              }}
+              className="focus-ring absolute right-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full text-ink-600"
+            >
+              <X size={ICON_SM} aria-hidden="true" />
+            </button>
+          )}
+        </form>
+
         <div role="group" aria-label="장소 종류" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {(["all", "office", "kiosk"] as const).map((k) => (
             <button
@@ -194,6 +268,7 @@ export function PlacesView({
           </button>
         </div>
         <p role="status" aria-live="polite" className="text-sm text-ink-600">{notice}</p>
+        <p role="status" aria-live="polite" className="sr-only">{searching && shown.length > 0 ? `${shown.length}곳을 찾았어요` : ""}</p>
 
         {mapState === "failed" ? (
           <p className="rounded-card bg-ink-50 p-4 text-sm text-ink-700">지도를 불러오지 못했어요 — 목록으로 보여 드려요</p>
@@ -233,7 +308,9 @@ export function PlacesView({
           </section>
         )}
 
-        {shown.length === 0 && <p className="text-sm text-ink-700">조건에 맞는 곳이 없어요</p>}
+        {shown.length === 0 && (
+          <p className="text-sm text-ink-700">{searching ? `'${query.trim()}'에 맞는 곳이 없어요` : "조건에 맞는 곳이 없어요"}</p>
+        )}
         <ul aria-label="장소 목록" className="flex flex-col gap-2">
           {shown.map((p) => (
             <li key={p.id}>
