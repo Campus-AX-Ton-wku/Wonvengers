@@ -253,6 +253,11 @@ select.input {
   background-size: 1.25rem;
 }
 
+/* 다크용 로고 — img 한 장의 그림만 바꾼다(alt 가 하나로 남는다). 원본 SVG 엔 밝은 배경 사각형이 박혀 있다 */
+[data-theme="dark"] img.wordmark {
+  content: url("/brand/perky-wordmark-dark.svg");
+}
+
 [data-theme="dark"] select.input {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23b4c4d6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
