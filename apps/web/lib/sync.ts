@@ -161,11 +161,14 @@ function removeMeta(): void {
 function payloadFor(sub: string, content: UserDataContent): PutPayload {
   // 서버는 빠진 찜 필드를 빈 값으로 본다. 이 변경 이전에 배포된 API 는 exact() 로 모르는 키를 400 으로 거절하므로,
   // 비어 있으면 빼고 보낸다 — 찜을 안 쓴 사용자는 배포 시점과 상관없이 평소처럼 저장된다.
-  const { saved, documentChecks, ...rest } = content;
+  // 프로필 · 배지(11/22)도 같은 까닭으로 — 안 꾸몄거나 배지가 없으면 빼고 보낸다.
+  const { saved, documentChecks, profileCard, badges, ...rest } = content;
   return {
     ...rest,
     ...(saved.length > 0 ? { saved } : {}),
     ...(Object.keys(documentChecks).length > 0 ? { documentChecks } : {}),
+    ...(profileCard !== null ? { profileCard } : {}),
+    ...(Object.keys(badges).length > 0 ? { badges } : {}),
     schemaVersion: SCHEMA_VERSION,
     consentVersion: CONSENT_VERSION,
     consentAt: consentAtFor(sub) ?? new Date().toISOString(),

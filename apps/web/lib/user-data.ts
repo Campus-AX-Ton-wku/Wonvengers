@@ -29,6 +29,38 @@ export type DiscoveryKey = keyof DiscoveryAnswers;
 export type EligibilityValues = Omit<EligibilityProfile, "selfDeclared">;
 
 /** 신청 준비 화면의 확인 세 칸 (app/find/policies/[id]/prepare). */
+/**
+ * 내 프로필 · 배지 (docs/기획/2026-11-22-내-프로필-설계.md §1). 배지 id 는 ② 배지 PR 의 판정과 같은 목록 —
+ * 서버 검사를 ①에서 한 번에 열어 두려고 여기서 먼저 정한다.
+ */
+export const BADGE_IDS = [
+  "first_calc",
+  "first_save",
+  "save_5",
+  "prep_start",
+  "prep_done",
+  "guide_read",
+  "ledger_first",
+  "ledger_3months",
+] as const;
+export type BadgeId = (typeof BADGE_IDS)[number];
+/** 프로필 그림 — 기존 3D 아이콘 이름(lib/icons3d.ts)과 같다 */
+export const PROFILE_ICON_IDS = ["rent", "move-in", "moving", "student", "wallet", "guarantee"] as const;
+export type ProfileIconId = (typeof PROFILE_ICON_IDS)[number];
+export const PROFILE_COLOR_IDS = ["blue", "mint", "peach", "lemon", "lavender", "sky"] as const;
+export type ProfileColorId = (typeof PROFILE_COLOR_IDS)[number];
+/** 프로필 이름 최대 글자 수(글자 단위 — 한글 한 글자도 1) */
+export const MAX_PROFILE_NAME = 10;
+
+export interface ProfileCardData {
+  icon: ProfileIconId;
+  color: ProfileColorId;
+  /** 직접 정한 이름. null 이면 내 조건으로 지은 기본 이름(lib/profile-card.ts) */
+  name: string | null;
+  /** 그림 오른쪽 아래에 거는 받은 배지 하나 */
+  pinnedBadge: BadgeId | null;
+}
+
 export interface ChecklistState {
   eligibility: boolean;
   period: boolean;
@@ -51,6 +83,10 @@ export interface UserDataContent {
   saved: string[];
   /** perky.document-checks:<policyId> — 정책별로 체크한 서류 이름 (11/17) */
   documentChecks: Record<string, string[]>;
+  /** perky.profile-card — 꾸민 프로필, 안 꾸몄으면 null (11/22) */
+  profileCard: ProfileCardData | null;
+  /** perky.badges — 받은 배지 → 받은 날 (11/22) */
+  badges: Partial<Record<BadgeId, string>>;
 }
 
 export interface UserDataPayload extends UserDataContent {
@@ -158,7 +194,7 @@ export const MAX_SAVED = 50;
 export const MAX_DOCUMENTS = 15;
 export const MAX_DOCUMENT_NAME = 60;
 /** 없어도 받는 칸 — 예전 앱(홈 화면에 캐시된 앱 포함)은 보내지 않는다 */
-const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks"] as const;
+const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks", "profileCard", "badges"] as const;
 const DECLARED_KEY = /^[A-Za-z0-9_:.-]{1,100}$/;
 const POLICY_ID = /^[a-z0-9-]{1,100}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -343,6 +379,35 @@ function parseDocumentChecks(v: unknown, path: string): Record<string, string[]>
   return out;
 }
 
+/** 제어 문자(줄바꿈 · 탭 …) — 이름에 넣지 않는다 */
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
+
+function parseProfileCard(v: unknown, path: string): ProfileCardData {
+  const o = exact(v, path, ["icon", "color", "name", "pinnedBadge"]);
+  const name = nullable(o.name, (x) => {
+    if (typeof x !== "string") fail(`${path}.name`, "not a string");
+    const s = x as string;
+    const length = [...s].length;
+    if (length < 1 || length > MAX_PROFILE_NAME || s.trim() !== s || CONTROL.test(s)) fail(`${path}.name`, "bad name");
+    return s;
+  });
+  return {
+    icon: oneOf(o.icon, `${path}.icon`, PROFILE_ICON_IDS),
+    color: oneOf(o.color, `${path}.color`, PROFILE_COLOR_IDS),
+    name,
+    pinnedBadge: nullable(o.pinnedBadge, (x) => oneOf(x, `${path}.pinnedBadge`, BADGE_IDS)),
+  };
+}
+
+function parseBadges(v: unknown, path: string): Partial<Record<BadgeId, string>> {
+  const out: Partial<Record<BadgeId, string>> = {};
+  for (const [id, day] of Object.entries(record(v, path))) {
+    const badge = oneOf(id, `${path}.${id}`, BADGE_IDS);
+    out[badge] = date(day, `${path}.${badge}`);
+  }
+  return out;
+}
+
 function parsePayload(v: unknown, path: string): UserDataPayload {
   const o = record(v, path);
   const allowed: readonly string[] = [...PAYLOAD_KEYS, ...OPTIONAL_PAYLOAD_KEYS];
@@ -362,6 +427,8 @@ function parsePayload(v: unknown, path: string): UserDataPayload {
     saved: o.saved === undefined ? [] : parseSaved(o.saved, `${path}.saved`),
     documentChecks:
       o.documentChecks === undefined ? {} : parseDocumentChecks(o.documentChecks, `${path}.documentChecks`),
+    profileCard: o.profileCard === undefined ? null : nullable(o.profileCard, (x) => parseProfileCard(x, `${path}.profileCard`)),
+    badges: o.badges === undefined ? {} : parseBadges(o.badges, `${path}.badges`),
   };
 }
 
@@ -402,6 +469,8 @@ export function emptyContent(): UserDataContent {
     checklists: {},
     saved: [],
     documentChecks: {},
+    profileCard: null,
+    badges: {},
   };
 }
 
@@ -411,7 +480,7 @@ export function emptyContent(): UserDataContent {
  */
 export function sanitizeContent(
   raw: Record<"answers" | "listing" | "profile" | "declared" | "checklists", unknown> &
-    Partial<Record<"saved" | "documentChecks", unknown>>
+    Partial<Record<"saved" | "documentChecks" | "profileCard" | "badges", unknown>>
 ): UserDataContent {
   const keep = <T>(parse: () => T, fallback: T): T => {
     const result = attempt(parse);
@@ -429,7 +498,24 @@ export function sanitizeContent(
       () => (raw.documentChecks === undefined ? {} : parseDocumentChecks(raw.documentChecks, "documentChecks")),
       {}
     ),
+    profileCard: keep(
+      () => (raw.profileCard === undefined ? null : nullable(raw.profileCard, (x) => parseProfileCard(x, "profileCard"))),
+      null
+    ),
+    badges: keep(() => (raw.badges === undefined ? {} : parseBadges(raw.badges, "badges")), {}),
   };
+}
+
+/** 이 기기에 저장된 프로필 — 형식에 안 맞으면 없는 것으로(안 꾸민 것과 같게) */
+export function readProfileCard(v: unknown): ProfileCardData | null {
+  const r = attempt(() => nullable(v, (x) => parseProfileCard(x, "profileCard")));
+  return r.ok ? r.value : null;
+}
+
+/** 이 기기에 저장된 받은 배지 — 형식에 안 맞으면 빈 값 */
+export function readBadges(v: unknown): Partial<Record<BadgeId, string>> {
+  const r = attempt(() => (v === null || v === undefined ? {} : parseBadges(v, "badges")));
+  return r.ok ? r.value : {};
 }
 
 export function isEmptyContent(c: UserDataContent): boolean {
@@ -441,7 +527,9 @@ export function isEmptyContent(c: UserDataContent): boolean {
     (c.declared === null || Object.keys(c.declared).length === 0) &&
     Object.keys(c.checklists).length === 0 &&
     c.saved.length === 0 &&
-    Object.keys(c.documentChecks).length === 0
+    Object.keys(c.documentChecks).length === 0 &&
+    c.profileCard === null &&
+    Object.keys(c.badges).length === 0
   );
 }
 
@@ -455,6 +543,8 @@ export function contentOf(c: UserDataContent): UserDataContent {
     checklists: c.checklists,
     saved: c.saved,
     documentChecks: c.documentChecks,
+    profileCard: c.profileCard,
+    badges: c.badges,
   };
 }
 

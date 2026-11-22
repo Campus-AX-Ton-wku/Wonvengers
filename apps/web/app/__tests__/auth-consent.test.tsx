@@ -73,6 +73,14 @@ describe("/auth/consent (설계 '화면' 3)", () => {
     expect(rows.find((r) => r.textContent?.includes("계약 조건"))?.textContent).toContain("이사 비용");
   });
 
+  it("프로필 · 배지도 저장 항목으로 보여준다 (11/22 내 프로필)", async () => {
+    render(<ConsentPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("프로필 · 배지"));
+    expect(row?.textContent).toContain("그림 · 색 · 이름 · 대표 배지");
+    expect(row?.textContent).toContain("받은 배지");
+  });
+
   it("관심 지원금도 저장 항목으로 보여준다", async () => {
     render(<ConsentPage />);
     await screen.findByRole("heading", { level: 1 });

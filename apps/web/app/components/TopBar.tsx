@@ -29,6 +29,7 @@ const BACK_LABEL = "이전 단계로";
 export function TopBar({
   backHref,
   home = false,
+  title,
   right,
 }: {
   /** 앞 화면이 앱 밖일 때 갈 곳. 없으면 화살표를 그리지 않는다. */
@@ -40,6 +41,8 @@ export function TopBar({
   backLabel?: string;
   /** 홈 화면(/home) — 왼쪽에 로고. */
   home?: boolean;
+  /** 탭 화면 제목 — 왼쪽에 h1 로 (내 정보, 11/22). 뒤로 가기 · 로고와 같이 쓰지 않는다 */
+  title?: string;
   right?: React.ReactNode;
 }) {
   return (
@@ -55,6 +58,9 @@ export function TopBar({
             </span>
           ) : backHref ? (
             <BackButton backHref={backHref} />
+          ) : title ? (
+            /* 아이콘 버튼 안 여백(10px)만큼 띄워 제목 왼쪽 끝을 본문 gutter 에 맞춘다(로고와 같은 자리) */
+            <h1 className="flex min-h-11 items-center px-2.5 text-xl font-extrabold text-ink-900">{title}</h1>
           ) : (
             <span className="w-11" aria-hidden="true" />
           )}

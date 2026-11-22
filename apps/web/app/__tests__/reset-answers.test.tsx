@@ -180,8 +180,13 @@ describe("로그인 상태", () => {
       // 비어 있는 찜 필드는 본문에서 빠진다 — 서버가 빈 값으로 읽는다
       saved: payload.saved ?? [],
       documentChecks: payload.documentChecks ?? {},
+      // 안 꾸민 프로필 · 없는 배지도 빠진다(11/22)
+      profileCard: payload.profileCard ?? null,
+      badges: payload.badges ?? {},
     }).toEqual(emptyContent());
     expect(payload).not.toHaveProperty("saved");
     expect(payload).not.toHaveProperty("documentChecks");
+    expect(payload).not.toHaveProperty("profileCard");
+    expect(payload).not.toHaveProperty("badges");
   });
 });
