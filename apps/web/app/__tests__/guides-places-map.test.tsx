@@ -12,6 +12,7 @@ const rec = vi.hoisted(() => ({
   bounds: [] as { points: Pt[] }[],
   overlays: [] as { opts: Record<string, unknown>; setMap: ReturnType<typeof vi.fn> }[],
   clusterers: [] as { opts: Record<string, unknown>; addMarkers: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }[],
+  calls: [] as string[],
 }));
 
 vi.mock("@/lib/kakao-map", () => {
@@ -36,7 +37,7 @@ vi.mock("@/lib/kakao-map", () => {
       return o;
     },
     MarkerClusterer: function (opts: Record<string, unknown>) {
-      const c = { opts, addMarkers: vi.fn(), clear: vi.fn() };
+      const c = { opts, addMarkers: vi.fn(() => rec.calls.push("add")), clear: vi.fn(() => rec.calls.push("clear")) };
       rec.clusterers.push(c);
       return c;
     },
@@ -57,11 +58,12 @@ const PLACES: CivilPlace[] = [
 ];
 
 beforeEach(() => {
+  rec.calls.length = 0; // 앞 시험의 정리(unmount)가 afterEach 뒤에 남긴 호출을 버린다
   Object.defineProperty(navigator, "geolocation", { configurable: true, value: undefined });
 });
 afterEach(() => {
   vi.clearAllMocks();
-  rec.maps.length = rec.bounds.length = rec.overlays.length = rec.clusterers.length = 0;
+  rec.maps.length = rec.bounds.length = rec.overlays.length = rec.clusterers.length = rec.calls.length = 0;
 });
 
 describe("지도가 준비된 길", () => {
@@ -97,5 +99,15 @@ describe("지도가 준비된 길", () => {
     expect(map.setBounds).toHaveBeenCalledTimes(2);
     expect(map.setBounds.mock.calls[1][0].points).toHaveLength(2); // 발급기 둘 (함열읍 포함)
     expect(map.setLevel).toHaveBeenCalledWith(MIN_MAP_LEVEL);
+    // 다시 그릴 때는 항상 지운 뒤에 담는다
+    expect(rec.calls.slice(0, 4)).toEqual(["clear", "add", "clear", "add"]);
+  });
+
+  it("화면을 닫으면 묶음을 비워 표시가 남지 않게 한다", async () => {
+    const { unmount } = render(<PlacesView places={PLACES} generatedAt={null} jsKey="k" />);
+    await vi.waitFor(() => expect(rec.clusterers[0]?.addMarkers).toHaveBeenCalledTimes(1));
+    rec.clusterers[0].clear.mockClear();
+    unmount();
+    expect(rec.clusterers[0].clear).toHaveBeenCalledTimes(1);
   });
 });

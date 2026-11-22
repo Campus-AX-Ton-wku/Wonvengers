@@ -108,6 +108,11 @@ export function PlacesView({
       .catch(() => alive && setMapState("failed"));
     return () => {
       alive = false;
+      // 다시 그릴 때(places 바뀜 · 다시 열림) 지난 표시가 남지 않게
+      const m = mapRef.current;
+      m?.clusterer.clear();
+      m?.meDot?.setMap(null);
+      mapRef.current = null;
     };
   }, [jsKey, places.length]);
 
@@ -208,7 +213,7 @@ export function PlacesView({
             autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="장소나 동 이름으로 찾기 (예: 어양동, 시청, 익산역)"
+            placeholder="예: 어양동, 시청, 익산역"
             className="focus-ring min-h-12 w-full rounded-control bg-surface py-2 pl-10 pr-12 text-base text-ink-900 shadow-card placeholder:text-ink-500 [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query !== "" && (
@@ -263,7 +268,7 @@ export function PlacesView({
           </button>
         </div>
         <p role="status" aria-live="polite" className="text-sm text-ink-600">{notice}</p>
-        <p role="status" aria-live="polite" className="sr-only">{searching ? `${shown.length}곳을 찾았어요` : ""}</p>
+        <p role="status" aria-live="polite" className="sr-only">{searching && shown.length > 0 ? `${shown.length}곳을 찾았어요` : ""}</p>
 
         {mapState === "failed" ? (
           <p className="rounded-card bg-ink-50 p-4 text-sm text-ink-700">지도를 불러오지 못했어요 — 목록으로 보여 드려요</p>

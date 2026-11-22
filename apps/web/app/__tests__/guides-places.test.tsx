@@ -23,6 +23,10 @@ const PLACES: CivilPlace[] = [
   { ...base, id: "kiosk-407", kind: "kiosk", name: "익산역", detail: "익산역사 내", weekday: "03:00~23:50", lat: 35.9405, lng: 126.9466, documents: ["resident"] },
 ];
 
+/** 알림 칸 · 검색 결과 칸이 둘 다 role=status 라서 순서가 아니라 글로 찾는다 */
+const statusTexts = () => screen.getAllByRole("status").map((el) => el.textContent ?? "");
+const hasStatus = (text: string) => statusTexts().includes(text);
+
 beforeEach(() => {
   Object.defineProperty(navigator, "geolocation", { configurable: true, value: undefined });
 });
@@ -101,7 +105,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     });
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getAllByRole("status")[0].textContent).toBe("지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요");
+    expect(hasStatus("지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요")).toBe(true);
     expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(3);
   });
 
@@ -112,9 +116,9 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
       value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: 35.9405, longitude: 126.9466 } } as GeolocationPosition) },
     });
     const { unmount } = render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
-    expect(screen.getAllByRole("status")[0].textContent).toBe("");
+    expect(statusTexts().every((t) => t === "")).toBe(true);
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getAllByRole("status")[0].textContent).toBe("가까운 순으로 바꿨어요");
+    expect(hasStatus("가까운 순으로 바꿨어요")).toBe(true);
     unmount();
 
     Object.defineProperty(navigator, "geolocation", {
@@ -123,7 +127,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     });
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getAllByRole("status")[0].textContent).toBe("위치를 찾지 못해 익산 전체를 보여 드려요");
+    expect(hasStatus("위치를 찾지 못해 익산 전체를 보여 드려요")).toBe(true);
   });
 
   it("서류 칩은 데이터에 있는 서류만 — 칩 묶음에 이름이 있다", async () => {
@@ -141,7 +145,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
     const search = screen.getByRole("search");
     expect(within(search).getByLabelText("장소나 동 이름으로 찾기")).toBeTruthy();
-    expect(screen.getByPlaceholderText("장소나 동 이름으로 찾기 (예: 어양동, 시청, 익산역)")).toBeTruthy();
+    expect(screen.getByPlaceholderText("예: 어양동, 시청, 익산역")).toBeTruthy();
     await user.type(screen.getByRole("searchbox"), "시청");
     const list = screen.getByRole("list", { name: "장소 목록" });
     expect(within(list).getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringContaining("익산시청")]);
@@ -154,6 +158,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     await user.type(screen.getByRole("searchbox"), " 없는곳 ");
     expect(screen.getByText("'없는곳'에 맞는 곳이 없어요")).toBeTruthy();
     expect(screen.queryByText("조건에 맞는 곳이 없어요")).toBeNull();
+    expect(statusTexts().every((t) => t === "")).toBe(true); // 보이는 문구가 이미 알리므로 읽기 전용 안내는 비운다
   });
 
   it("검색어 지우기 — 모두 돌아오고 입력칸에 포커스", async () => {
