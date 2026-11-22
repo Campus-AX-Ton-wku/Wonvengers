@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import BenefitResultCard from "@/app/result/BenefitResultCard";
 import { ResultLoading, ResultState } from "@/app/result/ResultState";
@@ -7,6 +7,7 @@ import { toBenefitResultCardData } from "@/lib/benefit-result";
 import type { PolicyMeta, PolicyResult } from "@/lib/types";
 import policiesData from "@/data/policies.json";
 import { makeListing } from "@/lib/__tests__/fixtures";
+import { enableLogin } from "@/lib/__tests__/auth-fixtures";
 
 const listing = makeListing();
 
@@ -84,6 +85,24 @@ describe("결과 카드 (11/17 정리 — 같은 말 반복 · 확인 안 된 �
     const urgentCard = toBenefitResultCardData(urgent, "2026-09-02")!;
     render(<BenefitResultCard card={urgentCard} result={urgent} listing={listing} />);
     expect(screen.getByText("마감 임박")).toBeTruthy();
+  });
+
+  it("신청 가능 카드는 배지가 없으니 빈 윗줄 없이 ♡ 를 이름 줄 오른쪽에 붙인다 — 확인 필요는 배지 줄에 (11/22 ggue)", async () => {
+    enableLogin(); // ♡ 는 로그인을 쓸 수 있는 빌드에서만 그린다
+    const eligible = result();
+    const eligibleCard = toBenefitResultCardData(eligible, "2026-07-01")!;
+    const first = render(<BenefitResultCard card={eligibleCard} result={eligible} listing={listing} />);
+    const heart = await screen.findByRole("button", { name: /관심 지원금에 담기/ });
+    expect(heart.parentElement!.contains(screen.getByRole("heading", { name: eligibleCard.title }))).toBe(true);
+    expect(first.container.querySelector(".sr-only")?.textContent).toBe("예상적용");
+    first.unmount();
+
+    const check = result("조건충족시가능");
+    const checkCard = toBenefitResultCardData(check, "2026-07-01")!;
+    render(<BenefitResultCard card={checkCard} result={check} listing={listing} />);
+    const checkHeart = await screen.findByRole("button", { name: /관심 지원금에 담기/ });
+    expect(checkHeart.parentElement!.contains(screen.getByRole("heading", { name: checkCard.title }))).toBe(false);
+    vi.unstubAllEnvs();
   });
 
   it("자격 요건 · 지원 형태 · 신청 방식 행과 '조건 N개 일치' 같은 반복을 두지 않는다", () => {
