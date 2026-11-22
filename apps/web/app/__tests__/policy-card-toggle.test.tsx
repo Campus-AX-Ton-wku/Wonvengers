@@ -89,18 +89,6 @@ describe("2층 정책 카드", () => {
     expect(screen.queryByText("검수 상태 · 참고사항")).toBeNull();
   });
 
-  it("대출 카드의 확인 날짜는 정책 카드와 같은 점 표기다", async () => {
-    // 익산 청년 전세자금 대출이자 지원으로 본다. 확인일은 DB(검수 기록)에서 오므로 데이터 값을 그대로 쓴다.
-    const verifiedAt = loanProducts.find((x) => x.id === "iksan-youth-jeonse-loan-interest")!.verifiedAt!;
-    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "월세", rentOrYearlyAmount: 350000 }));
-    saveProfile(makeProfile());
-    render(<ResultPage />);
-    await screen.findByRole("heading", { level: 1 });
-    const loan = screen.getByText("청년 전세자금 대출이자 지원사업", { selector: "p" }).parentElement!;
-    expect(within(loan).getByText(new RegExp(`${verifiedAt.replace(/-/g, "\\.")} 확인`))).toBeTruthy();
-    expect(screen.queryByText(/\d{4}-\d{2}-\d{2} 확인/)).toBeNull();
-  });
-
   it("상태·금액·준비 CTA·공식 신청 링크는 토글 밖에 남는다", async () => {
     await renderResult();
     const card = topCards()[0];

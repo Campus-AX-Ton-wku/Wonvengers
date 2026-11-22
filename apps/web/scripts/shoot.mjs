@@ -134,6 +134,8 @@ const SHOTS = [
   { name: "mobile-eligibility", path: "/eligibility", full: true },
   { name: "mobile-eligibility-2", path: "/eligibility?g=2", full: true },
   { name: "mobile-result", path: "/result", full: true },
+  { name: "mobile-guides-places", path: "/guides/places", full: true },
+  { name: "mobile-guides-documents", path: "/guides/where-documents/1", full: true },
 ];
 
 const DESKTOP_SHOTS = [

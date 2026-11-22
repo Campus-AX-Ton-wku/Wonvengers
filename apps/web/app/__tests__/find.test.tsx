@@ -227,9 +227,10 @@ describe("/find 단계형 흐름", () => {
 });
 
 describe("/find 나이 조건", () => {
-  it("대상 연령 안내가 고르기 전에도 보인다", () => {
+  it("생년월일 아래 '대부분 만 18~39세 대상이에요' 안내는 두지 않는다 (11/22 ggue)", () => {
     render(<FindPage />);
-    expect(screen.getByText(/만 18~39세/)).toBeTruthy();
+    expect(screen.queryByText(/대부분 만/)).toBeNull();
+    expect(screen.queryByText(/만 18~39세/)).toBeNull();
   });
 
   /* 나이는 고르는 선택지가 아니라 이미 정해진 사실이다. 그 사실에 판정을 얹으면

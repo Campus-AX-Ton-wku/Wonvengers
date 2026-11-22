@@ -14,6 +14,8 @@ import {
   type UserDataContent,
 } from "./user-data";
 import { isSaved, toggleSaved } from "./saved";
+import { emptyLedger, parseLedger, type LedgerRecord } from "./ledger";
+import { parseHouseChecklist } from "./house-checklist";
 
 const LISTING_KEY = "housing-benefit:listing";
 const PROFILE_KEY = "housing-benefit:profile";
@@ -67,7 +69,11 @@ export function saveListing(listing: ListingInput): void {
 }
 
 export function loadListing(): ListingInput | null {
-  return readJSON<ListingInput>(LISTING_KEY);
+  const listing = readJSON<ListingInput>(LISTING_KEY);
+  if (!listing) return null;
+  // 이사비·중개보수는 11/21 부터 묻지 않는다. 예전에 넣어 둔 값이 남아 있으면 고칠 칸도 없이
+  // 영수증 '이사비' 줄과 이사비 지원 합계에 계속 들어간다 — 읽을 때 0 으로 둔다.
+  return { ...listing, oneTimeMoveCost: 0 };
 }
 
 export function saveProfile(profile: EligibilityProfile): void {
@@ -458,5 +464,76 @@ export function writeLocalContent(content: UserDataContent): void {
  */
 export function resetAllAnswers(): void {
   quietly(clearLocalContent);
+  clearDeviceRecords();
   notifyLocalChange(true);
+}
+
+// ── 주거비 달력 (docs/기획/2026-11-21-주거비-달력-설계.md §5) ──
+
+const LEDGER_KEY = "perky.ledger";
+
+/**
+ * 주거비 달력 기록. **이 기기에만** 둔다 — SYNCED_KEYS · readLocalContent 에 넣지 않는다.
+ * 저장할 때 notifyLocalChange 를 부르지 않는다: lib/sync.ts 가 그 알림마다 서버에 올리므로 누를 때마다 PUT 이 나간다.
+ * clearLocalContent 에도 넣지 않는다: 그 함수는 로그인하면서 서버 값으로 덮어쓸 때(writeLocalContent)도 불린다.
+ * 지우는 곳은 로그아웃 · 탈퇴(lib/sync.ts)와 '처음부터 다시'(resetAllAnswers).
+ */
+export function loadLedger(): LedgerRecord {
+  if (typeof window === "undefined") return emptyLedger();
+  try {
+    const raw = window.localStorage.getItem(LEDGER_KEY);
+    return raw ? parseLedger(JSON.parse(raw)) : emptyLedger();
+  } catch {
+    return emptyLedger();
+  }
+}
+
+export function saveLedger(record: LedgerRecord): void {
+  writeJSONSafely(LEDGER_KEY, record);
+}
+
+export function clearLedger(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(LEDGER_KEY);
+  } catch {
+    // 지우기가 막혀 있으면 할 수 있는 것이 없다.
+  }
+}
+
+// ── 집 보러 갈 때 체크리스트 (docs/기획/2026-11-22-집-보기-체크리스트-설계.md) ──
+// 이름이 HouseChecklist 인 까닭: 위의 loadChecklist · saveChecklist 는 신청 준비 체크(perky.application-checklist:*)다.
+
+export const HOUSE_CHECKLIST_KEY = "perky.house-checklist";
+
+/** 체크한 줄. 주거비 달력과 같은 규칙 — 이 기기에만, notifyLocalChange 안 부름, clearLocalContent 밖. */
+export function loadHouseChecklist(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(HOUSE_CHECKLIST_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return parseHouseChecklist(parsed && typeof parsed === "object" ? (parsed as { checked?: unknown }).checked : null);
+  } catch {
+    return [];
+  }
+}
+
+export function saveHouseChecklist(ids: string[]): void {
+  writeJSONSafely(HOUSE_CHECKLIST_KEY, { v: 1, checked: ids });
+}
+
+export function clearHouseChecklist(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(HOUSE_CHECKLIST_KEY);
+  } catch {
+    // 지우기가 막혀 있으면 할 수 있는 것이 없다.
+  }
+}
+
+/** 서버에 없는, 이 기기에만 있는 기록(주거비 달력 · 집 보기 체크리스트). 로그아웃 · 탈퇴(lib/sync.ts) · '처음부터 다시'에서 지운다 */
+export function clearDeviceRecords(): void {
+  clearLedger();
+  clearHouseChecklist();
 }

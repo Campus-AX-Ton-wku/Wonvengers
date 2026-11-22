@@ -14,16 +14,38 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     }
   });
 
-  it("확인일 · 그림 · 장마다 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
+  it("'어디서' 바로가기도 출처와 같은 규칙 — https 공공 주소만, 이름은 비어 있지 않다 (11/22 ggue)", () => {
+    const places = GUIDES.flatMap((g) => g.sections.flatMap((s) => s.where ?? []));
+    expect(places.filter((p) => p.url).length).toBeGreaterThanOrEqual(15);
+    for (const p of places) {
+      expect(p.name.length).toBeGreaterThan(0);
+      if (p.url) expect(p.url).toMatch(/^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/);
+    }
+  });
+
+  it("바로가기 예 — 시세는 실거래가 지도 네 종류, 전입신고 · 임대차 신고는 정부24 서비스 화면", () => {
+    const where = (id: string, step: number) => findGuide(id)!.sections[step - 1].where ?? [];
+    expect(where("before-contract", 1).map((p) => p.name)).toEqual(["아파트", "연립·다세대", "단독·다가구", "오피스텔"]);
+    expect(where("before-contract", 1)[3].url).toBe("https://rt.molit.go.kr/pt/gis/gis.do?srhThingSecd=D&mobileAt=");
+    expect(where("protect-deposit", 1)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016");
+    expect(where("protect-deposit", 3)[0].url).toBe("https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=16130000132");
+  });
+
+  it("확인일 · 그림 · 장마다 용어 · 제목 · 한 줄 할 일 · 본문이 비어 있지 않다", () => {
     for (const g of GUIDES) {
       expect(g.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(ICON3D_NAMES).toContain(g.icon);
       for (const s of g.sections) {
+        expect(s.keyword.length).toBeGreaterThan(0);
         expect(s.title.length).toBeGreaterThan(0);
         expect(s.lead.length).toBeGreaterThan(0);
         expect(s.body.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it("용어는 윗줄(keyword)로 빠졌으니 제목은 'A = B' · 줄표 꼴로 쓰지 않는다 (11/21 ggue 시안)", () => {
+    for (const g of GUIDES) for (const s of g.sections) expect(s.title).not.toMatch(/ = |—/);
   });
 
   it("비유를 써도 정확한 용어는 '용어 풀이'에 남긴다 — 대항력 · 우선변제권 · 임차권등기 · 근저당", () => {
@@ -67,5 +89,25 @@ describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
       expect(ids(h)).toEqual(GUIDES.map((g) => g.id));
       expect(guidesForHousing(h).tag).toBeNull();
     }
+  });
+});
+
+describe("서류 떼는 곳 1장 — 지도 버튼 (11/22)", () => {
+  const section = findGuide("where-documents")!.sections[0];
+
+  it("placesMap 은 이 장 1번 섹션에만 있다", () => {
+    expect(section.placesMap).toBe(true);
+    const marked = GUIDES.flatMap((g) => g.sections.map((s, i) => ({ id: g.id, i, on: s.placesMap })))
+      .filter((x) => x.on)
+      .map((x) => `${x.id}/${x.i}`);
+    expect(marked).toEqual(["where-documents/0"]);
+  });
+
+  it("발급기에서도 뗄 수 있다는 줄", () => {
+    expect(section.body.join(" ")).toContain("무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요");
+  });
+
+  it("행안부 출처", () => {
+    expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
   });
 });

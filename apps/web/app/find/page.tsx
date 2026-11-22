@@ -6,7 +6,7 @@ import bracketsJson from "@/data/income-brackets.json";
 import policiesJson from "@/data/policies.json";
 import { RegionSummary } from "@/app/find/RegionSummary";
 import WheelDatePicker from "@/app/WheelDatePicker";
-import { AGE_MIN, POLICY_AGE_MAX, resolveAnswers } from "@/lib/age";
+import { resolveAnswers } from "@/lib/age";
 import { birthYearOptions } from "@/lib/birth";
 import { candidateCount, groupPolicies } from "@/lib/discovery";
 import { todayISO, fromISODate } from "@/lib/date";
@@ -284,11 +284,8 @@ function FindSteps() {
                  접어 둔다 — 이미 값이 보이는데 휠까지 펴면 화면만 시끄럽다. */
               defaultOpen={answers.birthDate === null}
             />
-            {/* 대상 연령은 고르기 전부터 말해준다. 자격 조건을 입력 옵션에 얹으면
-                41세가 39세를 고른다 — 받을 수 없는 금액을 받을 수 있다고 믿게 된다. */}
-            <p className="text-sm leading-relaxed text-ink-500">
-              대부분 만 {AGE_MIN}~{POLICY_AGE_MAX}세 대상이에요.
-            </p>
+            {/* '대부분 만 18~39세 대상이에요' 안내는 11/22 뺐다(ggue). 자격 조건은 입력 옵션에 얹지 않는다 —
+                41세가 39세를 고르면 받을 수 없는 금액을 받을 수 있다고 믿게 된다. 해당 지원금이 없으면 아래 경고가 말한다 */}
             {answers.birthDate !== null && count === 0 && (
               <p className="flex items-start gap-2 rounded-control bg-warn-50 p-4 text-sm leading-relaxed text-warn-800">
                 <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0" />

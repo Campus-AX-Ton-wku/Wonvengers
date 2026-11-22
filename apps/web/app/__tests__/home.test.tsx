@@ -9,11 +9,12 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { AUTH_KEY, resetAuthForTests, signOut } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveChecklist, saveDocumentChecks, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
+import { saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
-import { todayISO } from "@/lib/date";
+import { seoulTodayISO, todayISO } from "@/lib/date";
+import { addMonths, emptyLedger, ledgerMonth, ledgerPlan, monthKeyOf, toggleLine } from "@/lib/ledger";
 import { openPolicies } from "@/lib/home";
-import { formatKoreanMoney } from "@/lib/money";
+import { formatApproxMoney } from "@/lib/money";
 import { policiesForRegion } from "@/lib/region";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { PolicyMeta } from "@/lib/types";
@@ -73,7 +74,7 @@ describe("/home", () => {
     expect(screen.queryByRole("link", { name: /Perky/ })).toBeNull();
   });
 
-  it("지원 요약 — 지금 신청할 수 있는 수, 찜이 없으면 목록 앞 3건 미리 보기 (계산 권유는 오늘 할 일로)", async () => {
+  it("지원 요약 — 지금 신청할 수 있는 수와 [지원금 목록 보기] → 지원금 화면 (미리 보기 줄 · 펼침 없음, 11/21)", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     const open = openPolicies(policiesJson as PolicyMeta[], 익산_재직, todayISO()) ?? [];
     render(<HomePage />);
@@ -81,25 +82,13 @@ describe("/home", () => {
     expect(within(summary).getByText("지금 신청할 수 있는 지원금")).toBeTruthy();
     expect(within(summary).getByTestId("open-count").textContent).toBe(`${open.length}건`);
     expect(within(summary).queryByText(/공고 기준이에요/)).toBeNull();
-
-    const preview = within(summary).getByRole("list", { name: "신청할 수 있는 지원금 미리 보기" });
-    const rows = within(preview).getAllByRole("link");
-    expect(rows.map((r) => r.getAttribute("href"))).toEqual(open.slice(0, 3).map((p) => `/find/policies/${p.id}`));
-
-    const all = within(summary).getByRole("link", { name: open.length > 3 ? `${open.length}건 모두 보기` : "지원금 목록 보기" });
-    expect(all.getAttribute("href")).toBe("/find/policies");
+    // 목록은 지원금 화면이 맡는다 — 홈에는 미리 보기 줄도 펼침 토글도 없다
+    expect(within(summary).queryByRole("list")).toBeNull();
+    expect(within(summary).queryByRole("button", { name: /목록/ })).toBeNull();
+    expect(within(summary).getByRole("link", { name: /지원금 목록 보기/ }).getAttribute("href")).toBe("/find/policies");
     // 계산 권유는 11/20 부터 '오늘 할 일'이 맡는다 — 요약 카드에는 계산 상자도 3D 그림도 없다
     expect(within(summary).queryByRole("link", { name: /계산하기/ })).toBeNull();
     expect(summary.querySelectorAll("img[data-icon3d]")).toHaveLength(0);
-  });
-
-  it("찜이 있으면 미리 보기를 빼고 목록 보기 버튼만", async () => {
-    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
-    saveSavedList(["youth-housing-benefit-split-payment"]);
-    render(<HomePage />);
-    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
-    expect(within(summary).queryByRole("list")).toBeNull();
-    expect(within(summary).getByRole("link", { name: "지원금 목록 보기" }).getAttribute("href")).toBe("/find/policies");
   });
 
   it("답 전이면 시작하기", async () => {
@@ -120,13 +109,13 @@ describe("/home", () => {
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
   });
 
-  it("요약 아래 주거 가이드 세 장 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 전체 보기는 /guides", async () => {
+  it("요약 아래 주거 가이드 세 장 + 체크리스트 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 체크리스트는 맨 끝, 전체 보기는 /guides", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     const guides = await screen.findByRole("region", { name: "주거 가이드" });
     expect(within(guides).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/guides");
     const cards = within(guides).getAllByRole("listitem").map((li) => within(li).getByRole("link").getAttribute("href"));
-    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract"]);
+    expect(cards).toEqual(["/guides/where-documents", "/guides/protect-deposit", "/guides/before-contract", "/guides/checklist"]);
     expect(within(within(guides).getAllByRole("listitem")[0]).getByText("월세라면 먼저")).toBeTruthy();
     expect(within(within(guides).getAllByRole("listitem")[1]).queryByText(/라면 먼저/)).toBeNull();
   });
@@ -143,9 +132,10 @@ describe("/home", () => {
     const box = within(summary).getByRole("link", { name: /^최종 예상 주거비, 12개월 기준\. 지원 전 .+, 지원 후 .+\. 결과 보기$/ });
     expect(box.getAttribute("href")).toBe("/result");
     expect(within(box).getByText("12개월 기준")).toBeTruthy();
-    expect(within(box).getByText(formatKoreanMoney(s.nominalTotalCost))).toBeTruthy();
-    expect(within(box).getByText(formatKoreanMoney(s.finalEstimatedHousingCost)).className).toContain("text-brand-900");
-    expect(within(box).getByText(formatKoreanMoney(s.nominalTotalCost - s.finalEstimatedHousingCost)).parentElement?.textContent).toMatch(/줄었어요$/);
+    // 홈 상자는 천 원 단위(formatApproxMoney) — 정확한 값은 결과 화면 (11/21)
+    expect(within(box).getByText(formatApproxMoney(s.nominalTotalCost))).toBeTruthy();
+    expect(within(box).getByText(formatApproxMoney(s.finalEstimatedHousingCost)).className).toContain("text-brand-900");
+    expect(within(box).getByText(formatApproxMoney(s.nominalTotalCost - s.finalEstimatedHousingCost)).parentElement?.textContent).toMatch(/줄었어요$/);
     expect(box.querySelector('[class*="accent-"]')).toBeNull();
     expect(within(summary).queryByRole("link", { name: "내 월세 계산하기" })).toBeNull();
   });
@@ -163,8 +153,46 @@ describe("/home", () => {
     expect(within(box).queryByText(/줄었어요/)).toBeNull();
   });
 
+  it("금액에 넣은 지원이 없어 지원 전 · 후가 같으면 화살표 대신 금액 하나와 '아직 금액에 넣은 지원이 없어요' (11/21)", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    const listing = makeListing({ region: "전북특별자치도 익산시" });
+    const profile = makeProfile({ livesApartFromParents: false });
+    saveListing(listing); saveProfile(profile);
+    const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, todayISO());
+    expect(s.finalEstimatedHousingCost).toBe(s.nominalTotalCost);
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const box = within(summary).getByRole("link", { name: /^최종 예상 주거비, 12개월 기준, .+\. 아직 금액에 넣은 지원이 없어요\. 결과 보기$/ });
+    expect(within(box).queryByText("지원 전")).toBeNull();
+    expect(within(box).getByText("아직 금액에 넣은 지원이 없어요")).toBeTruthy();
+    expect(within(box).getByText(formatApproxMoney(s.finalEstimatedHousingCost)).className).toContain("text-brand-900");
+  });
+
+  it("연세를 월로 나눠 원 단위가 생기면 홈 상자는 천 원 단위 '약 …' — 숫자 한가운데서 줄이 꺾이지 않게 (11/21)", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    // 연세 160만원 ÷ 12 = 월 133,333원 → 12개월 159만 9,996원 (실제 화면에서 숫자 한가운데서 꺾인 값)
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 1_600_000, managementFee: 0 }));
+    saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const box = within(summary).getByRole("link", { name: /^최종 예상 주거비/ });
+    const amounts = within(box).getAllByText(/원$/).filter((el) => el.className.includes("whitespace-nowrap"));
+    expect(amounts.length).toBeGreaterThan(0);
+    expect(within(box).getAllByText(/^약 \d/).length).toBeGreaterThan(0);
+  });
+
   describe("요약 카드 Perky 포즈", () => {
     const pose = () => document.querySelector("[data-pose]")?.getAttribute("data-pose");
+
+    it("Perky 는 카드 안 오른쪽 위 + 발밑 그림자 — 카드 밖으로 걸치지 않는다 (시안 '홈 보강', 11/21)", async () => {
+      enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+      render(<HomePage />);
+      const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+      const spot = summary.querySelector("[data-perky-spot]") as HTMLElement;
+      expect(spot.querySelector("img[data-pose]")).toBeTruthy();
+      expect(spot.className).not.toMatch(/-top-/);
+      expect(spot.querySelector("[data-perky-shadow]")).toBeTruthy();
+    });
 
     it("신청할 수 있는 게 있으면 found", async () => {
       enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
@@ -278,5 +306,70 @@ describe("/home", () => {
       await screen.findByRole("region", { name: "내 지원 요약" });
       expect(screen.queryByRole("region", { name: "다가오는 일정" })).toBeNull();
     });
+  });
+});
+
+describe("/home — 주거비 달력 입구 한 줄 (11/21)", () => {
+  const thisMonth = monthKeyOf(seoulTodayISO());
+  const 이번달시작 = makeListing({ region: "전북특별자치도 익산시", contractType: "월세", rentOrYearlyAmount: 400_000, managementFee: 50_000, contractStartDate: `${thisMonth}-01`, months: 12 });
+
+  it("주거비 상자 아래 '이번 달 주거비 · 낸 돈 1/2 …' → /ledger", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing(이번달시작); saveProfile(makeProfile());
+    saveLedger(toggleLine(emptyLedger(), thisMonth, "rent", 400_000));
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비, 낸 돈 2개 중 1개/ });
+    expect(row.getAttribute("href")).toBe("/ledger");
+    expect(within(row).getByText(/^낸 돈 1\/2/)).toBeTruthy();
+  });
+
+  it("연세 + 관리비 0원, 계약 2개월째 이후 — '낸 돈 0/0' 대신 낸 돈 부분을 뺀다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing(makeListing({ region: "전북특별자치도 익산시", contractType: "연세", rentOrYearlyAmount: 4_800_000, managementFee: 0, contractStartDate: `${addMonths(thisMonth, -2)}-01`, months: 12 }));
+    saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비/ });
+    expect(row.textContent).not.toContain("낸 돈");
+    expect(row.getAttribute("aria-label")).not.toContain("낸 돈");
+  });
+
+  it("이번 달 칸을 다 누르면 초록 '이번 달 다 적었어요'", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    const profile = makeProfile();
+    saveListing(이번달시작); saveProfile(profile);
+    // 이번 달 칸을 화면과 같은 함수로 만들어 전부 누른다 — 들어오는 지원이 몇 건이든(데이터에 따라) 결과가 같다
+    const s = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], 이번달시작.region), profile, 이번달시작, seoulTodayISO());
+    let record = emptyLedger();
+    for (const line of ledgerMonth(ledgerPlan(이번달시작, s, profile.birthDate), record, thisMonth).lines) record = toggleLine(record, thisMonth, line.key, line.amount);
+    saveLedger(record);
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    const row = within(summary).getByRole("link", { name: /^이번 달 주거비, 이번 달 다 적었어요/ });
+    expect(within(row).getByText("이번 달 다 적었어요").className).toContain("text-ok-700");
+  });
+
+  it("이번 달이 계약 기간 밖이면 한 줄이 없다", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    saveListing({ ...이번달시작, contractStartDate: `${addMonths(thisMonth, 1)}-01` }); saveProfile(makeProfile());
+    render(<HomePage />);
+    const summary = await screen.findByRole("region", { name: "내 지원 요약" });
+    expect(within(summary).queryByRole("link", { name: /^이번 달 주거비/ })).toBeNull();
+  });
+});
+
+describe("/home — 대출 · 보증 (11/22)", () => {
+  it("주거 가이드 위에 세 장 — 월세면 보증부월세대출부터 · 꼬리표, 카드는 상세로, 전체 보기는 /loans", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    render(<HomePage />);
+    const loans = await screen.findByRole("region", { name: "대출 · 보증" });
+    const cards = within(loans).getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/loans/"));
+    expect(cards).toHaveLength(3);
+    expect(cards[0].getAttribute("href")).toBe("/loans/youth-btm-monthly-rent-loan");
+    expect(within(cards[0]).getByText("월세라면 먼저")).toBeTruthy();
+    expect(within(loans).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/loans");
+    const guides = screen.getByRole("region", { name: "주거 가이드" });
+    expect(loans.compareDocumentPosition(guides) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

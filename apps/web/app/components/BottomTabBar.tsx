@@ -3,41 +3,32 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
-import { loadListing, loadProfile, onLocalChange } from "@/lib/storage";
 import { useSyncState } from "@/lib/sync";
 import { TabIcon, type TabIconName } from "./TabIcons";
 
-export type TabKey = "home" | "saved" | "calc" | "benefit" | "my";
+export type TabKey = "home" | "saved" | "benefit" | "ledger" | "my";
 
 /**
- * 탭 순서 (11/20 결정) — 계산이 Perky 의 메인 기능이라 가운데, 엄지가 가장 쉽게 닿는 자리에 둔다.
- * 찜은 홈에서 빠져 '관심' 탭이 따로 맡는다.
+ * 탭 순서 (11/21 시안 '하단 섬 · 상단바 설계' 확정) — 탭은 '자주 돌아오는 곳'만 둔다.
+ * 계산 탭은 뺐다: 계산은 홈이 맡는다(계산 전 '내 월세 계산하기' · 계산 뒤 주거비 상자), 그 밖의 입구는
+ * 달력 빈 화면 [계산하기] · 결과 맨 아래 [다른 방으로 다시 계산하기]. 빈 자리에 주거비 달력(/ledger)이 들어왔다.
  */
 const TABS: { key: TabKey; label: string; icon: TabIconName; href: string }[] = [
   { key: "home", label: "홈", icon: "home", href: "/home" },
   { key: "saved", label: "관심", icon: "saved", href: "/saved" },
-  { key: "calc", label: "계산", icon: "calc", href: "/calculate" },
   { key: "benefit", label: "지원금", icon: "benefit", href: "/find/policies" },
+  { key: "ledger", label: "달력", icon: "ledger", href: "/ledger" },
   { key: "my", label: "내 정보", icon: "my", href: "/account" },
 ];
 
 /**
- * 계산 탭이 열 화면. 계산을 마쳤으면 결과, 아니면 계산 시작.
- * 탭은 이동만 한다(Apple HIG '탭 막대는 이동에, 행동에 쓰지 않는다') — '계산하기' 버튼이 아니라
- * '내 계산' 자리다. 홈의 '결과 보기'와 같은 조건(내 집 정보 + 2층 답)을 쓴다.
- */
-export function calcTabHref(): string {
-  return loadListing() && loadProfile() ? "/result" : "/calculate";
-}
-
-/**
- * 하단 섬 탭 (디자인 캔버스 '하단 섬 내비게이션 설계', 11/20).
+ * 하단 섬 탭 (디자인 캔버스 '하단 섬 · 상단바 설계').
  *
- * 화면 아래에 떠 있는 둥근 막대다. 홈 · 관심 · 지원금 · 내 정보 · 계산 결과처럼 '탭의 첫 화면'에만 둔다.
+ * 화면 아래에 떠 있는 둥근 막대다. 홈 · 관심 · 지원금 · 달력 · 내 정보처럼 '탭의 첫 화면'과 그 하위 화면(결과 → 홈에 불)에 둔다.
  * 질문 · 계산 입력 · 서류 체크 같은 단계 화면에는 두지 않는다 — 한 가지 일에 집중하는 화면이고,
  * 그 화면들은 아래에 고정 버튼(StickyBottomAction)이 이미 있다.
  *
- * 로그인한 사람에게만 보인다. 홈 · 관심은 로그인한 사람만 들어갈 수 있어서, 로그인 전에 탭을 보이면
+ * 로그인한 사람에게만 보인다. 홈 · 관심 · 달력은 로그인한 사람만 들어갈 수 있어서, 로그인 전에 탭을 보이면
  * 누르는 순간 온보딩으로 튕긴다.
  *
  * 선택된 탭은 채운 아이콘 + 뒤의 연한 파랑 알약 + 굵은 글자 — 색 하나에 기대지 않는다.
@@ -47,7 +38,6 @@ export function calcTabHref(): string {
  */
 export function BottomTabBar({ active }: { active: TabKey }) {
   const [signedIn, setSignedIn] = useState(false);
-  const [calcHref, setCalcHref] = useState("/calculate");
   const sync = useSyncState();
 
   useEffect(() => {
@@ -55,12 +45,6 @@ export function BottomTabBar({ active }: { active: TabKey }) {
     const update = () => setSignedIn(hasStoredLogin());
     update();
     return onAuthChange(update);
-  }, []);
-
-  useEffect(() => {
-    const read = () => setCalcHref(calcTabHref());
-    read();
-    return onLocalChange(read);
   }, []);
 
   if (!signedIn) return null;
@@ -76,12 +60,11 @@ export function BottomTabBar({ active }: { active: TabKey }) {
         <div className="pointer-events-auto mx-auto flex w-[calc(100%-2.5rem)] max-w-[380px] gap-0.5 rounded-full bg-surface/80 p-1 shadow-island backdrop-blur-xl backdrop-saturate-150">
           {TABS.map((tab) => {
             const on = tab.key === active;
-            const href = tab.key === "calc" ? calcHref : tab.href;
             const alert = tab.key === "my" && failed;
             return (
               <Link
                 key={tab.key}
-                href={href}
+                href={tab.href}
                 aria-current={on ? "page" : undefined}
                 className={`focus-ring relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-full transition-colors ${
                   on ? "bg-brand-600/12 text-brand-600" : "text-ink-600 hover:bg-ink-100/70 active:bg-ink-200/70"
@@ -91,7 +74,7 @@ export function BottomTabBar({ active }: { active: TabKey }) {
                   <TabIcon name={tab.icon} filled={on} />
                   {alert && <span aria-hidden="true" className="absolute -right-1 -top-0.5 size-2 rounded-full bg-warn-800 ring-2 ring-surface" />}
                 </span>
-                <span className={`text-[11px] leading-tight ${on ? "font-bold text-brand-700" : "font-semibold"}`}>
+                <span className={`text-[12px] leading-tight ${on ? "font-bold text-brand-700" : "font-semibold"}`}>
                   {tab.label}
                   {alert && <span className="sr-only"> (저장 안 됨)</span>}
                 </span>

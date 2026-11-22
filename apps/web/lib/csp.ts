@@ -7,8 +7,17 @@
  * - connect-src: 이 사이트 + Cognito 도메인(토큰 교환·갱신) + API 출처뿐. 훔친 토큰을 다른 곳으로 보내지 못한다.
  * - script-src 'unsafe-inline': Next 가 페이지마다 인라인 스크립트(self.__next_f)를 넣어서 뺄 수 없다.
  *   우리가 더하는 인라인 스크립트는 layout 의 온보딩·첫 화면 기록 하나뿐이고 새로 늘리지 않는다.
+ * - 카카오 지도(11/22, /guides/places): 스크립트는 dapi.kakao.com · t1.daumcdn.net · t1.kakaocdn.net,
+ *   지도 그림은 *.daumcdn.net · *.kakao.com · *.kakaocdn.net 만 연다. scheme 없이 쓴다: SDK 가 페이지 프로토콜을
+ *   따라 불러서, 정식(https)은 https 만 열리고 로컬 http 확인도 된다.
+ *   받아들인 위험: connect-src 는 그대로라 카카오로 직접 보내는 길은 늘지 않지만, 카카오 스크립트는 우리 출처에서
+ *   돌아 localStorage(refresh token)를 읽을 수 있다. 지도를 위해 다른 외부 스크립트처럼 이 위험을 받아들인다.
+ *   eval 은 막아 둔다 — 지도는 그려진다(script-src 에 'unsafe-eval' 을 넣지 않는다).
  * - meta 로는 frame-ancestors 를 줄 수 없다(브라우저가 무시한다).
  */
+export const KAKAO_MAP_SCRIPT_ORIGINS = ["dapi.kakao.com", "t1.daumcdn.net", "t1.kakaocdn.net"];
+export const KAKAO_MAP_IMG_ORIGINS = ["*.daumcdn.net", "*.kakao.com", "*.kakaocdn.net"];
+
 export function contentSecurityPolicy(
   env: { NEXT_PUBLIC_COGNITO_DOMAIN?: string; NEXT_PUBLIC_API_URL?: string } = {
     NEXT_PUBLIC_COGNITO_DOMAIN: process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
@@ -26,9 +35,9 @@ export function contentSecurityPolicy(
   }
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'unsafe-inline' ${KAKAO_MAP_SCRIPT_ORIGINS.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    `img-src 'self' data: blob: ${KAKAO_MAP_IMG_ORIGINS.join(" ")}`,
     "font-src 'self'",
     `connect-src ${connect.join(" ")}`,
     "object-src 'none'",

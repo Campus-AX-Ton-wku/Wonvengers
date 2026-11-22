@@ -11,7 +11,7 @@ import {
 import { disablePushQuietly, unsubscribeThisDevice } from "./push";
 import { reloadPage } from "./redirect";
 import { deleteAccountRemote, loadRemote, saveRemote, type PutPayload } from "./remote";
-import { clearLocalContent, onLocalChange, readLocalContent, writeLocalContent } from "./storage";
+import { clearDeviceRecords, clearLocalContent, onLocalChange, readLocalContent, writeLocalContent } from "./storage";
 import {
   CONSENT_VERSION,
   SCHEMA_VERSION,
@@ -339,6 +339,7 @@ function applyRemote(remote: GetResponseBody): void {
 function endLocalSession(): void {
   stopSync();
   clearLocalContent();
+  clearDeviceRecords();
   removeMeta();
   signOut({ redirect: false });
 }
@@ -477,6 +478,8 @@ export async function logout(): Promise<LogoutResult> {
       clearLocalContent();
       removeMeta();
     }
+    // 주거비 달력 · 집 보기 체크리스트는 서버에 없는, 이 기기에만 있는 기록 — 동기화 기록이 없어도 지운다(공용 기기 보호)
+    clearDeviceRecords();
     signOut();
   }
   return { discardedUnsynced };
@@ -501,6 +504,7 @@ export async function withdraw(): Promise<void> {
     // 서버는 그 사용자의 구독을 모두 지웠다 — 이 기기 구독만 끊는다
     await unsubscribeThisDevice();
     clearLocalContent();
+    clearDeviceRecords();
     removeMeta();
     forgetConsent();
     signOut({ redirect: false });

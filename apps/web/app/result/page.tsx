@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
 import type { LoanProductMeta } from "@/lib/types";
@@ -11,14 +12,12 @@ import {
   AppShell,
   BottomTabBar,
   Button,
-  ContactInfo,
-  Disclosure,
   Icon3D,
   TopBar,
 } from "@/app/components";
 import {
-  ChevronDown,
-  ExternalLink,
+  ChevronRight,
+  ICON_MD,
   ICON_SM,
   Info,
 } from "@/app/components/icons";
@@ -31,16 +30,9 @@ import { benefitResultCards } from "@/lib/benefit-result";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
 
-/** 대출·보증 상품을 접은 목록에서 한 줄로 구분하는 이름 */
-const PRODUCT_TYPE_LABEL: Record<LoanProductMeta["productType"], string> = {
-  loan_interest_subsidy: "대출 · 이자 지원",
-  guarantee_fee_subsidy: "보증료 지원",
-  savings_account: "청약 · 저축",
-};
-
 export default function ResultPage() {
   const router = useRouter();
-  const { listing, summary, asOf, status, expiredAt, retry } = useResultData();
+  const { listing, birthDate, summary, asOf, status, expiredAt, retry } = useResultData();
 
   if (status === "loading") return <ResultLoading />;
   if (status === "missing") return <MissingInput />;
@@ -119,7 +111,7 @@ export default function ResultPage() {
           </h2>
           {countedCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
             </div>
           ))}
         </section>
@@ -137,56 +129,26 @@ export default function ResultPage() {
           </div>
           {extraCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min((countedCards.length + index) * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
             </div>
           ))}
         </section>
       )}
 
-      {/* 대출·보증은 현금 지원이 아니라 합계에 넣지 않는다. 예전엔 7개가 문단째 펼쳐져 화면의 절반을 썼다
-          (11/17 결과 화면 정리) — 한 줄로 접고, 펼치면 이름 · 종류 · 확인일만, 상품마다 다시 펼쳐 조건과 신청. */}
+      {/* 대출 · 보증은 현금 지원이 아니라 합계에 넣지 않는다. 11/22 부터 홈 '대출 · 보증' · /loans 가 맡아서
+          여기엔 개수와 '합계에 안 넣었다'는 한 줄만 둔다(예전엔 접힌 목록 · 상품별 접기). */}
       {loanProducts.length > 0 && (
-        <section aria-labelledby="loan-heading">
-          <h2 id="loan-heading" className="sr-only">대출·보증 상품</h2>
-          {/* 안쪽 상품 토글(Disclosure)도 group-open 으로 화살표를 돌린다 — 바깥은 이름 붙은 group 으로 따로 둔다 */}
-          <details className="group/loans rounded-card bg-surface shadow-card">
-            <summary className="focus-ring flex min-h-16 cursor-pointer list-none items-center gap-3 rounded-card px-4 py-3 [&::-webkit-details-marker]:hidden">
-              {/* 묶음의 주제는 3D 그림, 펼치기는 선 화살표 — 같은 줄에서도 할 일이 나뉜다 (lib/icons3d.ts) */}
-              <Icon3D name="loan" size={40} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-ink-900">현금 지원이 아닌 대출·보증 {loanProducts.length}개</span>
-                <span className="block text-xs text-ink-500">위 금액에는 넣지 않았어요</span>
-              </span>
-              <ChevronDown size={ICON_SM} aria-hidden="true" className="shrink-0 text-ink-500 transition-transform group-open/loans:rotate-180" />
-            </summary>
-            <div className="px-4 pb-4">
-              <p className="text-xs leading-relaxed text-ink-600">
-                이자 절감액은 계산하지 않아요.
-              </p>
-              <ul className="mt-1 divide-y divide-ink-100">
-                {loanProducts.map((product) => (
-                  <li key={product.id} className="py-3">
-                    <p className="text-sm font-bold text-ink-900">{product.name}</p>
-                    <p className="mt-0.5 text-xs text-ink-500">
-                      {product.agency} · {PRODUCT_TYPE_LABEL[product.productType]}
-                      {product.verifiedAt ? ` · ${formatDotDate(product.verifiedAt)} 확인` : " · 원문 확인 필요"}
-                    </p>
-                    <Disclosure label="조건과 신청 방법" className="mt-2">
-                      <p className="px-1 text-sm leading-relaxed text-ink-600">{product.summary}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-4 px-1 text-sm">
-                        <ExternalRefLink href={product.sourceUrl} tone="quiet">
-                          공식 출처
-                        </ExternalRefLink>
-                        <ExternalRefLink href={product.applyUrl}>신청 페이지로 이동</ExternalRefLink>
-                      </div>
-                      <ContactInfo contact={product.contact} variant="inline" />
-                    </Disclosure>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </details>
-        </section>
+        <Link
+          href="/loans"
+          className="focus-ring flex min-h-16 items-center gap-3 rounded-card bg-surface px-4 py-3 shadow-card transition-colors hover:bg-ink-50"
+        >
+          <Icon3D name="loan" size={40} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-ink-900">현금 지원이 아닌 대출·보증 {loanProducts.length}개</span>
+            <span className="block text-xs text-ink-500">위 금액에는 넣지 않았어요</span>
+          </span>
+          <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-500" />
+        </Link>
       )}
 
       <div className="flex gap-2.5 rounded-card bg-ink-100 p-4">
@@ -209,33 +171,8 @@ export default function ResultPage() {
         </Button>
       </div>
       </main>
-      {/* 계산 탭의 첫 화면 — 계산을 마친 사람은 계산 탭이 여기로 온다 (BottomTabBar calcTabHref) */}
-      <BottomTabBar active="calc" />
+      {/* 결과는 홈의 하위 화면 — 하단 섬은 '홈'에 불 (11/21 계산 탭을 달력 탭으로 바꿈) */}
+      <BottomTabBar active="home" />
     </AppShell>
-  );
-}
-
-/** 외부로 나가는 링크. 44px 타깃과 새 창 아이콘을 한 곳에서 준다. */
-function ExternalRefLink({
-  href,
-  tone = "brand",
-  children,
-}: {
-  href: string;
-  tone?: "brand" | "quiet";
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className={`focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm font-bold underline transition-colors ${
-        tone === "quiet" ? "text-ink-600 hover:text-ink-900" : "text-brand-700 hover:text-brand-800"
-      }`}
-    >
-      {children}
-      <ExternalLink size={ICON_SM - 2} aria-hidden="true" />
-    </a>
   );
 }

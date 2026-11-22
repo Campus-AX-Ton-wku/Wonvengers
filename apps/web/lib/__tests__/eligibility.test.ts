@@ -305,3 +305,30 @@ describe("계약 형태 조건 (정책 discovery.housingTypes ↔ 2층 계약 �
     expect(result.failedLabels).not.toContain("전세 계약만 신청할 수 있어요");
   });
 });
+
+/*
+ * 11/21 (ggue): 받는 동안 나이를 따지는 지원은 나이 상한 전까지만 센다(lib/benefit.ts supportAgeLimit).
+ * 계약 시작일에 이미 상한을 넘으면 한 달도 못 받는다 — 0원짜리 카드로 두지 않고 '대상 아님'으로 돌린다.
+ */
+describe("나이 상한 — 계약 시작 때 이미 넘으면 대상 아님", () => {
+  const profile = makeProfile({
+    birthDate: "1997-01-01", // 2026-04-01 에 만 29세 — 오늘 나이 판정은 통과, 2027-01-01 에 만 30세
+    livesApartFromParents: true,
+    originHouseholdMonthlyIncome: 500000,
+  });
+
+  it("계약 시작(2027-02-01)이 만 30세 생일 뒤면 주거급여 분리지급은 대상 아님이다", () => {
+    const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 24, contractStartDate: "2027-02-01" });
+    const result = evaluatePolicy(housingBenefitSplit, profile, listing, OPEN_PERIOD_DAY);
+    expect(result.status).toBe("대상아님");
+    expect(result.estimatedAmount).toBe(0);
+    expect(result.failedLabels.join(" ")).toMatch(/만 30세/);
+  });
+
+  it("생일 전에 시작하면 그 전까지 다 채운 달만 센다", () => {
+    const listing = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 24, contractStartDate: "2026-06-01" });
+    const result = evaluatePolicy(housingBenefitSplit, profile, listing, OPEN_PERIOD_DAY);
+    expect(result.status).not.toBe("대상아님");
+    expect(result.estimatedAmount).toBe(212000 * 7); // 2026-06-01 ~ 2027-01-01
+  });
+});

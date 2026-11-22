@@ -8,8 +8,12 @@ import {
   benefitFormula,
   benefitTypeLabel,
   estimatePolicyAmount,
+  monthsBeforeAgeLimit,
   payoutTiming,
+  supportAgeLimit,
+  AGE_CHECKED_AT_APPLICATION,
 } from "@/lib/benefit";
+import { nominalTotalCost } from "@/lib/rent";
 import { makeListing } from "./fixtures";
 
 const policies = policiesData as PolicyMeta[];
@@ -51,8 +55,19 @@ describe("benefitFormula", () => {
     );
   });
 
+  it("이사비가 0 이면 '0원과 상한 중 작은 값 = 0원' 대신 계산하지 않는다고 말한다 (11/21 이사비 칸 삭제)", () => {
+    const listing = makeListing({ oneTimeMoveCost: 0 });
+    const 이사비지원 = policies.filter((p) => p.lumpSumBasis === "oneTimeMoveCost");
+    expect(이사비지원.length).toBeGreaterThan(0);
+    for (const policy of 이사비지원) {
+      expect(estimatePolicyAmount(policy, listing)).toBe(0);
+      expect(benefitFormula(policy, listing), policy.id).toContain("계산하지 않습니다");
+    }
+  });
+
   it("식의 결과는 실제 계산 금액과 항상 같다", () => {
-    const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 4800000, months: 12 });
+    // 이사비는 화면이 더는 받지 않지만, 값이 들어오면 식과 금액이 맞는지는 계속 본다
+    const listing = makeListing({ contractType: "연세", rentOrYearlyAmount: 4800000, months: 12, oneTimeMoveCost: 300000 });
     // 계약 화면이 그 지출을 받지 않는 정책은 예상액을 내지 않는다. 식 대신 왜
     // 계산하지 않는지를 말한다 (types.ts 의 lumpSumBasis).
     const 계산하는것 = policies.filter(
@@ -201,5 +216,81 @@ describe("monthlyBreakdown — 매달 주는 지원의 한 달 금액 (11/18 결
   it("일시금은 매달 주는 지원이 아니다", () => {
     const lump = all.find((p) => p.benefitType === "lump_sum")!;
     expect(monthlyBreakdown(lump, makeListing())).toBeNull();
+  });
+});
+
+/*
+ * 11/21 (ggue 실기기): 거주 24개월로 넣었더니 주거비는 12개월(월세·관리비 480만원)로, 청년 주거급여
+ * 분리지급은 24개월(21만 2천원 × 24 = 508만 8천원)로 세어 지원이 주거비보다 커졌다. 처음엔 둘 다 12개월로
+ * 맞췄는데, ggue 결정으로 '최대 12개월' 규칙을 없애고 둘 다 입력한 개월 수 그대로 센다.
+ */
+describe("계산 기간 — 주거비와 지원금은 입력한 개월 수로 같이 센다", () => {
+  const listing24 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, managementFee: 100000, months: 24 });
+
+  it("지급 기간 상한이 없는 지원(청년 주거급여)은 입력한 24개월을 센다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing24)).toBe(212000 * 24);
+    expect(monthlyBreakdown(housingBenefit, listing24)).toEqual({ monthly: 212000, months: 24 });
+    expect(benefitFormula(housingBenefit, listing24)).toContain("× 24개월");
+  });
+
+  it("주거비도 같은 24개월로 세어, 월 지원이 월세보다 작으면 지원이 주거비를 넘지 않는다", () => {
+    expect(nominalTotalCost(listing24)).toBe((300000 + 100000) * 24);
+    expect(estimatePolicyAmount(housingBenefit, listing24)).toBeLessThanOrEqual(nominalTotalCost(listing24));
+  });
+
+  it("정책의 지급 기간 상한(국토부 청년월세 24개월)은 그대로 지킨다", () => {
+    const listing36 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 36 });
+    expect(estimatePolicyAmount(moland, listing36)).toBe(200000 * 24);
+  });
+
+  it("12개월보다 짧게 살면 그 개월 수로 센다", () => {
+    const listing6 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 6 });
+    expect(estimatePolicyAmount(housingBenefit, listing6)).toBe(212000 * 6);
+  });
+});
+
+/*
+ * 11/21 (ggue): 입력한 거주 개월 수를 그대로 세면서 나이 상한을 넘는 기간까지 지원이 붙는 문제.
+ * 정책별로 나눈다 — 나이를 '신청할 때 한 번' 보는 지원은 자르지 않고, '받는 동안 계속' 보는 지원
+ * (그리고 구분이 안 된 지원)은 만 (상한+1)세 생일 전까지 다 채운 달만 센다.
+ */
+describe("나이 상한 — 받는 동안 나이를 따지는 지원은 상한을 넘기 전 달까지만 센다", () => {
+  const 시작 = "2026-12-01";
+  const listing36 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 36, contractStartDate: 시작 });
+  const listing24 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 24, contractStartDate: 시작 });
+
+  it("계약 시작부터 만 (상한+1)세 생일 전까지 다 채운 달 수를 센다", () => {
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2026-12-01")).toBe(17); // 2028-05-10 에 만 30세
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2026-12-15")).toBe(16); // 2028-04-15 ~ 05-15 는 다 못 채운다
+    expect(monthsBeforeAgeLimit("1998-05-10", 29, "2028-06-01")).toBe(0); // 시작 때 이미 넘었다
+  });
+
+  it("청년 주거급여 분리지급(만 30세 미만)은 36개월로 넣어도 만 30세 생일 전까지만 센다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing36, "1998-05-10")).toBe(212000 * 17);
+    expect(monthlyBreakdown(housingBenefit, listing36, "1998-05-10")).toEqual({ monthly: 212000, months: 17 });
+    expect(supportAgeLimit(housingBenefit, listing36, "1998-05-10")).toEqual({ months: 17, ageMax: 29, endDate: "2028-05-10" });
+    expect(benefitFormula(housingBenefit, listing36, "1998-05-10")).toContain("× 17개월");
+    expect(benefitFormula(housingBenefit, listing36, "1998-05-10")).toContain("만 30세가 되는 2028.05.10 전까지");
+  });
+
+  it("상한에 닿지 않으면 입력한 개월 수 그대로다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing24, "2003-08-12")).toBe(212000 * 24);
+    expect(supportAgeLimit(housingBenefit, listing24, "2003-08-12")).toBeNull();
+  });
+
+  it("신청할 때 한 번만 나이를 보는 지원(국토부 청년월세 · 공고 '1991~2007년생')은 자르지 않는다", () => {
+    expect(AGE_CHECKED_AT_APPLICATION.has(moland.id)).toBe(true);
+    // 2027-01-15 에 만 35세가 되지만 신청 때 34세였으면 24개월 다 받는다
+    expect(estimatePolicyAmount(moland, listing24, "1992-01-15")).toBe(200000 * 24);
+    expect(supportAgeLimit(moland, listing24, "1992-01-15")).toBeNull();
+  });
+
+  it("구분이 안 된 새 정책은 받는 동안 나이를 따진다고 보고 자른다 — 금액을 부풀리지 않게", () => {
+    const 새정책 = { ...moland, id: "some-new-policy" };
+    expect(estimatePolicyAmount(새정책, listing24, "1992-01-15")).toBe(200000 * 1);
+  });
+
+  it("생년월일을 모르면 자르지 않는다", () => {
+    expect(estimatePolicyAmount(housingBenefit, listing36)).toBe(212000 * 36);
   });
 });

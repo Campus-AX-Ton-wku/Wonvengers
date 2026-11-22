@@ -4,7 +4,8 @@ import { render, screen, within } from "@testing-library/react";
 import BenefitResultCard from "@/app/result/BenefitResultCard";
 import { ResultLoading, ResultState } from "@/app/result/ResultState";
 import { toBenefitResultCardData } from "@/lib/benefit-result";
-import type { PolicyResult } from "@/lib/types";
+import type { PolicyMeta, PolicyResult } from "@/lib/types";
+import policiesData from "@/data/policies.json";
 import { makeListing } from "@/lib/__tests__/fixtures";
 
 const listing = makeListing();
@@ -186,5 +187,31 @@ describe("결과 예외 상태", () => {
     render(<ResultLoading />);
     expect(screen.getByRole("status").textContent).toBe("혜택 계산 중");
     expect(screen.getByRole("main").getAttribute("aria-busy")).toBe("true");
+  });
+});
+
+/*
+ * 11/21 (ggue): 받는 동안 나이를 따지는 지원(청년 주거급여 분리지급)이 나이 상한에서 잘리면
+ * 카드에 몇 개월로 셌는지와 왜 그런지(만 30세가 되는 날)를 같이 적는다 — 입력한 36개월과 다르니까.
+ */
+describe("결과 카드 — 나이 상한으로 지원 개월이 줄면 이유를 적는다", () => {
+  it("36개월로 넣어도 '17개월이면 …'과 '만 30세가 되는 2028.05.10 전까지만 셌어요'를 보여 준다", () => {
+    const housing = (policiesData as PolicyMeta[]).find((p) => p.id === "youth-housing-benefit-split-payment")!;
+    const listing36 = makeListing({ contractType: "월세", rentOrYearlyAmount: 300000, months: 36, contractStartDate: "2026-12-01" });
+    const policyResult: PolicyResult = {
+      policy: housing,
+      status: "예상적용",
+      checks: [],
+      passedLabels: ["나이 19~29세"],
+      failedLabels: [],
+      unknownLabels: [],
+      estimatedAmount: 212000 * 17,
+    };
+    const card = toBenefitResultCardData(policyResult, "2026-11-21");
+    if (!card) throw new Error("카드 생성 실패");
+    render(<BenefitResultCard card={card} result={policyResult} listing={listing36} birthDate="1998-05-10" />);
+
+    expect(screen.getByText("17개월이면 360만 4,000원")).toBeTruthy();
+    expect(screen.getByText("만 30세가 되는 2028.05.10 전까지만 셌어요")).toBeTruthy();
   });
 });

@@ -22,6 +22,7 @@ export {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Circle,
   CircleAlert,
   CircleCheck,
   CircleSlash,

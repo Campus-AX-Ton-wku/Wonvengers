@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppShell, LinkButton, TopBar } from "@/app/components";
-import { ChevronLeft, ChevronRight, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
+import { AppShell, buttonClass, TopBar } from "@/app/components";
+import { ExternalLink, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
+import { StepNav } from "./StepNav";
 
 /** 정적 export — 모든 가이드의 모든 장을 미리 만든다. */
 export function generateStaticParams() {
@@ -9,8 +11,9 @@ export function generateStaticParams() {
 }
 
 /**
- * 가이드 한 장 (11/20 ggue — 노션처럼 한 페이지에 한 섹션). ← 는 목차(/guides/[id]).
- * 순서: 비유 제목 → 한 줄 할 일(굵게) → 본문 → 어디서 해요 → 조심해요 → 용어 풀이(정확한 뜻) → 이전 · 다음.
+ * 가이드 한 장 (11/20 ggue — 노션처럼 한 페이지에 한 섹션). ← 는 목차(/guides/[id]) — 장 넘기기가 기록을 안 쌓아서 늘 목차다.
+ * 순서: 용어 · 몇 번째 장 → 제목 → 한 줄 할 일(굵게) → 본문 → 어디서 해요 → 조심해요 → 용어 풀이(정확한 뜻) → 이전 · 다음.
+ * 윗줄은 11/21 ggue 결정으로 가이드 이름 대신 용어 — 목차와 똑같이 '용어 → 제목' 두 줄. ← 가 그 가이드 목차로 돌아간다.
  * 출처 · 확인일은 목차 아래 한 곳에 둔다.
  */
 export default async function GuideStepPage({ params }: { params: Promise<{ id: string; step: string }> }) {
@@ -28,7 +31,7 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
       <main className="flex flex-1 flex-col gap-5 pb-10 pt-2.5">
         <header className="flex flex-col gap-2">
           <p className="text-[13px] font-bold text-brand-700">
-            {guide.title} · {n}/{total}
+            {section.keyword} · {n}/{total}
           </p>
           <h1 className="text-[26px] font-extrabold leading-[1.35] text-ink-900">{section.title}</h1>
           <p className="text-[17px] font-bold leading-relaxed text-ink-900">{section.lead}</p>
@@ -48,15 +51,53 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
               <MapPin size={ICON_SM} aria-hidden="true" className="text-brand-600" />
               {section.whereLabel ?? "어디서 해요"}
             </h2>
-            <ul className="flex flex-col gap-1.5">
-              {section.where.map((w) => (
-                <li key={w} className="flex gap-2.5 text-[15px] leading-relaxed text-ink-700">
-                  <span aria-hidden="true" className="mt-[0.65em] size-1.5 shrink-0 rounded-full bg-brand-600" />
-                  <span>{w}</span>
-                </li>
-              ))}
+            {/* 11/22 ggue — 바로가기가 있는 곳은 누르면 그 서비스 화면이 새 창으로(이름은 링크 파랑 + ↗). 없는 곳은 글자만.
+                덧말(다른 곳에서도 할 수 있음)은 작게 아래 줄. 줄은 가는 선으로 나눠 누르는 칸(48px)이 보이게 */}
+            <ul className="flex flex-col divide-y divide-ink-100">
+              {section.where.map((place) => {
+                const text = (
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span
+                      className={`text-[15px] leading-snug ${place.url ? "font-semibold text-brand-700" : "text-ink-700"}`}
+                    >
+                      {place.name}
+                    </span>
+                    {place.note && (
+                      <>
+                        <span className="sr-only">, </span>
+                        <span className="text-[13px] leading-snug text-ink-500">{place.note}</span>
+                      </>
+                    )}
+                  </span>
+                );
+                return (
+                  <li key={place.name}>
+                    {place.url ? (
+                      <a
+                        href={place.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="focus-ring flex min-h-12 items-center gap-3 py-2.5"
+                      >
+                        {text}
+                        <ExternalLink size={ICON_SM} aria-hidden="true" className="shrink-0 text-brand-600" />
+                        <span className="sr-only">(새 창)</span>
+                      </a>
+                    ) : (
+                      <div className="flex min-h-12 items-center py-2.5">{text}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
+        )}
+
+        {section.placesMap && (
+          <Link href="/guides/places" className={buttonClass({ variant: "secondary", size: "md", full: true })}>
+            <MapPin size={ICON_MD} aria-hidden="true" />
+            가까운 주민센터 · 무인민원발급기 지도 보기
+          </Link>
         )}
 
         {section.caution && (
@@ -85,24 +126,8 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
           </section>
         )}
 
-        <nav aria-label="장 이동" className="mt-auto flex gap-2 pt-4">
-          {n > 1 && (
-            <LinkButton href={`${base}/${n - 1}`} variant="secondary" size="md" className="flex-1">
-              <ChevronLeft size={ICON_MD} aria-hidden="true" />
-              이전
-            </LinkButton>
-          )}
-          {n < total ? (
-            <LinkButton href={`${base}/${n + 1}`} size="md" className="flex-1">
-              다음
-              <ChevronRight size={ICON_MD} aria-hidden="true" />
-            </LinkButton>
-          ) : (
-            <LinkButton href={base} size="md" className="flex-1">
-              목차로
-            </LinkButton>
-          )}
-        </nav>
+        {/* 장 넘기기는 기록을 쌓지 않는다 — ← 가 늘 목차로 (./StepNav.tsx, 11/21 ggue) */}
+        <StepNav base={base} n={n} total={total} />
       </main>
     </AppShell>
   );
