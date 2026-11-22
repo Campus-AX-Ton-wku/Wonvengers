@@ -8,6 +8,46 @@ import { isPushConfigured } from "@/lib/push";
 import { ChevronRight, ICON_MD } from "@/app/components/icons";
 import { flushNow, hasUnsyncedChanges, logout, retrySync, useSyncState, withdraw } from "@/lib/sync";
 import { ThemeSetting } from "./ThemeSetting";
+import policiesJson from "@/data/policies.json";
+import { seoulTodayISO } from "@/lib/date";
+import { pageProgress } from "@/lib/preparation";
+import {
+  EMPTY_ANSWERS,
+  loadAnswers,
+  loadChecklist,
+  loadDocumentChecks,
+  loadLedger,
+  loadProfileCard,
+  loadSaved,
+  onLocalChange,
+} from "@/lib/storage";
+import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+import type { ProfileCardData } from "@/lib/user-data";
+import { MyRecords } from "./MyRecords";
+import { ProfileCardSection } from "./ProfileCardSection";
+
+const POLICIES = policiesJson as PolicyMeta[];
+
+interface Mine {
+  answers: DiscoveryAnswers;
+  card: ProfileCardData | null;
+  saved: number;
+  preparing: number;
+  ledgerMonths: number;
+}
+
+/** 내 기록 · 프로필에 쓰는 이 기기 값. 신청 준비 중 = 관심 지원금 중 하나라도 체크했지만 다 마치지 않은 것 */
+function readMine(): Mine {
+  const saved = loadSaved();
+  const preparing = saved.filter((id) => {
+    const policy = POLICIES.find((x) => x.id === id);
+    if (!policy) return false;
+    const { done, total } = pageProgress(policy, loadChecklist(id), loadDocumentChecks(id));
+    return done > 0 && done < total;
+  }).length;
+  const ledgerMonths = Object.values(loadLedger().months).filter((m) => Object.keys(m.done).length > 0).length;
+  return { answers: loadAnswers(), card: loadProfileCard(), saved: saved.length, preparing, ledgerMonths };
+}
 
 /** 2026.11.04 18:00 — 이 기기 시간대로. */
 function formatSavedAt(iso: string): string {
@@ -37,6 +77,16 @@ export default function AccountPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const sync = useSyncState();
+  const [mine, setMine] = useState<Mine>({ answers: EMPTY_ANSWERS, card: null, saved: 0, preparing: 0, ledgerMonths: 0 });
+  const [today, setToday] = useState("");
+
+  // 프로필 · 내 기록은 이 기기 사본에서 — 다른 기기에서 바꾼 값이 동기화로 들어오면 다시 읽는다
+  useEffect(() => {
+    const read = () => setMine(readMine());
+    read();
+    setToday(seoulTodayISO());
+    return onLocalChange(read);
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -85,7 +135,8 @@ export default function AccountPage() {
 
   return (
     <AppShell>
-      <TopBar backHref="/find" />
+      {/* 탭 화면이라 뒤로 가기 없음 — 로그인했으면 상단바 왼쪽 제목 '내 정보'(11/22 내 프로필) */}
+      <TopBar title={ready && available && signedIn && !withdrawn ? "내 정보" : undefined} />
       <main className="flex flex-1 flex-col gap-6 pb-10 pt-4">
         {!ready ? (
           <p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p>
@@ -114,11 +165,23 @@ export default function AccountPage() {
           </section>
         ) : (
           <>
-            <section className="flex flex-col gap-2">
-              <h1 className={heading}>내 정보</h1>
-              <p className="text-sm text-ink-700">카카오로 로그인했어요</p>
-              <p className="text-sm text-ink-500">
-                {sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}
+            {/* 11/22 내 프로필 — 프로필 카드 · 내 기록 · 설정 · 계정 순 (docs/기획/2026-11-22-내-프로필-설계.md §3) */}
+            <ProfileCardSection
+              card={mine.card}
+              answers={mine.answers}
+              today={today}
+              onSaved={(card) => setMine((m) => ({ ...m, card }))}
+            />
+            <MyRecords saved={mine.saved} preparing={mine.preparing} ledgerMonths={mine.ledgerMonths} />
+            <Settings showNotifications={isPushConfigured()} />
+            <section aria-labelledby="account-heading" className="flex flex-col gap-2.5">
+              <h2 id="account-heading" className="text-base font-bold text-ink-900">
+                계정
+              </h2>
+              <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-ink-600">
+                <span>카카오로 로그인했어요</span>
+                <span aria-hidden="true" className="text-ink-300">·</span>
+                <span>{sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}</span>
               </p>
               {sync.status === "error" && (
                 <div
@@ -131,46 +194,32 @@ export default function AccountPage() {
                   </Button>
                 </div>
               )}
+              <div className="flex flex-col gap-2">
+                <Button variant="quiet" size="screen" disabled={loggingOut} onClick={() => void requestLogout()}>
+                  {loggingOut ? "로그아웃하는 중…" : "로그아웃"}
+                </Button>
+                <Button
+                  variant="text"
+                  size="md"
+                  onClick={() => {
+                    setFailed(false);
+                    setConfirming(true);
+                  }}
+                >
+                  회원 탈퇴
+                </Button>
+              </div>
+              {failed && (
+                <p role="alert" className="rounded-control bg-danger-50 px-4 py-3 text-sm text-danger-700">
+                  탈퇴하지 못했어요. 아무것도 지우지 않았으니 잠시 뒤 다시 시도해 주세요.
+                </p>
+              )}
             </section>
-            {/* 알림 칸은 알림 설정 화면으로 옮겼다(11/20 두 단계 구조 — 종 → 알림함 → ⚙ 알림 설정). 여기는 길 하나만 */}
-            {isPushConfigured() && (
-              <Link
-                href="/notifications/settings"
-                className="focus-ring flex min-h-11 items-center justify-between rounded-control border border-ink-200 bg-surface px-4 py-3 text-sm font-bold text-ink-900"
-              >
-                알림 설정
-                <ChevronRight size={ICON_MD} aria-hidden="true" className="text-ink-300" />
-              </Link>
-            )}
-            <div className="flex flex-col gap-2">
-              <Button variant="quiet" size="screen" disabled={loggingOut} onClick={() => void requestLogout()}>
-                {loggingOut ? "로그아웃하는 중…" : "로그아웃"}
-              </Button>
-              <Button
-                variant="text"
-                size="md"
-                onClick={() => {
-                  setFailed(false);
-                  setConfirming(true);
-                }}
-              >
-                회원 탈퇴
-              </Button>
-            </div>
-            {failed && (
-              <p role="alert" className="rounded-control bg-danger-50 px-4 py-3 text-sm text-danger-700">
-                탈퇴하지 못했어요. 아무것도 지우지 않았으니 잠시 뒤 다시 시도해 주세요.
-              </p>
-            )}
           </>
         )}
 
-        {/* 화면 모드(다크 모드, 11/22) — 로그인과 상관없는 이 기기 설정이라 상태 갈래 밖에 둔다 */}
-        {ready && <ThemeSetting />}
-
-        <Link href="/privacy" className="focus-ring inline-flex min-h-11 w-fit items-center text-sm font-bold text-brand-700 underline">
-          개인정보 처리방침
-        </Link>
+        {/* 로그인 전 · 로그인 못 씀 · 탈퇴 끝에도 화면 모드 · 처리방침은 보인다(이 기기 설정). 로그인했으면 위 '설정'에 있다 */}
+        {ready && !(available && signedIn && !withdrawn) && <Settings showNotifications={false} />}
       </main>
       {/* 내 정보 탭의 첫 화면 (BottomTabBar). 상단바 종은 알림함(/notifications)으로 간다(11/20). */}
       <BottomTabBar active="my" />
@@ -207,5 +256,28 @@ export default function AccountPage() {
         </Sheet>
       )}
     </AppShell>
+  );
+}
+
+/** 설정 — 알림 설정 ›(알림을 쓸 수 있을 때) · 화면 모드 · 개인정보 처리방침 › */
+function Settings({ showNotifications }: { showNotifications: boolean }) {
+  const row =
+    "focus-ring flex min-h-12 items-center justify-between rounded-control border border-ink-200 bg-surface px-4 py-3 text-sm font-bold text-ink-900";
+  return (
+    <section aria-label="설정" className="flex flex-col gap-2.5">
+      {/* 알림 칸은 알림 설정 화면으로 옮겼다(11/20 두 단계 구조 — 종 → 알림함 → ⚙ 알림 설정). 여기는 길 하나만 */}
+      {showNotifications && (
+        <Link href="/notifications/settings" className={row}>
+          알림 설정
+          <ChevronRight size={ICON_MD} aria-hidden="true" className="text-ink-300" />
+        </Link>
+      )}
+      {/* 화면 모드(다크 모드, 11/22) — 로그인과 상관없는 이 기기 설정 */}
+      <ThemeSetting />
+      <Link href="/privacy" className={row}>
+        개인정보 처리방침
+        <ChevronRight size={ICON_MD} aria-hidden="true" className="text-ink-300" />
+      </Link>
+    </section>
   );
 }
