@@ -91,3 +91,23 @@ describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
     }
   });
 });
+
+describe("서류 떼는 곳 1장 — 지도 버튼 (11/22)", () => {
+  const section = findGuide("where-documents")!.sections[0];
+
+  it("placesMap 은 이 장 1번 섹션에만 있다", () => {
+    expect(section.placesMap).toBe(true);
+    const marked = GUIDES.flatMap((g) => g.sections.map((s, i) => ({ id: g.id, i, on: s.placesMap })))
+      .filter((x) => x.on)
+      .map((x) => `${x.id}/${x.i}`);
+    expect(marked).toEqual(["where-documents/0"]);
+  });
+
+  it("발급기에서도 뗄 수 있다는 줄", () => {
+    expect(section.body.join(" ")).toContain("무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요");
+  });
+
+  it("행안부 출처", () => {
+    expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
+  });
+});

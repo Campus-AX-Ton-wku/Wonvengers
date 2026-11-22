@@ -36,6 +36,8 @@ export interface GuideSection {
   where?: GuidePlace[];
   /** where 칸 제목 — 기본 '어디서 해요'. 서류는 '어디서 떼요', 시세는 '실거래가 공개시스템에서 봐요' */
   whereLabel?: string;
+  /** true 면 '어디서' 칸 아래에 서류 떼는 곳 지도(/guides/places) 버튼 — 서류 떼는 곳 1장 */
+  placesMap?: boolean;
   /** 조심해요 (있을 때만) */
   caution?: string;
   /** 용어 풀이 — 비유 대신 정확한 뜻 */
@@ -270,7 +272,10 @@ export const GUIDES: Guide[] = [
         keyword: "서류 지도",
         title: "어디서 떼요? 한눈에 보기",
         lead: "지원금 신청에 자주 나오는 서류와 떼는 곳이에요.",
-        body: ["대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요."],
+        body: [
+          "대부분 정부24에서 한 번에 뗄 수 있어요. 정부24에 없는 서류는 그 서류를 만드는 기관에서 떼요.",
+          "무인민원발급기에서 뗄 수 있는 서류는 지도에서 서류별로 골라 볼 수 있어요. 발급기마다 뗄 수 있는 서류가 달라요.",
+        ],
         // 누르면 정부24 발급 화면(본문: 대부분 정부24에서 한 번에). 덧말은 떼는 곳 전부 — 링크가 여는 곳을 맨 앞에
         where: [
           { name: "주민등록등본", url: "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015", note: "정부24(온라인) · 주민센터 · 무인민원발급기" },
@@ -282,6 +287,7 @@ export const GUIDES: Guide[] = [
           { name: "등기부등본", url: "https://www.iros.go.kr/", note: "대법원 인터넷등기소" },
         ],
         whereLabel: "어디서 떼요",
+        placesMap: true,
       },
       {
         keyword: "떼기 전에",
@@ -301,6 +307,7 @@ export const GUIDES: Guide[] = [
       { name: "국세청 홈택스", url: "https://www.hometax.go.kr" },
       { name: "세움터", url: "https://www.eais.go.kr" },
       { name: "대법원 인터넷등기소", url: "https://www.iros.go.kr" },
+      { name: "행정안전부 무인민원발급기정보", topic: "익산 발급기 위치·운영시간·발급 서류", url: "https://www.data.go.kr/data/15154774/openapi.do" },
     ],
   },
 ];

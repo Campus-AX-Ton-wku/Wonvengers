@@ -181,4 +181,12 @@ describe("장 넘기기 — 기록을 쌓지 않는다", () => {
     await user.click(screen.getByRole("link", { name: "목차로" }));
     expect(routerMock.replace).toHaveBeenLastCalledWith("/guides/protect-deposit");
   });
+
+  it("서류 떼는 곳 1장 — 지도 버튼이 있고, 다른 장에는 없다 (11/22)", async () => {
+    const { unmount } = render(await GuideStepPage({ params: Promise.resolve({ id: "where-documents", step: "1" }) }));
+    expect(screen.getByRole("link", { name: "가까운 주민센터 · 무인민원발급기 지도 보기" }).getAttribute("href")).toBe("/guides/places");
+    unmount();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "1" }) }));
+    expect(screen.queryByRole("link", { name: /지도 보기/ })).toBeNull();
+  });
 });

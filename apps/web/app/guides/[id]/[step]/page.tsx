@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppShell, TopBar } from "@/app/components";
+import { AppShell, buttonClass, TopBar } from "@/app/components";
 import { ExternalLink, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
 import { StepNav } from "./StepNav";
@@ -90,6 +91,13 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
               })}
             </ul>
           </section>
+        )}
+
+        {section.placesMap && (
+          <Link href="/guides/places" className={buttonClass({ variant: "secondary", size: "md", full: true })}>
+            <MapPin size={ICON_MD} aria-hidden="true" />
+            가까운 주민센터 · 무인민원발급기 지도 보기
+          </Link>
         )}
 
         {section.caution && (
