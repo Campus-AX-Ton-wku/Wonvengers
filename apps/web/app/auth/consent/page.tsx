@@ -27,6 +27,8 @@ const STORED_ITEMS: { name: string; detail: string; sensitive?: boolean }[] = [
   },
   { name: "신청 체크리스트", detail: "정책마다 확인 표시한 항목" },
   { name: "관심 지원금", detail: "하트를 눌러 모아 둔 지원금 목록과 정책별 서류 준비 체크" },
+  // 11/22 내 프로필 — 동의 버전은 올리지 않는다(11/17 관심 지원금 줄과 같게, 설계 §1)
+  { name: "프로필 · 배지", detail: "내 정보에서 꾸민 그림 · 색 · 이름 · 대표 배지와 받은 배지 · 받은 날" },
 ];
 
 const FACTS: { term: string; desc: string }[] = [
