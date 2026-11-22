@@ -79,7 +79,8 @@ export function ProfileSheet({
 
       <fieldset className="mt-2 flex flex-col gap-2">
         <legend className="mb-2 text-sm font-bold text-ink-900">색</legend>
-        <div className="flex flex-wrap gap-2.5">
+        {/* 한 줄 6칸(390px 이상) · 좁으면 3칸씩 두 줄 — 4 + 2 로 어정쩡하게 꺾이지 않게. 칸은 44px 그대로 */}
+        <div className="grid w-fit grid-cols-3 gap-2.5 min-[380px]:grid-cols-6 min-[380px]:gap-1.5">
           {PROFILE_COLORS.map((option) => (
             <label
               key={option.id}
