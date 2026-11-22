@@ -30,7 +30,7 @@ import { replaceKeepingEntry } from "@/lib/navigation";
  * 로그인을 다시 권한다(LoginSheet). 회원은 '처음이면 위, 회원이면 아래'로 읽고 아래를 누른다.
  * - 1 · 2장 오른쪽 위 [건너뛰기] → 마지막 장. 새 폰의 회원이 소개를 다 넘기지 않게
  * - 소개를 본 비회원이 / 로 들어오면 /start(이 화면을 마지막 장부터)로 온다(lib/start-redirect.ts)
- * - 카카오 버튼은 로그인을 쓸 수 있을 때(정식 주소)만, 이 기기에 로그인 기록이 없을 때만 보인다
+ * - 카카오 버튼은 로그인을 쓸 수 있을 때(정식 주소)만, 이 기기에 로그인 기록이 없을 때만 보인다 — 11/22 부터 1장부터 모든 장에
  *
  * ── SSR ──────────────────────────────────────────────────────────
  * 렌더에 localStorage 를 읽지 않는다. 읽으면 서버 HTML 과 첫 클라이언트 렌더가
@@ -113,7 +113,8 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
 
   const slide = SLIDES[step];
   const isLast = step === LAST;
-  const showKakao = isLast && isLoginAvailable() && !loggedIn;
+  // 1장부터 보인다(11/22) — 로그아웃한 회원 · 새 폰의 회원이 소개를 넘기지 않고 바로 로그인한다. 장마다 같은 자리라 넘겨도 버튼이 튀지 않는다.
+  const showKakao = isLoginAvailable() && !loggedIn;
 
   return (
     <AppShell className="relative">

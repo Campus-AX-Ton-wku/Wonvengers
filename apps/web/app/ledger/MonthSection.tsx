@@ -74,7 +74,7 @@ export function MonthSection({
           {out.length > 0 && <LineGroup title="나가는 돈" lines={out} verb="냈어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
           {out.length > 0 && income.length > 0 && <span aria-hidden="true" className="h-px bg-ink-100" />}
           {income.length > 0 && <LineGroup title="들어오는 돈" lines={income} verb="받았어요" month={month} record={record} onChange={onChange} onEdit={setEditing} />}
-          <Totals view={view} burdenLabel={burdenLabel(month, todayMonth)} yearLabel={yearTotalLabel(month, todayMonth)} />
+          <Totals view={view} burdenLabel={burdenLabel(month, todayMonth)} yearLabel={yearTotalLabel(month, todayMonth)} contractStart={plan.start} />
         </section>
       ) : (
         <OutOfContract plan={plan} onStart={() => onMonth(plan.start)} />
@@ -160,7 +160,7 @@ function LineGroup({
 }
 
 /** 이번 달 실제 부담 · 예상 · 누적 (설계 §4.4). 음수면 0원 + "지원이 N원 더 많아요". */
-function Totals({ view, burdenLabel, yearLabel }: { view: LedgerMonthView; burdenLabel: string; yearLabel: string }) {
+function Totals({ view, burdenLabel, yearLabel, contractStart }: { view: LedgerMonthView; burdenLabel: string; yearLabel: string; contractStart: MonthKey }) {
   const more = view.actual < 0 ? -view.actual : 0;
   return (
     <div className="flex flex-col gap-3 border-t-2 border-ink-900 pt-3.5">
@@ -175,11 +175,22 @@ function Totals({ view, burdenLabel, yearLabel }: { view: LedgerMonthView; burde
           {view.pending && " · 아직 안 누른 칸은 빼고 셈해요"}
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-3 rounded-[14px] bg-ink-50 px-3.5 py-3">
-        <span className="text-sm font-semibold text-ink-700">{yearLabel}</span>
-        <span data-testid="ledger-year" className="whitespace-nowrap text-[17px] font-extrabold text-brand-900">
-          {formatKoreanMoney(view.yearTotal)}
-        </span>
+      <div className="flex flex-col gap-2 rounded-[14px] bg-ink-50 px-3.5 py-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-semibold text-ink-700">{yearLabel}</span>
+          <span data-testid="ledger-year" className="whitespace-nowrap text-[17px] font-extrabold text-brand-900">
+            {formatKoreanMoney(view.yearTotal)}
+          </span>
+        </div>
+        {/* 계약이 해를 넘겼을 때만 — 올해 누적만으로는 작년에 낸 돈이 안 보인다 (11/22) */}
+        {view.contractTotal !== null && (
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0 text-sm font-semibold text-ink-700">총 누적 · {monthLabel(contractStart)}부터</span>
+            <span data-testid="ledger-contract" className="whitespace-nowrap text-[17px] font-extrabold text-brand-900">
+              {formatKoreanMoney(view.contractTotal)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

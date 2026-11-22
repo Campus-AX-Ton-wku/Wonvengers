@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
+import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/auth";
 import { useSyncState } from "@/lib/sync";
+import { KakaoButton } from "./KakaoButton";
 import { TabIcon, type TabIconName } from "./TabIcons";
 
 export type TabKey = "home" | "saved" | "benefit" | "ledger" | "my";
@@ -28,8 +29,9 @@ const TABS: { key: TabKey; label: string; icon: TabIconName; href: string }[] = 
  * 질문 · 계산 입력 · 서류 체크 같은 단계 화면에는 두지 않는다 — 한 가지 일에 집중하는 화면이고,
  * 그 화면들은 아래에 고정 버튼(StickyBottomAction)이 이미 있다.
  *
- * 로그인한 사람에게만 보인다. 홈 · 관심 · 달력은 로그인한 사람만 들어갈 수 있어서, 로그인 전에 탭을 보이면
- * 누르는 순간 온보딩으로 튕긴다.
+ * 탭은 로그인한 사람에게만 보인다. 홈 · 관심 · 달력은 로그인한 사람만 들어갈 수 있어서, 로그인 전에 탭을 보이면
+ * 누르는 순간 온보딩으로 튕긴다. 그 자리에 비회원에게는 [카카오로 로그인하고 홈으로]를 띄운다(11/22) — 없으면 질문을 다 끝낸
+ * 화면(지원금 목록 · 결과)에서 홈으로 갈 길이 없다. 내 정보 화면은 본문에 이미 카카오 버튼이 있어 띄우지 않는다.
  *
  * 선택된 탭은 채운 아이콘 + 뒤의 연한 파랑 알약 + 굵은 글자 — 색 하나에 기대지 않는다.
  * 저장에 실패하면 '내 정보'에 점을 찍는다(상단바의 '저장 안 됨 · 다시 시도'와 같은 뜻, 내 계정 화면에서 다시 시도).
@@ -38,21 +40,37 @@ const TABS: { key: TabKey; label: string; icon: TabIconName; href: string }[] = 
  */
 export function BottomTabBar({ active }: { active: TabKey }) {
   const [signedIn, setSignedIn] = useState(false);
+  const [available, setAvailable] = useState(false);
   const sync = useSyncState();
 
   useEffect(() => {
     if (!isLoginAvailable()) return;
+    setAvailable(true);
     const update = () => setSignedIn(hasStoredLogin());
     update();
     return onAuthChange(update);
   }, []);
 
-  if (!signedIn) return null;
+  const spacer = <div aria-hidden="true" data-testid="tab-bar-spacer" className="h-[calc(6.5rem+env(safe-area-inset-bottom))] shrink-0" />;
+
+  if (!signedIn) {
+    if (!available || active === "my") return null;
+    return (
+      <>
+        {spacer}
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <div className="pointer-events-auto mx-auto w-[calc(100%-2.5rem)] max-w-[380px] rounded-[12px] shadow-island">
+            <KakaoButton onClick={() => signIn("/home")}>카카오로 로그인하고 홈으로</KakaoButton>
+          </div>
+        </div>
+      </>
+    );
+  }
   const failed = sync.status === "error";
 
   return (
     <>
-      <div aria-hidden="true" data-testid="tab-bar-spacer" className="h-[calc(6.5rem+env(safe-area-inset-bottom))] shrink-0" />
+      {spacer}
       <nav
         aria-label="주요 메뉴"
         className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[max(1.25rem,env(safe-area-inset-bottom))]"

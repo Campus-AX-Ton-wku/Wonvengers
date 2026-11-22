@@ -182,3 +182,24 @@ describe("/ledger — 주거비 달력", () => {
     expect(within(nav).getByRole("link", { name: "달력" }).getAttribute("aria-current")).toBe("page");
   });
 });
+
+describe("/ledger — 총 누적 (11/22)", () => {
+  it("계약이 해를 넘겼으면 '올해 누적' 아래 '총 누적 · 계약 시작 달부터' — 작년에 낸 돈도 센다", async () => {
+    const old = addMonths(thisMonth, -14); // 언제 돌려도 작년 이전
+    saveListing({ ...listing, contractStartDate: `${old}-01`, months: 36 });
+    saveProfile(profile);
+    saveLedger(toggleLine(emptyLedger(), old, "rent", 400_000));
+    render(<LedgerPage />);
+    expect((await screen.findByTestId("ledger-contract")).textContent).toBe("40만원");
+    expect(screen.getByText(`총 누적 · ${monthLabel(old)}부터`)).toBeTruthy();
+    expect(screen.getByTestId("ledger-year").textContent).toBe("0원");
+  });
+
+  it("올해 시작한 계약은 '올해 누적'만 — 같은 숫자를 두 줄로 보이지 않는다", async () => {
+    saveListing({ ...listing, contractStartDate: `${thisMonth.slice(0, 4)}-01-01`, months: 12 });
+    saveProfile(profile);
+    render(<LedgerPage />);
+    await screen.findByTestId("ledger-year");
+    expect(screen.queryByTestId("ledger-contract")).toBeNull();
+  });
+});

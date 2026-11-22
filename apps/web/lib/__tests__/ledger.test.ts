@@ -131,6 +131,19 @@ describe("한 달 (ledgerMonth) — 시안 예시 값", () => {
     expect(ledgerMonth(월세계획, r, "2027-01").yearTotal).toBe(400_000);
   });
 
+  it("총 누적 — 계약이 해를 넘기면 계약 시작 달부터 센다(11/22, 올해 누적만으로는 작년에 낸 돈이 안 보였다)", () => {
+    const r = press(record, "2027-01", RENT_KEY);
+    // 2026-09 23만 8천 + 10월 23만 + 11월 40만 + 12월 0 + 2027-01 40만
+    expect(ledgerMonth(월세계획, r, "2027-01")).toMatchObject({ yearTotal: 400_000, contractTotal: 1_268_000 });
+    // 계약이 끝난 뒤에도 계약 기간 전체 합
+    expect(ledgerMonth(월세계획, r, "2027-12").contractTotal).toBe(1_268_000);
+  });
+
+  it("총 누적 — 계약이 올해 시작했으면 올해 누적과 같아서 null(같은 숫자를 두 줄로 보이지 않는다)", () => {
+    expect(ledgerMonth(월세계획, record, "2026-11").contractTotal).toBeNull();
+    expect(ledgerMonth(월세계획, record, "2026-08").contractTotal).toBeNull();
+  });
+
   it("계약 기간 밖 — 칸 없음, 부담 0", () => {
     for (const month of ["2026-08", "2027-09"]) {
       expect(ledgerMonth(월세계획, record, month)).toMatchObject({ inContract: false, lines: [], actual: 0, expected: 0, pending: false });
