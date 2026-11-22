@@ -104,6 +104,14 @@ export function syncEnabled(): boolean {
   return sub !== null && hasConsent(sub);
 }
 
+/**
+ * 이 기기가 지금 로그인한 계정과 서버를 한 번이라도 맞췄는가(처음 동기화 끝) — 배지 판정(11/22)이 기다린다.
+ * 로그인 직후 서버 값을 받기 전에 사본에 무언가 적으면, 비어 있지 않은 사본이 서버와 달라 충돌 창이 뜬다.
+ */
+export function syncReady(): boolean {
+  return syncEnabled() && readMeta() !== null && state.status !== "conflict";
+}
+
 function readMeta(): SyncMeta | null {
   const sub = storedSub();
   if (sub === null) return null;
