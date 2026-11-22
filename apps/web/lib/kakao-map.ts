@@ -17,7 +17,7 @@ export function loadKakaoMaps(appKey: string | undefined, timeoutMs = 8_000): Pr
   if (pending) return pending;
   pending = new Promise<KakaoMaps>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=clusterer`;
     script.async = true;
     const timer = setTimeout(() => reject(new Error("timeout")), timeoutMs);
     script.addEventListener("load", () => {

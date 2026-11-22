@@ -81,3 +81,31 @@ export function formatDistance(km: number): string {
 export function directionsUrl(p: CivilPlace): string {
   return `https://map.kakao.com/link/to/${encodeURIComponent(p.name)},${p.lat},${p.lng}`;
 }
+
+/** 지도에서 한 장소만 보일 때 거리 확대를 막는 가장 작은 지도 단계 (카카오: 숫자가 작을수록 가까이 확대) */
+export const MIN_MAP_LEVEL = 4;
+
+/** 익산 시내(동 지역)인지 — 주소에 읍 · 면이 없으면 시내로 본다. 처음 지도 화면을 시내에 맞추는 데 쓴다 */
+export function isCityCenter(p: CivilPlace): boolean {
+  return !/(읍|면) /.test(p.address);
+}
+
+/** 검색어 비교용 — 앞뒤 · 가운데 공백을 모두 없애고 소문자로 */
+export function normalizeQuery(s: string): string {
+  return s.replace(/\s+/g, "").toLowerCase();
+}
+
+const OFFICE_WORDS = ["주민센터", "행정복지센터"];
+const KIOSK_WORD = "무인민원발급기";
+
+/** 이름 · 주소 · 설치 장소 상세에 검색어가 있거나, 종류 이름(주민센터 · 발급기 …)을 쓴 검색어인지 */
+export function matchesQuery(p: CivilPlace, query: string): boolean {
+  const q = normalizeQuery(query);
+  if (!q) return true;
+  if ([p.name, p.address, p.detail ?? ""].some((v) => normalizeQuery(v).includes(q))) return true;
+  if (q.length >= 2) {
+    if (p.kind === "office" && OFFICE_WORDS.some((w) => w.includes(q))) return true;
+    if (p.kind === "kiosk" && KIOSK_WORD.includes(q)) return true;
+  }
+  return false;
+}

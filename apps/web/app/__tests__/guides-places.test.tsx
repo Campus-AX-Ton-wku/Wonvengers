@@ -101,7 +101,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     });
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getByRole("status").textContent).toBe("지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요");
+    expect(screen.getAllByRole("status")[0].textContent).toBe("지금 계신 곳이 익산에서 멀어 익산 전체를 보여 드려요");
     expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(3);
   });
 
@@ -112,9 +112,9 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
       value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: 35.9405, longitude: 126.9466 } } as GeolocationPosition) },
     });
     const { unmount } = render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
-    expect(screen.getByRole("status").textContent).toBe("");
+    expect(screen.getAllByRole("status")[0].textContent).toBe("");
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getByRole("status").textContent).toBe("가까운 순으로 바꿨어요");
+    expect(screen.getAllByRole("status")[0].textContent).toBe("가까운 순으로 바꿨어요");
     unmount();
 
     Object.defineProperty(navigator, "geolocation", {
@@ -123,7 +123,7 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     });
     render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
     await user.click(screen.getByRole("button", { name: "내 위치" }));
-    expect(screen.getByRole("status").textContent).toBe("위치를 찾지 못해 익산 전체를 보여 드려요");
+    expect(screen.getAllByRole("status")[0].textContent).toBe("위치를 찾지 못해 익산 전체를 보여 드려요");
   });
 
   it("서류 칩은 데이터에 있는 서류만 — 칩 묶음에 이름이 있다", async () => {
@@ -134,6 +134,49 @@ describe("서류 떼는 곳 지도 /guides/places", () => {
     const docs = within(screen.getByRole("group", { name: "서류" }));
     expect(docs.getByRole("button", { name: "주민등록등본" })).toBeTruthy();
     expect(docs.queryByRole("button", { name: "등기부등본" })).toBeNull();
+  });
+
+  it("이름으로 찾기 — 시청을 치면 익산시청만 남고 결과 수를 알린다", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    const search = screen.getByRole("search");
+    expect(within(search).getByLabelText("장소나 동 이름으로 찾기")).toBeTruthy();
+    expect(screen.getByPlaceholderText("장소나 동 이름으로 찾기 (예: 어양동, 시청, 익산역)")).toBeTruthy();
+    await user.type(screen.getByRole("searchbox"), "시청");
+    const list = screen.getByRole("list", { name: "장소 목록" });
+    expect(within(list).getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringContaining("익산시청")]);
+    expect(screen.getByText("1곳을 찾았어요").getAttribute("role")).toBe("status");
+  });
+
+  it("찾는 곳이 없으면 검색어를 넣어 알린다 — 칩만 고른 빈 결과는 기존 문구", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    await user.type(screen.getByRole("searchbox"), " 없는곳 ");
+    expect(screen.getByText("'없는곳'에 맞는 곳이 없어요")).toBeTruthy();
+    expect(screen.queryByText("조건에 맞는 곳이 없어요")).toBeNull();
+  });
+
+  it("검색어 지우기 — 모두 돌아오고 입력칸에 포커스", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    expect(screen.queryByRole("button", { name: "검색어 지우기" })).toBeNull();
+    await user.type(screen.getByRole("searchbox"), "시청");
+    await user.click(screen.getByRole("button", { name: "검색어 지우기" }));
+    expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(3);
+    expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+    expect(screen.queryByRole("button", { name: "검색어 지우기" })).toBeNull();
+  });
+
+  it("검색은 종류 칩과 함께 걸린다", async () => {
+    const user = userEvent.setup();
+    render(<PlacesView places={PLACES} generatedAt="2026-11-22" jsKey={undefined} />);
+    await user.type(screen.getByRole("searchbox"), "어양동");
+    expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "무인민원발급기" }));
+    expect(screen.getByText("'어양동'에 맞는 곳이 없어요")).toBeTruthy();
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "익산");
+    expect(within(screen.getByRole("list", { name: "장소 목록" })).getAllByRole("button")).toHaveLength(2);
   });
 
   it("장소가 없으면 안내 + 가이드 1장 링크", () => {

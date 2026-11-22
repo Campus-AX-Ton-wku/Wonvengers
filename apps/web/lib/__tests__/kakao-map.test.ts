@@ -19,7 +19,7 @@ describe("loadKakaoMaps", () => {
     const p2 = loadKakaoMaps("abc");
     const scripts = document.querySelectorAll("script");
     expect(scripts).toHaveLength(1);
-    expect(scripts[0].getAttribute("src")).toBe("https://dapi.kakao.com/v2/maps/sdk.js?appkey=abc&autoload=false");
+    expect(scripts[0].getAttribute("src")).toBe("https://dapi.kakao.com/v2/maps/sdk.js?appkey=abc&autoload=false&libraries=clusterer");
     const maps = { load: (cb: () => void) => cb() };
     (window as { kakao?: unknown }).kakao = { maps };
     scripts[0].dispatchEvent(new Event("load"));
