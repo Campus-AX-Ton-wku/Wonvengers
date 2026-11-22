@@ -9,7 +9,11 @@ import {
   DISCOVERY_KEYS,
   ELIGIBILITY_KEYS,
   emptyContent,
+  readBadges,
+  readProfileCard,
   sanitizeContent,
+  type BadgeId,
+  type ProfileCardData,
   type ChecklistState,
   type UserDataContent,
 } from "./user-data";
@@ -340,6 +344,28 @@ export function saveDocumentChecks(policyId: string, names: readonly string[]): 
   if (writeJSONSafely(`${DOCUMENT_CHECKS_PREFIX}${policyId}`, names)) notifyLocalChange();
 }
 
+// ── 내 프로필 · 배지 (11/22, docs/기획/2026-11-22-내-프로필-설계.md §1) — 계정과 동기화한다 ──
+const PROFILE_CARD_KEY = "perky.profile-card";
+const BADGES_KEY = "perky.badges";
+
+/** 꾸민 프로필. 안 꾸몄으면(또는 깨졌으면) null — 화면은 기본값(집 · 파랑 · 기본 이름)으로 그린다 */
+export function loadProfileCard(): ProfileCardData | null {
+  return readProfileCard(readJSON<unknown>(PROFILE_CARD_KEY));
+}
+
+export function saveProfileCard(card: ProfileCardData): void {
+  if (writeJSONSafely(PROFILE_CARD_KEY, card)) notifyLocalChange();
+}
+
+/** 받은 배지 → 받은 날 */
+export function loadBadges(): Partial<Record<BadgeId, string>> {
+  return readBadges(readJSON<unknown>(BADGES_KEY));
+}
+
+export function saveBadges(badges: Partial<Record<BadgeId, string>>): void {
+  if (writeJSONSafely(BADGES_KEY, badges)) notifyLocalChange();
+}
+
 function documentCheckIds(): string[] {
   const ids: string[] = [];
   try {
@@ -393,7 +419,17 @@ function quietly(write: () => void): void {
 
 // ── 사본 묶음 — lib/sync.ts 가 이 묶음으로 서버와 주고받는다 (lib/user-data.ts) ──
 
-const SYNCED_KEYS = [ANSWERS_KEY, ANSWERED_KEY, LISTING_KEY, PROFILE_KEY, ELIGIBILITY_ANSWERED_KEY, DECLARED_KEY, SAVED_KEY];
+const SYNCED_KEYS = [
+  ANSWERS_KEY,
+  ANSWERED_KEY,
+  LISTING_KEY,
+  PROFILE_KEY,
+  ELIGIBILITY_ANSWERED_KEY,
+  DECLARED_KEY,
+  SAVED_KEY,
+  PROFILE_CARD_KEY,
+  BADGES_KEY,
+];
 
 /** 이 기기의 답 일곱 갈래를 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
 export function readLocalContent(): UserDataContent {
@@ -422,6 +458,8 @@ export function readLocalContent(): UserDataContent {
     checklists: Object.fromEntries(checklistIds().map((id) => [id, loadChecklist(id)])),
     saved: readJSON<unknown>(SAVED_KEY) ?? [],
     documentChecks: Object.fromEntries(documentCheckIds().map((id) => [id, loadDocumentChecks(id)])),
+    profileCard: readJSON<unknown>(PROFILE_CARD_KEY),
+    badges: readJSON<unknown>(BADGES_KEY) ?? {},
   });
 }
 
@@ -454,6 +492,8 @@ export function writeLocalContent(content: UserDataContent): void {
     for (const [id, checklist] of Object.entries(content.checklists)) saveChecklist(id, checklist);
     if (content.saved.length > 0) writeJSON(SAVED_KEY, content.saved);
     for (const [id, names] of Object.entries(content.documentChecks)) writeJSON(`${DOCUMENT_CHECKS_PREFIX}${id}`, names);
+    if (content.profileCard) writeJSON(PROFILE_CARD_KEY, content.profileCard);
+    if (Object.keys(content.badges).length > 0) writeJSON(BADGES_KEY, content.badges);
   });
 }
 
@@ -463,7 +503,14 @@ export function writeLocalContent(content: UserDataContent): void {
  * 로그인 상태면 lib/sync.ts 가 비운 데이터를 기다리지 않고 바로 올린다 — 다른 기기에서도 빈 상태.
  */
 export function resetAllAnswers(): void {
-  quietly(clearLocalContent);
+  // 프로필 · 배지(11/22)는 답이 아니라서 남긴다 — 사본을 비우기 전에 읽어 두었다가 다시 쓴다
+  const profileCard = loadProfileCard();
+  const badges = loadBadges();
+  quietly(() => {
+    clearLocalContent();
+    if (profileCard) writeJSON(PROFILE_CARD_KEY, profileCard);
+    if (Object.keys(badges).length > 0) writeJSON(BADGES_KEY, badges);
+  });
   clearDeviceRecords();
   notifyLocalChange(true);
 }

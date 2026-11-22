@@ -506,6 +506,18 @@ export function sanitizeContent(
   };
 }
 
+/** 이 기기에 저장된 프로필 — 형식에 안 맞으면 없는 것으로(안 꾸민 것과 같게) */
+export function readProfileCard(v: unknown): ProfileCardData | null {
+  const r = attempt(() => nullable(v, (x) => parseProfileCard(x, "profileCard")));
+  return r.ok ? r.value : null;
+}
+
+/** 이 기기에 저장된 받은 배지 — 형식에 안 맞으면 빈 값 */
+export function readBadges(v: unknown): Partial<Record<BadgeId, string>> {
+  const r = attempt(() => (v === null || v === undefined ? {} : parseBadges(v, "badges")));
+  return r.ok ? r.value : {};
+}
+
 export function isEmptyContent(c: UserDataContent): boolean {
   return (
     Object.values(c.answers.values).every((v) => v === null) &&
