@@ -7,7 +7,7 @@ import { answerLine } from "@/lib/discovery";
 import { DEFAULT_PROFILE_CARD, profileColor, profileName } from "@/lib/profile-card";
 import { saveProfileCard } from "@/lib/storage";
 import type { DiscoveryAnswers } from "@/lib/types";
-import type { ProfileCardData } from "@/lib/user-data";
+import type { BadgeId, ProfileCardData } from "@/lib/user-data";
 import { ProfileSheet } from "./ProfileSheet";
 
 /**
@@ -19,11 +19,13 @@ export function ProfileCardSection({
   card,
   answers,
   today,
+  earnedBadges,
   onSaved,
 }: {
   card: ProfileCardData | null;
   answers: DiscoveryAnswers;
   today: string;
+  earnedBadges: readonly BadgeId[];
   onSaved: (next: ProfileCardData) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -69,6 +71,7 @@ export function ProfileCardSection({
         <ProfileSheet
           card={shown}
           defaultName={profileName(null, answers).name}
+          earnedBadges={earnedBadges}
           onClose={() => setEditing(false)}
           onSave={(next) => {
             saveProfileCard(next);
