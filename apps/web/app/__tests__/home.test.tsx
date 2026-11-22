@@ -9,7 +9,7 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { AUTH_KEY, resetAuthForTests, signOut } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveSavedList } from "@/lib/storage";
+import { saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveProfileCard, saveSavedList } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
 import { seoulTodayISO, todayISO } from "@/lib/date";
 import { addMonths, emptyLedger, ledgerMonth, ledgerPlan, monthKeyOf, toggleLine } from "@/lib/ledger";
@@ -107,6 +107,23 @@ describe("/home", () => {
     const tabs = screen.getByRole("navigation", { name: "주요 메뉴" });
     expect(within(tabs).getByRole("link", { name: "홈" }).getAttribute("aria-current")).toBe("page");
     expect(within(tabs).getByRole("link", { name: "관심" }).getAttribute("href")).toBe("/saved");
+  });
+
+  it("홈 인사 — 제목 위 그림 + '익산 사는 직장인님, 반가워요', 누르면 내 정보 · 꾸민 이름이면 그 이름 (11/22 내 프로필)", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    const first = render(<HomePage />);
+    const hello = await screen.findByRole("link", { name: /익산 사는 직장인님, 반가워요/ });
+    expect(hello.getAttribute("href")).toBe("/account");
+    expect(hello.querySelector("img[data-icon3d='rent']")).not.toBeNull();
+    // 인사는 제목보다 위
+    const title = screen.getByRole("heading", { level: 1, name: "내 주거지원 현황" });
+    expect(hello.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    first.unmount();
+
+    saveProfileCard({ icon: "student", color: "mint", name: "월세 2년 차", pinnedBadge: null });
+    render(<HomePage />);
+    const named = await screen.findByRole("link", { name: /월세 2년 차님, 반가워요/ });
+    expect(named.querySelector("img[data-icon3d='student']")).not.toBeNull();
   });
 
   it("요약 아래 주거 가이드 세 장 + 체크리스트 — 집 형태(월세)에 맞춰 서류 떼는 곳부터 · 꼬리표, 체크리스트는 맨 끝, 전체 보기는 /guides", async () => {

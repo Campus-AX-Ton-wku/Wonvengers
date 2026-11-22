@@ -20,12 +20,14 @@ import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgres
 import { formatApproxMoney } from "@/lib/money";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
-import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
 import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
 import { calcMonths } from "@/lib/rent";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
+import type { ProfileCardData } from "@/lib/user-data";
+import { HomeGreeting } from "./HomeGreeting";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -47,6 +49,7 @@ export default function HomePage() {
   const [ready, setReady] = useState(false);
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
   const [saved, setSaved] = useState<string[]>([]);
+  const [profileCard, setProfileCard] = useState<ProfileCardData | null>(null);
   const [today, setToday] = useState("");
   const [costs, setCosts] = useState<Costs | null>(null);
   const [ledger, setLedger] = useState<LedgerProgress | null>(null);
@@ -63,6 +66,7 @@ export default function HomePage() {
       setToday(t);
       setAnswers(loadAnswers());
       setSaved(loadSaved());
+      setProfileCard(loadProfileCard());
       const listing = loadListing();
       const profile = loadProfile();
       if (listing && profile) {
@@ -116,6 +120,8 @@ export default function HomePage() {
       <TopBar home />
       <main className="flex flex-col pb-10 pt-2.5">
         <header className="flex flex-col gap-2.5">
+          {/* 홈 인사(11/22 내 프로필) — 제목 위, 누르면 내 정보. 계산 전 · 후 같은 머리 */}
+          <HomeGreeting card={profileCard} answers={answers} />
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">내 주거지원 현황</h1>
           {open !== null && <ConditionChip line={answerLine(resolveAnswers(answers, today))} />}
         </header>
