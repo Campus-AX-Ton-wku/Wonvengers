@@ -51,12 +51,14 @@ async function 탈퇴창열기(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("/account (설계 '화면' 5)", () => {
-  it("로그인 상태, 마지막 저장 시각, 로그아웃·회원 탈퇴, 처리방침 링크", async () => {
+  it("계정 칸은 로그아웃 · 회원 탈퇴만 — '계정' 제목 · 로그인 상태 · 마지막 저장 줄은 없다 (11/23 ggue), 처리방침 링크", async () => {
     로그인한채로();
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 정보");
-    expect(screen.getByText("카카오로 로그인했어요")).toBeTruthy();
-    expect(screen.getByText(/^마지막 저장 \d{4}\.\d{2}\.\d{2} \d{2}:\d{2}$/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "로그아웃" })).toBeTruthy();
+    const account = screen.getByRole("region", { name: "계정" });
+    expect(within(account).getAllByRole("button").map((b) => b.textContent)).toEqual(["로그아웃", "회원 탈퇴"]);
+    expect(screen.queryByRole("heading", { name: "계정" })).toBeNull();
+    expect(screen.queryByText("카카오로 로그인했어요")).toBeNull();
+    expect(screen.queryByText(/마지막 저장 \d/)).toBeNull();
     expect(screen.getByRole("link", { name: "개인정보 처리방침" }).getAttribute("href")).toBe("/privacy");
   });
 
@@ -184,12 +186,12 @@ describe("알림 설정 한 줄 (11/20 두 단계 구조)", () => {
  * '아직 저장 전이에요'만 보이고 배지도 안 받아졌다(배지는 처음 동기화 뒤에만 판정). 동의로 가는 길을 보여 준다.
  */
 describe("/account — 로그인했지만 이 기기에 저장 동의가 없을 때", () => {
-  it("계정 줄에 동의 안내 + [동의하고 저장] → 돌아올 곳(/account)을 적고 동의 화면으로", async () => {
+  it("계정 칸에 [동의하고 저장] → 돌아올 곳(/account)을 적고 동의 화면으로", async () => {
     const user = userEvent.setup();
     signInAs("sub-a", { consent: false });
     render(<AccountPage />);
-    expect(await screen.findByText("이 기기에서는 아직 저장에 동의하지 않았어요")).toBeTruthy();
-    expect(screen.queryByText("아직 저장 전이에요")).toBeNull();
+    const account = await screen.findByRole("region", { name: "계정" });
+    expect(within(account).getByRole("button", { name: "동의하고 저장" })).toBeTruthy();
     const buttons = screen.getAllByRole("button", { name: "동의하고 저장" });
     expect(buttons.length).toBeGreaterThan(0);
     await user.click(buttons[0]);
@@ -207,8 +209,7 @@ describe("/account — 로그인했지만 이 기기에 저장 동의가 없을 
 
   it("동의한 기기에서는 안내 · 버튼이 없다", async () => {
     로그인한채로();
-    await screen.findByText("카카오로 로그인했어요");
-    expect(screen.queryByText("이 기기에서는 아직 저장에 동의하지 않았어요")).toBeNull();
+    await screen.findByRole("button", { name: "로그아웃" });
     expect(screen.queryByRole("button", { name: "동의하고 저장" })).toBeNull();
     expect(screen.queryByText("저장에 동의하면 배지를 받을 수 있어요")).toBeNull();
     expect(screen.queryByText("앱을 쓰다 보면 모여요")).toBeNull(); // 덧붙인 설명 줄은 뺐다 (ggue 11/23)
