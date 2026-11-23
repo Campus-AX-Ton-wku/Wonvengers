@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("@/lib/auth", async (importOriginal) => ({
@@ -9,6 +9,7 @@ vi.mock("@/lib/auth", async (importOriginal) => ({
 }));
 
 import OnboardingPage from "@/app/onboarding/page";
+import { AUTO_MS } from "@/app/onboarding/Onboarding";
 import StartPage from "@/app/start/page";
 import { signIn } from "@/lib/auth";
 import { hasSeenOnboarding } from "@/lib/storage";
@@ -23,13 +24,69 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
+const 제목 = () => screen.getByRole("heading", { level: 1 }).textContent ?? "";
+
 describe("온보딩 2장", () => {
-  it("질문 수를 실제와 같게 말한다 — /find 는 다섯 가지를 묻는다", async () => {
+  it("질문 수는 숫자로 못 박지 않는다 — '몇 가지 질문만' (11/23)", async () => {
     render(<OnboardingPage />);
     await userEvent.setup().click(screen.getByRole("button", { name: "2단계 · 안내" }));
 
-    expect(screen.getByText(/다섯 가지만\s*답하면 돼요/)).toBeTruthy();
-    expect(screen.queryByText(/네 가지/)).toBeNull();
+    expect(screen.getByText(/몇 가지 질문만\s*답하면 돼요/)).toBeTruthy();
+    expect(screen.queryByText(/다섯 가지|네 가지/)).toBeNull();
+  });
+});
+
+describe("넘기기 — [다음] 없이 밀거나 기다린다 (11/23)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("[다음] · [이전] 버튼이 없다", () => {
+    render(<OnboardingPage />);
+    expect(screen.queryByRole("button", { name: "다음" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "이전" })).toBeNull();
+  });
+
+  it("가만히 두면 AUTO_MS 마다 다음 장으로 가고, 마지막 장에서 멈춘다", () => {
+    vi.useFakeTimers();
+    render(<OnboardingPage />);
+    expect(제목()).toMatch(/흩어진 청년 혜택을/);
+    act(() => vi.advanceTimersByTime(AUTO_MS - 1));
+    expect(제목()).toMatch(/흩어진 청년 혜택을/);
+    act(() => vi.advanceTimersByTime(1));
+    expect(제목()).toMatch(/몇 가지 질문만/);
+    act(() => vi.advanceTimersByTime(AUTO_MS));
+    expect(제목()).toMatch(마지막장);
+    act(() => vi.advanceTimersByTime(AUTO_MS * 3));
+    expect(제목()).toMatch(마지막장);
+  });
+
+  it("손으로 넘기면 시간을 처음부터 다시 센다", () => {
+    vi.useFakeTimers();
+    render(<OnboardingPage />);
+    act(() => vi.advanceTimersByTime(AUTO_MS - 500));
+    fireEvent.click(screen.getByRole("button", { name: "2단계 · 안내" }));
+    act(() => vi.advanceTimersByTime(AUTO_MS - 1));
+    expect(제목()).toMatch(/몇 가지 질문만/);
+    act(() => vi.advanceTimersByTime(1));
+    expect(제목()).toMatch(마지막장);
+  });
+
+  it("왼쪽으로 밀면 다음 장, 오른쪽으로 밀면 이전 장. 짧게 밀거나 위아래로 밀면 그대로", () => {
+    render(<OnboardingPage />);
+    const 밀기 = (dx: number, dy = 0) => {
+      const main = screen.getByRole("main");
+      fireEvent.pointerDown(main, { clientX: 200, clientY: 300 });
+      fireEvent.pointerUp(main, { clientX: 200 + dx, clientY: 300 + dy });
+    };
+    밀기(-120);
+    expect(제목()).toMatch(/몇 가지 질문만/);
+    밀기(-20);
+    expect(제목()).toMatch(/몇 가지 질문만/);
+    밀기(-60, 200);
+    expect(제목()).toMatch(/몇 가지 질문만/);
+    밀기(120);
+    expect(제목()).toMatch(/흩어진 청년 혜택을/);
+    밀기(120); // 1장에서 더 뒤로는 없다
+    expect(제목()).toMatch(/흩어진 청년 혜택을/);
   });
 });
 
@@ -43,11 +100,12 @@ describe("시작 화면 — 소개 마지막 장 (11/20)", () => {
     expect(screen.getByRole("button", { name: "내 혜택 찾아보기" })).toBeTruthy();
   });
 
-  it("로그인을 쓸 수 있으면 1장부터 [카카오로 로그인] — 파랑 버튼 아래 (11/22)", async () => {
+  it("[카카오로 로그인] · [내 혜택 찾아보기]는 마지막 장에만 — 카카오는 파랑 버튼 아래 (11/23)", async () => {
     enableLogin();
     const user = userEvent.setup();
     render(<OnboardingPage />);
-    expect(screen.getByRole("button", { name: /카카오로 로그인/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /카카오로 로그인/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "내 혜택 찾아보기" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "건너뛰기" }));
     const kakao = screen.getByRole("button", { name: /카카오로 로그인/ });
     const start = screen.getByRole("button", { name: "내 혜택 찾아보기" });
@@ -83,10 +141,10 @@ describe("시작 화면 — 소개 마지막 장 (11/20)", () => {
     await vi.waitFor(() => expect(screen.queryByRole("button", { name: /카카오로 로그인/ })).toBeNull());
   });
 
-  it("/start 는 처음부터 마지막 장이고, [이전]으로 소개를 다시 볼 수 있다", async () => {
+  it("/start 는 처음부터 마지막 장이고, 진행 점으로 소개를 다시 볼 수 있다", async () => {
     render(<StartPage />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(마지막장);
-    await userEvent.setup().click(screen.getByRole("button", { name: "이전" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/다섯 가지만\s*답하면 돼요/);
+    await userEvent.setup().click(screen.getByRole("button", { name: "2단계 · 안내" }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/몇 가지 질문만\s*답하면 돼요/);
   });
 });

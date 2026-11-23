@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
-import { AppShell, BottomTabBar, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, LinkButton, PerkyCharacter, PushAskSheet, TopBar } from "@/app/components";
 import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
 import { ScheduleCard } from "./ScheduleCard";
@@ -17,6 +17,7 @@ import { seoulTodayISO } from "@/lib/date";
 import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
 import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgress } from "@/lib/ledger";
 import { formatApproxMoney } from "@/lib/money";
+import { markPushAsked, pushAskFor, type PushAskKind } from "@/lib/push-ask";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
@@ -52,6 +53,7 @@ export default function HomePage() {
   const [today, setToday] = useState("");
   const [costs, setCosts] = useState<Costs | null>(null);
   const [ledger, setLedger] = useState<LedgerProgress | null>(null);
+  const [pushAsk, setPushAsk] = useState<PushAskKind | null>(null);
 
   useEffect(() => {
     // 로그인이 풀리면 시작 화면(/start) — 소개 1장부터가 아니라 [내 혜택 찾아보기] · [카카오로 로그인]부터 (11/20)
@@ -60,9 +62,21 @@ export default function HomePage() {
       leave();
       return;
     }
-    // 로그인하고 홈까지 왔다 — 배지 알림은 여기서부터 (BadgeWatcher, 11/23 ggue)
+    // 로그인하고 홈까지 왔다 — 배지 알림은 여기서부터 (BadgeWatcher, 11/23 ggue).
+    // 알림 허용을 물을 차례면(lib/push-ask.ts) 그 창을 먼저 띄우고, 닫은 뒤에 배지를 판정한다 — 창 두 개가 겹치지 않게.
+    let alive = true;
     const sub = storedSub();
-    if (sub) markHomeReached(sub);
+    void pushAskFor("home")
+      .catch(() => null)
+      .then((kind) => {
+        if (!alive) return;
+        if (kind) {
+          markPushAsked("home");
+          setPushAsk(kind);
+        } else if (sub) {
+          markHomeReached(sub);
+        }
+      });
     const read = () => {
       const t = seoulTodayISO();
       setToday(t);
@@ -100,11 +114,18 @@ export default function HomePage() {
     const offAuth = onAuthChange(checkLogin);
     const offLocal = onLocalChange(read);
     return () => {
+      alive = false;
       window.removeEventListener("storage", onStorage);
       offAuth();
       offLocal();
     };
   }, []);
+
+  const closePushAsk = () => {
+    setPushAsk(null);
+    const sub = storedSub();
+    if (sub) markHomeReached(sub);
+  };
 
   if (!ready) return <AppShell><TopBar home /><p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p></AppShell>;
 
@@ -140,6 +161,7 @@ export default function HomePage() {
         <LoanRow region={answers.region} housingType={answers.housingType} />
       </main>
       <BottomTabBar active="home" />
+      {pushAsk && <PushAskSheet kind={pushAsk} onClose={closePushAsk} />}
     </AppShell>
   );
 }
