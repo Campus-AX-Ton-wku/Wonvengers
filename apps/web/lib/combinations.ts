@@ -14,13 +14,13 @@ function isValidCombination(subset: PolicyResult[]): boolean {
 /**
  * 중복 제한을 위반하지 않으면서 총액이 가장 큰 조합을 찾는다 (F3-8). 정책 수가 적어(3~5개) 전수 탐색으로 충분하다.
  *
- * 기본은 **'예상 적용'만** (11/23 ggue) — 맨 위 '받을 수 있는 지원' · 최종 주거비 · 달력은 확인이 끝난 지원만 더한다.
- * 예전에는 '조건 충족 시 가능'도 더해서, 원가구 소득을 '모름'으로 답한 사람에게 확인 안 된 254만원이 큰 숫자로 떴다.
- * 확인하면 더 받을 수 있는 몫은 statuses 에 둘 다 넣어 따로 센다(lib/summary.ts pendingSupport).
+ * 기본은 '예상 적용' + '조건 충족 시 가능' (11/23 ggue 다시 정함) — 조건을 확인하면 받을 수 있는 금액도 합계에 넣는다.
+ * 대신 그 조건은 결과 전 '확인할 것' 화면에서 반드시 답하게 하고(lib/confirm.ts), 결과 화면이 '추가로 확인할 조건'을 밝힌다.
+ * (같은 날 한때 '예상 적용'만 더했다 — PR #239)
  */
 export function bestCombination(
   results: PolicyResult[],
-  statuses: readonly PolicyStatus[] = ["예상적용"]
+  statuses: readonly PolicyStatus[] = ["예상적용", "조건충족시가능"]
 ): CombinationResult {
   const candidates = results.filter((r) => statuses.includes(r.status));
   const n = candidates.length;

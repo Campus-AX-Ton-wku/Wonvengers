@@ -378,7 +378,8 @@ function EligibilitySteps() {
     if (step < steps.length - 1) return go(String(step + 2));
     // 결과 화면 앞 '찾았어요' 한 장 — 여기서 [결과 확인하기]를 누를 때만 보인다(lib/reveal.ts)
     markReveal();
-    router.push("/result");
+    // 결과 전 '확인할 것'(11/23) — 확인할 조건이 없으면 그 화면이 바로 결과로 넘긴다
+    router.push("/result/confirm");
   }
 
   if (region === null || steps.length === 0) return <EligibilityLoading />;

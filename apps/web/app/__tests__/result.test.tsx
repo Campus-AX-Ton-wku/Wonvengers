@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ResultPage from "@/app/result/page";
-import { saveListing, saveProfile } from "@/lib/storage";
+import { saveDeclared, saveListing, saveProfile } from "@/lib/storage";
+import { confirmKey } from "@/lib/confirm";
 import { makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 import { routerMock } from "./navigation-mock";
 import loanProductsData from "@/data/loan-products.json";
@@ -335,33 +336,38 @@ describe("결과 — 전세 계약", () => {
 });
 
 /**
- * 11/23 ggue 실기기: 원가구 소득을 '모름'으로 답했는데 청년 주거급여 분리지급 254만 4,000원이 맨 위 큰 숫자에 들어가고,
- * 밑에 '이 금액에는 아직 확인되지 않은 조건이 들어 있어요'가 붙었다. 확인하지 않은 금액은 합계에 넣지 않는다.
+ * 11/23 ggue: 조건을 확인하면 받을 수 있는 금액도 합계에 넣는다 — 대신 결과 전 '확인할 것'에서 반드시 답하게 하고,
+ * 결과 화면은 직접 확인한 조건이 들어 있다고 밝힌다.
  */
-describe("결과 — 확인할 조건이 남은 지원은 합계 밖", () => {
-  function 원가구소득모름() {
+describe("결과 — 조건을 확인해야 받는 지원", () => {
+  const 주거급여 = "youth-housing-benefit-split-payment";
+  function 원가구소득모름(selfDeclared?: Record<string, boolean>) {
     saveListing(makeListing({ contractType: "월세", rentOrYearlyAmount: 350_000, managementFee: 50_000, months: 12 }));
     saveProfile(makeProfile({ originHouseholdMonthlyIncome: "unknown" }));
+    for (const [k, v] of Object.entries(selfDeclared ?? {})) saveDeclared(k, v);
     render(<ResultPage />);
   }
 
-  it("맨 위 금액에 넣지 않고, 바로 밑에 '조건을 확인하면 최대 +254만 4,000원'", async () => {
+  it("아직 답하지 않았으면 결과 대신 '확인할 것'으로 보낸다", async () => {
     원가구소득모름();
-    await screen.findByText(지원금_라벨);
-    expect(amountAfter(지원금_라벨).textContent).not.toBe("254만 4,000원");
-    expect(screen.getByText("조건을 확인하면 최대 +254만 4,000원")).toBeTruthy();
-    expect(screen.queryByText("이 금액에는 아직 확인되지 않은 조건이 들어 있어요")).toBeNull();
-    expect(screen.getByText(/이 조건을 확인하면 최대 254만 4,000원을 더 받을 수 있어요/)).toBeTruthy();
-    expect(screen.getByText(/\[청년 주거급여 분리지급\] 원가구 소득/)).toBeTruthy();
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/result/confirm"));
+    expect(screen.queryByText(지원금_라벨)).toBeNull();
   });
 
-  it("영수증 '받는 지원'에도 없고, 카드는 '조건이 맞으면 더 받을 수 있는 지원'에 — 합계에 안 넣은 이유와 함께", async () => {
-    원가구소득모름();
+  it("해당해요로 답했으면 254만 4,000원이 합계에 들고, 추가 확인이 필요하다고 밝힌다", async () => {
+    원가구소득모름({ [confirmKey(주거급여, "originHouseholdIncome")]: true });
     await screen.findByText(지원금_라벨);
-    const card = screen.getByText(주거비_라벨).closest("section") as HTMLElement;
-    expect(within(card).queryByText("청년 주거급여 분리지급")).toBeNull();
-    const extra = screen.getByRole("region", { name: /조건이 맞으면 더 받을 수 있는 지원/ });
-    expect(within(extra).getByRole("heading", { name: "청년 주거급여 분리지급" })).toBeTruthy();
-    expect(within(extra).getByText("확인할 조건이 남아 위 합계에는 넣지 않았어요")).toBeTruthy();
+    expect(routerMock.replace).not.toHaveBeenCalledWith("/result/confirm");
+    expect(amountAfter(지원금_라벨).textContent).toBe("254만 4,000원");
+    expect(screen.getByText("추가로 조건을 확인해야 하는 금액이 들어 있어요")).toBeTruthy();
+    expect(screen.getByText("직접 확인한 조건이 들어 있어요 — 신청할 때 기관이 다시 확인해요")).toBeTruthy();
+    expect(screen.getByText(/\[청년 주거급여 분리지급\] 원가구 소득/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "답 고치기" }).getAttribute("href")).toBe("/result/confirm");
+  });
+
+  it("해당하지 않아요로 답했으면 합계에 없다", async () => {
+    원가구소득모름({ [confirmKey(주거급여, "originHouseholdIncome")]: false });
+    await screen.findByText(지원금_라벨);
+    expect(amountAfter(지원금_라벨).textContent).not.toBe("254만 4,000원");
   });
 });
