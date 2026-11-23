@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import { GUIDES, findGuide, guidesForHousing } from "../guides";
 import { ICON3D_NAMES } from "../icons3d";
 
+const PUBLIC_URL = /^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/;
+// 한국부동산원 청약홈은 .co.kr 이다 — 아파트 청약을 받는 유일한 공식 창구라 이름으로만 허용한다 (11/22)
+const isPublicUrl = (url: string) => PUBLIC_URL.test(url) || /^https:\/\/www\.applyhome\.co\.kr(\/|$)/.test(url);
+
 describe("주거 가이드 (lib/guides.ts)", () => {
-  it("세 편 — 계약 전 · 보증금 · 서류, 홈 카드 순서 그대로", () => {
-    expect(GUIDES.map((g) => g.id)).toEqual(["before-contract", "protect-deposit", "where-documents"]);
+  it("네 편 — 계약 전 · 보증금 · 서류 · 청약, 홈 카드 순서 그대로", () => {
+    expect(GUIDES.map((g) => g.id)).toEqual(["before-contract", "protect-deposit", "where-documents", "cheongyak"]);
   });
 
   it("글마다 출처가 있고, 모두 https 공공 주소(go.kr · gov.kr · or.kr · korea.kr)다", () => {
     for (const g of GUIDES) {
       expect(g.sources.length).toBeGreaterThan(0);
-      for (const s of g.sources) expect(s.url).toMatch(/^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/);
+      for (const s of g.sources) expect(isPublicUrl(s.url)).toBe(true);
     }
   });
 
@@ -19,7 +23,7 @@ describe("주거 가이드 (lib/guides.ts)", () => {
     expect(places.filter((p) => p.url).length).toBeGreaterThanOrEqual(15);
     for (const p of places) {
       expect(p.name.length).toBeGreaterThan(0);
-      if (p.url) expect(p.url).toMatch(/^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(\/|$)/);
+      if (p.url) expect(isPublicUrl(p.url)).toBe(true);
     }
   });
 
@@ -109,5 +113,13 @@ describe("서류 떼는 곳 1장 — 지도 버튼 (11/22)", () => {
 
   it("행안부 출처", () => {
     expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
+  });
+
+  it("앱 안 링크(links)는 '/' 로 시작하는 앱 주소만, 글자는 비어 있지 않다 (11/22 청약 가이드)", () => {
+    const links = GUIDES.flatMap((g) => g.sections.flatMap((s) => s.links ?? []));
+    for (const l of links) {
+      expect(l.href).toMatch(/^\/[a-z]/);
+      expect(l.label.length).toBeGreaterThan(0);
+    }
   });
 });

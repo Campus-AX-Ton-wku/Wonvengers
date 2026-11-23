@@ -19,7 +19,7 @@ beforeEach(() => window.localStorage.clear());
 describe("readBadgeFacts", () => {
   it("아무 기록이 없으면 다 비어 있다", () => {
     expect(readBadgeFacts(TODAY)).toMatchObject({
-      calculated: false, saved: 0, prepStarted: false, guidesRead: 0, guidesTotal: 3, ledgerAny: false, ledgerStreak: 0,
+      calculated: false, saved: 0, prepStarted: false, guidesRead: 0, guidesTotal: 4, ledgerAny: false, ledgerStreak: 0,
     });
   });
 

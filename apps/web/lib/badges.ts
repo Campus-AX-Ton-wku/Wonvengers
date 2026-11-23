@@ -41,7 +41,7 @@ export const BADGES: readonly Badge[] = [
   { id: "save_5", label: "관심 5개", desc: "관심 지원금 5개를 모았어요.", howTo: "관심 지원금을 5개 모아요.", icon: "wallet" },
   { id: "prep_start", label: "준비 시작", desc: "신청 준비를 처음 시작했어요.", howTo: "관심 지원금에서 신청 준비를 시작해요.", icon: "contract" },
   { id: "prep_done", label: "준비 끝", desc: "한 지원금의 신청 준비를 다 마쳤어요.", howTo: "서류를 하나씩 챙겨 신청 준비를 마쳐요.", icon: "receipt" },
-  { id: "guide_read", label: "가이드 정독", desc: "주거 가이드 3편을 끝까지 읽었어요.", howTo: "주거 가이드를 끝 장까지 읽어요.", icon: "guarantee" },
+  { id: "guide_read", label: "가이드 정독", desc: "주거 가이드를 모두 끝까지 읽었어요.", howTo: "주거 가이드를 끝 장까지 읽어요.", icon: "guarantee" },
   { id: "ledger_first", label: "달력 첫 기록", desc: "주거비 달력에 처음 적었어요.", howTo: "달력에서 낸 돈을 체크해요.", icon: "rent" },
   { id: "ledger_3months", label: "3달 꼬박", desc: "달력 3달을 빠짐없이 적었어요.", howTo: "달력을 3달 연속 다 적어요.", icon: "move-in" },
 ];
