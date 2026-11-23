@@ -827,3 +827,43 @@ html.splash-out #splash {
     transition: none;
   }
 }
+
+/* ── 사진 맞추기 크기 막대 (11/23 시안 '사진 맞추기') — 검은 화면 위 흰 막대 · 24px 손잡이 ── */
+.crop-range {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.crop-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffffff var(--fill, 0%), rgba(255, 255, 255, 0.25) var(--fill, 0%));
+}
+.crop-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffffff var(--fill, 0%), rgba(255, 255, 255, 0.25) var(--fill, 0%));
+}
+.crop-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -10px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.crop-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.crop-range:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+  border-radius: 8px;
+}

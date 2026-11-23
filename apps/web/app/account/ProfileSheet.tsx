@@ -1,30 +1,40 @@
 "use client";
 
-import { useId, useState } from "react";
-import { BadgeMedal, Button, Icon3D, Sheet } from "@/app/components";
+import { useId, useRef, useState } from "react";
+import { BadgeMedal, Button, Icon3D, ProfileAvatar, Sheet } from "@/app/components";
 import { badgeOf } from "@/lib/badges";
-import { Check } from "@/app/components/icons";
+import { Camera, Check, ImageIcon } from "@/app/components/icons";
+import { photoSrc } from "@/lib/profile-photo";
+import { PhotoCropper } from "./PhotoCropper";
 import { PROFILE_COLORS, PROFILE_ICONS, normalizeProfileName } from "@/lib/profile-card";
 import { MAX_PROFILE_NAME, type BadgeId, type ProfileCardData } from "@/lib/user-data";
 
+/** [저장]이 넘기는 사진 바뀜 — 새 사진(JPEG base64) · 지움 · 그대로 */
+export type PhotoChange = { kind: "set"; image: string } | { kind: "remove" } | null;
+
 /**
  * 프로필 꾸미기 창 (내 프로필 설계 §4, 시안 Profile · sheet '프로필 꾸미기') — 이름 · 그림 6 · 색 6.
+ * 11/23 사진: 그림 칸 맨 앞 [앨범에서] [사진 찍기] → 사진 맞추기 화면 → 사진이 동그라미를 채운다. 그림을 누르면 그림으로,
+ * '사진 지우기'도 그림으로. 사진도 [저장]을 눌러야 바뀐다(계정 저장은 ProfileCardSection).
  * [저장]을 눌러야 바뀐다. 창을 닫으면(Esc · 바깥) 그대로. 대표 배지 줄은 ② 배지에서.
  * 고른 칸은 테두리 + 체크 — 색만으로 말하지 않는다. 그림 · 색은 네이티브 라디오라 키보드 화살표로 고른다.
  */
 export function ProfileSheet({
   card,
+  photo,
   defaultName,
   earnedBadges,
   onSave,
   onClose,
 }: {
   card: ProfileCardData;
+  /** 지금 계정 사진(JPEG base64) — 없으면 null */
+  photo: string | null;
   /** 받은 배지 — 대표 배지로 고를 수 있는 것 */
   earnedBadges: readonly BadgeId[];
   /** 비우면 쓰는 이름 — 자리 글자로 보여 준다 */
   defaultName: string;
-  onSave: (next: ProfileCardData) => void;
+  onSave: (next: ProfileCardData, photo: PhotoChange) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(card.name ?? "");
@@ -35,10 +45,34 @@ export function ProfileSheet({
   );
   const nameId = useId();
   const count = [...name].length;
+  /** 고른 사진(아직 저장 전). null 이면 그림 */
+  const [draftPhoto, setDraftPhoto] = useState<string | null>(photo);
+  /** 맞추는 중인 파일 */
+  const [picked, setPicked] = useState<File | null>(null);
+  const albumRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const lastSource = useRef<"album" | "camera">("album");
+
+  function pick(source: "album" | "camera") {
+    lastSource.current = source;
+    (source === "album" ? albumRef : cameraRef).current?.click();
+  }
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 사진을 다시 골라도 바뀜이 생기게
+    if (file) setPicked(file);
+  }
+  const photoChange: PhotoChange =
+    draftPhoto === photo ? null : draftPhoto ? { kind: "set", image: draftPhoto } : { kind: "remove" };
 
   return (
     <Sheet title="프로필 꾸미기" onClose={onClose}>
-      <div className="flex flex-col gap-1.5">
+      {/* 앱은 고른 한 장만 받는다 — 사진첩 전체를 보지 않는다. [사진 찍기]는 카메라를 바로 연다 */}
+      <input ref={albumRef} type="file" accept="image/*" className="hidden" onChange={onFile} data-testid="photo-album-input" />
+      <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={onFile} data-testid="photo-camera-input" />
+      <div className="flex items-center gap-3.5">
+        <ProfileAvatar card={{ ...card, icon, color }} size="md" photo={draftPhoto ? photoSrc(draftPhoto) : null} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-baseline justify-between">
           <label htmlFor={nameId} className="text-sm font-bold text-ink-900">
             이름
@@ -60,10 +94,53 @@ export function ProfileSheet({
         />
         <p className="text-xs text-ink-500">비우면 내 조건으로 지은 이름을 써요.</p>
       </div>
+      </div>
 
       <fieldset className="mt-2 flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-bold text-ink-900">그림</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <legend className="mb-2 flex w-full items-baseline justify-between gap-2 text-sm font-bold text-ink-900">
+          <span>
+            프로필 그림 <span className="font-medium text-ink-500">— 내 사진도 돼요</span>
+          </span>
+          {draftPhoto && (
+            <button
+              type="button"
+              onClick={() => setDraftPhoto(null)}
+              className="focus-ring -my-1.5 min-h-8 shrink-0 rounded px-1.5 text-[13px] font-semibold text-ink-500 underline underline-offset-[3px]"
+            >
+              사진 지우기
+            </button>
+          )}
+        </legend>
+        {/* 4칸씩 두 줄 — 앨범 · 사진 찍기 + 그림 6 (시안) */}
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            type="button"
+            aria-pressed={draftPhoto !== null}
+            aria-label="앨범에서 사진 고르기"
+            onClick={() => pick("album")}
+            className="focus-ring relative flex min-h-[76px] flex-col items-center justify-center gap-1 rounded-control border border-ink-200 bg-surface text-xs font-semibold text-ink-700 aria-pressed:border-brand-600 aria-pressed:bg-brand-50 aria-pressed:text-brand-800"
+          >
+            {draftPhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element -- 고른 사진 미리보기(data:)
+              <img src={photoSrc(draftPhoto)} alt="" className="size-10 rounded-[12px] object-cover" />
+            ) : (
+              <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-[12px] bg-brand-100 text-brand-700">
+                <ImageIcon size={22} strokeWidth={2} />
+              </span>
+            )}
+            앨범에서
+          </button>
+          <button
+            type="button"
+            aria-label="사진 찍기"
+            onClick={() => pick("camera")}
+            className="focus-ring flex min-h-[76px] flex-col items-center justify-center gap-1 rounded-control border border-ink-200 bg-surface text-xs font-semibold text-ink-700"
+          >
+            <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-[12px] bg-brand-100 text-brand-700">
+              <Camera size={22} strokeWidth={2} />
+            </span>
+            사진 찍기
+          </button>
           {PROFILE_ICONS.map((option) => (
             <label
               key={option.id}
@@ -73,11 +150,14 @@ export function ProfileSheet({
                 type="radio"
                 name="profile-icon"
                 value={option.id}
-                checked={icon === option.id}
-                onChange={() => setIcon(option.id)}
+                checked={draftPhoto === null && icon === option.id}
+                onChange={() => {
+                  setIcon(option.id);
+                  setDraftPhoto(null); // 그림을 고르면 그림으로 — 사진은 [저장] 때 지운다
+                }}
                 className="sr-only"
               />
-              <Icon3D name={option.icon} size={36} />
+              <Icon3D name={option.icon} size={40} />
               {option.label}
             </label>
           ))}
@@ -141,10 +221,25 @@ export function ProfileSheet({
       <Button
         size="screen"
         className="mt-3"
-        onClick={() => onSave({ ...card, icon, color, name: normalizeProfileName(name), pinnedBadge: pinned })}
+        onClick={() => onSave({ ...card, icon, color, name: normalizeProfileName(name), pinnedBadge: pinned }, photoChange)}
       >
         저장
       </Button>
+
+      {picked && (
+        <PhotoCropper
+          file={picked}
+          onCancel={() => setPicked(null)}
+          onRepick={() => {
+            setPicked(null);
+            pick(lastSource.current);
+          }}
+          onDone={(image) => {
+            setDraftPhoto(image);
+            setPicked(null);
+          }}
+        />
+      )}
     </Sheet>
   );
 }
