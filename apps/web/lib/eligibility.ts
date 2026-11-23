@@ -2,6 +2,7 @@ import type { CheckOutcome, EligibilityProfile, ListingInput, PolicyMeta, Policy
 import { POLICY_RULES } from "./policy-rules";
 import { formatDotDate, isWithinWindow } from "./date";
 import { estimatePolicyAmount, supportAgeLimit } from "./benefit";
+import { applyConfirmations } from "./confirm";
 
 /**
  * 2층 규칙(lib/policy-rules.ts)이 아직 없는 정책 — Supabase 에만 등록한 새 정책 (2026-11-16 부터).
@@ -77,9 +78,11 @@ export function evaluatePolicy(
     });
   }
 
-  const failed = checks.filter((c) => c.result === "fail");
-  const unknown = checks.filter((c) => c.result === "unknown");
-  const passed = checks.filter((c) => c.result === "pass");
+  // 결과 전 '확인할 것'(11/23)에서 답한 조건 — 아직 모르는 조건에만 입힌다(lib/confirm.ts)
+  const judged = applyConfirmations(policy.id, checks, profile.selfDeclared);
+  const failed = judged.filter((c) => c.result === "fail");
+  const unknown = judged.filter((c) => c.result === "unknown");
+  const passed = judged.filter((c) => c.result === "pass");
 
   let status: PolicyStatus;
   if (failed.length > 0) status = "대상아님";
@@ -91,7 +94,7 @@ export function evaluatePolicy(
   return {
     policy,
     status,
-    checks,
+    checks: judged,
     passedLabels: passed.map((c) => c.label),
     failedLabels: failed.map((c) => c.label),
     unknownLabels: unknown.map((c) => c.howToConfirm ? `${c.label} (확인 방법: ${c.howToConfirm})` : c.label),

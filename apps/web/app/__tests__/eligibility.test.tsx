@@ -707,7 +707,8 @@ describe("/eligibility → 찾았어요 표시", () => {
     }
     await user.click(screen.getByRole("button", { name: "결과 확인하기" }));
 
-    expect(routerMock.push).toHaveBeenLastCalledWith("/result");
+    // 결과 전 '확인할 것'(11/23)을 거친다 — 확인할 것이 없으면 그 화면이 결과로 넘긴다
+    expect(routerMock.push).toHaveBeenLastCalledWith("/result/confirm");
     expect(window.sessionStorage.getItem("perky.reveal")).toBe("1");
   });
 });

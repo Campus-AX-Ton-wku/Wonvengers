@@ -28,7 +28,8 @@ import BenefitResultCard from "./BenefitResultCard";
 import { ResultReceipt } from "./ResultReceipt";
 import { ResultLoading, ResultState } from "./ResultState";
 import { benefitResultCards } from "@/lib/benefit-result";
-import { takeReveal } from "@/lib/reveal";
+import { markReveal, takeReveal } from "@/lib/reveal";
+import { pendingConfirmations } from "@/lib/confirm";
 import { loadApplied } from "@/lib/storage";
 import FoundReveal from "./FoundReveal";
 
@@ -58,7 +59,16 @@ export default function ResultPage() {
     if (revealRequested && revealPhase === "done") titleRef.current?.focus({ preventScroll: true });
   }, [revealRequested, revealPhase]);
 
-  if (status === "loading" || revealRequested === null) return <ResultLoading />;
+  // 아직 답하지 않은 조건이 걸린 금액이 있으면 결과 전 '확인할 것'으로 보낸다(11/23 ggue — 무조건 확인).
+  // 홈 · 지원금 탭에서 바로 들어온 경우다. 꺼낸 '찾았어요' 표시는 되돌려 둔다 — 확인을 마치고 오면 보인다
+  const needsConfirm = summary !== null && status === "ready" && pendingConfirmations(summary).length > 0;
+  useEffect(() => {
+    if (!needsConfirm || revealRequested === null) return;
+    if (revealRequested) markReveal();
+    router.replace("/result/confirm");
+  }, [needsConfirm, revealRequested, router]);
+
+  if (status === "loading" || revealRequested === null || needsConfirm) return <ResultLoading />;
   if (status === "missing") return <MissingInput />;
   if (status === "error") return <ResultState kind="error" onRetry={retry} />;
   if (status === "empty") return <ResultState kind="empty" />;
@@ -67,7 +77,7 @@ export default function ResultPage() {
     return <ResultState kind="error" onRetry={retry} />;
   }
 
-  const { included, pending } = summaryHighlights(summary);
+  const { included, pending, selfConfirmed } = summaryHighlights(summary);
   // 카드 금액이 맨 위 합계에 들어갔는지(금색 여부)는 최선 조합으로 정한다 — 중복 수급으로 빠진 정책도 있다.
   const cards = benefitResultCards(summary.results, asOf, new Set(summary.bestCombination.includedPolicyIds));
   const cardResults = cards.map((card) => ({
@@ -130,6 +140,7 @@ export default function ResultPage() {
         }))}
         overlapExcluded={overlapExcluded}
         pending={pending}
+        selfConfirmed={selfConfirmed}
       />
 
       {/* 11/18 진단 2회차: 합계 안 · 밖이 눈으로 구분되지 않았다 — 보이는 제목으로 나누고, 밖 묶음의 공통 설명은 한 번만 */}

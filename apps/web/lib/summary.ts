@@ -2,6 +2,7 @@ import type { CalculationSummary, EligibilityProfile, ListingInput, PolicyMeta }
 import type { PolicyResult } from "./types";
 import { evaluateAllPolicies } from "./eligibility";
 import { bestCombination } from "./combinations";
+import { selfConfirmedConditions } from "./confirm";
 import { nominalTotalCost } from "./rent";
 
 export function buildCalculationSummary(
@@ -24,33 +25,30 @@ export function buildCalculationSummary(
 }
 
 export interface PendingSupport {
-  /** 조건을 확인하면 맨 위 합계에 더해질 수 있는 금액(최대). 확인이 끝난 합계와의 차이 */
+  /** 맨 위 합계 중 아직 확인하지 않은 조건이 걸린 몫 */
   amount: number;
   /** 그 몫을 이루는 '조건 충족 시 가능' 지원 */
   policyIds: string[];
 }
 
 /**
- * 조건을 확인하면 더 받을 수 있는 몫 (11/23 ggue). 맨 위 합계는 '예상 적용'만 더하므로(lib/combinations.ts),
- * '조건 충족 시 가능'까지 넣은 최선 조합과의 차이를 따로 보여 준다 — 합계에 섞지 않는다.
+ * 맨 위 합계 중 추가로 조건을 확인해야 하는 몫 (11/23 ggue). 합계에는 넣는다(lib/combinations.ts) —
+ * 대신 결과 화면이 그 몫과 조건을 밝히고, 결과 전 '확인할 것'(lib/confirm.ts)에서 반드시 답하게 한다.
+ * 그래서 보통은 0 이다. 0 이 아니면 '확인할 것'을 거치지 않고 들어온 경우다(결과 화면이 그리로 보낸다).
  */
 export function pendingSupport(summary: CalculationSummary): PendingSupport {
-  const potential = bestCombination(summary.results, ["예상적용", "조건충족시가능"]);
-  const amount = Math.max(0, potential.totalAmount - summary.maxSupportAmount);
-  const policyIds =
-    amount > 0
-      ? summary.results
-          .filter((r) => r.status === "조건충족시가능" && r.estimatedAmount > 0 && potential.includedPolicyIds.includes(r.policy.id))
-          .map((r) => r.policy.id)
-      : [];
-  return { amount, policyIds };
+  const included = new Set(summary.bestCombination.includedPolicyIds);
+  const pending = summary.results.filter((r) => r.status === "조건충족시가능" && r.estimatedAmount > 0 && included.has(r.policy.id));
+  return { amount: pending.reduce((sum, r) => sum + r.estimatedAmount, 0), policyIds: pending.map((r) => r.policy.id) };
 }
 
 export interface SummaryHighlights {
-  /** 맨 위 합계(확인이 끝난 지원)를 구성한 정책 */
+  /** 맨 위 합계를 구성한 정책 */
   included: { id: string; name: string; amount: number }[];
-  /** 조건을 확인하면 더 받을 수 있는 몫과, 그 몫에 남은 확인할 조건 (F4-8 · 11/23) */
+  /** 합계 중 아직 확인하지 않은 조건이 걸린 몫과 그 조건 (F4-8 · 11/23) */
   pending: { amount: number; conditions: { policyId: string; policy: string; label: string }[] };
+  /** 합계에 든 지원 중 '확인할 것'에서 직접 답해 정해진 조건 — 신청할 때 기관이 다시 확인한다 (11/23) */
+  selfConfirmed: { policyId: string; policy: string; label: string }[];
 }
 
 /**
@@ -70,6 +68,7 @@ export function summaryHighlights(summary: CalculationSummary): SummaryHighlight
       name: r.policy.name,
       amount: r.estimatedAmount,
     })),
+    selfConfirmed: selfConfirmedConditions(summary),
     pending: {
       amount: pending.amount,
       conditions: summary.results

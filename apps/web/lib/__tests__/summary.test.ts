@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
 import { buildCalculationSummary, pendingSupport, summaryHighlights } from "@/lib/summary";
-import { bestCombination } from "@/lib/combinations";
+import { confirmKey } from "@/lib/confirm";
 import { makeListing, makeProfile, OPEN_PERIOD_DAY } from "./fixtures";
 
 const policies = policiesData as PolicyMeta[];
@@ -32,39 +32,46 @@ describe("summaryHighlights", () => {
     expect(sum).toBe(summary.maxSupportAmount);
   });
 
-  it("확인할 조건이 남은 지원은 맨 위 합계에 넣지 않고, 확인하면 더 받을 몫과 그 조건으로 따로 모은다 (11/23 ggue)", () => {
-    // 화면 그대로: 원가구 소득을 '모름'으로 답하면 청년 주거급여 분리지급이 '조건 충족 시 가능'이 된다
+  it("조건을 확인해야 받는 지원도 맨 위 합계에 넣고, 그 몫과 조건을 따로 모은다 (11/23 ggue)", () => {
+    // 원가구 소득을 '모름'으로 답하면 청년 주거급여 분리지급이 '조건 충족 시 가능'이 된다
     const summary = buildCalculationSummary(
       policies,
       makeProfile({ originHouseholdMonthlyIncome: "unknown" }),
       listing,
       OPEN_PERIOD_DAY
     );
-    const pendingResults = summary.results.filter((r) => r.status === "조건충족시가능" && r.estimatedAmount > 0);
-    expect(pendingResults.length).toBeGreaterThan(0);
-    for (const r of pendingResults) expect(summary.bestCombination.includedPolicyIds).not.toContain(r.policy.id);
-    for (const r of summary.results.filter((x) => summary.bestCombination.includedPolicyIds.includes(x.policy.id))) {
-      expect(r.status).toBe("예상적용");
-    }
+    // 같이 받을 수 없는 지원끼리는 더 큰 쪽만 합계에 든다 — 합계에 든 '조건 충족 시 가능'만 본다
+    const pendingResults = summary.results.filter(
+      (r) => r.status === "조건충족시가능" && r.estimatedAmount > 0 && summary.bestCombination.includedPolicyIds.includes(r.policy.id)
+    );
+    expect(pendingResults.map((r) => r.policy.id)).toContain("youth-housing-benefit-split-payment");
 
     const { pending } = summaryHighlights(summary);
-    expect(pending.amount).toBe(pendingSupport(summary).amount);
-    expect(pending.amount).toBeGreaterThan(0);
+    expect(pending.amount).toBe(pendingResults.reduce((sum, r) => sum + r.estimatedAmount, 0));
     expect(pending.conditions.length).toBeGreaterThan(0);
-    for (const c of pending.conditions) expect(pendingResults.map((r) => r.policy.id)).toContain(c.policyId);
-    // 최종 주거비도 확인이 끝난 지원만 뺀다
-    expect(summary.finalEstimatedHousingCost).toBe(Math.max(0, summary.nominalTotalCost - summary.maxSupportAmount));
+    expect(pendingSupport(summary).policyIds.sort()).toEqual(pendingResults.map((r) => r.policy.id).sort());
   });
 
-  it("확인하면 더 받을 몫 = '조건 충족 시 가능'까지 넣은 최선 조합 − 맨 위 합계", () => {
-    const summary = buildCalculationSummary(
-      policies,
-      makeProfile({ originHouseholdMonthlyIncome: "unknown" }),
-      listing,
-      OPEN_PERIOD_DAY
-    );
-    const potential = bestCombination(summary.results, ["예상적용", "조건충족시가능"]);
-    expect(pendingSupport(summary).amount).toBe(potential.totalAmount - summary.maxSupportAmount);
+  it("'확인할 것'에서 해당해요로 답하면 예상 적용이 되고, 직접 확인한 조건으로 남는다", () => {
+    const profile = makeProfile({
+      originHouseholdMonthlyIncome: "unknown",
+      selfDeclared: { [confirmKey("youth-housing-benefit-split-payment", "originHouseholdIncome")]: true },
+    });
+    const summary = buildCalculationSummary(policies, profile, listing, OPEN_PERIOD_DAY);
+    const r = summary.results.find((x) => x.policy.id === "youth-housing-benefit-split-payment")!;
+    expect(r.status).toBe("예상적용");
+    expect(summaryHighlights(summary).pending.amount).toBe(0);
+    expect(summaryHighlights(summary).selfConfirmed.map((c) => c.policyId)).toContain("youth-housing-benefit-split-payment");
+  });
+
+  it("해당하지 않아요로 답하면 대상 아님 — 합계에서 빠진다", () => {
+    const profile = makeProfile({
+      originHouseholdMonthlyIncome: "unknown",
+      selfDeclared: { [confirmKey("youth-housing-benefit-split-payment", "originHouseholdIncome")]: false },
+    });
+    const summary = buildCalculationSummary(policies, profile, listing, OPEN_PERIOD_DAY);
+    expect(summary.results.find((x) => x.policy.id === "youth-housing-benefit-split-payment")!.status).toBe("대상아님");
+    expect(summary.bestCombination.includedPolicyIds).not.toContain("youth-housing-benefit-split-payment");
   });
 
   it("판정 질문을 다 채우면 최선 조합에 미확인 조건이 남지 않는다", () => {

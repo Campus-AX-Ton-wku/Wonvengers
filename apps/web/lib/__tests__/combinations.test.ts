@@ -75,12 +75,12 @@ describe("bestCombination", () => {
     expect(result.includedPolicyIds).toEqual(["c"]);
   });
 
-  // 11/23 ggue: 맨 위 합계는 확인이 끝난 지원만 — 확인할 조건이 남은 지원은 기본 조합에 넣지 않는다
-  it("기본은 '예상 적용'만 — '조건 충족 시 가능'은 넣으라고 할 때만 센다", () => {
+  // 11/23 ggue(다시 정함): 조건을 확인하면 받는 금액도 합계에 넣는다 — 그 조건은 결과 전 '확인할 것'에서 반드시 답한다
+  it("기본은 '예상 적용' + '조건 충족 시 가능' — 확인된 것만 세려면 상태를 넘긴다", () => {
     const sure = makeResult({ id: "sure", status: "예상적용", amount: 500000 });
     const maybe = makeResult({ id: "maybe", status: "조건충족시가능", amount: 2000000 });
-    expect(bestCombination([sure, maybe])).toEqual({ includedPolicyIds: ["sure"], totalAmount: 500000 });
-    expect(bestCombination([sure, maybe], ["예상적용", "조건충족시가능"]).totalAmount).toBe(2500000);
+    expect(bestCombination([sure, maybe]).totalAmount).toBe(2500000);
+    expect(bestCombination([sure, maybe], ["예상적용"])).toEqual({ includedPolicyIds: ["sure"], totalAmount: 500000 });
   });
 
   it("후보가 없으면 0원, 빈 조합을 반환한다", () => {
