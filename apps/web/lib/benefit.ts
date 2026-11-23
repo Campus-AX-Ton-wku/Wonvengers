@@ -93,6 +93,17 @@ function supportedMonths(policy: PolicyMeta, listing: ListingInput, birthDate?: 
 }
 
 /**
+ * 월세 상한 지원(rent_capped_monthly)이 세는 한 달 월세. 전세는 0 (11/23).
+ *
+ * 전세의 monthlyRentEquivalent 는 대출 이자다 — 은행에 내는 돈이라 '실제 월세 범위 내'로 주는 지원의
+ * 기준이 될 수 없다. 전세 계약에 얼마를 주는지는 공고마다 다르고 앱이 확인하지 못했다(F0-5) —
+ * 판정(eligibility.ts)이 '확인 필요' 조건으로 남긴다.
+ */
+function cappedRentBase(listing: ListingInput): number {
+  return listing.contractType === "전세" ? 0 : monthlyRentEquivalent(listing);
+}
+
+/**
  * 정책 하나를 단독으로 받는다고 가정했을 때의 총 예상액.
  * birthDate 를 주면 받는 동안 나이를 따지는 지원은 나이 상한 전까지만 센다(supportAgeLimit).
  */
@@ -100,7 +111,7 @@ export function estimatePolicyAmount(policy: PolicyMeta, listing: ListingInput, 
   const eligibleMonths = supportedMonths(policy, listing, birthDate);
 
   if (policy.benefitType === "rent_capped_monthly") {
-    const monthly = Math.min(policy.monthlyCap ?? Infinity, monthlyRentEquivalent(listing));
+    const monthly = Math.min(policy.monthlyCap ?? Infinity, cappedRentBase(listing));
     return Math.max(0, Math.round(monthly * eligibleMonths));
   }
 
@@ -128,7 +139,7 @@ export function monthlyBreakdown(
   if (months <= 0) return null;
   const monthly =
     policy.benefitType === "rent_capped_monthly"
-      ? Math.min(policy.monthlyCap ?? Infinity, monthlyRentEquivalent(listing))
+      ? Math.min(policy.monthlyCap ?? Infinity, cappedRentBase(listing))
       : policy.monthlyCap ?? 0;
   return { monthly: Math.round(monthly), months };
 }
@@ -143,6 +154,11 @@ export function benefitFormula(policy: PolicyMeta, listing: ListingInput, birthD
   // 입력한 개월 수보다 적게 셌으면 왜 그런지 식 끝에 붙인다
   const limit = supportAgeLimit(policy, listing, birthDate);
   const why = limit ? ` (${ageLimitReason(limit)})` : "";
+
+  if (policy.benefitType === "rent_capped_monthly" && listing.contractType === "전세") {
+    const cap = policy.monthlyCap == null ? "" : ` (월 상한 ${won(policy.monthlyCap)})`;
+    return `전세 계약은 매달 내는 월세가 없어 이 지원금의 예상액을 계산하지 않습니다${cap}`;
+  }
 
   if (policy.benefitType === "rent_capped_monthly") {
     const monthly = monthlyRentEquivalent(listing);

@@ -1,5 +1,6 @@
 import { monthlyBreakdown } from "./benefit";
 import { formatKoreanMoney } from "./money";
+import { monthlyRentEquivalent } from "./rent";
 import type { CalculationSummary, ContractType, ListingInput, PolicyMeta } from "./types";
 import type { LedgerData, LedgerMonthData } from "./user-data";
 
@@ -125,7 +126,7 @@ export interface LedgerPlan {
   end: MonthKey;
   months: number;
   contractType: ContractType;
-  /** 월세 또는 연세 */
+  /** 월세 · 연세 금액, 전세면 매달 대출 이자 (lib/rent.ts monthlyJeonseInterest) */
   rent: number;
   fee: number;
   incomes: LedgerIncome[];
@@ -147,7 +148,7 @@ export function ledgerPlan(listing: ListingInput, summary: CalculationSummary, b
     end: addMonths(start, months - 1),
     months,
     contractType: listing.contractType,
-    rent: listing.rentOrYearlyAmount,
+    rent: listing.contractType === "전세" ? monthlyRentEquivalent(listing) : listing.rentOrYearlyAmount,
     fee: listing.managementFee,
     incomes,
   };
@@ -204,7 +205,7 @@ function linesFor(plan: LedgerPlan, record: LedgerRecord, month: MonthKey): Ledg
   if (plan.contractType === "연세") {
     if (n === 1 && plan.rent > 0) lines.push(line(RENT_KEY, "out", "연세", plan.rent, "연세는 계약 시작 달에 한 번만 나와요"));
   } else if (plan.rent > 0) {
-    lines.push(line(RENT_KEY, "out", "월세", plan.rent));
+    lines.push(line(RENT_KEY, "out", plan.contractType === "전세" ? "전세대출 이자" : "월세", plan.rent));
   }
   if (plan.fee > 0) lines.push(line(FEE_KEY, "out", "관리비", plan.fee));
   for (const income of plan.incomes) {

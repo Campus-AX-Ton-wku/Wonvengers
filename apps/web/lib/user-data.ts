@@ -143,7 +143,7 @@ export const DISCOVERY_KEYS = [
 
 const STATUSES = ["대학생", "재직", "구직"] as const satisfies readonly DiscoveryStatus[];
 const HOUSING_TYPES = ["월세", "연세", "전세", "그 외"] as const satisfies readonly HousingType[];
-const CONTRACT_TYPES = ["월세", "연세"] as const satisfies readonly ListingInput["contractType"][];
+const CONTRACT_TYPES = ["월세", "연세", "전세"] as const satisfies readonly ListingInput["contractType"][];
 const WORK_STATUSES = [
   "student",
   "employed",
@@ -162,6 +162,8 @@ const LISTING_KEYS = [
   "months",
   "confirmedMatchesActualContract",
 ] as const satisfies readonly (keyof ListingInput)[];
+/** 전세 계약에만 있는 칸 (11/23). 없어도 된다 — 월세 · 연세와 예전 저장에는 없다. */
+const LISTING_OPTIONAL_KEYS = ["jeonseLoanAmount", "jeonseLoanRate"] as const satisfies readonly (keyof ListingInput)[];
 
 const YES_NO_KEYS = [
   "livesApartFromParents",
@@ -191,7 +193,9 @@ export const ELIGIBILITY_KEYS = [
 ] as const satisfies readonly RequiredInputKey[];
 
 // 타입에 항목이 늘었는데 여기를 안 고치면 컴파일이 깨진다 — 새 답이 검사에서 조용히 버려지지 않게.
-const everyListingKey: [Exclude<keyof ListingInput, (typeof LISTING_KEYS)[number]>] extends [never]
+const everyListingKey: [
+  Exclude<keyof ListingInput, (typeof LISTING_KEYS)[number] | (typeof LISTING_OPTIONAL_KEYS)[number]>,
+] extends [never]
   ? true
   : false = true;
 const everyEligibilityKey: [Exclude<RequiredInputKey, (typeof ELIGIBILITY_KEYS)[number]>] extends [never]
@@ -243,9 +247,9 @@ function record(v: unknown, path: string): Record<string, unknown> {
 }
 
 /** 정해진 키만, 빠짐없이. */
-function exact(v: unknown, path: string, keys: readonly string[]): Record<string, unknown> {
+function exact(v: unknown, path: string, keys: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
   const o = record(v, path);
-  for (const k of Object.keys(o)) if (!keys.includes(k)) fail(`${path}.${k}`, "unknown key");
+  for (const k of Object.keys(o)) if (!keys.includes(k) && !optional.includes(k)) fail(`${path}.${k}`, "unknown key");
   for (const k of keys) if (!Object.prototype.hasOwnProperty.call(o, k)) fail(`${path}.${k}`, "missing");
   return o;
 }
@@ -314,7 +318,8 @@ function parseAnswers(v: unknown, path: string): UserDataContent["answers"] {
 }
 
 function parseListing(v: unknown, path: string): ListingInput {
-  const o = exact(v, path, LISTING_KEYS);
+  const o = exact(v, path, LISTING_KEYS, LISTING_OPTIONAL_KEYS);
+  const has = (k: string) => Object.prototype.hasOwnProperty.call(o, k);
   return {
     region: str(o.region, `${path}.region`, 60),
     contractType: oneOf(o.contractType, `${path}.contractType`, CONTRACT_TYPES),
@@ -325,6 +330,10 @@ function parseListing(v: unknown, path: string): ListingInput {
     contractStartDate: date(o.contractStartDate, `${path}.contractStartDate`, true),
     months: num(o.months, `${path}.months`, 600, true),
     confirmedMatchesActualContract: bool(o.confirmedMatchesActualContract, `${path}.confirmedMatchesActualContract`),
+    ...(has("jeonseLoanAmount") && {
+      jeonseLoanAmount: num(o.jeonseLoanAmount, `${path}.jeonseLoanAmount`, 10_000_000_000, true),
+    }),
+    ...(has("jeonseLoanRate") && { jeonseLoanRate: num(o.jeonseLoanRate, `${path}.jeonseLoanRate`, 30) }),
   };
 }
 

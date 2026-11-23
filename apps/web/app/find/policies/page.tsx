@@ -39,6 +39,7 @@ const policies = policiesJson as PolicyMeta[];
 function ctaLabel(housingType: HousingType | null): string {
   if (housingType === "월세") return "지원받으면 내 월세는 얼마일까?";
   if (housingType === "연세") return "지원받으면 내 연세 부담은 얼마나 줄까?";
+  if (housingType === "전세") return "지원받으면 내 전세 부담은 얼마일까?";
   return "지원받으면 내 주거비는 얼마일까?";
 }
 
@@ -46,6 +47,7 @@ function ctaLabel(housingType: HousingType | null): string {
 function resultLabel(housingType: HousingType | null): string {
   if (housingType === "월세") return "내 월세 계산 결과 보기";
   if (housingType === "연세") return "내 연세 계산 결과 보기";
+  if (housingType === "전세") return "내 전세 계산 결과 보기";
   return "내 주거비 계산 결과 보기";
 }
 
@@ -79,8 +81,8 @@ export default function FindPoliciesPage() {
   // 건수가 못 받는 것까지 세고, 금액이 가장 큰 마감 건이 첫 카드를 차지한다.
   const { 신청가능 } = asOf ? splitByApplicationWindow(groups, asOf) : { 신청가능: [] };
 
-  // 계산(2층)으로 보낼 수 있는가. 후보가 없거나 전세면 계산 화면이 받을 계약이 없다.
-  const canCalculate = count > 0 && resolved.housingType !== "전세";
+  // 계산(2층)으로 보낼 수 있는가. 후보가 없으면 계산할 것이 없다. 전세도 11/23 부터 계산한다.
+  const canCalculate = count > 0;
   // 비회원은 계산 버튼과 하단 섬의 카카오 버튼을 하나로 합친다(11/23) — 둘 다 결국 카카오 로그인이라
   // [카카오로 로그인하고 홈으로]가 파란 계산 버튼을 덮고 서 있었다. 로그인 뒤 바로 계산 화면으로 간다.
   const mergedLogin = guest && canCalculate;
@@ -149,18 +151,10 @@ export default function FindPoliciesPage() {
 
           {/* 다음에 할 일 하나. 목록이 답한 것은 '얼마까지'이고, 사용자가 실제로
               궁금한 것은 '그래서 내 주거비가 얼마가 되나'다.
-
-              전세 거주자에게는 이 CTA 를 내보내지 않는다. 계약 조건 화면(2층)이
-              받는 계약 형태가 월세·연세뿐이라, 전세 부담이 얼마나 주는지 계산할
-              방법이 없다. 문구만 전세용으로 바꾸면 눌러서 막히는 길이 된다. */}
+              11/23 까지 전세 거주자에게는 이 CTA 대신 '아직 계산할 수 없어요'를 보였다 —
+              계산 화면이 월세·연세만 받았다. 이제 전세도 받는다(대출 이자 + 관리비). */}
           {/* 계산 카드는 옅은 파랑 — 화면에서 가장 진한 파랑은 하단 섬의 '지원금'과 동그란 › 뿐이다(11/23 시안). */}
-          {count > 0 &&
-            !mergedLogin &&
-            (resolved.housingType === "전세" ? (
-              <p className="mt-6 rounded-card bg-brand-50 px-4 py-4 text-sm leading-relaxed text-ink-700 ring-1 ring-inset ring-brand-100">
-                전세는 아직 계산할 수 없어요. 월세·연세만 가능해요.
-              </p>
-            ) : (
+          {canCalculate && !mergedLogin && (
               <Link
                 href={calculated ? "/result" : "/calculate"}
                 className="press focus-ring mt-6 flex min-h-20 items-center gap-3.5 rounded-card bg-brand-50 py-4 pl-4 pr-3.5 ring-1 ring-inset ring-brand-100"
@@ -178,7 +172,7 @@ export default function FindPoliciesPage() {
                   <ChevronRight size={ICON_MD} strokeWidth={2.4} className="text-white" />
                 </span>
               </Link>
-            ))}
+            )}
 
           {/* 고지는 본문과 같은 무게로 두지 않는다. 가는 선 아래 작은 각주(11/23 시안).
               그러나 접지는 않는다 — 접을 수 있는 고지는 고지가 아니다. 문장은 그대로. */}

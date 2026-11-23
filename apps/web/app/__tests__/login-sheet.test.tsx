@@ -148,13 +148,13 @@ describe("목록의 계산 입구 — 비회원은 카카오 버튼 하나 (11/2
     expect((button as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("전세면 계산할 수 없으니 [카카오로 로그인하고 홈으로] 그대로", async () => {
+  it("전세도 계산하니(11/23) 월세와 같이 버튼 하나로 합친다", async () => {
     saveAnswers({ ...익산_대학생, housingType: "전세" as const });
     render(<FindPoliciesPage />);
     await screen.findByRole("heading", { level: 1 });
 
-    expect(screen.getByRole("button", { name: /카카오로 로그인하고 홈으로/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /최종 주거비/ })).toBeNull();
+    expect(screen.getByRole("button", 합친버튼)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /카카오로 로그인하고 홈으로/ })).toBeNull();
   });
 
   it("로그인 상태면 파란 계산 버튼으로 바로 계산 화면에 간다", async () => {
