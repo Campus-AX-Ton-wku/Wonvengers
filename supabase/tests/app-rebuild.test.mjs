@@ -50,7 +50,7 @@ await db.exec(readFileSync(join(repo, "supabase", "seed.sql"), "utf8"));
 for (const f of ["20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261116233659_documents.sql"]) {
   await db.exec(migration(f));
 }
-const rebuildSql = ["20261117104553_app_rebuild.sql", "20261117104705_app_rebuild_timeout.sql"].map(migration).join("\n")
+const rebuildSql = ["20261117104553_app_rebuild.sql", "20261117104705_app_rebuild_timeout.sql", "20261123000000_app_rebuild_daily.sql"].map(migration).join("\n")
   .split("\n")
   .filter((line) => !/^\s*create extension/i.test(line))
   .join("\n");
@@ -65,7 +65,7 @@ const edit = (sqlSet, policy = "moland-youth-rent-support") =>
   db.exec(`update policies set ${sqlSet}, edit_note = '검사: 다시 빌드 ${++n}' where policy_no = '${policy}' and is_current`);
 
 console.log("\n[1] 5분마다 도는 예약");
-const jobs = await q("select * from cron.jobs");
+const jobs = await q("select * from cron.jobs where jobname = 'app-rebuild'");
 ok("예약이 하나 있다", jobs.length === 1, JSON.stringify(jobs));
 ok("5분마다", jobs[0]?.schedule === "*/5 * * * *");
 ok("다시 빌드 함수를 부른다", /private\.request_app_rebuild\(\)/.test(jobs[0]?.command ?? ""));
@@ -107,6 +107,17 @@ await db.exec("set role anon");
 ok("anon 은 함수를 못 부른다", ((await tryExec("select private.request_app_rebuild()")) ?? "").includes("permission denied"));
 ok("anon 은 상태 표를 못 읽는다", ((await tryExec("select * from private.app_rebuild_state")) ?? "").includes("permission denied"));
 await db.exec("reset role");
+
+console.log("\n[매일] 06:00 — 지문을 지워 하루 한 번 다시 빌드 (청약 공고, 11/22)");
+const daily = (await q("select * from cron.jobs where jobname = 'app-rebuild-daily'"))[0];
+ok("매일 서울 06:00(UTC 21:00)", daily?.schedule === "0 21 * * *", JSON.stringify(daily));
+await db.exec(`insert into net._http_response values (${await lastRequest()}, 200, false, null) on conflict (id) do nothing`);
+ok("데이터가 그대로면 부르지 않는다", (await run()) === "같음");
+const beforeDaily = await calls();
+await db.exec(daily.command);
+ok("지문을 지우면 다음 회차에 한 번 부른다", (await run()) === "빌드 요청" && (await calls()) === beforeDaily + 1);
+await db.exec(`insert into net._http_response values (${await lastRequest()}, 200, false, null) on conflict (id) do nothing`);
+ok("그다음 회차는 다시 '같음'", (await run()) === "같음" && (await calls()) === beforeDaily + 1);
 
 console.log(`\n${pass} 통과 · ${fail} 실패`);
 process.exit(fail ? 1 : 0);
