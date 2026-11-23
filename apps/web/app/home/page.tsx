@@ -10,6 +10,7 @@ import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
 import { LedgerRow } from "./LedgerRow";
 import { LoanRow } from "./LoanRow";
+import { NoticeRow } from "./NoticeRow";
 import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
@@ -127,6 +128,7 @@ export default function HomePage() {
         {/* 일정이 없으면 블록째 숨긴다 (11/20 ggue) */}
         {schedule.length > 0 && <ScheduleCard events={schedule} today={today} />}
 
+        <NoticeRow today={today} />
         {/* 주거 가이드 → 대출 · 보증 순서 (11/22 ggue) */}
         <GuideRow housingType={answers.housingType} />
         <LoanRow region={answers.region} housingType={answers.housingType} />
