@@ -12,7 +12,7 @@ import { LedgerRow } from "./LedgerRow";
 import { LoanRow } from "./LoanRow";
 import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
-import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
+import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange, storedSub } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
 import { answerLine } from "@/lib/discovery";
 import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
@@ -20,7 +20,7 @@ import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgres
 import { formatApproxMoney } from "@/lib/money";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
-import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
 import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
 import { calcMonths } from "@/lib/rent";
@@ -61,6 +61,9 @@ export default function HomePage() {
       leave();
       return;
     }
+    // 로그인하고 홈까지 왔다 — 배지 알림은 여기서부터 (BadgeWatcher, 11/23 ggue)
+    const sub = storedSub();
+    if (sub) markHomeReached(sub);
     const read = () => {
       const t = seoulTodayISO();
       setToday(t);

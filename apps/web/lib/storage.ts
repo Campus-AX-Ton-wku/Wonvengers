@@ -600,6 +600,7 @@ export function clearDeviceRecords(): void {
   clearHouseChecklist();
   removeQuietly(GUIDES_READ_KEY);
   removeQuietly(BADGES_SEEN_KEY);
+  removeQuietly(HOME_REACHED_KEY);
 }
 
 function removeQuietly(key: string): void {
@@ -630,6 +631,7 @@ export function onDeviceRecordChange(listener: () => void): () => void {
 // ── 가이드 읽음 · 배지 처음 판정 (docs/기획/2026-11-22-내-프로필-설계.md §7) — 이 기기에만 ──
 const GUIDES_READ_KEY = "perky.guides-read";
 const BADGES_SEEN_KEY = "perky.badges-seen";
+const HOME_REACHED_KEY = "perky.home-reached";
 
 /** 끝 장까지 연 가이드 id. 모르는 id 는 버린다 */
 export function loadGuidesRead(): string[] {
@@ -648,6 +650,25 @@ export function markGuideRead(id: string): void {
 /** 이 기기에서 배지를 한 번이라도 판정했는가 — 처음 판정은 창 없이 조용히 기록한다 */
 export function badgesSeen(): boolean {
   return readRaw(BADGES_SEEN_KEY) === "1";
+}
+
+/**
+ * 이 계정(sub)으로 로그인한 뒤 홈 화면에 들어왔는가 — 배지 판정 · 알림은 그 뒤부터 (11/23 ggue).
+ * 앱을 처음 열고 질문 · 카카오 로그인 · 계산을 지나는 동안에는 배지 창이 뜨지 않는다. 홈은 로그인한 사람만 들어간다.
+ * 계정마다 따로 — 다른 계정으로 들어오면 다시 홈을 기다린다. 로그아웃 · '처음부터 다시'에 지운다(clearDeviceRecords).
+ */
+export function homeReachedBy(sub: string | null): boolean {
+  return sub !== null && readRaw(HOME_REACHED_KEY) === sub;
+}
+
+export function markHomeReached(sub: string): void {
+  if (typeof window === "undefined" || homeReachedBy(sub)) return;
+  try {
+    window.localStorage.setItem(HOME_REACHED_KEY, sub);
+  } catch {
+    return; // 못 적으면 홈에 올 때마다 다시 적어 본다
+  }
+  notifyDeviceRecordChange();
 }
 
 export function markBadgesSeen(): void {
