@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button, ChecklistRow } from "@/app/components";
 import { ChevronRight, ICON_SM } from "@/app/components/icons";
 import { HOUSE_CHECKLIST_GROUPS, HOUSE_CHECKLIST_ITEM_IDS } from "@/lib/house-checklist";
-import { HOUSE_CHECKLIST_KEY, clearHouseChecklist, loadHouseChecklist, saveHouseChecklist } from "@/lib/storage";
+import { HOUSE_CHECKLIST_KEY, loadHouseChecklist, saveHouseChecklist } from "@/lib/storage";
 
 /**
  * 체크 줄 · 진행 · 지우기. 정적 export 라 처음엔 0 으로 그리고, 저장된 체크는 그린 뒤 읽는다.
@@ -37,7 +37,7 @@ export function HouseChecklist() {
   };
   const clearAll = () => {
     setChecked(new Set());
-    clearHouseChecklist();
+    saveHouseChecklist([]);
   };
 
   return (
@@ -48,7 +48,7 @@ export function HouseChecklist() {
         </p>
         <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-ink-100">
           <div
-            className="h-full rounded-full bg-brand-600 transition-[width] motion-reduce:transition-none"
+            className="h-full rounded-full bg-brand-600 transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
             style={{ width: `${(done / total) * 100}%` }}
           />
         </div>

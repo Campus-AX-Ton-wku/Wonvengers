@@ -31,6 +31,8 @@ export { LoginSheet } from "./LoginSheet";
 export { default as PerkyCharacter, PERKY_STATES } from "./PerkyCharacter";
 export type { PerkyState } from "./PerkyCharacter";
 export { PerkyNote } from "./PerkyNote";
+export { ProfileAvatar } from "./ProfileAvatar";
+export { BadgeMedal } from "./BadgeMedal";
 export { ResetAnswersButton } from "./ResetAnswersButton";
 export { SaveButton } from "./SaveButton";
 export { Sheet } from "./Sheet";

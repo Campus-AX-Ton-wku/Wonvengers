@@ -43,41 +43,72 @@ afterEach(() => {
 });
 
 describe("/auth/consent (설계 '화면' 3)", () => {
-  it("저장 항목(민감 항목 명시)·목적·보관 기간·저장 위치·카카오 회원번호·삭제 방법을 보여준다", async () => {
+  it("첫 화면은 세 마디 — 저장하는 것 · 보관 기간 · 동의하지 않으면, 작은 글씨 셋과 처리방침 (11/23 시안)", async () => {
     render(<ConsentPage />);
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("답을 저장해 둘까요?");
+    const card = screen.getByRole("region", { name: "저장 동의 내용" });
+    expect(within(card).getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["저장하는 것", "보관 기간", "동의하지 않으면"]);
     const text = document.body.textContent ?? "";
     for (const phrase of [
-      "민감 정보",
-      "소득",
-      "재산",
-      "기초생활수급",
-      "다른 기기에서 이어 보기",
+      "다른 기기에서 로그인해도 이어 볼 수 있어요",
+      "소득 · 재산 · 수급 여부처럼 민감한 답도 함께 저장돼요",
       "마지막 저장 후 1년",
-      "AWS 서울 리전",
+      "로그아웃돼요",
+      "대한민국 서울(AWS)",
       "카카오 회원번호",
       "회원 탈퇴",
     ]) {
       expect(text).toContain(phrase);
     }
+    // 개발 용어 · 과거형 해명은 뺐다
+    expect(text).not.toContain("Amazon Cognito");
+    expect(text).not.toContain("아무것도 보내지 않았어요");
+    expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByRole("link", { name: /개인정보 처리방침/ }).getAttribute("href")).toBe("/privacy");
   });
 
-  it("소득·재산·수급 정보가 들어갈 수 있는 줄은 모두 '민감 정보'로 표시한다", async () => {
+  /** [n가지 하나씩 보기]를 눌러 세부 목록을 연다. */
+  async function openItems() {
     render(<ConsentPage />);
     await screen.findByRole("heading", { level: 1 });
-    const rows = screen.getAllByRole("row");
-    const sensitive = rows.filter((row) => /소득|재산|수급/.test(row.textContent ?? ""));
-    expect(sensitive.length).toBeGreaterThanOrEqual(3);
-    for (const row of sensitive) expect(row.textContent).toContain("민감 정보");
-    expect(rows.find((r) => r.textContent?.includes("계약 조건"))?.textContent).toContain("이사 비용");
+    const toggle = screen.getByRole("button", { name: "9가지 하나씩 보기" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("list", { name: "저장하는 것 세부" })).toBeNull();
+    await userEvent.setup().click(toggle);
+    expect(screen.getByRole("button", { name: "접기" }).getAttribute("aria-expanded")).toBe("true");
+    const basic = within(screen.getByRole("list", { name: "저장하는 것 세부" })).getAllByRole("listitem");
+    const sensitive = within(screen.getByRole("list", { name: "민감할 수 있는 답" })).getAllByRole("listitem");
+    const find = (name: string) => [...basic, ...sensitive].find((li) => li.textContent?.startsWith(name));
+    return { basic, sensitive, find };
+  }
+
+  it("세부 목록은 처음엔 접혀 있고, 펼치면 기본 6 · 민감할 수 있는 답 3으로 묶인다", async () => {
+    const { basic, sensitive, find } = await openItems();
+    expect(basic).toHaveLength(6);
+    expect(sensitive.map((li) => li.querySelector("span")?.textContent)).toEqual(["월 소득 구간", "자격 질문의 답", "결과 화면에서 답한 조건"]);
+    expect(screen.getByText("민감할 수 있는 답 3가지")).toBeTruthy();
+    // 소득·재산·수급이 들어가는 줄은 모두 민감 묶음에 있다
+    for (const li of basic) expect(li.textContent).not.toMatch(/소득|재산|수급/);
+    expect(find("계약 조건")?.textContent).toContain("이사 비용");
+  });
+
+  it("프로필 · 배지도 저장 항목으로 보여준다 (11/22 내 프로필)", async () => {
+    const { find } = await openItems();
+    const row = find("프로필 · 배지");
+    expect(row?.textContent).toContain("그림 · 색 · 이름 · 대표 배지");
+    expect(row?.textContent).toContain("받은 배지");
+  });
+
+  it("주거비 달력 · 집 보기 체크리스트도 저장 항목으로 보여준다 (11/23)", async () => {
+    const { find } = await openItems();
+    const row = find("주거비 달력 · 집 보기 체크리스트");
+    expect(row?.textContent).toContain("누른 표시와 고친 금액");
+    expect(row?.textContent).toContain("확인한 항목");
   });
 
   it("관심 지원금도 저장 항목으로 보여준다", async () => {
-    render(<ConsentPage />);
-    await screen.findByRole("heading", { level: 1 });
-    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("관심 지원금"));
-    expect(row?.textContent).toContain("서류 준비 체크");
+    const { find } = await openItems();
+    expect(find("관심 지원금")?.textContent).toContain("서류 준비 체크");
   });
 
   it("동의 전에는 서버로 아무것도 보내지 않는다", async () => {

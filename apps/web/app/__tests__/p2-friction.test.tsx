@@ -80,11 +80,11 @@ describe("계약 형태", () => {
 
   // 전세·그 외는 이 화면이 다루는 계약이 아니다. 둘 중 하나로 단정하면 월 환산액이
   // 통째로 틀어진다 — 기본값을 두지 않는 이유와 같다.
-  it("전세·그 외는 계약 형태로 옮기지 않는다", () => {
-    saveAnswers({ ...EMPTY_ANSWERS, housingType: "전세" });
+  it("그 외는 계약 형태로 옮기지 않는다 (전세는 11/23 부터 옮긴다)", () => {
+    saveAnswers({ ...EMPTY_ANSWERS, housingType: "그 외" });
     render(<CalculatePage />);
 
-    for (const type of ["월세", "연세"]) {
+    for (const type of ["월세", "연세", "전세"]) {
       expect(screen.getByRole("button", { name: type }).getAttribute("aria-pressed"), type).toBe(
         "false"
       );

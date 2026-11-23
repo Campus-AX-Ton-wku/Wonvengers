@@ -76,6 +76,10 @@ const 기대: UserDataContent = {
   checklists: { [정책]: { eligibility: true, period: false, documents: false } },
   saved: [],
   documentChecks: {},
+  profileCard: null,
+  badges: {},
+  ledger: null,
+  houseChecklist: [],
 };
 
 describe("이 기기의 사본 — 일곱 갈래 키를 한 묶음으로", () => {

@@ -112,25 +112,28 @@ export function MoneyInput({
   );
 }
 
-/** 금액이 아닌 숫자(개월 수·가구원 수). 만원 환산도 읽어주기도 없다. */
+/** 금액이 아닌 숫자(개월 수·가구원 수·금리). 만원 환산도 읽어주기도 없다. */
 export function NumberInput({
   id,
   value,
   onChange,
   placeholder,
+  decimal = false,
 }: {
   id?: string;
   value: number | null;
   onChange: (v: number | null) => void;
   /** MoneyInput 의 placeholder 주석과 같은 이유로 기본값을 두지 않는다. */
   placeholder?: string;
+  /** 소수점을 받는다 (대출 금리 2.4%). 휴대폰은 소수점 있는 숫자 자판을 띄운다. */
+  decimal?: boolean;
 }) {
   return (
     <input
       id={id}
       type="number"
-      inputMode="numeric"
-      step={1}
+      inputMode={decimal ? "decimal" : "numeric"}
+      step={decimal ? 0.01 : 1}
       className="input"
       value={value === null ? "" : value}
       onChange={(e) => onChange(e.target.value === "" ? null : Math.max(0, Number(e.target.value) || 0))}

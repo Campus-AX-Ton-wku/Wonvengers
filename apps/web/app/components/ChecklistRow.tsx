@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Icon3D } from "./Icon3D";
 import { Check, ICON_SM } from "./icons";
 import type { Icon3DName } from "@/lib/icons3d";
@@ -23,12 +26,23 @@ export function ChecklistRow({
   icon?: Icon3DName;
   onChange: (checked: boolean) => void;
 }) {
+  // 이 화면에서 직접 체크한 줄만 '확인함'이 떠오른다(11/23) — 처음부터 체크돼 있던 줄은 그대로 그린다
+  const [justChecked, setJustChecked] = useState(false);
+  // 체크할 때마다 줄이 한 번 반짝인다 — 숫자를 올려 같은 움직임을 다시 튼다
+  const [flash, setFlash] = useState(0);
   return (
-    <label className="focus-within:ring-brand-500 flex min-h-[76px] cursor-pointer items-center justify-between gap-3 rounded-control border border-ink-200 bg-surface px-4 py-3.5 focus-within:ring-2 focus-within:ring-offset-2">
+    <label className="relative isolate focus-within:ring-brand-500 flex min-h-[76px] cursor-pointer items-center justify-between gap-3 rounded-control border border-ink-200 bg-surface px-4 py-3.5 focus-within:ring-2 focus-within:ring-offset-2">
+      {flash > 0 && checked && <span key={flash} aria-hidden="true" className="check-flash" />}
       <input
         type="checkbox"
         checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
+        onChange={(event) => {
+          if (event.target.checked) {
+            setJustChecked(true);
+            setFlash((n) => n + 1);
+          }
+          onChange(event.target.checked);
+        }}
         className="sr-only"
       />
       {icon && <Icon3D name={icon} size={32} />}
@@ -45,7 +59,9 @@ export function ChecklistRow({
           checkbox 는 sr-only 라, 확인 안 한 줄에는 빈 동그라미를 두어 누를 수 있는 줄로 보이게 한다. */}
       {checked ? (
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-[10px] bg-ok-50 px-2.5 py-1.5 text-xs font-medium text-ok-700"
+          className={`inline-flex shrink-0 items-center gap-1 rounded-[10px] bg-ok-50 px-2.5 py-1.5 text-xs font-medium text-ok-700 ${
+            justChecked ? "check-in" : ""
+          }`}
           aria-hidden="true"
         >
           <Check size={ICON_SM - 2} strokeWidth={2.5} />

@@ -4,6 +4,7 @@ import { AppShell, buttonClass, TopBar } from "@/app/components";
 import { ExternalLink, ICON_MD, ICON_SM, MapPin, TriangleAlert } from "@/app/components/icons";
 import { findGuide, GUIDES } from "@/lib/guides";
 import { StepNav } from "./StepNav";
+import { MarkGuideRead } from "./MarkGuideRead";
 
 /** 정적 export — 모든 가이드의 모든 장을 미리 만든다. */
 export function generateStaticParams() {
@@ -77,7 +78,7 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
                         href={place.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="focus-ring flex min-h-12 items-center gap-3 py-2.5"
+                        className="press-row focus-ring -mx-2 flex min-h-12 items-center gap-3 rounded-[10px] px-2 py-2.5"
                       >
                         {text}
                         <ExternalLink size={ICON_SM} aria-hidden="true" className="shrink-0 text-brand-600" />
@@ -134,6 +135,8 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
 
         {/* 장 넘기기는 기록을 쌓지 않는다 — ← 가 늘 목차로 (./StepNav.tsx, 11/21 ggue) */}
         <StepNav base={base} n={n} total={total} />
+        {/* 끝 장 = 이 가이드를 다 읽음 — '가이드 정독' 배지 재료(11/22, 이 기기에만) */}
+        {n === total && <MarkGuideRead id={guide.id} />}
       </main>
     </AppShell>
   );

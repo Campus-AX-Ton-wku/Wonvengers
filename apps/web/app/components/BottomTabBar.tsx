@@ -37,8 +37,19 @@ const TABS: { key: TabKey; label: string; icon: TabIconName; href: string }[] = 
  * 저장에 실패하면 '내 정보'에 점을 찍는다(상단바의 '저장 안 됨 · 다시 시도'와 같은 뜻, 내 계정 화면에서 다시 시도).
  *
  * 본문 끝에 섬 높이만큼 빈칸을 같이 그린다 — 마지막 카드가 섬 아래에 가리지 않게.
+ *
+ * guestAction 을 주면 비회원 버튼의 문구와 로그인 뒤 돌아갈 곳을 바꾼다. 지원금 목록은 이 버튼과 본문의 계산 버튼을
+ * 하나로 합쳐 [카카오로 로그인하고 내 최종 주거비 확인하기] → /calculate 로 쓴다(11/23) — 둘이 같이 있으면 노란 버튼이
+ * 파란 버튼을 덮고, 어느 쪽을 눌러도 결국 카카오 로그인이다.
  */
-export function BottomTabBar({ active }: { active: TabKey }) {
+export interface GuestAction {
+  label: React.ReactNode;
+  returnTo: string;
+}
+
+const DEFAULT_GUEST_ACTION: GuestAction = { label: "카카오로 로그인하고 홈으로", returnTo: "/home" };
+
+export function BottomTabBar({ active, guestAction = DEFAULT_GUEST_ACTION }: { active: TabKey; guestAction?: GuestAction }) {
   const [signedIn, setSignedIn] = useState(false);
   const [available, setAvailable] = useState(false);
   const sync = useSyncState();
@@ -60,7 +71,7 @@ export function BottomTabBar({ active }: { active: TabKey }) {
         {spacer}
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="pointer-events-auto mx-auto w-[calc(100%-2.5rem)] max-w-[380px] rounded-[12px] shadow-island">
-            <KakaoButton onClick={() => signIn("/home")}>카카오로 로그인하고 홈으로</KakaoButton>
+            <KakaoButton onClick={() => signIn(guestAction.returnTo)}>{guestAction.label}</KakaoButton>
           </div>
         </div>
       </>

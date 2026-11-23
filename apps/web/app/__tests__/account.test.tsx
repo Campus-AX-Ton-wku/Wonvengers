@@ -16,7 +16,8 @@ vi.mock("@/lib/sync", async (importOriginal) => ({
 }));
 
 import AccountPage from "@/app/account/page";
-import { resetAuthForTests, signIn } from "@/lib/auth";
+import { RETURN_KEY, resetAuthForTests, signIn } from "@/lib/auth";
+import { goTo } from "@/lib/redirect";
 import { loadRemote, saveRemote } from "@/lib/remote";
 import { logout, resetSyncForTests, withdraw } from "@/lib/sync";
 import { enableLogin, remoteItem, seedSyncMeta, signInAs } from "@/lib/__tests__/auth-fixtures";
@@ -177,3 +178,38 @@ describe("알림 설정 한 줄 (11/20 두 단계 구조)", () => {
 });
 
 
+
+/**
+ * 11/23 ggue 실기기: 로그인했는데 이 기기에 저장 동의가 없으면(동의 화면에서 고르지 않고 나감) 앱이 조용히 저장을 멈췄다 —
+ * '아직 저장 전이에요'만 보이고 배지도 안 받아졌다(배지는 처음 동기화 뒤에만 판정). 동의로 가는 길을 보여 준다.
+ */
+describe("/account — 로그인했지만 이 기기에 저장 동의가 없을 때", () => {
+  it("계정 줄에 동의 안내 + [동의하고 저장] → 돌아올 곳(/account)을 적고 동의 화면으로", async () => {
+    const user = userEvent.setup();
+    signInAs("sub-a", { consent: false });
+    render(<AccountPage />);
+    expect(await screen.findByText("이 기기에서는 아직 저장에 동의하지 않았어요")).toBeTruthy();
+    expect(screen.queryByText("아직 저장 전이에요")).toBeNull();
+    const buttons = screen.getAllByRole("button", { name: "동의하고 저장" });
+    expect(buttons.length).toBeGreaterThan(0);
+    await user.click(buttons[0]);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBe("/account");
+    expect(goTo).toHaveBeenCalledWith("/auth/consent");
+  });
+
+  it("배지 칸에 '저장에 동의하면 배지를 받을 수 있어요'", async () => {
+    signInAs("sub-a", { consent: false });
+    render(<AccountPage />);
+    const badges = await screen.findByRole("region", { name: /배지/ });
+    expect(within(badges).getByText("저장에 동의하면 배지를 받을 수 있어요")).toBeTruthy();
+    expect(within(badges).queryByText("앱을 쓰다 보면 모여요")).toBeNull();
+  });
+
+  it("동의한 기기에서는 안내 · 버튼이 없다", async () => {
+    로그인한채로();
+    await screen.findByText("카카오로 로그인했어요");
+    expect(screen.queryByText("이 기기에서는 아직 저장에 동의하지 않았어요")).toBeNull();
+    expect(screen.queryByRole("button", { name: "동의하고 저장" })).toBeNull();
+    expect(screen.getByText("앱을 쓰다 보면 모여요")).toBeTruthy();
+  });
+});

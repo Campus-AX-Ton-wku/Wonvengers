@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { isEntryPage } from "@/lib/entry";
+import { loadGuidesRead } from "@/lib/storage";
 import { resetNavigation, routerMock } from "./navigation-mock";
 import GuidesPage from "@/app/guides/page";
 import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
@@ -202,5 +203,17 @@ describe("앱 안 링크 (11/22)", () => {
   it("청약 쉽게 6장 — 익산 청약 공고 화면으로", async () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "cheongyak", step: "6" }) }));
     expect(screen.getByRole("link", { name: "익산 청약 공고 보기" }).getAttribute("href")).toBe("/housing");
+  });
+});
+
+/** '가이드 정독' 배지 재료 (11/22 내 프로필 ②) — 끝 장을 열면 그 가이드를 읽음으로 남긴다(이 기기에만) */
+describe("가이드 읽음 기록", () => {
+  it("마지막 장을 열면 남기고, 중간 장은 남기지 않는다", async () => {
+    window.localStorage.clear();
+    const middle = render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "4" }) }));
+    expect(loadGuidesRead()).toEqual([]);
+    middle.unmount();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "5" }) }));
+    expect(loadGuidesRead()).toEqual(["protect-deposit"]);
   });
 });
