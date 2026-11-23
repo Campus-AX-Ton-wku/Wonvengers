@@ -1,4 +1,4 @@
-import { BadgeMedal } from "@/app/components";
+import { BadgeMedal, Button } from "@/app/components";
 import { badgeOf, type BadgeStatus } from "@/lib/badges";
 import type { BadgeId } from "@/lib/user-data";
 
@@ -14,9 +14,15 @@ function shortDate(iso: string): string {
 export function BadgeSection({
   statuses,
   earned,
+  onConsent,
 }: {
   statuses: readonly BadgeStatus[];
   earned: Partial<Record<BadgeId, string>>;
+  /**
+   * 로그인했지만 이 기기에 저장 동의가 없을 때만 — 배지는 처음 동기화 뒤에만 받으므로(BadgeWatcher) 왜 안 받아지는지 말하고
+   * [동의하고 저장]을 둔다(11/23 ggue 실기기: '가이드 정독 3/3'인데 회색).
+   */
+  onConsent?: () => void;
 }) {
   const count = statuses.filter((s) => earned[s.id]).length;
   return (
@@ -25,7 +31,7 @@ export function BadgeSection({
         <h2 id="badges-heading" className="text-base font-bold text-ink-900">
           배지 <span className="text-brand-700">{count}</span>/{statuses.length}
         </h2>
-        <p className="text-xs text-ink-500">앱을 쓰다 보면 모여요</p>
+        <p className="text-xs text-ink-500">{onConsent ? "저장에 동의하면 배지를 받을 수 있어요" : "앱을 쓰다 보면 모여요"}</p>
       </div>
       <ul className="grid grid-cols-4 gap-2 rounded-card bg-surface p-3 shadow-card">
         {statuses.map((s) => {
@@ -40,6 +46,11 @@ export function BadgeSection({
           );
         })}
       </ul>
+      {onConsent && (
+        <Button variant="secondary" size="md" onClick={onConsent}>
+          동의하고 저장
+        </Button>
+      )}
     </section>
   );
 }
