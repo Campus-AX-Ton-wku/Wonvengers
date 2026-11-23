@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/fetch-app-data.mjs && node scripts/fetch-civil-places.mjs",
+    "prebuild": "node scripts/fetch-app-data.mjs && node scripts/fetch-civil-places.mjs && node scripts/fetch-notices.mjs",
     "fetch:civil-places": "node scripts/fetch-civil-places.mjs",
+    "fetch:notices": "node scripts/fetch-notices.mjs",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
