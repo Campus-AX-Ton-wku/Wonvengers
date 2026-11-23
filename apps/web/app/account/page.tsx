@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell, BottomTabBar, Button, KakaoButton, LinkButton, Sheet, TopBar } from "@/app/components";
-import { hasStoredLogin, isLoginAvailable, onAuthChange, signIn } from "@/lib/auth";
+import { hasStoredLogin, isLoginAvailable, onAuthChange, rememberReturnTo, signIn } from "@/lib/auth";
+import { goTo } from "@/lib/redirect";
 import { isPushConfigured } from "@/lib/push";
 import { ChevronRight, ICON_MD } from "@/app/components/icons";
-import { flushNow, hasUnsyncedChanges, logout, retrySync, useSyncState, withdraw } from "@/lib/sync";
+import { flushNow, hasUnsyncedChanges, logout, retrySync, syncEnabled, useSyncState, withdraw } from "@/lib/sync";
 import { ThemeSetting } from "./ThemeSetting";
 import policiesJson from "@/data/policies.json";
 import { seoulTodayISO } from "@/lib/date";
@@ -85,6 +86,11 @@ export default function AccountPage() {
   const [ready, setReady] = useState(false);
   const [available, setAvailable] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  /**
+   * 로그인했는데 이 기기에 저장 동의가 없는가(동의 화면에서 고르지 않고 나간 경우, 11/23 ggue 실기기).
+   * 그러면 앱이 조용히 저장을 멈추고 배지도 판정하지 않는다(BadgeWatcher 는 처음 동기화 뒤에만) — 동의로 가는 길을 보인다.
+   */
+  const [needsConsent, setNeedsConsent] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [working, setWorking] = useState(false);
   const [withdrawn, setWithdrawn] = useState(false);
@@ -121,11 +127,17 @@ export default function AccountPage() {
       const ok = isLoginAvailable();
       setAvailable(ok);
       setSignedIn(ok && hasStoredLogin());
+      setNeedsConsent(ok && hasStoredLogin() && !syncEnabled());
     };
     update();
     setReady(true);
     return onAuthChange(update);
   }, []);
+
+  function askConsent() {
+    rememberReturnTo("/account");
+    goTo("/auth/consent");
+  }
 
   async function requestLogout() {
     setLoggingOut(true);
@@ -201,7 +213,7 @@ export default function AccountPage() {
               earnedBadges={mine.badgeStatuses.map((s) => s.id).filter((id) => mine.earned[id])}
               onSaved={(card) => setMine((m) => ({ ...m, card }))}
             />
-            <BadgeSection statuses={mine.badgeStatuses} earned={mine.earned} />
+            <BadgeSection statuses={mine.badgeStatuses} earned={mine.earned} onConsent={needsConsent ? askConsent : undefined} />
             <MyRecords saved={mine.saved} preparing={mine.preparing} ledgerMonths={mine.ledgerMonths} />
             <Settings showNotifications={isPushConfigured()} />
             <section aria-labelledby="account-heading" className="flex flex-col gap-2.5">
@@ -211,8 +223,17 @@ export default function AccountPage() {
               <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-ink-600">
                 <span>카카오로 로그인했어요</span>
                 <span aria-hidden="true" className="text-ink-300">·</span>
-                <span>{sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}</span>
+                {needsConsent ? (
+                  <span>이 기기에서는 아직 저장에 동의하지 않았어요</span>
+                ) : (
+                  <span>{sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}</span>
+                )}
               </p>
+              {needsConsent && (
+                <Button variant="secondary" size="screen" onClick={askConsent}>
+                  동의하고 저장
+                </Button>
+              )}
               {sync.status === "error" && (
                 <div
                   role="status"

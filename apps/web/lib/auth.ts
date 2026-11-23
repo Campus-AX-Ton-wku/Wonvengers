@@ -156,6 +156,18 @@ export function safeReturnTo(value: string | null): string {
   return url.pathname + url.search + url.hash;
 }
 
+/**
+ * 로그인 · 동의 뒤 돌아올 곳을 적어 둔다(앱 안 경로만). signIn 이 쓰는 것과 같은 칸이다 —
+ * 내 정보에서 [동의하고 저장]으로 /auth/consent 에 갈 때 동의 뒤 내 정보로 돌아오게 한다(11/23).
+ */
+export function rememberReturnTo(path: string): void {
+  try {
+    window.sessionStorage.setItem(RETURN_KEY, safeReturnTo(path));
+  } catch {
+    // 못 적으면 동의 뒤 기본 화면으로 간다
+  }
+}
+
 export function consumeReturnTo(): string {
   let value: string | null = null;
   try {
