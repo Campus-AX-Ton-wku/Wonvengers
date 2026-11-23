@@ -139,7 +139,7 @@ function SortChips({ value, onChange }: { value: SavedSort; onChange: (sort: Sav
 function EmptySaved() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-card border border-brand-200 bg-surface px-5 pb-6 pt-7 text-center">
-      <span aria-hidden="true" className="flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+      <span aria-hidden="true" className="empty-pop flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
         <Heart size={ICON_MD} />
       </span>
       <p className="mt-1 text-base font-bold text-ink-900">아직 관심 지원금이 없어요</p>
@@ -163,7 +163,7 @@ function SavedCardItem({ card: { policy, deadline, progress } }: { card: SavedCa
     <li>
       <Link
         href={`/find/policies/${policy.id}/prepare`}
-        className="focus-ring flex items-center gap-2.5 rounded-card bg-surface py-[18px] pl-5 pr-3.5 shadow-card"
+        className="press focus-ring flex items-center gap-2.5 rounded-card bg-surface py-[18px] pl-5 pr-3.5 shadow-card"
       >
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col items-start gap-1">

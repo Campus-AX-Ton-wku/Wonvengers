@@ -8,7 +8,7 @@ export function LoanCard({ product, compact = false, tag = null }: { product: Lo
   return (
     <Link
       href={`/loans/${product.id}`}
-      className={`focus-ring relative flex rounded-card bg-surface shadow-card ${tag ? "ring-[1.5px] ring-inset ring-brand-600/35" : ""} ${
+      className={`press focus-ring relative flex rounded-card bg-surface shadow-card ${tag ? "ring-[1.5px] ring-inset ring-brand-600/35" : ""} ${
         compact ? "w-[164px] shrink-0 flex-col gap-3 px-4 pb-4 pt-[18px]" : "items-center gap-3.5 p-4"
       }`}
     >

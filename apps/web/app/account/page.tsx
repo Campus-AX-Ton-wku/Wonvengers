@@ -313,7 +313,7 @@ export default function AccountPage() {
 /** 설정 — 알림 설정 ›(알림을 쓸 수 있을 때) · 화면 모드 · 개인정보 처리방침 › */
 function Settings({ showNotifications }: { showNotifications: boolean }) {
   const row =
-    "focus-ring flex min-h-12 items-center justify-between rounded-control border border-ink-200 bg-surface px-4 py-3 text-sm font-bold text-ink-900";
+    "press focus-ring flex min-h-12 items-center justify-between rounded-control border border-ink-200 bg-surface px-4 py-3 text-sm font-bold text-ink-900";
   return (
     <section aria-label="설정" className="flex flex-col gap-2.5">
       {/* 알림 칸은 알림 설정 화면으로 옮겼다(11/20 두 단계 구조 — 종 → 알림함 → ⚙ 알림 설정). 여기는 길 하나만 */}

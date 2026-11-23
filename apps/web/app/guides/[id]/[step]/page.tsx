@@ -78,7 +78,7 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
                         href={place.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="focus-ring flex min-h-12 items-center gap-3 py-2.5"
+                        className="press-row focus-ring -mx-2 flex min-h-12 items-center gap-3 rounded-[10px] px-2 py-2.5"
                       >
                         {text}
                         <ExternalLink size={ICON_SM} aria-hidden="true" className="shrink-0 text-brand-600" />

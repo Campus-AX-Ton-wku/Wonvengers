@@ -7,6 +7,7 @@ import { APPLE_SPLASH, SPLASH_SCRIPT } from "@/lib/splash";
 import { SplashGate } from "@/app/components/SplashGate";
 import { ThemeWatcher } from "@/app/components/ThemeWatcher";
 import { BadgeWatcher } from "@/app/components/BadgeWatcher";
+import { ToastHost } from "@/app/components/ToastHost";
 import { THEME_COLORS, THEME_SCRIPT } from "@/lib/theme";
 import { contentSecurityPolicy } from "@/lib/csp";
 
@@ -133,6 +134,8 @@ export default function RootLayout({
         <ThemeWatcher />
         {/* 배지 받는 순간 창(11/22 내 프로필 ②) — 로그인 · 처음 동기화 뒤에만 판정한다 */}
         <BadgeWatcher />
+        {/* 아래 알림(11/23, 토스 영상 #3 · #4) — 관심 담기 · 빼기 */}
+        <ToastHost />
         {children}
       </body>
     </html>
