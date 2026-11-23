@@ -136,17 +136,20 @@ describe("HTTP API", () => {
     });
   });
 
-  it("다섯 경로는 JWT authorizer 뒤에 있고, 카카오 연결 해제 웹훅 두 경로만 없다(어드민 키로 확인 — apps/api/src/kakao-webhook.ts)", () => {
+  it("여덟 경로(11/23 프로필 사진 셋 추가)는 JWT authorizer 뒤에 있고, 카카오 연결 해제 웹훅 두 경로만 없다(어드민 키로 확인 — apps/api/src/kakao-webhook.ts)", () => {
     const routes = Object.values(template.findResources("AWS::ApiGatewayV2::Route")).map(
       (r) => r.Properties as { RouteKey: string; AuthorizationType?: string }
     );
     expect(routes.map((r) => r.RouteKey).sort()).toEqual([
       "DELETE /me",
+      "DELETE /me/photo",
       "DELETE /me/push",
       "GET /kakao/unlink",
       "GET /me/data",
+      "GET /me/photo",
       "POST /kakao/unlink",
       "PUT /me/data",
+      "PUT /me/photo",
       "PUT /me/push",
     ]);
     for (const r of routes) {

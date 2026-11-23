@@ -6,6 +6,7 @@ import { resolveAnswers } from "@/lib/age";
 import { answerLine } from "@/lib/discovery";
 import { DEFAULT_PROFILE_CARD, profileColor, profileName } from "@/lib/profile-card";
 import { saveProfileCard } from "@/lib/storage";
+import { choosePhoto, removePhoto, syncPhoto, useProfilePhotoImage } from "@/lib/profile-photo";
 import type { DiscoveryAnswers } from "@/lib/types";
 import type { BadgeId, ProfileCardData } from "@/lib/user-data";
 import { ProfileSheet } from "./ProfileSheet";
@@ -14,6 +15,7 @@ import { ProfileSheet } from "./ProfileSheet";
  * 내 정보 맨 위 프로필 카드 (내 프로필 설계 §3, 시안 Profile) — 위쪽이 고른 색으로 물든 카드.
  * 그림 동그라미 · 이름(기본 이름이면 안내 한 줄) · 내 조건 칩(나이 · 지역 · 상태 · 집 형태) · [프로필 꾸미기] [내 조건 수정].
  * 금액은 보여 주지 않는다. 이름 · 그림 · 색은 계정에 저장된다(lib/storage.ts saveProfileCard → 동기화).
+ * 사진(11/23)은 따로 계정에 — lib/profile-photo.ts.
  */
 export function ProfileCardSection({
   card,
@@ -30,6 +32,7 @@ export function ProfileCardSection({
 }) {
   const [editing, setEditing] = useState(false);
   const shown = card ?? DEFAULT_PROFILE_CARD;
+  const photo = useProfilePhotoImage(card);
   const { name, isDefault } = profileName(card, answers);
   const color = profileColor(shown.color);
   const hasAnswers = Object.values(answers).some((v) => v !== null);
@@ -70,13 +73,24 @@ export function ProfileCardSection({
       {editing && (
         <ProfileSheet
           card={shown}
+          photo={photo}
           defaultName={profileName(null, answers).name}
           earnedBadges={earnedBadges}
           onClose={() => setEditing(false)}
-          onSave={(next) => {
-            saveProfileCard(next);
-            onSaved(next);
+          onSave={(next, change) => {
+            // 사진은 따로 저장하고(lib/profile-photo.ts), 카드에는 고른 때만 적는다 — 다른 기기가 그걸 보고 받는다.
+            // 사진이 없으면 photoAt 키를 아예 뺀다(예전 서버는 모르는 키를 거부한다)
+            let saved = next;
+            if (change?.kind === "set") saved = { ...next, photoAt: choosePhoto(change.image) };
+            else if (change?.kind === "remove") {
+              removePhoto();
+              const { photoAt: _gone, ...rest } = next;
+              saved = rest;
+            }
+            saveProfileCard(saved);
+            onSaved(saved);
             setEditing(false);
+            void syncPhoto(saved);
           }}
         />
       )}

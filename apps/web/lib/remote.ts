@@ -1,5 +1,6 @@
 import { authConfig, getSession } from "./auth";
 import type { PushSubscriptionBody } from "./push-subscription";
+import { validatePhotoBody, type ProfilePhotoBody } from "./profile-photo-data";
 import { validateUserData, type GetResponseBody, type PutResponseBody, type UserDataPayload } from "./user-data";
 
 /**
@@ -102,6 +103,34 @@ export function putPushRemote(sub: PushSubscriptionBody): Promise<void> {
 export function deletePushRemote(endpoint: string): Promise<void> {
   return withTimeout(async (signal) => {
     const res = await call(signal, "DELETE", "/me/push", { endpoint });
+    if (res.status !== 204) throw new RemoteError(res.status);
+  });
+}
+
+/** 프로필 사진 받기 (11/23). 없으면 null. 받은 것도 같은 검사를 거친다. */
+export function getPhotoRemote(): Promise<ProfilePhotoBody | null> {
+  return withTimeout(async (signal) => {
+    const res = await call(signal, "GET", "/me/photo");
+    if (res.status === 204) return null;
+    if (!res.ok) throw new RemoteError(res.status);
+    const checked = validatePhotoBody(await res.json());
+    if (!checked.ok) throw new RemoteError(502);
+    return checked.value;
+  });
+}
+
+/** 프로필 사진 올리기 — 마지막 한 장으로 덮어쓴다. */
+export function putPhotoRemote(photo: ProfilePhotoBody): Promise<void> {
+  return withTimeout(async (signal) => {
+    const res = await call(signal, "PUT", "/me/photo", photo);
+    if (res.status !== 204) throw new RemoteError(res.status);
+  });
+}
+
+/** 프로필 사진 지우기. 없어도 204. */
+export function deletePhotoRemote(): Promise<void> {
+  return withTimeout(async (signal) => {
+    const res = await call(signal, "DELETE", "/me/photo");
     if (res.status !== 204) throw new RemoteError(res.status);
   });
 }

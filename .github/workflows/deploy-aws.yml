@@ -24,6 +24,7 @@ on:
       # API Lambda 가 함께 묶는 웹 파일 (apps/api 가 ../../web/lib 로 가져온다)
       - "apps/web/lib/user-data.ts"
       - "apps/web/lib/push-subscription.ts"
+      - "apps/web/lib/profile-photo-data.ts"
       - "apps/web/lib/filter.ts"
       - "apps/web/lib/age.ts"
       - "apps/web/lib/region.ts"

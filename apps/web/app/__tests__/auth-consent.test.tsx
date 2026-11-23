@@ -158,7 +158,7 @@ describe("/auth/consent (설계 '화면' 3)", () => {
     const [payload, base] = save.mock.calls[0];
     expect(base).toBeNull();
     expect(payload.answers.values).toEqual(답);
-    expect(payload.consentVersion).toBe("2026-11-04");
+    expect(payload.consentVersion).toBe("2026-11-23");
   });
 
   it("서버에 다른 답이 있으면 무엇을 쓸지 묻는다", async () => {

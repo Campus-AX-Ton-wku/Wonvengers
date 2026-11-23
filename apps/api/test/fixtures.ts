@@ -61,7 +61,7 @@ export function validPayload(overrides: Partial<UserDataPayload> = {}): UserData
     badges: {},
     ledger: null,
     houseChecklist: [],
-    consentVersion: "2026-11-04",
+    consentVersion: "2026-11-23",
     consentAt: "2026-11-04T09:00:00.000Z",
     ...overrides,
   };

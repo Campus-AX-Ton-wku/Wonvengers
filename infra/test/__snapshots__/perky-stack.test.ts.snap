@@ -183,6 +183,59 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Lambda::Permission",
     },
+    "ApiDELETEmephotoApiIntegrationPermission86A3E2D0": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/me/photo",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ApiDELETEmephotoC582DC8B": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "ApiCognito2A5FE4F0",
+        },
+        "RouteKey": "DELETE /me/photo",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
     "ApiDELETEmepush2EC465BD": {
       "Properties": {
         "ApiId": {
@@ -531,6 +584,59 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
       },
       "Type": "AWS::Lambda::Permission",
     },
+    "ApiGETmephotoApiIntegrationPermission5AA9BBB8": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/me/photo",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ApiGETmephotoE0FC7D3B": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "ApiCognito2A5FE4F0",
+        },
+        "RouteKey": "GET /me/photo",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
     "ApiLogs3D05D88B": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -636,6 +742,59 @@ exports[`운영 > 템플릿 스냅샷 1`] = `
                 "Ref": "ApiF70053CD",
               },
               "/*/*/me/data",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ApiPUTmephoto91F6EAAA": {
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiF70053CD",
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "ApiCognito2A5FE4F0",
+        },
+        "RouteKey": "PUT /me/photo",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "ApiGETmedataApiIntegration0CDB2C12",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::ApiGatewayV2::Route",
+    },
+    "ApiPUTmephotoApiIntegrationPermissionAD974A06": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiFunctionCE271BD4",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:ap-northeast-2:448842988711:",
+              {
+                "Ref": "ApiF70053CD",
+              },
+              "/*/*/me/photo",
             ],
           ],
         },
