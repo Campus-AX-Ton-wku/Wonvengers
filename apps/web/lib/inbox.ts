@@ -2,6 +2,8 @@ import type { ChecklistState } from "./user-data";
 import { resolveAnswers } from "./age";
 import { tagPolicy } from "./filter";
 import { openPolicies, savedCards, type SavedCard } from "./home";
+import { NOTICE_REGION, noticeStatus, type HousingNotice } from "./notices";
+import { policyAppliesToRegion } from "./region";
 import type { DiscoveryAnswers, PolicyMeta } from "./types";
 
 /**
@@ -19,12 +21,34 @@ import type { DiscoveryAnswers, PolicyMeta } from "./types";
  *      알림 기준선(11/16) 전부터 있던 정책은 올라온 날이 없어 여기 나오지 않는다 (11/20, docs/기획/2026-11-20-알림함-설계.md)
  *   4. 새로 신청이 열렸어요 — 내 조건으로 지금 신청할 수 있는 지원금(홈 '지금 신청할 수 있는'과 같은 목록) 중
  *      신청이 시작된 지 14일 이하
+ *   5. 새 청약 공고가 올라왔어요 — 익산 공고, 모집공고일 14일 이하 (11/22, noticeInboxItems — 정책과 모양이 달라 따로 센다)
  */
 
 export const DEADLINE_SOON_DAYS = 7;
 export const UPCOMING_DAYS = 14;
 export const RECENT_OPEN_DAYS = 14;
 export const NEW_POLICY_DAYS = 30;
+export const NEW_NOTICE_DAYS = 14;
+
+export interface NoticeInboxItem {
+  kind: "notice";
+  key: string;
+  notice: HousingNotice;
+  days: number;
+}
+
+/** 새 청약 공고 — 사는 곳이 익산(답한 것)일 때만. '새 지원금'과 같은 규칙(11/08 결정) */
+export function noticeInboxItems(notices: readonly HousingNotice[], answers: DiscoveryAnswers, todayISO: string): NoticeInboxItem[] {
+  if (!answers.region || !policyAppliesToRegion(NOTICE_REGION, answers.region)) return [];
+  const out: NoticeInboxItem[] = [];
+  for (const notice of notices) {
+    if (!notice.announcedAt || noticeStatus(notice, todayISO) === "ended") continue;
+    const days = daysBetween(notice.announcedAt, todayISO);
+    if (days < 0 || days >= NEW_NOTICE_DAYS) continue;
+    out.push({ kind: "notice", key: `notice:${notice.id}`, notice, days });
+  }
+  return out.sort((a, b) => a.days - b.days);
+}
 
 const DAY = 86_400_000;
 
@@ -115,12 +139,12 @@ export function loadInboxSeen(): Set<string> {
   }
 }
 
-export function hasUnseen(items: readonly InboxItem[], seen: ReadonlySet<string>): boolean {
+export function hasUnseen(items: readonly { key: string }[], seen: ReadonlySet<string>): boolean {
   return items.some((item) => !seen.has(item.key));
 }
 
 /** 지금 보이는 알림을 모두 읽음으로. 오래된 것부터 버려 SEEN_MAX 개만 남긴다. */
-export function markInboxSeen(items: readonly InboxItem[]): void {
+export function markInboxSeen(items: readonly { key: string }[]): void {
   try {
     const seen = [...loadInboxSeen()];
     for (const item of items) if (!seen.includes(item.key)) seen.push(item.key);

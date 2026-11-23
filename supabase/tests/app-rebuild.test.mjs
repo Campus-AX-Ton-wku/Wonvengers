@@ -50,7 +50,7 @@ await db.exec(readFileSync(join(repo, "supabase", "seed.sql"), "utf8"));
 for (const f of ["20261115172640_app_policies.sql", "20261115233614_app_fields.sql", "20261116233659_documents.sql"]) {
   await db.exec(migration(f));
 }
-const rebuildSql = ["20261117104553_app_rebuild.sql", "20261117104705_app_rebuild_timeout.sql", "20261123000000_app_rebuild_daily.sql"].map(migration).join("\n")
+const rebuildSql = ["20261117104553_app_rebuild.sql", "20261117104705_app_rebuild_timeout.sql", "20261123123704_app_rebuild_daily.sql"].map(migration).join("\n")
   .split("\n")
   .filter((line) => !/^\s*create extension/i.test(line))
   .join("\n");

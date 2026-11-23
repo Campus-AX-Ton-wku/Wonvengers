@@ -29,6 +29,7 @@ on:
       - "apps/web/lib/region.ts"
       - "apps/web/lib/date.ts"
       - "apps/web/lib/types.ts"
+      - "apps/web/lib/notices.ts"
       - ".github/workflows/deploy-aws.yml"
   workflow_dispatch: # 손으로도 돌릴 수 있게 (승인은 똑같이 필요)
 

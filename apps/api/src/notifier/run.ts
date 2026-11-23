@@ -1,14 +1,18 @@
+import type { NoticeSnapshot } from "../../../web/lib/notices";
 import type { PolicyMeta } from "../../../web/lib/types";
 import type { PushStore, StoredDevice } from "../push-store";
 import type { UserDataStore } from "../store";
 import {
   composeMessage,
+  composeNoticeMessage,
   composeReminder,
   deadlineReminders,
   isSendingHour,
   kst,
+  livesInNoticeRegion,
   matchPolicies,
   REMINDER_HOUR,
+  selectNewNotices,
   selectNewPolicies,
   type PushMessage,
 } from "./plan";
@@ -18,10 +22,18 @@ import type { Sender } from "./sender";
 export interface NotifierDeps {
   push: Pick<
     PushStore,
-    "listDevices" | "deleteDevice" | "getAnnounced" | "saveAnnounced" | "getReminderDate" | "saveReminderDate"
+    | "listDevices"
+    | "deleteDevice"
+    | "getAnnounced"
+    | "saveAnnounced"
+    | "getReminderDate"
+    | "saveReminderDate"
+    | "getAnnouncedNotices"
+    | "saveAnnouncedNotices"
   >;
   users: Pick<UserDataStore, "get">;
   fetchPolicies(): Promise<PolicyMeta[]>;
+  fetchNotices(): Promise<NoticeSnapshot>;
   send: Sender;
   now(): Date;
 }
@@ -29,6 +41,13 @@ export interface NotifierDeps {
 export interface ReminderSummary {
   /** not-hour: 10시 회차가 아님 · done-today: 오늘 이미 돌림 · none: 알릴 찜 없음 · sent: 보냄 */
   outcome: "not-hour" | "done-today" | "none" | "sent";
+  recipients: number;
+}
+
+export interface NoticeSummary {
+  /** not-ready: 빌드 때 못 받은 빈 스냅숏(generatedAt null) — 상태를 건드리지 않는다 */
+  outcome: "fetch-failed" | "not-ready" | "initialized" | "no-new" | "sent";
+  newNotices: number;
   recipients: number;
 }
 
@@ -46,6 +65,8 @@ export interface RunSummary {
   fetchError?: string;
   /** 찜한 지원금 마감 알림 (11/20) — 목록을 읽은 회차에만 */
   reminders?: ReminderSummary;
+  /** 새 청약 공고 (11/22) — 정책 목록과 따로 읽는다 */
+  notices?: NoticeSummary;
 }
 
 function countFailure(summary: RunSummary, reason: string): void {
@@ -115,6 +136,9 @@ export async function runNotifier(deps: NotifierDeps, { force = false }: { force
   };
   if (!force && !isSendingHour(now)) return { ...summary, outcome: "skipped-hours" };
 
+  const directory = deviceDirectory(deps);
+  summary.notices = await announceNewNotices(deps, directory, summary, now);
+
   let published: PolicyMeta[];
   try {
     published = await deps.fetchPolicies();
@@ -123,7 +147,6 @@ export async function runNotifier(deps: NotifierDeps, { force = false }: { force
     return { ...summary, outcome: "fetch-failed", fetchError: `${e.name}: ${e.message.slice(0, 120)}` };
   }
 
-  const directory = deviceDirectory(deps);
   summary.outcome = await announceNewPolicies(deps, directory, summary, published, now);
   summary.reminders = await remindDeadlines(deps, directory, summary, published, now, force);
   return summary;
@@ -205,4 +228,43 @@ async function remindDeadlines(
 
   await deps.push.saveReminderDate(today, now);
   return { ...result, outcome: result.recipients > 0 ? "sent" : "none" };
+}
+
+/** 새 청약 공고 (11/22). 공고 목록은 정책과 따로 읽는다 — 하나가 실패해도 다른 하나는 돈다. */
+async function announceNewNotices(deps: NotifierDeps, directory: Directory, summary: RunSummary, now: Date): Promise<NoticeSummary> {
+  const result: NoticeSummary = { outcome: "no-new", newNotices: 0, recipients: 0 };
+  let snapshot: NoticeSnapshot;
+  try {
+    snapshot = await deps.fetchNotices();
+  } catch {
+    return { ...result, outcome: "fetch-failed" };
+  }
+  // 빈 스냅숏을 기준선으로 삼으면 다음에 받은 공고를 전부 '새 공고'로 한꺼번에 보낸다(리뷰 I-1)
+  if (snapshot.generatedAt === null) return { ...result, outcome: "not-ready" };
+  const { notices } = snapshot;
+  const announced = await deps.push.getAnnouncedNotices();
+  if (announced === null) {
+    // 첫 실행: 지금 있는 공고를 한꺼번에 알리지 않는다
+    await deps.push.saveAnnouncedNotices(new Set(notices.map((n) => n.id)), now);
+    return { ...result, outcome: "initialized" };
+  }
+  const { toSend, toMark } = selectNewNotices(notices, announced, kst(now).date);
+  if (toMark.length === 0) return result;
+  result.newNotices = toSend.length;
+  if (toSend.length > 0) {
+    const message = composeNoticeMessage(toSend);
+    for (const [userId, devices] of await directory.byUser()) {
+      try {
+        const item = await deps.users.get(userId);
+        if (!item || !item.data.consentVersion || !livesInNoticeRegion(item.data.answers.values)) continue;
+        result.recipients += 1;
+        await deliver(deps, directory, summary, userId, devices, message);
+      } catch (err) {
+        skipUser(summary, devices, err);
+      }
+    }
+  }
+  // 보낸 '뒤에' 적는다 — 새 정책 알림과 같은 이유
+  await deps.push.saveAnnouncedNotices(new Set([...announced, ...toMark]), now);
+  return { ...result, outcome: toSend.length > 0 ? "sent" : "no-new" };
 }

@@ -83,7 +83,7 @@ export default function PushSettings() {
       {view === "off" && (
         <>
           <p className="text-sm leading-relaxed text-ink-600">
-            내 조건에 맞는 새 지원금이 올라오거나, 관심 지원금 마감이 7일 · 1일 남으면 알려 드려요 (낮 9시~밤 9시)
+            내 조건에 맞는 새 지원금이나 익산의 새 청약 공고가 올라오거나, 관심 지원금 마감이 7일 · 1일 남으면 알려 드려요 (낮 9시~밤 9시)
           </p>
           <Button variant="secondary" size="screen" disabled={busy} onClick={() => void turnOn()}>
             {busy ? "켜는 중…" : "알림 켜기"}

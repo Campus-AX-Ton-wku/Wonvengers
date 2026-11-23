@@ -52,4 +52,9 @@ describe("/privacy — 처리방침 초안 (설계 '화면' 6)", () => {
     expect(screen.getByText(/연동 서비스 — 카카오맵/)).toBeTruthy();
     expect(screen.getByText(/좌표를 카카오에 따로 보내지는 않지만/)).toBeTruthy();
   });
+
+  it("휴대폰 알림의 쓰임에 새 청약 공고 — 사는 곳이 익산일 때 (11/22)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/사는 곳이 익산이면 새 청약 공고가 올라올 때/)).toBeTruthy();
+  });
 });

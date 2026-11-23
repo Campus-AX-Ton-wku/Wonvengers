@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import noticesData from "@/data/notices.json";
 import policiesJson from "@/data/policies.json";
 import { AppShell, DeadlineBadge, Icon3D, IconLink, TabIcon, TopBar } from "@/app/components";
 import { ChevronRight, ICON_LG, ICON_MD, Settings } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { formatDotDate, seoulTodayISO } from "@/lib/date";
-import { inboxItems, loadInboxSeen, markInboxSeen, seoulDateOf, type InboxItem } from "@/lib/inbox";
+import { inboxItems, loadInboxSeen, markInboxSeen, noticeInboxItems, seoulDateOf, type InboxItem, type NoticeInboxItem } from "@/lib/inbox";
+import { noticeDeadlineLabel, type NoticeSnapshot } from "@/lib/notices";
 import { deadlineLabel } from "@/lib/preparation";
 import { isPushConfigured } from "@/lib/push";
 import { replacePage } from "@/lib/redirect";
@@ -15,6 +17,7 @@ import { loadAnswers, loadChecklist, loadDocumentChecks, loadSaved } from "@/lib
 import type { PolicyMeta } from "@/lib/types";
 
 const policies = policiesJson as PolicyMeta[];
+const notices = (noticesData as NoticeSnapshot).notices;
 
 const SECTIONS: { kind: InboxItem["kind"]; title: string }[] = [
   { kind: "deadline", title: "마감이 다가와요" },
@@ -32,6 +35,7 @@ export default function NotificationsPage() {
   const [ready, setReady] = useState(false);
   const [today, setToday] = useState("");
   const [items, setItems] = useState<InboxItem[]>([]);
+  const [noticeItems, setNoticeItems] = useState<NoticeInboxItem[]>([]);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
@@ -41,13 +45,16 @@ export default function NotificationsPage() {
       return;
     }
     const t = seoulTodayISO();
-    const list = inboxItems(policies, loadAnswers(), loadSaved(), t, { checklist: loadChecklist, documents: loadDocumentChecks });
+    const answers = loadAnswers();
+    const list = inboxItems(policies, answers, loadSaved(), t, { checklist: loadChecklist, documents: loadDocumentChecks });
+    const noticeList = noticeInboxItems(notices, answers, t);
     const seen = loadInboxSeen();
     setToday(t);
     setItems(list);
-    setFresh(new Set(list.filter((item) => !seen.has(item.key)).map((item) => item.key)));
+    setNoticeItems(noticeList);
+    setFresh(new Set([...list, ...noticeList].filter((item) => !seen.has(item.key)).map((item) => item.key)));
     setReady(true);
-    markInboxSeen(list);
+    markInboxSeen([...list, ...noticeList]);
 
     const checkLogin = () => {
       if (!hasStoredLogin()) leave();
@@ -83,10 +90,11 @@ export default function NotificationsPage() {
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">알림</h1>
         {!ready ? (
           <p className="mt-6 text-center text-sm text-ink-500">불러오는 중…</p>
-        ) : items.length === 0 ? (
+        ) : items.length === 0 && noticeItems.length === 0 ? (
           <EmptyInbox />
         ) : (
-          SECTIONS.map(({ kind, title }) => {
+          <>
+          {SECTIONS.map(({ kind, title }) => {
             const list = items.filter((item) => item.kind === kind);
             if (list.length === 0) return null;
             return (
@@ -99,7 +107,18 @@ export default function NotificationsPage() {
                 </ul>
               </section>
             );
-          })
+          })}
+            {noticeItems.length > 0 && (
+              <section aria-label="새 청약 공고가 올라왔어요" className="flex flex-col gap-3">
+                <h2 className="text-base font-bold text-ink-700">새 청약 공고가 올라왔어요</h2>
+                <ul className="flex flex-col gap-3">
+                  {noticeItems.map((item) => (
+                    <NoticeInboxRow key={item.key} item={item} today={today} fresh={fresh.has(item.key)} />
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
         )}
       </main>
     </AppShell>
@@ -142,6 +161,32 @@ function InboxRow({ item, today, fresh }: { item: InboxItem; today: string; fres
           </span>
           <span className="text-[15px] font-bold leading-snug text-ink-900">{policy.name}</span>
           <span className="text-[13px] text-ink-500">{subline(item)}</span>
+        </span>
+        <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
+      </Link>
+    </li>
+  );
+}
+
+function NoticeInboxRow({ item, today, fresh }: { item: NoticeInboxItem; today: string; fresh: boolean }) {
+  const { notice } = item;
+  const [, m, d] = (notice.announcedAt ?? "").split("-");
+  return (
+    <li>
+      <Link href="/housing" className="focus-ring flex items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-3 shadow-card">
+        <Icon3D name="bankbook" size={40} />
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="flex items-center gap-1.5">
+            <DeadlineBadge label={noticeDeadlineLabel(notice, today)} />
+            {fresh && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700">
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-brand-600" />
+                새 소식
+              </span>
+            )}
+          </span>
+          <span className="text-[15px] font-bold leading-snug text-ink-900">{notice.title}</span>
+          <span className="text-[13px] text-ink-500">{`${notice.typeLabel} · ${Number(m)}월 ${Number(d)}일 공고`}</span>
         </span>
         <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
       </Link>

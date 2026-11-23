@@ -54,6 +54,10 @@ class MemoryPushStore implements PushStore {
     return null;
   }
   async saveAnnounced() {}
+  async getAnnouncedNotices() {
+    return null;
+  }
+  async saveAnnouncedNotices() {}
   async getReminderDate() {
     return null;
   }

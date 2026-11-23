@@ -4,6 +4,7 @@ import type { PushMessage } from "../src/notifier/plan";
 import type { StoredDevice } from "../src/push-store";
 import type { StoredItem } from "../src/store";
 import { policy, validPayload } from "./fixtures";
+import type { HousingNotice } from "../../web/lib/notices";
 
 const DAY = new Date("2026-11-16T02:00:00Z"); // 서울 11시 — 마감 알림(10시 회차)은 돌지 않는다
 const TEN = new Date("2026-11-16T01:00:00Z"); // 서울 10시 — 마감 알림 회차
@@ -33,12 +34,19 @@ function setup(opts: {
   now?: Date;
   /** 마감 알림을 마지막으로 돌린 날 */
   remindedOn?: string | null;
+  /** 새 청약 공고 (11/22) — 기본은 공고 없음 · 이미 알린 목록 빈 집합(지금 시험들은 공고 알림을 보내지 않는다) */
+  notices?: HousingNotice[];
+  /** /notices.json 의 받은 시각 — null 이면 빌드 때 못 받은 빈 스냅숏 */
+  noticesGeneratedAt?: string | null;
+  announcedNotices?: string[] | null;
+  noticesFail?: boolean;
 }) {
   let announced: Set<string> | null = opts.announced === null ? null : new Set(opts.announced ?? []);
   const sent: { device: string; message: PushMessage }[] = [];
   const removed: string[] = [];
   const order: string[] = [];
   let remindedOn: string | null = opts.remindedOn ?? null;
+  let announcedNotices: Set<string> | null = opts.announcedNotices === null ? null : new Set(opts.announcedNotices ?? []);
   const deps: NotifierDeps = {
     push: {
       listDevices: vi.fn(async () => opts.devices ?? []),
@@ -55,6 +63,10 @@ function setup(opts: {
         order.push("save-reminded");
         remindedOn = date;
       }),
+      getAnnouncedNotices: vi.fn(async () => (announcedNotices === null ? null : new Set(announcedNotices))),
+      saveAnnouncedNotices: vi.fn(async (ids: ReadonlySet<string>) => {
+        announcedNotices = new Set(ids);
+      }),
     },
     users: {
       get: vi.fn(async (userId: string) => {
@@ -66,6 +78,11 @@ function setup(opts: {
       if (opts.fetchFails) throw new Error("503");
       return opts.published ?? [];
     }),
+    fetchNotices: vi.fn(async () => {
+      if (opts.noticesFail) throw new Error("503");
+      const generatedAt = opts.noticesGeneratedAt === undefined ? "2026-11-16T06:00:00+09:00" : opts.noticesGeneratedAt;
+      return { generatedAt, notices: opts.notices ?? [] };
+    }),
     send: vi.fn(async (d: StoredDevice, message: PushMessage) => {
       order.push("send");
       sent.push({ device: d.deviceId, message });
@@ -73,7 +90,7 @@ function setup(opts: {
     }),
     now: () => opts.now ?? DAY,
   };
-  return { deps, sent, removed, order, announced: () => announced, remindedOn: () => remindedOn };
+  return { deps, sent, removed, order, announced: () => announced, remindedOn: () => remindedOn, announcedNotices: () => announcedNotices };
 }
 
 const fresh = policy({ id: "fresh", name: "새 정책" });
@@ -130,6 +147,7 @@ describe("runNotifier — 보내기", () => {
       devicesRemoved: 0,
       failures: {},
       reminders: { outcome: "not-hour", recipients: 0 },
+      notices: { outcome: "no-new", newNotices: 0, recipients: 0 },
     });
     expect(t.sent.map((s) => s.device)).toEqual(["a-d1", "a-d2"]);
     expect(t.sent[0].message.url).toBe("/find/policies/fresh");
@@ -296,5 +314,49 @@ describe("runNotifier — 찜한 지원금 마감 알림 (11/20)", () => {
     expect(t.sent.map((s) => `${s.device}:${s.message.tag}`)).toEqual(["a-d1:new-policy", "a-d2:new-policy", "a-d1:deadline"]);
     expect(t.removed).toEqual(["a-d2"]);
     expect(summary.reminders).toEqual({ outcome: "sent", recipients: 1 });
+  });
+});
+
+const notice = (id: string, over: Partial<HousingNotice> = {}): HousingNotice => ({
+  id, source: "마이홈포털", kind: "공공임대", typeLabel: "행복주택", title: `${id} 공고`, supplier: "LH",
+  announcedAt: "2026-11-14", applyStart: "2026-11-14", applyEnd: "2026-12-30", url: "https://apply.lh.or.kr/x", address: null, ...over,
+});
+
+describe("runNotifier — 새 청약 공고 (11/22)", () => {
+  it("처음엔 지금 공고를 '알림'으로 적기만 하고 보내지 않는다 — 배포 직후 한꺼번에 가지 않게", async () => {
+    const t = setup({ notices: [notice("a"), notice("b")], announcedNotices: null, announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    const summary = await runNotifier(t.deps);
+    expect(summary.notices?.outcome).toBe("initialized");
+    expect(t.sent.filter((s) => s.message.tag === "notice")).toEqual([]);
+    expect([...(t.announcedNotices() ?? [])].sort()).toEqual(["a", "b"]);
+  });
+
+  it("새 공고는 익산에 사는 사람에게 한 통, 누르면 /housing", async () => {
+    const elsewhere = userItem({ answers: { values: { birthDate: "2002-03-14", region: null, status: "대학생", incomeBracket: 1, housingType: "월세" }, answeredKeys: [] } });
+    const t = setup({ notices: [notice("a"), notice("b")], announcedNotices: ["a"], announced: [], devices: [device("u", 1), device("v", 1)], users: { u: userItem(), v: elsewhere } });
+    const summary = await runNotifier(t.deps);
+    expect(summary.notices).toMatchObject({ outcome: "sent", newNotices: 1, recipients: 1 });
+    expect(t.sent.filter((s) => s.message.tag === "notice")).toEqual([
+      { device: "u-d1", message: { title: "익산에 새 청약 공고가 올라왔어요", body: "b 공고", url: "/housing", tag: "notice" } },
+    ]);
+    expect(t.announcedNotices()?.has("b")).toBe(true);
+  });
+
+  it("빌드 때 못 받은 빈 스냅숏은 기준선으로 삼지 않는다 — 다음에 받은 공고를 한꺼번에 '새 공고'로 보내지 않게 (리뷰 I-1)", async () => {
+    const t = setup({ notices: [], noticesGeneratedAt: null, announcedNotices: null, announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    expect((await runNotifier(t.deps)).notices?.outcome).toBe("not-ready");
+    expect(t.announcedNotices()).toBeNull();
+
+    // 다음 회차 — 받은 공고 3건이 처음 보이면 그때 표시만 한다
+    const t2 = setup({ notices: [notice("a"), notice("b"), notice("c")], announcedNotices: null, announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    expect((await runNotifier(t2.deps)).notices?.outcome).toBe("initialized");
+    expect(t2.sent.filter((s) => s.message.tag === "notice")).toEqual([]);
+  });
+
+  it("공고 목록을 못 읽어도 정책 알림은 돈다", async () => {
+    const t = setup({ noticesFail: true, published: [fresh], announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    const summary = await runNotifier(t.deps);
+    expect(summary.notices?.outcome).toBe("fetch-failed");
+    expect(summary.outcome).toBe("sent");
   });
 });
