@@ -9,7 +9,7 @@ import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
 import GuideStepPage, { generateStaticParams as stepParams } from "@/app/guides/[id]/[step]/page";
 
 describe("주거 가이드 화면", () => {
-  it("목록 — 맨 위 집 보러 갈 때 체크리스트, 그 아래 세 편이 각 글의 목차로 간다 (11/22 ggue)", () => {
+  it("목록 — 맨 위 집 보러 갈 때 체크리스트, 그 아래 네 편이 각 글의 목차로 간다 (11/22 ggue)", () => {
     render(<GuidesPage />);
     const links = screen.getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/guides/"));
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
@@ -17,13 +17,14 @@ describe("주거 가이드 화면", () => {
       "/guides/before-contract",
       "/guides/protect-deposit",
       "/guides/where-documents",
+      "/guides/cheongyak",
     ]);
   });
 
-  it("정적 export — 목차 세 장, 섹션 페이지는 모든 장(5 + 5 + 2)", () => {
-    expect(generateStaticParams()).toEqual([{ id: "before-contract" }, { id: "protect-deposit" }, { id: "where-documents" }]);
+  it("정적 export — 목차 네 장, 섹션 페이지는 모든 장(5 + 5 + 2 + 6)", () => {
+    expect(generateStaticParams()).toEqual([{ id: "before-contract" }, { id: "protect-deposit" }, { id: "where-documents" }, { id: "cheongyak" }]);
     const steps = stepParams();
-    expect(steps).toHaveLength(12);
+    expect(steps).toHaveLength(18);
     expect(steps.filter((p) => p.id === "protect-deposit").map((p) => p.step)).toEqual(["1", "2", "3", "4", "5"]);
   });
 });
