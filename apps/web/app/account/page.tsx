@@ -64,15 +64,8 @@ function readMine(today: string): Mine {
   };
 }
 
-/** 2026.11.04 18:00 — 이 기기 시간대로. */
-function formatSavedAt(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 /**
- * 계정 (설계 '화면' 5). 로그인 상태, 마지막 저장 시각, 로그아웃, 회원 탈퇴, 처리방침 링크.
+ * 계정 (설계 '화면' 5). 로그아웃, 회원 탈퇴, 처리방침 링크. (로그인 상태 · 마지막 저장 시각 줄은 11/23 뺐다 — ggue)
  * "저장된 답 지우기"는 따로 두지 않는다 — 답을 고르는 흐름 안의 '처음부터 다시'가 그 일을 한다.
  *
  * 회원 탈퇴가 끝나면 이 기기 사본을 지우고 로그아웃한 뒤 여기서 "탈퇴가 끝났어요"를 말한다.
@@ -215,19 +208,9 @@ export default function AccountPage() {
             <BadgeSection statuses={mine.badgeStatuses} earned={mine.earned} onConsent={needsConsent ? askConsent : undefined} />
             <MyRecords saved={mine.saved} preparing={mine.preparing} ledgerMonths={mine.ledgerMonths} />
             <Settings showNotifications={isPushConfigured()} />
-            <section aria-labelledby="account-heading" className="flex flex-col gap-2.5">
-              <h2 id="account-heading" className="text-base font-bold text-ink-900">
-                계정
-              </h2>
-              <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-ink-600">
-                <span>카카오로 로그인했어요</span>
-                <span aria-hidden="true" className="text-ink-300">·</span>
-                {needsConsent ? (
-                  <span>이 기기에서는 아직 저장에 동의하지 않았어요</span>
-                ) : (
-                  <span>{sync.lastSavedAt ? `마지막 저장 ${formatSavedAt(sync.lastSavedAt)}` : "아직 저장 전이에요"}</span>
-                )}
-              </p>
+            {/* 11/23 ggue — '계정' 제목 · '카카오로 로그인했어요 · 마지막 저장' 줄을 뺐다. 로그아웃 · 회원 탈퇴만.
+                동의가 없을 때의 [동의하고 저장] · 저장 실패 안내 · 탈퇴 실패 안내는 그럴 때만 나오므로 남긴다 */}
+            <section aria-label="계정" className="flex flex-col gap-2.5">
               {needsConsent && (
                 <Button variant="secondary" size="screen" onClick={askConsent}>
                   동의하고 저장
