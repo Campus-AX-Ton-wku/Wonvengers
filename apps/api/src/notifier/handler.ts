@@ -5,7 +5,7 @@ import { DynamoPushStore } from "../push-store";
 import { DynamoUserDataStore } from "../store";
 import { runNotifier, type NotifierDeps, type RunSummary } from "./run";
 import { createSender } from "./sender";
-import { fetchPublishedPolicies } from "./source";
+import { fetchPublishedNotices, fetchPublishedPolicies } from "./source";
 
 /**
  * 알림 Lambda 진입점. EventBridge 가 매시 정각(서울 9~21시) 빈 이벤트로 부른다.
@@ -39,6 +39,8 @@ async function liveDeps(): Promise<NotifierDeps> {
     push: new DynamoPushStore(dynamo, required("PUSH_TABLE_NAME")),
     users: new DynamoUserDataStore(dynamo, required("TABLE_NAME")),
     fetchPolicies: () => fetchPublishedPolicies(policiesUrl),
+    // /notices.json 은 /policies.json 과 같은 앱에 있다 — 환경변수를 늘리지 않는다
+    fetchNotices: () => fetchPublishedNotices(new URL("/notices.json", policiesUrl).toString()),
     send: createSender(webpush, { subject: required("VAPID_SUBJECT"), publicKey, privateKey }),
     now: () => new Date(),
   };

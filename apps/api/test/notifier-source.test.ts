@@ -21,3 +21,17 @@ describe("fetchPublishedPolicies — 배포된 앱의 /policies.json", () => {
     await expect(fetchPublishedPolicies("u", respond(200, [{ id: "a" }]))).rejects.toThrow();
   });
 });
+
+import { fetchPublishedNotices } from "../src/notifier/source";
+
+describe("fetchPublishedNotices — 배포된 /notices.json", () => {
+  const ok = (body: unknown) => (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
+  it("공고 목록을 돌려준다", async () => {
+    const n = { id: "myhome:1", title: "t", kind: "공공임대", url: "https://x" };
+    expect(await fetchPublishedNotices("https://app/notices.json", ok({ generatedAt: null, notices: [n] }))).toEqual([n]);
+  });
+  it("모양이 틀리면 던진다(그 회차 공고 알림만 건너뛴다)", async () => {
+    await expect(fetchPublishedNotices("u", ok([]))).rejects.toThrow();
+    await expect(fetchPublishedNotices("u", ok({ notices: [{ id: 1 }] }))).rejects.toThrow();
+  });
+});

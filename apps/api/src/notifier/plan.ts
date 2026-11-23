@@ -1,5 +1,7 @@
 import { resolveAnswers } from "../../../web/lib/age";
 import { tagPolicy } from "../../../web/lib/filter";
+import { NOTICE_REGION, noticeStatus, type HousingNotice } from "../../../web/lib/notices";
+import { policyAppliesToRegion } from "../../../web/lib/region";
 import type { DiscoveryAnswers, PolicyMeta } from "../../../web/lib/types";
 
 /**
@@ -141,5 +143,29 @@ export function composeReminder(reminders: Reminder[]): PushMessage {
     body: `${first.policy.name} 외 ${reminders.length - 1}건 — 신청 준비를 확인해 보세요`,
     url: "/saved",
     tag: REMINDER_TAG,
+  };
+}
+
+// ── 새 청약 공고 (11/22, docs/기획/2026-11-22-청약-공고-설계.md §3) ──
+
+export function selectNewNotices(published: HousingNotice[], announced: ReadonlySet<string>, today: string) {
+  const fresh = published.filter((n) => !announced.has(n.id));
+  return { toSend: fresh.filter((n) => noticeStatus(n, today) !== "ended"), toMark: fresh.map((n) => n.id) };
+}
+
+/** 사는 곳이 익산(답한 것)일 때만 — 알림함과 같은 규칙 */
+export function livesInNoticeRegion(answers: DiscoveryAnswers): boolean {
+  return Boolean(answers.region) && policyAppliesToRegion(NOTICE_REGION, answers.region as string);
+}
+
+/** 잠금 화면에 보이므로 공고명만 */
+export function composeNoticeMessage(notices: HousingNotice[]): PushMessage {
+  if (notices.length === 0) throw new Error("composeNoticeMessage: no notices");
+  const [first] = notices;
+  return {
+    title: "익산에 새 청약 공고가 올라왔어요",
+    body: notices.length === 1 ? first.title : `${first.title} 외 ${notices.length - 1}건`,
+    url: "/housing",
+    tag: "notice",
   };
 }

@@ -1,3 +1,4 @@
+import type { HousingNotice } from "../../../web/lib/notices";
 import type { PolicyMeta } from "../../../web/lib/types";
 
 /**
@@ -16,4 +17,17 @@ export async function fetchPublishedPolicies(url: string, fetchImpl: typeof fetc
     }
   }
   return body as PolicyMeta[];
+}
+
+/** 배포된 /notices.json (apps/web/app/notices.json/route.ts). 모양이 틀리면 던진다(그 회차 공고 알림만 건너뛴다). */
+export async function fetchPublishedNotices(url: string, fetchImpl: typeof fetch = fetch): Promise<HousingNotice[]> {
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000), headers: { "cache-control": "no-cache" } });
+  if (!res.ok) throw new Error(`notices.json ${res.status}`);
+  const body = (await res.json()) as { notices?: unknown };
+  if (!body || !Array.isArray(body.notices)) throw new Error("notices.json has no notices array");
+  for (const item of body.notices) {
+    const n = item as Partial<HousingNotice>;
+    if (typeof n?.id !== "string" || typeof n.title !== "string" || typeof n.url !== "string") throw new Error("notices.json has a malformed item");
+  }
+  return body.notices as HousingNotice[];
 }

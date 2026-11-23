@@ -173,3 +173,27 @@ describe("composeReminder — 정해진 문구", () => {
     expect(() => composeReminder([])).toThrow();
   });
 });
+
+import { composeNoticeMessage, livesInNoticeRegion, selectNewNotices } from "../src/notifier/plan";
+import type { HousingNotice } from "../../web/lib/notices";
+
+const notice = (id: string, over: Partial<HousingNotice> = {}): HousingNotice => ({
+  id, source: "마이홈포털", kind: "공공임대", typeLabel: "행복주택", title: `${id} 공고`, supplier: "LH",
+  announcedAt: "2026-11-20", applyStart: "2026-11-20", applyEnd: "2026-12-30", url: "https://apply.lh.or.kr/x", address: null, ...over,
+});
+
+describe("새 청약 공고 (11/22)", () => {
+  it("처음 보는 공고만 — 끝난 공고는 보내지 않고 '알림'으로만 적는다", () => {
+    const { toSend, toMark } = selectNewNotices([notice("a"), notice("b"), notice("old", { applyEnd: "2026-11-01" })], new Set(["a"]), "2026-11-22");
+    expect(toSend.map((n) => n.id)).toEqual(["b"]);
+    expect(toMark).toEqual(["b", "old"]);
+  });
+  it("사는 곳이 익산일 때만", () => {
+    expect(livesInNoticeRegion({ birthDate: null, region: "전북특별자치도 익산시", status: null, incomeBracket: null, housingType: null })).toBe(true);
+    expect(livesInNoticeRegion({ birthDate: null, region: null, status: null, incomeBracket: null, housingType: null })).toBe(false);
+  });
+  it("한 통으로 묶는다 — 잠금 화면에는 공고명만", () => {
+    expect(composeNoticeMessage([notice("a")])).toEqual({ title: "익산에 새 청약 공고가 올라왔어요", body: "a 공고", url: "/housing", tag: "notice" });
+    expect(composeNoticeMessage([notice("a"), notice("b"), notice("c")]).body).toBe("a 공고 외 2건");
+  });
+});

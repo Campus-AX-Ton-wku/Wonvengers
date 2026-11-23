@@ -10,7 +10,7 @@ import {
   ScanCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { DynamoPushStore, MAX_DEVICES, PUSH_TTL_SECONDS, STATE_DEVICE, STATE_REMINDED, STATE_USER, deviceIdOf } from "../src/push-store";
+import { DynamoPushStore, MAX_DEVICES, PUSH_TTL_SECONDS, STATE_DEVICE, STATE_NOTICES, STATE_REMINDED, STATE_USER, deviceIdOf } from "../src/push-store";
 import { A } from "./fixtures";
 
 const ddb = mockClient(DynamoDBDocumentClient);
@@ -159,5 +159,31 @@ describe("마감 알림을 돌린 날 (상태 항목, 11/20)", () => {
     });
     ddb.on(GetCommand).resolves({ Item: { userId: STATE_USER, deviceId: STATE_REMINDED, date: "2026-11-20" } });
     expect(await store.getReminderDate()).toBe("2026-11-20");
+  });
+});
+
+describe("이미 알린 청약 공고 (상태 항목, 11/22)", () => {
+  it("없으면 null — 첫 실행", async () => {
+    ddb.on(GetCommand).resolves({});
+    expect(await store.getAnnouncedNotices()).toBeNull();
+    expect(ddb.commandCalls(GetCommand)[0].args[0].input).toEqual({
+      TableName: "perky-push",
+      Key: { userId: STATE_USER, deviceId: STATE_NOTICES },
+      ConsistentRead: true,
+    });
+  });
+
+  it("목록을 Set 으로", async () => {
+    ddb.on(GetCommand).resolves({ Item: { userId: STATE_USER, deviceId: STATE_NOTICES, noticeIds: ["myhome:1", "applyhome:2-2"] } });
+    expect(await store.getAnnouncedNotices()).toEqual(new Set(["myhome:1", "applyhome:2-2"]));
+  });
+
+  it("저장은 정렬한 배열 — 새 정책 상태(announced)와 다른 항목", async () => {
+    ddb.on(PutCommand).resolves({});
+    await store.saveAnnouncedNotices(new Set(["myhome:2", "myhome:1"]), now);
+    expect(ddb.commandCalls(PutCommand)[0].args[0].input).toEqual({
+      TableName: "perky-push",
+      Item: { userId: STATE_USER, deviceId: STATE_NOTICES, noticeIds: ["myhome:1", "myhome:2"], updatedAt: "2026-11-16T09:00:00.000Z" },
+    });
   });
 });

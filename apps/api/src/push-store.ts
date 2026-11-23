@@ -20,6 +20,8 @@ export const STATE_USER = "__state__";
 export const STATE_DEVICE = "announced";
 /** 마감 알림을 마지막으로 돌린 서울 날짜 (11/20 마감 알림) — 같은 날 두 번 보내지 않게 */
 export const STATE_REMINDED = "reminded";
+/** 이미 알린 청약 공고 (11/22) — 새 정책의 announced 와 따로 둔다 */
+export const STATE_NOTICES = "announced-notices";
 export const MAX_DEVICES = 5;
 /** 마지막 갱신 후 1년이 지나면 DynamoDB TTL 이 지운다. 계정 화면을 열 때마다 갱신된다. */
 export const PUSH_TTL_SECONDS = 365 * 24 * 60 * 60;
@@ -48,6 +50,8 @@ export interface PushStore {
   /** 이미 알린 정책 id. 상태 항목이 없으면(첫 실행) null. */
   getAnnounced(): Promise<Set<string> | null>;
   saveAnnounced(ids: ReadonlySet<string>, now: Date): Promise<void>;
+  getAnnouncedNotices(): Promise<Set<string> | null>;
+  saveAnnouncedNotices(ids: ReadonlySet<string>, now: Date): Promise<void>;
   /** 마감 알림을 마지막으로 돌린 서울 날짜(YYYY-MM-DD). 한 번도 안 돌렸으면 null. */
   getReminderDate(): Promise<string | null>;
   saveReminderDate(date: string, now: Date): Promise<void>;
@@ -176,6 +180,24 @@ export class DynamoPushStore implements PushStore {
       new PutCommand({
         TableName: this.tableName,
         Item: { userId: STATE_USER, deviceId: STATE_REMINDED, date, updatedAt: now.toISOString() },
+      })
+    );
+  }
+
+  async getAnnouncedNotices(): Promise<Set<string> | null> {
+    const out = await this.doc.send(
+      new GetCommand({ TableName: this.tableName, Key: { userId: STATE_USER, deviceId: STATE_NOTICES }, ConsistentRead: true })
+    );
+    if (!out.Item) return null;
+    const ids = out.Item.noticeIds;
+    return new Set(Array.isArray(ids) ? ids.map(String) : []);
+  }
+
+  async saveAnnouncedNotices(ids: ReadonlySet<string>, now: Date): Promise<void> {
+    await this.doc.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: { userId: STATE_USER, deviceId: STATE_NOTICES, noticeIds: [...ids].sort(), updatedAt: now.toISOString() },
       })
     );
   }
