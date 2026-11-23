@@ -13,6 +13,7 @@ import {
   monthLabel,
   monthOnlyLabel,
   monthsBetween,
+  oneTimeForMonth,
   oneTimeSupports,
   parseLedger,
   policyLineKey,
@@ -255,6 +256,25 @@ describe("한 번 받는 지원 (oneTimeSupports)", () => {
       [이사비.id, "최대 50만원", "예상적용"],
       [보증료.id, null, "조건충족시가능"],
     ]);
+  });
+
+  it("oneTimeForMonth — 받은 달 다음 달부터 빠진다, 받은 달 · 그 앞 달엔 남는다, 안 받은 건 늘 보인다 (ggue 11/23)", () => {
+    const supports = oneTimeSupports(summary([result(전입장려금), result(이사비), result(보증료)], []));
+    const record = toggleOneTime(toggleOneTime(emptyLedger(), 전입장려금.id, "2026-11"), 이사비.id, "2026-12");
+    const ids = (month: string) => oneTimeForMonth(supports, record, month).shown.map((o) => o.policy.id);
+    expect(ids("2026-10")).toEqual([전입장려금.id, 이사비.id, 보증료.id]);
+    expect(ids("2026-11")).toEqual([전입장려금.id, 이사비.id, 보증료.id]);
+    expect(ids("2026-12")).toEqual([이사비.id, 보증료.id]);
+    expect(ids("2027-01")).toEqual([보증료.id]);
+    expect(oneTimeForMonth(supports, record, "2026-11").hiddenCount).toBe(0);
+    expect(oneTimeForMonth(supports, record, "2026-12").hiddenCount).toBe(1);
+    expect(oneTimeForMonth(supports, record, "2027-01").hiddenCount).toBe(2);
+  });
+
+  it("oneTimeForMonth — 결과에 없는 정책의 받은 기록은 센 개수에 넣지 않는다", () => {
+    const supports = oneTimeSupports(summary([result(전입장려금)], []));
+    const record = toggleOneTime(toggleOneTime(emptyLedger(), 전입장려금.id, "2026-11"), "gone", "2026-10");
+    expect(oneTimeForMonth(supports, record, "2026-12")).toEqual({ shown: [], hiddenCount: 1 });
   });
 });
 

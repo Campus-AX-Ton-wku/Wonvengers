@@ -9,7 +9,22 @@ export const YEARLY_RENT_MONTHS = 12;
  */
 export function monthlyRentEquivalent(listing: ListingInput): number {
   if (listing.contractType === "월세") return listing.rentOrYearlyAmount;
+  if (listing.contractType === "전세") return monthlyJeonseInterest(listing);
   return Math.round(listing.rentOrYearlyAmount / YEARLY_RENT_MONTHS);
+}
+
+/**
+ * 전세의 매달 나가는 돈 = 대출 이자 = 대출 금액 × 연 금리 ÷ 12 (11/23 ggue A안).
+ *
+ * 보증금은 계약이 끝나면 돌려받는 돈이라 주거비에 넣지 않는다. 내 돈으로 낸 보증금의 기회비용(예금
+ * 이자)도 넣지 않는다 — 금리를 하나 더 가정해야 하고, 그 가정이 곧 추정이다(F0-5).
+ * 원금은 갚는 돈이 아니라 계약이 끝날 때 보증금으로 갚는 것이라 이자만 센다.
+ */
+export function monthlyJeonseInterest(listing: ListingInput): number {
+  const loan = listing.jeonseLoanAmount ?? 0;
+  const rate = listing.jeonseLoanRate ?? 0;
+  if (loan <= 0 || rate <= 0) return 0;
+  return Math.round((loan * rate) / 100 / 12);
 }
 
 /**

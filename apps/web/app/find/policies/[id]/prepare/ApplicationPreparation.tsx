@@ -255,14 +255,14 @@ function ExternalApplicationHandoff({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center">
+    <div className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-scrim/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center">
       <section
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="external-handoff-title"
         aria-describedby="external-handoff-description"
-        className="flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
+        className="sheet-in flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
       >
         <h2 id="external-handoff-title" className="text-2xl font-extrabold leading-[34px] text-ink-900">
           외부 사이트로 이동할게요

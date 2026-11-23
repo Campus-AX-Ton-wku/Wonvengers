@@ -22,7 +22,7 @@ describe("집 보러 갈 때 체크리스트 /guides/checklist", () => {
     expect(screen.queryByText(/계약해도/)).toBeNull();
   });
 
-  it("누르면 체크 · 진행 글자 · 이 기기 기록이 바뀌고, [체크 모두 지우기]로 비운다", async () => {
+  it("누르면 체크 · 진행 글자 · 저장된 기록이 바뀌고, [체크 모두 지우기]로 비운다", async () => {
     const user = userEvent.setup();
     render(<ChecklistPage />);
     await user.click(row(/수압 · 물 빠짐/));
@@ -33,7 +33,8 @@ describe("집 보러 갈 때 체크리스트 /guides/checklist", () => {
     await user.click(screen.getByRole("button", { name: "체크 모두 지우기" }));
     expect(progress().textContent).toBe("0/22 확인");
     expect(row(/수압 · 물 빠짐/)).toHaveProperty("checked", false);
-    expect(window.localStorage.getItem(HOUSE_CHECKLIST_KEY)).toBeNull();
+    // 빈 목록으로 저장한다 — 계정에도 '모두 지움'이 올라가게(11/23)
+    expect(JSON.parse(window.localStorage.getItem(HOUSE_CHECKLIST_KEY)!).checked).toEqual([]);
   });
 
   it("다시 열면 저장된 체크가 그대로 — 서류 줄도", async () => {

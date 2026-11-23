@@ -38,6 +38,50 @@ describe("DynamoUserDataStore", () => {
     }
   });
 
+  it("프로필 · 배지 필드가 없는 옛 항목도 읽고, 검증하면 profileCard null · badges {} 가 된다 (11/22)", async () => {
+    const { profileCard: _p, badges: _b, ...old } = validPayload();
+    ddb.on(GetCommand).resolves({ Item: { ...old, userId: A.sub, updatedAt: "2026-11-22T09:00:00.000Z", expiresAt: 1 } });
+    const item = await store.get(A.sub);
+    const checked = validateUserData(JSON.parse(JSON.stringify(item!.data)));
+    expect(checked.ok).toBe(true);
+    if (checked.ok) {
+      expect(checked.value.profileCard).toBeNull();
+      expect(checked.value.badges).toEqual({});
+    }
+  });
+
+  it("꾸민 프로필 · 받은 배지를 그대로 읽는다 (11/22)", async () => {
+    const data = {
+      ...validPayload(),
+      profileCard: { icon: "student" as const, color: "mint" as const, name: "월세 2년 차", pinnedBadge: "first_calc" as const },
+      badges: { first_calc: "2026-11-18" },
+    };
+    ddb.on(GetCommand).resolves({ Item: { ...data, userId: A.sub, updatedAt: "2026-11-22T09:00:00.000Z", expiresAt: 1 } });
+    expect((await store.get(A.sub))!.data).toEqual(data);
+  });
+
+  it("달력 · 체크리스트 필드가 없는 옛 항목도 읽고, 검증하면 ledger null · houseChecklist [] 가 된다 (11/23)", async () => {
+    const { ledger: _l, houseChecklist: _h, ...old } = validPayload();
+    ddb.on(GetCommand).resolves({ Item: { ...old, userId: A.sub, updatedAt: "2026-11-22T09:00:00.000Z", expiresAt: 1 } });
+    const item = await store.get(A.sub);
+    const checked = validateUserData(JSON.parse(JSON.stringify(item!.data)));
+    expect(checked.ok).toBe(true);
+    if (checked.ok) {
+      expect(checked.value.ledger).toBeNull();
+      expect(checked.value.houseChecklist).toEqual([]);
+    }
+  });
+
+  it("주거비 달력 기록 · 집 보기 체크를 그대로 읽는다 (11/23)", async () => {
+    const data = {
+      ...validPayload(),
+      ledger: { v: 1 as const, months: { "2026-11": { done: { rent: 400000 }, amounts: {} } }, oneTime: {} },
+      houseChecklist: ["mold", "water"],
+    };
+    ddb.on(GetCommand).resolves({ Item: { ...data, userId: A.sub, updatedAt: "2026-11-23T09:00:00.000Z", expiresAt: 1 } });
+    expect((await store.get(A.sub))!.data).toEqual(data);
+  });
+
   it("항목이 없으면 null", async () => {
     ddb.on(GetCommand).resolves({});
     expect(await store.get(A.sub)).toBeNull();

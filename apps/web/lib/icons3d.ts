@@ -50,8 +50,8 @@ export const ICON3D_NAMES = [
 ] as const;
 export type Icon3DName = (typeof ICON3D_NAMES)[number];
 
-/** 시안의 다섯 크기 — 32 서류 줄 · 36 선택지 · 40 카드 · 섹션 · 48 안내 칸 · 64 타일 */
-export type Icon3DSize = 32 | 36 | 40 | 48 | 64;
+/** 시안의 크기 — 26 홈 인사 프로필 그림(11/22) · 32 서류 줄 · 36 선택지 · 40 카드 · 섹션 · 48 안내 칸 · 64 타일 · 프로필 카드 */
+export type Icon3DSize = 26 | 32 | 36 | 40 | 48 | 64;
 
 /**
  * 서류 이름 → 그림. 팀이 공고 원문 그대로 적은 이름(policies.documents)이라 낱말로 맞춘다.

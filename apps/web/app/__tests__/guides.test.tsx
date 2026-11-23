@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { isEntryPage } from "@/lib/entry";
+import { loadGuidesRead } from "@/lib/storage";
 import { resetNavigation, routerMock } from "./navigation-mock";
 import GuidesPage from "@/app/guides/page";
 import GuidePage, { generateStaticParams } from "@/app/guides/[id]/page";
@@ -197,5 +198,17 @@ describe("앱 안 링크 (11/22)", () => {
     render(await GuideStepPage({ params: Promise.resolve({ id: "cheongyak", step: "2" }) }));
     const link = screen.getByRole("link", { name: "청년 주택드림 청약통장 보기" });
     expect(link.getAttribute("href")).toBe("/loans/youth-dream-savings-account");
+  });
+});
+
+/** '가이드 정독' 배지 재료 (11/22 내 프로필 ②) — 끝 장을 열면 그 가이드를 읽음으로 남긴다(이 기기에만) */
+describe("가이드 읽음 기록", () => {
+  it("마지막 장을 열면 남기고, 중간 장은 남기지 않는다", async () => {
+    window.localStorage.clear();
+    const middle = render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "4" }) }));
+    expect(loadGuidesRead()).toEqual([]);
+    middle.unmount();
+    render(await GuideStepPage({ params: Promise.resolve({ id: "protect-deposit", step: "5" }) }));
+    expect(loadGuidesRead()).toEqual(["protect-deposit"]);
   });
 });

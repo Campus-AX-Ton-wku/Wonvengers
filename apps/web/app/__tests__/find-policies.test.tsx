@@ -2,8 +2,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import FindPoliciesPage from "@/app/find/policies/page";
-import { EMPTY_ANSWERS, saveAnswers } from "@/lib/storage";
-import { birthDateForAge } from "@/lib/__tests__/fixtures";
+import { EMPTY_ANSWERS, saveAnswers, saveListing, saveProfile } from "@/lib/storage";
+import { birthDateForAge, makeListing, makeProfile } from "@/lib/__tests__/fixtures";
 
 /** QA체크리스트 "1층 — 목록" 절을 자동화한 것. */
 
@@ -38,53 +38,47 @@ describe("/find/policies", () => {
     render(<FindPoliciesPage />);
 
     // localStorage 를 읽기 전에는 자리만 잡는다
-    expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 2 })).toBeTruthy();
     // 지역을 답하지 않으면 지역 조건으로 거를 수 없어 익산 한정 정책도 다 후보에
     // 남는다 — 8건 중 마감이 아닌 5건(익산형 청년월세 9/30까지, 상시인 주거급여 분리지급 ·
     // 보증료 지원 · 익산 전입 지원 2건). 국토부 청년월세 · 전북 지역정착 · 익산 이사비는 마감.
     // (2026-11-15 목표 지역 익산시로 정리) 제목은 지금 신청할 수 있는 것만 센다.
     // 금액 헤드라인은 앞 화면(/find/result)이 맡는다 — 여기서 또 보여주지 않는다.
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
       "받을 수 있는 주거 혜택 5개"
     );
   });
 
-  it("어떤 답의 결과인지 한 줄로 보여주고 고치러 갈 길을 준다", async () => {
+  it("탭 첫 화면 — 상단바 왼쪽 제목 '지원금', 뒤로 가기 · 답 줄 · [조건 수정] · [처음부터 다시]는 없다 (11/23 시안)", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
-    // 소득 구간은 이 줄에 두지 않는다 — '조건 수정' 화면에 그대로 있다.
-    expect(screen.getByText("23세 · 익산시 · 대학생")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /조건 수정/ }).getAttribute("href")).toBe("/find");
+    await screen.findByRole("heading", { level: 2 });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("지원금");
+    expect(screen.queryByRole("button", { name: "이전 단계로" })).toBeNull();
+    expect(screen.queryByText("23세 · 익산시 · 대학생")).toBeNull();
+    expect(screen.queryByRole("link", { name: /조건 수정/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "처음부터 다시" })).toBeNull();
   });
 
   it("지역 상담 창구 묶음('익산시에서 상담받을 수 있는 곳')을 두지 않는다 (11/17)", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     expect(screen.queryByText(/상담받을 수 있는 곳/)).toBeNull();
-  });
-
-  it("답하지 않은 항목은 요약 줄에 '모름'으로 남는다", async () => {
-    saveAnswers({ ...익산_대학생, status: null });
-    render(<FindPoliciesPage />);
-
-    await screen.findByRole("heading", { level: 1 });
-    expect(screen.getByText("23세 · 익산시 · 상태 모름")).toBeTruthy();
   });
 
   it("제목의 건수와 펼쳐진 카드 수가 같다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     // 익산 23세 월세 거주 대학생·소득 1구간 → 후보 5건(그중 국토부 청년월세와 익산 이사비·중개보수
     // 2건은 마감 — 이사비는 2026-05-14 예산 소진), 신청 가능 3건(주거급여 분리지급 · 익산 전입 지원 2건),
     // 해당 없음 3건(익산형 청년월세 — 소득 하한, 전북 지역정착 — 재직자, 보증료 지원 — 전세 전용).
     // (2026-11-15 목표 지역 익산시로 정리하면서 다른 지역 29건이 빠졌다)
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
       "받을 수 있는 주거 혜택 3개"
     );
 
@@ -103,7 +97,7 @@ describe("/find/policies", () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     const 분리지급 = screen.getByRole("link", { name: /청년 주거급여 분리지급/ });
     expect(within(분리지급).queryByText(/원문 확인/)).toBeNull();
     expect(within(분리지급).queryByText("원문 대조 전")).toBeNull();
@@ -111,11 +105,25 @@ describe("/find/policies", () => {
     expect(within(전입장려금).getByText("원문 대조 전")).toBeTruthy();
   });
 
+  it("카드는 3층 — 이름 · 기관 / 금액 + 상태 알약 / 확인할 것(있을 때만). '확인 필요'를 두 번 말하지 않는다 (11/23 시안)", async () => {
+    saveAnswers(익산_대학생);
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 2 });
+    const 분리지급 = screen.getByRole("link", { name: /청년 주거급여 분리지급/ });
+    expect(within(분리지급).getAllByText("확인 필요")).toHaveLength(1);
+    expect(within(분리지급).getByText("확인할 것")).toBeTruthy();
+    expect(분리지급.textContent).not.toMatch(/\S 확인 필요$/);
+    const 전입장려금 = screen.getByRole("link", { name: /전입세대 전입장려금/ });
+    expect(within(전입장려금).getByText("신청 가능")).toBeTruthy();
+    expect(within(전입장려금).queryByText("확인할 것")).toBeNull();
+  });
+
   it("카드를 누르면 그 정책의 상세 화면으로 간다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     // 마감된 정책은 목록에 없으므로(11/17) 신청 가능한 정책으로 본다
     const 분리지급 = screen.getByText("청년 주거급여 분리지급").closest("a");
     expect(분리지급?.getAttribute("href")).toBe("/find/policies/youth-housing-benefit-split-payment");
@@ -125,9 +133,20 @@ describe("/find/policies", () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     const cta = screen.getByRole("link", { name: /내 월세는 얼마일까/ });
     expect(cta.getAttribute("href")).toBe("/calculate");
+  });
+
+  it("계산한 적 있으면 계산 카드가 결과로 간다 — '내 월세 계산 결과 보기' (11/23 시안)", async () => {
+    saveAnswers(익산_대학생);
+    saveListing(makeListing({ region: "전북특별자치도 익산시" }));
+    saveProfile(makeProfile());
+    render(<FindPoliciesPage />);
+
+    await screen.findByRole("heading", { level: 2 });
+    expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
+    expect(screen.getByRole("link", { name: /내 월세 계산 결과 보기/ }).getAttribute("href")).toBe("/result");
   });
 
   /*
@@ -140,7 +159,7 @@ describe("/find/policies", () => {
     saveAnswers({ ...익산_대학생, housingType: "연세" as const });
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     const 신청가능영역 = screen.getByRole("region", { name: /받을 수 있는 주거 혜택/ });
     expect(within(신청가능영역).getByText("청년 주거급여 분리지급")).toBeTruthy();
     expect(screen.getByRole("link", { name: /내 연세 부담은 얼마나 줄까/ })).toBeTruthy();
@@ -151,20 +170,21 @@ describe("/find/policies", () => {
    * 그리로 보내면 자기 계약을 입력할 방법이 없는 화면에 도착한다. 문구만 전세용으로
    * 바꾸는 건 눌러서 막히는 길을 만드는 것이라, 대신 왜 아직 못 하는지를 말한다.
    */
-  it("전세 거주자에게는 월세 계산 CTA 대신 안내를 준다", async () => {
+  it("전세 거주자에게도 계산 입구를 준다 — 문구는 전세 (11/23 전세 계산 추가)", async () => {
     saveAnswers({ ...익산_대학생, housingType: "전세" as const });
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
-    expect(screen.getByText(/전세는 아직 계산할 수 없어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /내 전세 부담은 얼마일까/ }).getAttribute("href")).toBe("/calculate");
+    expect(screen.queryByText(/전세는 아직 계산할 수 없어요/)).toBeNull();
   });
 
   it("전세 거주자에게는 전세 전용 지원금이 신청 가능으로 뜬다", async () => {
     saveAnswers({ ...익산_대학생, housingType: "전세" as const });
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     const 신청가능영역 = screen.getByRole("region", { name: /받을 수 있는 주거 혜택/ });
     expect(within(신청가능영역).getByText("전세보증금반환보증 보증료 지원")).toBeTruthy();
   });
@@ -179,8 +199,8 @@ describe("/find/policies", () => {
     });
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+    await screen.findByRole("heading", { level: 2 });
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
       "아쉽게도 해당되는 주거 혜택이 없어요"
     );
     expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
@@ -190,7 +210,7 @@ describe("/find/policies", () => {
     saveAnswers({ ...익산_대학생, region: "강원특별자치도 춘천시" as const });
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     expect(screen.getByText(/아직 정보를 모으는 중이라 빠진 지원이 있을 수 있어요/)).toBeTruthy();
   });
 
@@ -198,7 +218,7 @@ describe("/find/policies", () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     expect(screen.queryByText(/아직 정보를 모으는 중/)).toBeNull();
   });
 
@@ -206,7 +226,7 @@ describe("/find/policies", () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
 
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
     expect(screen.getByText(/신청 자격을 확정하지 않습니다/)).toBeTruthy();
   });
 
@@ -217,7 +237,7 @@ describe("/find/policies", () => {
   it("카드에는 상태·이름·기관·금액만 남는다", async () => {
     saveAnswers(익산_대학생);
     const { container } = render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
 
     expect(screen.queryByText(/자세히 보기/)).toBeNull();
     expect(screen.queryByRole("link", { name: "공고 원문 →" })).toBeNull();
@@ -235,7 +255,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
   it("마감된 카드와 대상이 아닌 카드는 목록에 없다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
 
     expect(screen.queryByText(/신청할 수 없는 지원금/)).toBeNull();
     // 국토부 청년월세는 2026-05-29 에 접수가 끝났다
@@ -247,7 +267,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
   it("가장 큰 금액이 마감 건이어도 첫 카드를 차지하지 않는다", async () => {
     saveAnswers(익산_대학생);
     render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
 
     expect(카드들()[0].textContent).not.toMatch(/접수 마감/);
   });
@@ -256,7 +276,7 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
   it("신청 가능 영역에는 마감된 카드가 없다", async () => {
     saveAnswers({ ...익산_대학생, birthDate: birthDateForAge(18) });
     render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
 
     const 신청가능영역 = screen.getByRole("region", { name: /받을 수 있는 주거 혜택/ });
     expect(within(신청가능영역).queryByText(/접수 마감/)).toBeNull();
@@ -275,9 +295,9 @@ describe("/find/policies 신청할 수 없는 지원금", () => {
       housingType: "월세" as const,
     });
     render(<FindPoliciesPage />);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 2 });
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
       "지금 받을 수 있는 주거 혜택이 없어요"
     );
     expect(카드들()).toHaveLength(0);

@@ -3,7 +3,7 @@ import type { PolicyIcon } from "./icons3d";
 // 응답 값: 사용자가 판단할 수 없으면 "unknown"을 허용한다 (PRD F2-1).
 export type Answer<T> = T | "unknown";
 
-export type ContractType = "월세" | "연세";
+export type ContractType = "월세" | "연세" | "전세";
 
 // F1. 사용자가 입력하는 계약 조건
 export interface ListingInput {
@@ -16,6 +16,14 @@ export interface ListingInput {
   contractStartDate: string; // YYYY-MM-DD
   months: number; // 거주 예정 개월 수
   confirmedMatchesActualContract: boolean; // F1-10
+  /**
+   * 전세만 (11/23 ggue A안): 보증금 중 대출받은 금액. 월세 · 연세 계약에는 이 칸이 없다 —
+   * saveListing 이 지운다. 예전 서버가 모르는 키라 늘 넣으면 월세 저장까지 거부된다.
+   * 전세의 보증금은 deposit, rentOrYearlyAmount 는 0 이다.
+   */
+  jeonseLoanAmount?: number;
+  /** 전세만: 대출 금리, 연 % (예: 2.4). 대출이 없으면 없어도 된다. */
+  jeonseLoanRate?: number;
 }
 
 // F2. 정책 판정용 공통 입력

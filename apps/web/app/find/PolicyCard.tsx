@@ -4,7 +4,7 @@ import { benefitCeiling } from "@/lib/benefit";
 import { cardStatus } from "@/lib/discovery";
 import { formatDotDate } from "@/lib/date";
 import { CARD_STATUS_BADGE, Icon3D, SaveButton, StatusBadge } from "@/app/components";
-import { ChevronRight, ICON_MD, ShieldCheck } from "@/app/components/icons";
+import { ShieldCheck, TriangleAlert } from "@/app/components/icons";
 import { verificationBadge } from "@/lib/verification";
 
 /**
@@ -36,9 +36,8 @@ function statusNote(
   policy: PolicyMeta,
   result: TagResult
 ): string | null {
-  if (status === "확인 필요") {
-    return `${result.unknownFields.join(" · ")} 확인 필요`;
-  }
+  // 확인 필요는 카드 셋째 층의 주황 한 줄('확인할 것 · …')이 따로 말한다 — 알약과 '확인 필요'를 두 번 말하지 않게(11/23).
+  if (status === "확인 필요") return null;
   if (status === "접수 마감" && policy.applicationEnd) {
     return `${formatDotDate(policy.applicationEnd)} 접수 마감`;
   }
@@ -69,9 +68,8 @@ export default function PolicyCard({
 
   return (
     /*
-     * 카드 전체가 하나의 링크다. 오른쪽 chevron 은 그 사실을 눈으로 말할 뿐,
-     * 따로 누를 수 있는 것이 아니다 — 같은 카드에 누를 곳이 둘이면 어디를 눌러야
-     * 하는지 생각하게 된다.
+     * 카드 전체가 하나의 링크다. 오른쪽 chevron 은 11/23 시안에서 뺐다 — ♡ 와 › 가
+     * 나란히 있으면 누를 곳이 둘로 보인다.
      *
      * 11/17: 오른쪽 위 ♡ 찜 버튼은 링크 밖 형제라 누를 곳이 겹치지 않는다.
      *
@@ -80,43 +78,54 @@ export default function PolicyCard({
     <div className="relative">
     <Link
       href={`/find/policies/${policy.id}`}
-      className="focus-ring block rounded-card bg-surface py-5 pl-5 pr-14 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
+      className="press focus-ring flex flex-col gap-3.5 rounded-card bg-surface p-[18px] shadow-card"
     >
-      {/* 색만으로 상태를 말하지 않는다 — 배지마다 아이콘이 하나씩 붙는다. */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <StatusBadge tone={badge.tone} icon={badge.icon}>
-          {status}
-        </StatusBadge>
-        {unverified && (
-          <StatusBadge tone="neutral" icon={ShieldCheck}>
-            원문 대조 전
-          </StatusBadge>
-        )}
-      </div>
-
-      {/* 정책 종류 그림 — 이름을 읽기 전에 무슨 지원인지 먼저 보이게(11/20). 금액 줄은 그림 아래 왼쪽 끝에서 시작한다. */}
-      <div className="mt-2.5 flex items-center gap-3">
+      {/* 1층: 정책 종류 그림 + 이름 · 기관. 오른쪽 위는 ♡ 자리(pr-9). '원문 대조 전'은 배지 대신 기관 옆 회색 글씨로(11/23 시안). */}
+      <div className="flex items-center gap-3 pr-9">
         <Icon3D name={policy.icon} size={40} />
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <h3 className="text-base font-bold leading-snug text-ink-900">{policy.name}</h3>
-          <p className="mt-0.5 text-sm text-ink-500">{policy.agency}</p>
+          <p className="flex flex-wrap items-center gap-x-1.5 text-[13px] leading-snug text-ink-500">
+            {policy.agency}
+            {unverified && (
+              <>
+                <span aria-hidden="true" className="text-ink-300">·</span>
+                <span className="inline-flex items-center gap-[3px] whitespace-nowrap">
+                  <ShieldCheck size={14} strokeWidth={2} aria-hidden="true" className="shrink-0" />
+                  원문 대조 전
+                </span>
+              </>
+            )}
+          </p>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3">
+      {/* 2층: 금액(카드에서 제일 큰 글씨) + 오른쪽 상태 알약. 색만으로 말하지 않는다 — 알약마다 아이콘. */}
+      <div className="flex items-center justify-between gap-2.5">
         {/* tabular-nums 를 쓰지 않는다. 이 한글 폰트에서는 등폭 숫자가 눈에 띄게
             벌어져 '4 80만원' 처럼 읽힌다. */}
         <p
-          className={`text-[22px] font-extrabold leading-tight ${
+          className={`min-w-0 text-[22px] font-extrabold leading-tight ${
             받을수있나(status) ? "text-brand-900" : "text-ink-500"
           }`}
         >
           {ceiling ? ceiling.label : "금액 확인 필요"}
         </p>
-        <ChevronRight size={ICON_MD} aria-hidden="true" className="shrink-0 text-ink-300" />
+        <StatusBadge tone={badge.tone} icon={badge.icon} size="md">
+          {status}
+        </StatusBadge>
       </div>
 
-      {note && <p className="mt-2 text-sm leading-relaxed text-ink-600">{note}</p>}
+      {/* 3층: 확인할 것이 있을 때만 옅은 주황 한 줄 */}
+      {status === "확인 필요" && result.unknownFields.length > 0 && (
+        <p className="flex items-center gap-1.5 rounded-control bg-warn-50 px-2.5 py-2 text-[13px] leading-snug text-warn-800">
+          <TriangleAlert size={14} strokeWidth={2} aria-hidden="true" className="shrink-0" />
+          <b className="font-bold">확인할 것</b>
+          <span aria-hidden="true">·</span>
+          <span className="min-w-0">{result.unknownFields.join(" · ")}</span>
+        </p>
+      )}
+      {note && <p className="-mt-1.5 text-sm leading-relaxed text-ink-600">{note}</p>}
     </Link>
     <SaveButton policyId={policy.id} policyName={policy.name} className="absolute right-2 top-2" />
     </div>

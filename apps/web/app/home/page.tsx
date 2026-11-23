@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import { AppShell, BottomTabBar, LinkButton, PerkyCharacter, TopBar } from "@/app/components";
-import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, Pencil, TrendingDown } from "@/app/components/icons";
+import { ArrowRight, ChevronRight, ICON_MD, ICON_SM, TrendingDown } from "@/app/components/icons";
 import { GuideCard } from "@/app/guides/GuideCard";
 import { ScheduleCard } from "./ScheduleCard";
 import { TodayCard } from "./TodayCard";
@@ -12,7 +12,7 @@ import { LedgerRow } from "./LedgerRow";
 import { LoanRow } from "./LoanRow";
 import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
 import { resolveAnswers } from "@/lib/age";
-import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
+import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange, storedSub } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
 import { answerLine } from "@/lib/discovery";
 import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
@@ -20,12 +20,14 @@ import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgres
 import { formatApproxMoney } from "@/lib/money";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
-import { EMPTY_ANSWERS, loadAnswers, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadSaved, onLocalChange } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
 import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
 import { calcMonths } from "@/lib/rent";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
+import type { ProfileCardData } from "@/lib/user-data";
+import { HomeGreeting } from "./HomeGreeting";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -47,6 +49,7 @@ export default function HomePage() {
   const [ready, setReady] = useState(false);
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
   const [saved, setSaved] = useState<string[]>([]);
+  const [profileCard, setProfileCard] = useState<ProfileCardData | null>(null);
   const [today, setToday] = useState("");
   const [costs, setCosts] = useState<Costs | null>(null);
   const [ledger, setLedger] = useState<LedgerProgress | null>(null);
@@ -58,11 +61,15 @@ export default function HomePage() {
       leave();
       return;
     }
+    // 로그인하고 홈까지 왔다 — 배지 알림은 여기서부터 (BadgeWatcher, 11/23 ggue)
+    const sub = storedSub();
+    if (sub) markHomeReached(sub);
     const read = () => {
       const t = seoulTodayISO();
       setToday(t);
       setAnswers(loadAnswers());
       setSaved(loadSaved());
+      setProfileCard(loadProfileCard());
       const listing = loadListing();
       const profile = loadProfile();
       if (listing && profile) {
@@ -116,6 +123,8 @@ export default function HomePage() {
       <TopBar home />
       <main className="flex flex-col pb-10 pt-2.5">
         <header className="flex flex-col gap-2.5">
+          {/* 홈 인사(11/22 내 프로필) — 제목 위, 누르면 내 정보. 계산 전 · 후 같은 머리 */}
+          <HomeGreeting card={profileCard} answers={answers} />
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">내 주거지원 현황</h1>
           {open !== null && <ConditionChip line={answerLine(resolveAnswers(answers, today))} />}
         </header>
@@ -136,28 +145,22 @@ export default function HomePage() {
   );
 }
 
-/** "25세 · 익산시 · 대학생 [✎ 수정]" — 칩 전체가 조건 수정으로 가는 링크 하나다. */
+/**
+ * "25세 · 익산시 · 대학생" — 내 조건을 글로만 보여 준다.
+ * 11/23 ggue: 홈에서는 조건을 고치지 않는다([✎ 수정] 칩 링크를 뺐다). 조건 수정은 지원금 화면('조건 수정')과
+ * 내 정보('내 조건 수정')에 있다. 누를 수 없는 줄이라 버튼처럼 보이는 면 · 그림자도 두지 않는다.
+ */
 function ConditionChip({ line }: { line: string }) {
   const parts = line.split(" · ");
   return (
-    <Link
-      href="/find"
-      aria-label={`내 조건 ${line} — 조건 수정`}
-      className="focus-ring flex min-h-11 max-w-full items-center gap-2.5 self-start rounded-full bg-surface py-1.5 pl-4 pr-1.5 text-sm font-semibold text-ink-700 shadow-btn-quiet transition-[background-color,translate] duration-100 hover:bg-ink-50 active:translate-y-0.5"
-    >
-      <span className="min-w-0 truncate">
-        {parts.map((part, i) => (
-          <span key={i}>
-            {i > 0 && <span aria-hidden="true" className="mx-1.5 text-ink-300">·</span>}
-            {part}
-          </span>
-        ))}
-      </span>
-      <span className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-brand-50 px-3 text-[13px] font-bold text-brand-800">
-        <Pencil size={ICON_SM - 2} strokeWidth={2.25} aria-hidden="true" />
-        수정
-      </span>
-    </Link>
+    <p className="max-w-full truncate text-sm font-semibold text-ink-600">
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 && <span aria-hidden="true" className="mx-1.5 text-ink-300">·</span>}
+          {part}
+        </span>
+      ))}
+    </p>
   );
 }
 
