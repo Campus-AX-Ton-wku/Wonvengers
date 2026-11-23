@@ -26,11 +26,12 @@ vi.mock("@/data/notices.json", () => ({ default: fx.snapshot }));
 import HousingPage from "@/app/housing/page";
 
 describe("/housing — 익산 청약 공고", () => {
-  it("접수 중 · 접수 예정 두 묶음, 끝난 공고는 없다, 카드는 원문 공고로", async () => {
+  it("접수 중 · 접수 예정 두 묶음, 끝난 공고는 없다, 카드는 공고 상세로", async () => {
     render(<HousingPage />);
     const open = await screen.findByRole("region", { name: /접수 중/ });
-    expect(within(open).getByText("행복주택 추가모집")).toBeTruthy();
-    expect(within(open).getByRole("link", { name: /공고문 보기/ }).getAttribute("href")).toContain("apply.lh.or.kr/");
+    expect(within(open).getByRole("link", { name: /행복주택 추가모집/ }).getAttribute("href")).toBe(
+      `/housing/notice?id=${encodeURIComponent("행복주택 추가모집")}`
+    );
     const upcoming = screen.getByRole("region", { name: /접수 예정/ });
     expect(within(upcoming).getByText("두산위브 익산")).toBeTruthy();
     expect(screen.queryByText("어제 끝난 공고")).toBeNull();

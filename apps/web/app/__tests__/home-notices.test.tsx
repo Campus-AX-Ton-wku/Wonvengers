@@ -31,7 +31,7 @@ describe("/home — 익산 청약 공고 (11/22)", () => {
     fx.snapshot.notices = ["가", "나", "다", "라"].map(notice);
     render(<HomePage />);
     const row = await screen.findByRole("region", { name: "익산 청약 공고" });
-    expect(within(row).getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("https://"))).toHaveLength(3);
+    expect(within(row).getAllByRole("link").filter((a) => a.getAttribute("href")?.startsWith("/housing/notice?id="))).toHaveLength(3);
     expect(within(row).getByRole("link", { name: /전체 보기/ }).getAttribute("href")).toBe("/housing");
     const guides = screen.getByRole("region", { name: "주거 가이드" });
     expect(row.compareDocumentPosition(guides) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

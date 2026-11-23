@@ -27,12 +27,12 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("/notifications — 새 청약 공고 (11/22)", () => {
-  it("익산에 사는 사람에게 '새 청약 공고가 올라왔어요' 한 줄 → /housing, 보면 읽음", async () => {
+  it("익산에 사는 사람에게 '새 청약 공고가 올라왔어요' 한 줄 → 공고 상세, 보면 읽음", async () => {
     saveAnswers({ birthDate: birthDateForAge(25), region: "전북특별자치도 익산시", status: "재직", incomeBracket: 1, housingType: "월세" });
     render(<NotificationsPage />);
     const section = await screen.findByRole("region", { name: "새 청약 공고가 올라왔어요" });
     const link = within(section).getByRole("link", { name: /익산 행복주택 추가모집/ });
-    expect(link.getAttribute("href")).toBe("/housing");
+    expect(link.getAttribute("href")).toBe("/housing/notice?id=n1");
     expect(within(section).getByText("새 소식")).toBeTruthy();
     expect(loadInboxSeen().has("notice:n1")).toBe(true);
   });

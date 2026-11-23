@@ -1,16 +1,15 @@
+import Link from "next/link";
 import { DeadlineBadge } from "@/app/components";
-import { ExternalLink, ICON_SM } from "@/app/components/icons";
 import { formatDotDate } from "@/lib/date";
+import { noticeHref } from "@/lib/notice-detail";
 import { noticeDeadlineLabel, type HousingNotice } from "@/lib/notices";
 
-/** 청약 공고 카드 — /housing 목록과 홈 가로 줄(compact)이 같이 쓴다. 자격 판정 표시는 두지 않는다(F0-5). */
+/** 청약 공고 카드 — /housing 목록과 홈 가로 줄(compact)이 같이 쓴다. 카드 → 공고 상세(원문은 상세 아래 버튼). 자격 판정 표시는 두지 않는다(F0-5). */
 export function NoticeCard({ notice, today, compact = false }: { notice: HousingNotice; today: string; compact?: boolean }) {
   const period = [notice.applyStart, notice.applyEnd].map((d) => (d ? formatDotDate(d) : "")).join(" ~ ");
   return (
-    <a
-      href={notice.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={noticeHref(notice.id)}
       className={`focus-ring flex flex-col gap-2 rounded-card bg-surface shadow-card ${compact ? "w-[220px] shrink-0 px-4 pb-4 pt-[18px]" : "p-4"}`}
     >
       <span className="flex flex-wrap items-center gap-1.5">
@@ -21,12 +20,6 @@ export function NoticeCard({ notice, today, compact = false }: { notice: Housing
       <span className="text-[13px] leading-normal text-ink-500">
         {[notice.supplier, period].filter(Boolean).join(" · ")}
       </span>
-      {!compact && (
-        <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-brand-700">
-          공고문 보기
-          <ExternalLink size={ICON_SM} aria-hidden="true" />
-        </span>
-      )}
-    </a>
+    </Link>
   );
 }

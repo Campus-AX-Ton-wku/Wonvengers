@@ -17,6 +17,76 @@ export function ymd(raw) {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 }
 
+const won = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
+/** 세대 수 — 0 은 그대로, 빈 값 · "null" 은 null(0 으로 만들지 않는다 — F0-5) */
+const count = (v) => (v === null || v === undefined || String(v).trim() === "" || !(Number(v) >= 0) ? null : Number(v));
+const range = (label, s, e) => {
+  const start = ymd(s);
+  if (!start) return null;
+  const end = ymd(e);
+  return { label, start, end: end && end !== start ? end : null };
+};
+
+/** "0638581118" → "063-858-1118". 모르는 모양은 null — 틀린 번호를 걸게 하지 않는다 */
+export function telLabel(raw) {
+  const d = String(raw ?? "").replace(/\D/g, "");
+  const m = /^(02)(\d{3,4})(\d{4})$/.exec(d) ?? /^(0\d{2})(\d{3,4})(\d{4})$/.exec(d) ?? /^(1\d{3})(\d{4})$/.exec(d);
+  return m ? m.slice(1).join("-") : null;
+}
+
+// 마이홈 금액은 원, 모두 '최소'(가장 낮은 조건) — 11/23 LH 공고문 PDF 와 대조 (설계 §7.0)
+const RENT = [["임대보증금", "rentGtn"], ["월 임대료", "mtRntchrg"]];
+const SALE = [["계약금", "enty"], ["중도금", "prtpay"], ["잔금", "surlus"]];
+
+function myhomeDetail(row, kind) {
+  const refrnc = text(row.refrnc);
+  return {
+    schedule: [range("모집 공고", row.rcritPblancDe), range("접수", row.beginDe, row.endDe), range("당첨자 발표", row.przwnerPresnatnDe)].filter(Boolean),
+    facts: [],
+    complexes: [
+      {
+        name: text(row.hsmpNm) ?? text(row.pblancNm),
+        address: text(row.fullAdres),
+        households: won(row.sumSuplyCo),
+        heating: text(row.heatMthdNm),
+        amounts: (kind === "공공임대" ? RENT : SALE).map(([label, k]) => ({ label, won: won(row[k]) })).filter((a) => a.won !== null),
+      },
+    ],
+    houseTypes: null,
+    contact: refrnc ? { department: refrnc, phone: refrnc.match(/(?<!\d)(?:\d{2,4}-\d{3,4}-\d{4}|1\d{3}-\d{4})(?!\d)/)?.[0] ?? null, url: null } : null,
+  };
+}
+
+function applyhomeDetail(row) {
+  const rank = (n) => {
+    const here = range(`${n}순위 해당지역`, row[`GNRL_RNK${n}_CRSPAREA_RCPTDE`], row[`GNRL_RNK${n}_CRSPAREA_ENDDE`]);
+    const etc = range(`${n}순위 기타지역`, row[`GNRL_RNK${n}_ETC_AREA_RCPTDE`], row[`GNRL_RNK${n}_ETC_AREA_ENDDE`]);
+    return here && etc && here.start === etc.start && here.end === etc.end ? [{ ...here, label: `${n}순위` }] : [here, etc];
+  };
+  const ranks = [...rank(1), ...rank(2)].filter(Boolean);
+  const ym = /^(\d{4})(\d{2})$/.exec(String(row.MVN_PREARNGE_YM ?? "").trim());
+  const phone = telLabel(row.MDHS_TELNO);
+  const homepage = link(row.HMPG_ADRES);
+  return {
+    schedule: [
+      range("모집 공고", row.RCRIT_PBLANC_DE),
+      range("특별공급", row.SPSPLY_RCEPT_BGNDE, row.SPSPLY_RCEPT_ENDDE),
+      // 순위별 날짜가 없으면(무순위 · 잔여 등) 접수 한 줄
+      ...(ranks.length ? ranks : [range("접수", row.SUBSCRPT_RCEPT_BGNDE ?? row.RCEPT_BGNDE, row.SUBSCRPT_RCEPT_ENDDE ?? row.RCEPT_ENDDE)]),
+      range("당첨자 발표", row.PRZWNER_PRESNATN_DE),
+      range("계약", row.CNTRCT_CNCLS_BGNDE, row.CNTRCT_CNCLS_ENDDE),
+    ].filter(Boolean),
+    facts: [
+      won(row.TOT_SUPLY_HSHLDCO) && { label: "공급 규모", value: `${won(row.TOT_SUPLY_HSHLDCO)}세대` },
+      ym && { label: "입주 예정", value: `${ym[1]}년 ${Number(ym[2])}월` },
+      text(row.CNSTRCT_ENTRPS_NM) && { label: "시공", value: text(row.CNSTRCT_ENTRPS_NM) },
+    ].filter(Boolean),
+    complexes: [],
+    houseTypes: null,
+    contact: phone || homepage ? { department: "견본주택", phone, url: homepage } : null,
+  };
+}
+
 /**
  * 마이홈 응답의 줄 — 한 건이면 객체로, NODATA(03) 면 body 없이 온다.
  * 그 밖의 오류 코드(키 · 트래픽 등)는 HTTP 200 안에 담겨 오므로 던진다 — 0건으로 읽으면 반쪽 목록이 굳는다(리뷰 I-3).
@@ -47,6 +117,7 @@ export function fromMyhome(row, kind) {
     url,
     address: text(row.fullAdres),
     replaces: text(row.beforePblancId) ? `myhome:${row.beforePblancId}` : null,
+    detail: myhomeDetail(row, kind),
   };
 }
 
@@ -73,23 +144,29 @@ export function fromApplyhome(row, kind) {
     applyEnd: ends.at(-1) ?? null,
     url,
     address,
+    detail: applyhomeDetail(row),
   };
 }
 
-/** 같은 공고는 한 번, 정정공고가 대신한 공고 · 끝난 공고 · 기간이 없는 공고는 뺀다 */
+/** 같은 공고는 한 번(마이홈 단지 줄은 단지로 모은다), 정정공고가 대신한 공고 · 끝난 공고 · 기간이 없는 공고는 뺀다 */
 export function mergeNotices(list, today) {
   const replaced = new Set(list.map((n) => n?.replaces).filter(Boolean));
-  const seen = new Set();
-  const out = [];
+  const kept = new Map();
   for (const n of list) {
-    if (!n || replaced.has(n.id) || seen.has(n.id)) continue;
+    if (!n || replaced.has(n.id)) continue;
     if (!n.applyStart && !n.applyEnd) continue;
     if (n.applyEnd && n.applyEnd < today) continue;
-    seen.add(n.id);
+    const first = kept.get(n.id);
+    if (first) {
+      // 마이홈은 단지마다 한 줄 — 단지를 모은다(설계 §7.2)
+      for (const c of n.detail?.complexes ?? [])
+        if (!first.detail.complexes.some((x) => x.name === c.name && x.address === c.address)) first.detail.complexes.push(c);
+      continue;
+    }
     const { replaces: _replaces, ...notice } = n;
-    out.push(notice);
+    kept.set(n.id, notice);
   }
-  return out;
+  return [...kept.values()];
 }
 
 export function formatSnapshot(notices, generatedAt) {
@@ -130,6 +207,37 @@ async function applyhomeAll(fetchJson, key, op) {
   return rows;
 }
 
+/** 청약홈 주택형 — LTTOT_TOP_AMOUNT 는 만원(11/23 청약홈 화면과 대조) → 원 */
+export function fromApplyhomeModels(json) {
+  if (!Array.isArray(json?.data)) throw new Error("applyhome mdl: data 없음");
+  return [...json.data]
+    .sort((a, b) => String(a.MODEL_NO).localeCompare(String(b.MODEL_NO)))
+    .map((r) => {
+      const m = /^(\d+(?:\.\d+)?)\s*([A-Z]*)/.exec(String(r.HOUSE_TY ?? "").trim());
+      const price = won(r.LTTOT_TOP_AMOUNT);
+      return {
+        type: m ? `${Number(m[1])}㎡${m[2] ? ` ${m[2]}` : ""}` : String(r.HOUSE_TY ?? "").trim(),
+        general: count(r.SUPLY_HSHLDCO),
+        special: count(r.SPSPLY_HSHLDCO),
+        topPrice: price === null ? null : price * 10_000,
+      };
+    });
+}
+
+async function applyhomeModels(fetchJson, key, id) {
+  const [, manageNo, pblancNo] = /^applyhome:(.+)-(.*)$/.exec(id);
+  const u = new URL(`${APPLYHOME}/getAPTLttotPblancMdl`);
+  u.searchParams.set("serviceKey", key);
+  u.searchParams.set("page", "1");
+  u.searchParams.set("perPage", String(ROWS)); // 한 단지 주택형은 100개를 넘지 않는다. totalCount 는 전체 표 수라 쓰지 않는다
+  u.searchParams.set("cond[HOUSE_MANAGE_NO::EQ]", manageNo);
+  u.searchParams.set("cond[PBLANC_NO::EQ]", pblancNo);
+  const json = await fetchJson(u.toString());
+  // 조건을 무시한 줄이 섞여도 남의 단지 금액이 이 공고 표에 들어가지 않게 (목록 API 는 지역 조건을 무시했다 — 맨 위 주석)
+  const rows = Array.isArray(json?.data) ? json.data.filter((r) => String(r.HOUSE_MANAGE_NO) === manageNo && String(r.PBLANC_NO) === pblancNo) : json?.data;
+  return fromApplyhomeModels({ ...json, data: rows });
+}
+
 /** 네 목록을 모두 받아 합친다. 하나라도 실패하면 던진다(부르는 쪽이 지난 스냅숏을 지킨다). */
 export async function collectNotices({ fetchJson, key, today }) {
   const [rent, sale, apt, remain] = await Promise.all([
@@ -138,7 +246,7 @@ export async function collectNotices({ fetchJson, key, today }) {
     applyhomeAll(fetchJson, key, "getAPTLttotPblancDetail"),
     applyhomeAll(fetchJson, key, "getRemndrLttotPblancDetail"),
   ]);
-  return mergeNotices(
+  const notices = mergeNotices(
     [
       ...rent.map((r) => fromMyhome(r, "공공임대")),
       ...sale.map((r) => fromMyhome(r, "공공분양")),
@@ -147,4 +255,17 @@ export async function collectNotices({ fetchJson, key, today }) {
     ],
     today
   );
+  // 주택형은 남은 아파트 공고만, 실패하면 그 공고의 표만 빠진다(설계 §7.2). 무순위는 단위 미대조라 부르지 않는다
+  await Promise.all(
+    notices
+      .filter((n) => n.kind === "아파트 분양")
+      .map(async (n) => {
+        try {
+          n.detail.houseTypes = await applyhomeModels(fetchJson, key, n.id);
+        } catch {
+          n.detail.houseTypes = null;
+        }
+      })
+  );
+  return notices;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectNotices, formatSnapshot, fromApplyhome, fromMyhome, mergeNotices, myhomeRows, ymd } from "../notices/build.mjs";
+import { collectNotices, formatSnapshot, fromApplyhome, fromApplyhomeModels, fromMyhome, mergeNotices, myhomeRows, telLabel, ymd } from "../notices/build.mjs";
 
 const TODAY = "2026-11-22";
 const myhomeRow = (over = {}) => ({
@@ -93,6 +93,12 @@ describe("받아 오기 (collectNotices)", () => {
     if (u.pathname.endsWith("/ltRsdtRcritNtcList")) return myhomeJson([]);
     if (u.pathname.endsWith("/getAPTLttotPblancDetail")) return { data: [applyhomeRow(), applyhomeRow({ HOUSE_MANAGE_NO: "9", HSSPLY_ADRES: "전주시" })], totalCount: 2 };
     if (u.pathname.endsWith("/getRemndrLttotPblancDetail")) return { data: [], totalCount: 0 };
+    if (u.pathname.endsWith("/getAPTLttotPblancMdl"))
+      return { data: [
+        { HOUSE_MANAGE_NO: "2026000123", PBLANC_NO: "2026000123", MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" },
+        // 조건을 무시하고 다른 단지 줄이 섞여 와도 이 공고 표에 넣지 않는다 (리뷰 — 금액이 남의 단지 것이 되면 안 된다)
+        { HOUSE_MANAGE_NO: "2026000999", PBLANC_NO: "2026000999", MODEL_NO: "01", HOUSE_TY: "084.0000A", SUPLY_HSHLDCO: 5, SPSPLY_HSHLDCO: 5, LTTOT_TOP_AMOUNT: "99999" },
+      ], totalCount: 15094 };
     throw new Error(`예상 못 한 주소 ${u.pathname}`);
   };
   it("네 목록을 받아 익산만 합친다 — 마이홈은 익산 코드(52 · 140), 청약홈은 공급지역 전북", async () => {
@@ -111,5 +117,110 @@ describe("받아 오기 (collectNotices)", () => {
   });
   it("한 목록이라도 실패하면 던진다 — 반쪽 목록으로 덮어쓰지 않게", async () => {
     await expect(collectNotices({ fetchJson: fakeFetch({ fail: "getAPTLttotPblancDetail" }), key: "k", today: TODAY })).rejects.toThrow();
+  });
+  it("남은 익산 아파트 공고만 주택형을 부른다 — 관리번호 · 공고번호 조건", async () => {
+    const seen = [];
+    const fetchJson = async (url) => (seen.push(new URL(url)), fakeFetch()(url));
+    const notices = await collectNotices({ fetchJson, key: "k", today: TODAY });
+    const mdl = seen.filter((u) => u.pathname.endsWith("/getAPTLttotPblancMdl"));
+    expect(mdl).toHaveLength(1);
+    expect([mdl[0].searchParams.get("cond[HOUSE_MANAGE_NO::EQ]"), mdl[0].searchParams.get("cond[PBLANC_NO::EQ]")]).toEqual(["2026000123", "2026000123"]);
+    expect(notices.find((n) => n.source === "청약홈").detail.houseTypes).toEqual([{ type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 }]);
+    expect(notices.find((n) => n.source === "마이홈포털").detail.houseTypes).toBeNull();
+  });
+  it("주택형 호출이 실패해도 목록은 그대로 — 표만 없다", async () => {
+    const notices = await collectNotices({ fetchJson: fakeFetch({ fail: "getAPTLttotPblancMdl" }), key: "k", today: TODAY });
+    expect(notices.map((n) => n.id)).toEqual(["myhome:1001", "applyhome:2026000123-2026000123"]);
+    expect(notices[1].detail.houseTypes).toBeNull();
+  });
+});
+
+describe("상세 (detail)", () => {
+  it("마이홈 임대 — 일정(공고 · 접수 · 발표) · 단지 금액(원, 0 은 뺀다) · 문의 전화", () => {
+    const n = fromMyhome(myhomeRow({ hsmpNm: "익산부송1", sumSuplyCo: 350, heatMthdNm: "지역난방", rentGtn: 2520000, mtRntchrg: 50160,
+      enty: 126000, prtpay: 0, surlus: 2394000, przwnerPresnatnDe: "20270129", refrnc: "LH 콜센터 : 1600-1004 (평일 : 09:00 ~ 18:00)" }), "공공임대");
+    expect(n.detail.schedule).toEqual([
+      { label: "모집 공고", start: "2026-10-15", end: null },
+      { label: "접수", start: "2026-10-15", end: "2026-12-30" },
+      { label: "당첨자 발표", start: "2027-01-29", end: null },
+    ]);
+    expect(n.detail.complexes).toEqual([{ name: "익산부송1", address: "전북특별자치도 익산시 왕궁면", households: 350, heating: "지역난방",
+      amounts: [{ label: "임대보증금", won: 2520000 }, { label: "월 임대료", won: 50160 }] }]);
+    expect(n.detail.contact).toEqual({ department: "LH 콜센터 : 1600-1004 (평일 : 09:00 ~ 18:00)", phone: "1600-1004", url: null });
+    expect(n.detail.houseTypes).toBeNull();
+  });
+  it("마이홈 분양 — 계약금 · 중도금 · 잔금, 공급 0호(잔여 매각)는 null", () => {
+    const n = fromMyhome(myhomeRow({ hsmpNm: "위너스빌", sumSuplyCo: 0, enty: 7755000, prtpay: 0, surlus: 69795000, rentGtn: 0, mtRntchrg: 0 }), "공공분양");
+    expect(n.detail.complexes[0]).toMatchObject({ households: null, amounts: [{ label: "계약금", won: 7755000 }, { label: "잔금", won: 69795000 }] });
+  });
+  it("마이홈 같은 공고 여러 줄 → 단지를 모은다, 똑같은 줄은 한 번", () => {
+    const a = fromMyhome(myhomeRow({ hsmpNm: "익산부송1", fullAdres: "무왕로" }), "공공임대");
+    const b = fromMyhome(myhomeRow({ hsmpNm: "익산동산", fullAdres: "동천로" }), "공공임대");
+    const merged = mergeNotices([a, b, fromMyhome(myhomeRow({ hsmpNm: "익산동산", fullAdres: "동천로" }), "공공임대")], TODAY);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].detail.complexes.map((c) => c.name)).toEqual(["익산부송1", "익산동산"]);
+  });
+  it("청약홈 아파트 — 특별공급 · 1순위 · 2순위(해당 · 기타 같으면 한 줄) · 발표 · 계약, \"null\" 은 뺀다", () => {
+    const n = fromApplyhome(applyhomeRow({ SPSPLY_RCEPT_BGNDE: "null", SPSPLY_RCEPT_ENDDE: "null",
+      GNRL_RNK1_CRSPAREA_RCPTDE: "2026-12-01", GNRL_RNK1_CRSPAREA_ENDDE: "2026-12-01", GNRL_RNK1_ETC_AREA_RCPTDE: "2026-12-01", GNRL_RNK1_ETC_AREA_ENDDE: "2026-12-01",
+      GNRL_RNK2_CRSPAREA_RCPTDE: "2026-12-02", GNRL_RNK2_CRSPAREA_ENDDE: "2026-12-02", GNRL_RNK2_ETC_AREA_RCPTDE: "2026-12-03", GNRL_RNK2_ETC_AREA_ENDDE: "2026-12-03",
+      PRZWNER_PRESNATN_DE: "2026-12-08", CNTRCT_CNCLS_BGNDE: "2026-12-21", CNTRCT_CNCLS_ENDDE: "2026-12-23" }), "아파트 분양");
+    expect(n.detail.schedule).toEqual([
+      { label: "모집 공고", start: "2026-11-18", end: null },
+      { label: "1순위", start: "2026-12-01", end: null },
+      { label: "2순위 해당지역", start: "2026-12-02", end: null },
+      { label: "2순위 기타지역", start: "2026-12-03", end: null },
+      { label: "당첨자 발표", start: "2026-12-08", end: null },
+      { label: "계약", start: "2026-12-21", end: "2026-12-23" },
+    ]);
+  });
+  it("청약홈 순위별 날짜가 없으면(무순위 등) 접수 한 줄", () => {
+    const row = applyhomeRow({ SPSPLY_RCEPT_BGNDE: undefined, SPSPLY_RCEPT_ENDDE: undefined, RCEPT_BGNDE: undefined, RCEPT_ENDDE: undefined,
+      SUBSCRPT_RCEPT_BGNDE: "2026-12-05", SUBSCRPT_RCEPT_ENDDE: "2026-12-05" });
+    expect(fromApplyhome(row, "무순위 · 잔여").detail.schedule).toEqual([
+      { label: "모집 공고", start: "2026-11-18", end: null },
+      { label: "접수", start: "2026-12-05", end: null },
+    ]);
+  });
+  it("청약홈 — 개요(공급 규모 · 입주 예정 · 시공) · 견본주택 전화 · 홈페이지", () => {
+    const n = fromApplyhome(applyhomeRow({ TOT_SUPLY_HSHLDCO: 251, MVN_PREARNGE_YM: "203002", CNSTRCT_ENTRPS_NM: "두산건설 주식회사",
+      MDHS_TELNO: "0638581118", HMPG_ADRES: "https://www.두산위브트레지움익산.com" }), "아파트 분양");
+    expect(n.detail.facts).toEqual([
+      { label: "공급 규모", value: "251세대" },
+      { label: "입주 예정", value: "2030년 2월" },
+      { label: "시공", value: "두산건설 주식회사" },
+    ]);
+    expect(n.detail.contact).toEqual({ department: "견본주택", phone: "063-858-1118", url: "https://www.두산위브트레지움익산.com" });
+    expect(n.detail.complexes).toEqual([]);
+  });
+  it("마이홈 문의 — 숫자가 더 붙은 번호는 잘라 걸지 않는다 (리뷰)", () => {
+    expect(fromMyhome(myhomeRow({ refrnc: "관리사무소 063-1234-56789" }), "공공임대").detail.contact.phone).toBeNull();
+    expect(fromMyhome(myhomeRow({ refrnc: "관리사무소(063-859-5745)" }), "공공임대").detail.contact.phone).toBe("063-859-5745");
+  });
+  it("전화번호 모양 — 모르는 모양은 null(틀린 번호를 걸지 않는다)", () => {
+    expect(telLabel("0638581118")).toBe("063-858-1118");
+    expect(telLabel("0212345678")).toBe("02-1234-5678");
+    expect(telLabel("16700511")).toBe("1670-0511");
+    expect(telLabel("063-836-3620")).toBe("063-836-3620");
+    expect(telLabel("12")).toBeNull();
+    expect(telLabel(undefined)).toBeNull();
+  });
+});
+
+describe("주택형 (getAPTLttotPblancMdl)", () => {
+  it("주택형 → 전용 ㎡ + 글자, 만원 → 원, 모델 번호 순", () => {
+    expect(fromApplyhomeModels({ data: [
+      { MODEL_NO: "02", HOUSE_TY: "059.8500B", SUPLY_HSHLDCO: 31, SPSPLY_HSHLDCO: 37, LTTOT_TOP_AMOUNT: "35289" },
+      { MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" },
+      { MODEL_NO: "03", HOUSE_TY: "084.8800 ", SUPLY_HSHLDCO: 73, SPSPLY_HSHLDCO: 0, LTTOT_TOP_AMOUNT: "" },
+      { MODEL_NO: "04", HOUSE_TY: "104.9996 ", SUPLY_HSHLDCO: "", SPSPLY_HSHLDCO: null, LTTOT_TOP_AMOUNT: "52000" },
+    ] })).toEqual([
+      { type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 },
+      { type: "59.85㎡ B", general: 31, special: 37, topPrice: 352_890_000 },
+      { type: "84.88㎡", general: 73, special: 0, topPrice: null },
+      // 빈 세대 수를 0 으로 만들지 않는다 — '특별 0세대'는 확인 안 된 값이다 (리뷰 Important-1, F0-5)
+      { type: "104.9996㎡", general: null, special: null, topPrice: 520_000_000 },
+    ]);
+    expect(() => fromApplyhomeModels({ currentCount: 0 })).toThrow();
   });
 });
