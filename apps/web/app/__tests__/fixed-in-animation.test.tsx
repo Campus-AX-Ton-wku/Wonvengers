@@ -54,7 +54,8 @@ describe("화면에 붙는 것은 애니메이션 조상 안에 두지 않는다
     render(<FindPoliciesPage />);
     const nav = await screen.findByRole("navigation", { name: "주요 메뉴" });
     expect(nav.closest(ANIMATED)).toBeNull();
-    expect(상단바().closest(ANIMATED)).toBeNull();
+    // 탭 첫 화면이라 뒤로 가기 대신 제목(11/23) — 제목도 애니메이션 밖 상단바에 있다
+    expect(screen.getByRole("heading", { level: 1, name: "지원금" }).closest(ANIMATED)).toBeNull();
   });
 
   it("신청 준비의 상단바 · 아래 고정 버튼", () => {
