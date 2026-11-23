@@ -58,13 +58,16 @@ describe("/home", () => {
     await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
   });
 
-  it("제목 · 내 조건 칩 → 조건 수정", async () => {
+  // 11/23 ggue: 홈에서는 조건을 고치지 않는다 — [수정] 버튼을 빼고 조건은 글로만 보여 준다.
+  // 조건 수정은 지원금 화면('조건 수정') · 내 정보('내 조건 수정')에 남아 있다.
+  it("제목 아래 내 조건은 글로만 — 수정 버튼 · 링크가 없다", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 주거지원 현황");
-    const chip = screen.getByRole("link", { name: "내 조건 25세 · 익산시 · 재직 — 조건 수정" });
-    expect(chip.getAttribute("href")).toBe("/find");
-    expect(chip.textContent).toBe("25세·익산시·재직수정");
+    const line = screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "25세·익산시·재직");
+    expect(line.closest("a")).toBeNull();
+    expect(screen.queryByRole("link", { name: /조건 수정/ })).toBeNull();
+    expect(screen.queryByText("수정")).toBeNull();
   });
 
   it("왼쪽 위 로고는 링크가 아니다", async () => {
