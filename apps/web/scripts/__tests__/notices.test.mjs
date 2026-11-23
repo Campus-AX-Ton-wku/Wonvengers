@@ -28,6 +28,10 @@ describe("날짜 · 모양", () => {
     expect(myhomeRows({ response: { body: { item: { a: 1 } } } })).toEqual([{ a: 1 }]);
     expect(myhomeRows({ response: { header: { resultCode: "03", resultMsg: "NODATA_ERROR" } } })).toEqual([]);
   });
+  it("마이홈이 200 응답 안에 오류 코드를 담아 보내면 던진다 — 0건으로 읽으면 반쪽 목록이 오늘 날짜로 굳는다 (리뷰 I-3)", () => {
+    expect(() => myhomeRows({ response: { header: { resultCode: "30", resultMsg: "SERVICE_KEY_IS_NOT_REGISTERED_ERROR" } } })).toThrow(/30/);
+    expect(myhomeRows({ response: { header: { resultCode: "00" }, body: { item: [{ a: 1 }] } } })).toEqual([{ a: 1 }]);
+  });
 });
 
 describe("변환", () => {
@@ -100,6 +104,10 @@ describe("받아 오기 (collectNotices)", () => {
     expect([rent.searchParams.get("brtcCode"), rent.searchParams.get("signguCode")]).toEqual(["52", "140"]);
     const apt = seen.find((u) => u.pathname.endsWith("/getAPTLttotPblancDetail"));
     expect(apt.searchParams.get("cond[SUBSCRPT_AREA_CODE_NM::EQ]")).toBe("전북");
+  });
+  it("청약홈 응답에 data 배열이 없으면 던진다 — 조용히 0건이 되지 않게 (리뷰 I-3)", async () => {
+    const fetchJson = async (url) => (new URL(url).pathname.endsWith("/getRemndrLttotPblancDetail") ? { currentCount: 0 } : fakeFetch()(url));
+    await expect(collectNotices({ fetchJson, key: "k", today: TODAY })).rejects.toThrow();
   });
   it("한 목록이라도 실패하면 던진다 — 반쪽 목록으로 덮어쓰지 않게", async () => {
     await expect(collectNotices({ fetchJson: fakeFetch({ fail: "getAPTLttotPblancDetail" }), key: "k", today: TODAY })).rejects.toThrow();

@@ -17,8 +17,13 @@ export function ymd(raw) {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 }
 
-/** 마이홈 응답의 줄 — 한 건이면 객체로, NODATA 면 body 없이 온다 */
+/**
+ * 마이홈 응답의 줄 — 한 건이면 객체로, NODATA(03) 면 body 없이 온다.
+ * 그 밖의 오류 코드(키 · 트래픽 등)는 HTTP 200 안에 담겨 오므로 던진다 — 0건으로 읽으면 반쪽 목록이 굳는다(리뷰 I-3).
+ */
 export function myhomeRows(json) {
+  const code = json?.response?.header?.resultCode;
+  if (code !== undefined && code !== "00" && code !== "03") throw new Error(`myhome resultCode ${code}`);
   const body = json?.response?.body ?? json?.body;
   const items = body?.item ?? body?.items?.item ?? body?.items ?? [];
   return Array.isArray(items) ? items : [items];
@@ -116,7 +121,9 @@ async function applyhomeAll(fetchJson, key, op) {
     u.searchParams.set("perPage", String(ROWS));
     u.searchParams.set("cond[SUBSCRPT_AREA_CODE_NM::EQ]", "전북");
     const json = await fetchJson(u.toString());
-    const got = Array.isArray(json?.data) ? json.data : [];
+    // data 배열이 없으면 오류 응답이다 — 조용히 0건이 되지 않게 던진다(리뷰 I-3)
+    if (!Array.isArray(json?.data)) throw new Error(`applyhome ${op}: data 없음`);
+    const got = json.data;
     rows.push(...got);
     if (got.length < ROWS || rows.length >= Number(json?.totalCount ?? 0)) break;
   }

@@ -46,6 +46,18 @@ export default function HousingPage() {
 function Body({ today, kind, onKind }: { today: string; kind: NoticeKind | null; onKind: (k: NoticeKind | null) => void }) {
   const kinds = kindsPresent(snapshot.notices, today);
   const { open, upcoming } = groupNotices(snapshot.notices, today, kind);
+  if (snapshot.generatedAt === null) {
+    // 빌드 때 못 받아 빈 스냅숏으로 배포된 날 — '없음'이 아니라 '모름'이다 (리뷰 I-2)
+    return (
+      <div className="flex flex-col items-start gap-3 rounded-card bg-surface p-5 shadow-card">
+        <p className="text-base font-bold text-ink-900">공고를 아직 불러오지 못했어요</p>
+        <p className="text-sm text-ink-600">잠시 뒤 다시 확인하거나, 마이홈포털에서 익산 공고를 봐 주세요.</p>
+        <a href="https://www.myhome.go.kr/" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-brand-700">
+          마이홈포털에서 보기 ›
+        </a>
+      </div>
+    );
+  }
   if (kinds.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3 rounded-card bg-surface p-5 shadow-card">
