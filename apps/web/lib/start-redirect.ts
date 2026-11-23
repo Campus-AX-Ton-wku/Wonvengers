@@ -16,5 +16,9 @@
  *
  * 11/20: 소개를 이미 본 비회원(perky.onboarded = lib/storage.ts 의 ONBOARDED_KEY)은 /start — 소개 마지막 장인 시작 화면
  * ([내 혜택 찾아보기] · [카카오로 로그인])부터. 예전에는 앱을 열 때마다 소개 1장부터 다시 봤다.
+ *
+ * 11/23 ggue: 되돌림 — 비회원은 소개를 봤어도 늘 1장부터("앱을 처음 여니까 3번째 페이지에서 시작한다").
+ * 소개가 저절로 넘어가고([다음] 없음) 오른쪽 위 [건너뛰기]가 있어 회원도 금방 로그인 버튼에 닿는다.
+ * 홈에서 로그인이 풀린 경우만 /start(마지막 장)로 간다(app/home/page.tsx) — 앱을 연 게 아니라 쓰던 중이라서.
  */
-export const START_REDIRECT = `if(location.pathname==="/"){var a=null,o=null;try{a=localStorage.getItem("perky.auth");o=localStorage.getItem("perky.onboarded")}catch(e){}location.replace(a?"/home":o==="1"?"/start":"/onboarding")}`;
+export const START_REDIRECT = `if(location.pathname==="/"){var a=null;try{a=localStorage.getItem("perky.auth")}catch(e){}location.replace(a?"/home":"/onboarding")}`;
