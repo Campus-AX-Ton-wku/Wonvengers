@@ -1,4 +1,4 @@
-import type { HousingNotice } from "../../../web/lib/notices";
+import type { NoticeSnapshot } from "../../../web/lib/notices";
 import type { PolicyMeta } from "../../../web/lib/types";
 import type { PushStore, StoredDevice } from "../push-store";
 import type { UserDataStore } from "../store";
@@ -33,7 +33,7 @@ export interface NotifierDeps {
   >;
   users: Pick<UserDataStore, "get">;
   fetchPolicies(): Promise<PolicyMeta[]>;
-  fetchNotices(): Promise<HousingNotice[]>;
+  fetchNotices(): Promise<NoticeSnapshot>;
   send: Sender;
   now(): Date;
 }
@@ -45,7 +45,8 @@ export interface ReminderSummary {
 }
 
 export interface NoticeSummary {
-  outcome: "fetch-failed" | "initialized" | "no-new" | "sent";
+  /** not-ready: 빌드 때 못 받은 빈 스냅숏(generatedAt null) — 상태를 건드리지 않는다 */
+  outcome: "fetch-failed" | "not-ready" | "initialized" | "no-new" | "sent";
   newNotices: number;
   recipients: number;
 }
@@ -232,12 +233,15 @@ async function remindDeadlines(
 /** 새 청약 공고 (11/22). 공고 목록은 정책과 따로 읽는다 — 하나가 실패해도 다른 하나는 돈다. */
 async function announceNewNotices(deps: NotifierDeps, directory: Directory, summary: RunSummary, now: Date): Promise<NoticeSummary> {
   const result: NoticeSummary = { outcome: "no-new", newNotices: 0, recipients: 0 };
-  let notices: HousingNotice[];
+  let snapshot: NoticeSnapshot;
   try {
-    notices = await deps.fetchNotices();
+    snapshot = await deps.fetchNotices();
   } catch {
     return { ...result, outcome: "fetch-failed" };
   }
+  // 빈 스냅숏을 기준선으로 삼으면 다음에 받은 공고를 전부 '새 공고'로 한꺼번에 보낸다(리뷰 I-1)
+  if (snapshot.generatedAt === null) return { ...result, outcome: "not-ready" };
+  const { notices } = snapshot;
   const announced = await deps.push.getAnnouncedNotices();
   if (announced === null) {
     // 첫 실행: 지금 있는 공고를 한꺼번에 알리지 않는다

@@ -36,6 +36,8 @@ function setup(opts: {
   remindedOn?: string | null;
   /** 새 청약 공고 (11/22) — 기본은 공고 없음 · 이미 알린 목록 빈 집합(지금 시험들은 공고 알림을 보내지 않는다) */
   notices?: HousingNotice[];
+  /** /notices.json 의 받은 시각 — null 이면 빌드 때 못 받은 빈 스냅숏 */
+  noticesGeneratedAt?: string | null;
   announcedNotices?: string[] | null;
   noticesFail?: boolean;
 }) {
@@ -78,7 +80,8 @@ function setup(opts: {
     }),
     fetchNotices: vi.fn(async () => {
       if (opts.noticesFail) throw new Error("503");
-      return opts.notices ?? [];
+      const generatedAt = opts.noticesGeneratedAt === undefined ? "2026-11-16T06:00:00+09:00" : opts.noticesGeneratedAt;
+      return { generatedAt, notices: opts.notices ?? [] };
     }),
     send: vi.fn(async (d: StoredDevice, message: PushMessage) => {
       order.push("send");
@@ -337,6 +340,17 @@ describe("runNotifier — 새 청약 공고 (11/22)", () => {
       { device: "u-d1", message: { title: "익산에 새 청약 공고가 올라왔어요", body: "b 공고", url: "/housing", tag: "notice" } },
     ]);
     expect(t.announcedNotices()?.has("b")).toBe(true);
+  });
+
+  it("빌드 때 못 받은 빈 스냅숏은 기준선으로 삼지 않는다 — 다음에 받은 공고를 한꺼번에 '새 공고'로 보내지 않게 (리뷰 I-1)", async () => {
+    const t = setup({ notices: [], noticesGeneratedAt: null, announcedNotices: null, announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    expect((await runNotifier(t.deps)).notices?.outcome).toBe("not-ready");
+    expect(t.announcedNotices()).toBeNull();
+
+    // 다음 회차 — 받은 공고 3건이 처음 보이면 그때 표시만 한다
+    const t2 = setup({ notices: [notice("a"), notice("b"), notice("c")], announcedNotices: null, announced: [], devices: [device("u", 1)], users: { u: userItem() } });
+    expect((await runNotifier(t2.deps)).notices?.outcome).toBe("initialized");
+    expect(t2.sent.filter((s) => s.message.tag === "notice")).toEqual([]);
   });
 
   it("공고 목록을 못 읽어도 정책 알림은 돈다", async () => {
