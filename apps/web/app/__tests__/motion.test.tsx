@@ -13,7 +13,7 @@ import { BadgeWatcher } from "@/app/components/BadgeWatcher";
 import policiesJson from "@/data/policies.json";
 import { resetAuthForTests } from "@/lib/auth";
 import { saveRemote } from "@/lib/remote";
-import { markBadgesSeen, saveSavedList } from "@/lib/storage";
+import { markBadgesSeen, markHomeReached, saveSavedList } from "@/lib/storage";
 import { resetSyncForTests } from "@/lib/sync";
 import type { PolicyMeta } from "@/lib/types";
 import { enableLogin, seedSyncMeta, signInAs } from "@/lib/__tests__/auth-fixtures";
@@ -54,6 +54,7 @@ describe("2. 배지 받는 순간", () => {
     enableLogin();
     signInAs("sub-a");
     seedSyncMeta("sub-a");
+    markHomeReached("sub-a"); // 배지 알림은 로그인하고 홈에 들어온 뒤부터
     markBadgesSeen();
     render(<BadgeWatcher />);
     act(() => saveSavedList([POLICY.id]));

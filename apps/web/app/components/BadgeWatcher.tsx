@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { onAuthChange } from "@/lib/auth";
+import { onAuthChange, storedSub } from "@/lib/auth";
 import { badgeStatuses, badgeOf, newBadges, nextBadge, type Badge } from "@/lib/badges";
 import { readBadgeFacts } from "@/lib/badge-facts";
 import { seoulTodayISO } from "@/lib/date";
 import { DEFAULT_PROFILE_CARD } from "@/lib/profile-card";
 import {
   badgesSeen,
+  homeReachedBy,
   loadBadges,
   loadProfileCard,
   markBadgesSeen,
@@ -26,6 +27,8 @@ import { Sheet } from "./Sheet";
  * 배지 판정 · 받는 순간 창 (내 프로필 설계 §7). 루트 레이아웃에 하나 — 어느 화면에서든 조건을 채운 그 자리에서.
  *
  * - 로그인했고 이 기기가 서버와 처음 맞춘 뒤(syncReady)에만 판정한다. 그 전에 사본에 배지를 적으면 충돌 창이 뜬다.
+ * - 그리고 로그인한 뒤 홈 화면에 한 번 들어온 뒤부터(homeReachedBy, 11/23 ggue) — 처음 질문 · 로그인 · 계산 중에는 띄우지 않는다.
+ *   그 사이 채운 조건은 홈에 들어오는 순간 판정한다.
  * - 이 기기에서 처음 판정할 때는 창 없이 받은 날만 적는다(perky.badges-seen) — 업데이트 뒤 앱을 열자마자 창이 뜨지 않게.
  * - 그 뒤 새로 받은 배지는 창 하나로 — 여러 개면 첫 것만, 나머지는 내 정보 배지 칸에. 푸시는 보내지 않는다.
  * - 다시 보는 때: 답 · 관심 · 준비가 바뀔 때(onLocalChange), 달력 · 가이드 읽음(onDeviceRecordChange), 로그인 · 동기화 상태.
@@ -36,7 +39,7 @@ export function BadgeWatcher() {
 
   useEffect(() => {
     const check = () => {
-      if (!syncReady()) return;
+      if (!syncReady() || !homeReachedBy(storedSub())) return;
       const today = seoulTodayISO();
       const statuses = badgeStatuses(readBadgeFacts(today));
       const earned = loadBadges();

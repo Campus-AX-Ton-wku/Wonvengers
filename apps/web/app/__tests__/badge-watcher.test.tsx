@@ -10,7 +10,8 @@ import policiesJson from "@/data/policies.json";
 import { resetAuthForTests } from "@/lib/auth";
 import { saveRemote } from "@/lib/remote";
 import {
-  badgesSeen, loadBadges, loadProfileCard, markBadgesSeen, markGuideRead, saveListing, saveProfile, saveSavedList,
+  badgesSeen, clearDeviceRecords, homeReachedBy, loadBadges, loadProfileCard, markBadgesSeen, markGuideRead, markHomeReached,
+  saveListing, saveProfile, saveSavedList,
 } from "@/lib/storage";
 import { resetSyncForTests } from "@/lib/sync";
 import type { PolicyMeta } from "@/lib/types";
@@ -32,13 +33,41 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function 로그인() {
+/** 로그인 · 처음 동기화 끝 — 아직 홈에는 안 들어옴 */
+function 로그인만() {
   enableLogin();
   signInAs("sub-a");
   seedSyncMeta("sub-a");
 }
 
+function 로그인() {
+  로그인만();
+  markHomeReached("sub-a");
+}
+
 describe("BadgeWatcher", () => {
+  it("로그인하고 홈에 들어오기 전에는 판정하지 않는다 — 홈에 들어오는 순간 판정 (11/23 ggue)", async () => {
+    로그인만();
+    markBadgesSeen(); // 예전에 이 기기에서 판정한 적이 있어도
+    saveSavedList([first]); // 로그인 전 질문 · 목록에서 하트를 눌러 둔 상태
+    render(<BadgeWatcher />);
+    expect(loadBadges()).toEqual({});
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    act(() => markHomeReached("sub-a"));
+    expect(Object.keys(loadBadges())).toEqual(["first_save"]);
+    expect(await screen.findByRole("dialog", { name: /‘첫 관심’ 배지를 받았어요/ })).toBeTruthy();
+  });
+
+  it("홈에 들어온 기록은 계정마다 — 다른 계정이면 다시 홈을 기다리고, 로그아웃하면 지운다", () => {
+    markHomeReached("sub-a");
+    expect(homeReachedBy("sub-a")).toBe(true);
+    expect(homeReachedBy("sub-b")).toBe(false);
+    expect(homeReachedBy(null)).toBe(false);
+    clearDeviceRecords();
+    expect(homeReachedBy("sub-a")).toBe(false);
+  });
+
   it("이 기기에서 처음 판정할 때는 창 없이 기록만 — 이미 해 둔 것도 받은 날이 생긴다", () => {
     로그인();
     saveSavedList([first]);

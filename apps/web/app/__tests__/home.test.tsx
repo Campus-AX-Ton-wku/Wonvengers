@@ -9,7 +9,7 @@ vi.mock("@/lib/remote", () => ({ loadRemote: vi.fn(), saveRemote: vi.fn(), delet
 import HomePage from "@/app/home/page";
 import { AUTH_KEY, resetAuthForTests, signOut } from "@/lib/auth";
 import { replacePage } from "@/lib/redirect";
-import { saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveProfileCard, saveSavedList } from "@/lib/storage";
+import { homeReachedBy, saveAnswers, saveChecklist, saveDocumentChecks, saveLedger, saveListing, saveProfile, saveProfileCard, saveSavedList } from "@/lib/storage";
 import policiesJson from "@/data/policies.json";
 import { seoulTodayISO, todayISO } from "@/lib/date";
 import { addMonths, emptyLedger, ledgerMonth, ledgerPlan, monthKeyOf, toggleLine } from "@/lib/ledger";
@@ -38,6 +38,21 @@ describe("/home", () => {
     enableLogin();
     render(<HomePage />);
     await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
+  });
+
+  it("로그인하고 홈에 들어오면 그 계정으로 '홈 들어옴'을 남긴다 — 배지 알림은 여기서부터 (11/23)", async () => {
+    enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
+    expect(homeReachedBy("sub-a")).toBe(false);
+    render(<HomePage />);
+    await screen.findByRole("heading", { level: 1 });
+    expect(homeReachedBy("sub-a")).toBe(true);
+  });
+
+  it("로그인 기록 없이 홈에 오면 남기지 않는다", async () => {
+    enableLogin();
+    render(<HomePage />);
+    await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
+    expect(window.localStorage.getItem("perky.home-reached")).toBeNull();
   });
 
   it("홈을 열어 둔 사이 로그인이 풀리면(만료 · 다른 탭 로그아웃) 온보딩으로 보낸다", async () => {
