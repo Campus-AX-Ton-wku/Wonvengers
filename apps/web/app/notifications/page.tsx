@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import noticesData from "@/data/notices.json";
 import policiesJson from "@/data/policies.json";
-import { AppShell, DeadlineBadge, Icon3D, IconLink, TabIcon, TopBar } from "@/app/components";
+import { AppShell, DeadlineBadge, Icon3D, IconLink, PushAskSheet, TabIcon, TopBar } from "@/app/components";
 import { ChevronRight, ICON_LG, ICON_MD, Settings } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
+import { markPushAsked, pushAskFor, type PushAskKind } from "@/lib/push-ask";
 import { formatDotDate, seoulTodayISO } from "@/lib/date";
 import { inboxItems, loadInboxSeen, markInboxSeen, noticeInboxItems, seoulDateOf, type InboxItem, type NoticeInboxItem } from "@/lib/inbox";
 import { noticeDeadlineLabel, type NoticeSnapshot } from "@/lib/notices";
@@ -37,6 +38,7 @@ export default function NotificationsPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [noticeItems, setNoticeItems] = useState<NoticeInboxItem[]>([]);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
+  const [pushAsk, setPushAsk] = useState<PushAskKind | null>(null);
 
   useEffect(() => {
     const leave = () => replacePage("/onboarding");
@@ -56,6 +58,16 @@ export default function NotificationsPage() {
     setReady(true);
     markInboxSeen([...list, ...noticeList]);
 
+    // 오른쪽 위 종으로 처음 들어오면 알림 허용을 묻는다 (11/23 ggue, lib/push-ask.ts)
+    let alive = true;
+    void pushAskFor("inbox")
+      .catch(() => null)
+      .then((kind) => {
+        if (!alive || !kind) return;
+        markPushAsked("inbox");
+        setPushAsk(kind);
+      });
+
     const checkLogin = () => {
       if (!hasStoredLogin()) leave();
     };
@@ -65,6 +77,7 @@ export default function NotificationsPage() {
     window.addEventListener("storage", onStorage);
     const offAuth = onAuthChange(checkLogin);
     return () => {
+      alive = false;
       window.removeEventListener("storage", onStorage);
       offAuth();
     };
@@ -121,6 +134,7 @@ export default function NotificationsPage() {
           </>
         )}
       </main>
+      {pushAsk && <PushAskSheet kind={pushAsk} onClose={() => setPushAsk(null)} />}
     </AppShell>
   );
 }

@@ -613,6 +613,7 @@ export function clearDeviceRecords(): void {
   removeQuietly(GUIDES_READ_KEY);
   removeQuietly(BADGES_SEEN_KEY);
   removeQuietly(HOME_REACHED_KEY);
+  removeQuietly(PUSH_ASK_KEY);
   // 프로필 사진 사본(11/23) — 공용 기기에서 로그아웃하면 사진이 남지 않게. 계정의 사진은 그대로다
   removeQuietly(PROFILE_PHOTO_KEY);
   removeQuietly(PROFILE_PHOTO_DELETE_KEY);
@@ -647,6 +648,30 @@ export function onDeviceRecordChange(listener: () => void): () => void {
 const GUIDES_READ_KEY = "perky.guides-read";
 const BADGES_SEEN_KEY = "perky.badges-seen";
 const HOME_REACHED_KEY = "perky.home-reached";
+const PUSH_ASK_KEY = "perky.push-ask";
+
+/**
+ * 알림 허용을 물어본 기록 (11/23 ggue) — 이 기기 · 계정마다. 판단은 lib/push-ask.ts.
+ * lastAskedAt: 홈 · 알림함에서 마지막으로 물은 때(ISO). inboxAsked: 알림함 첫 방문에 물었는가.
+ * 로그아웃 · '처음부터 다시'에 지운다(clearDeviceRecords) — 다시 로그인하고 홈에 오면 다시 묻는다.
+ */
+export interface PushAskRecord {
+  lastAskedAt: string | null;
+  inboxAsked: boolean;
+}
+
+export function loadPushAsk(sub: string): PushAskRecord {
+  const v = readJSON<{ sub?: unknown; lastAskedAt?: unknown; inboxAsked?: unknown }>(PUSH_ASK_KEY);
+  if (!v || v.sub !== sub) return { lastAskedAt: null, inboxAsked: false };
+  return {
+    lastAskedAt: typeof v.lastAskedAt === "string" ? v.lastAskedAt : null,
+    inboxAsked: v.inboxAsked === true,
+  };
+}
+
+export function savePushAsk(sub: string, record: PushAskRecord): void {
+  writeJSONSafely(PUSH_ASK_KEY, { sub, ...record });
+}
 /** 프로필 사진 사본 { at, image, uploaded } — lib/profile-photo.ts */
 export const PROFILE_PHOTO_KEY = "perky.profile-photo";
 /** 서버 사진을 아직 못 지웠다는 표시 — lib/profile-photo.ts */
