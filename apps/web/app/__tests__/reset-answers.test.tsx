@@ -76,12 +76,22 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("/find/policies — '조건 수정' 옆", () => {
+describe("/find/policies — 지원금 탭에는 없다 (11/23 시안)", () => {
+  it("매일 여는 탭 맨 위에 두지 않는다 — 답 줄 · [처음부터 다시] · [조건 수정]을 뺐다", async () => {
+    답심기();
+    render(<FindPoliciesPage />);
+    await screen.findByRole("heading", { level: 2 });
+    expect(screen.queryByRole("button", { name: "처음부터 다시" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /조건 수정/ })).toBeNull();
+  });
+});
+
+describe("확인 시트 (/find/result 에서)", () => {
   it("취소하면 아무것도 지우지 않는다", async () => {
     답심기();
-    resetNavigation("/find/policies", "/find?q=birth");
+    resetNavigation("/find/result", "/find?q=birth");
     const user = userEvent.setup();
-    render(<FindPoliciesPage />);
+    render(<FindResultPage />);
 
     await user.click(await screen.findByRole("button", { name: "처음부터 다시" }));
     // 열리자마자 Enter 를 눌러도 지워지지 않게, 포커스는 '취소' 에 먼저 간다.
@@ -94,12 +104,10 @@ describe("/find/policies — '조건 수정' 옆", () => {
 
   it("1·2층 답과 체크리스트를 지우고 /find?q=birth 로 replace — 온보딩·가입 시트 기록은 남긴다", async () => {
     답심기();
-    resetNavigation("/find/policies", "/find?q=birth");
+    resetNavigation("/find/result", "/find?q=birth");
     const user = userEvent.setup();
-    render(<FindPoliciesPage />);
+    render(<FindResultPage />);
 
-    const row = (await screen.findByRole("link", { name: /조건 수정/ })).parentElement!;
-    expect(within(row).getByRole("button", { name: "처음부터 다시" })).toBeTruthy();
     await 다시하기(user);
 
     expect(readLocalContent()).toEqual(emptyContent());
@@ -161,11 +169,9 @@ describe("로그인 상태", () => {
     // 서버와 같아서 lib/sync.ts 가 올리지 않는다.)
     vi.mocked(loadRemote).mockResolvedValue(remoteItem(readLocalContent(), "2026-11-04T09:00:00.000Z"));
     vi.mocked(saveRemote).mockResolvedValue({ ok: true, updatedAt: "2026-11-04T09:05:00.000Z" });
-    resetNavigation("/find/policies", "/find?q=birth");
+    resetNavigation("/find/result", "/find?q=birth");
     const user = userEvent.setup();
-    render(<FindPoliciesPage />);
-    // 로그인이 화면에 반영됐다는 신호 — 지원금 목록은 탭의 첫 화면이라 하단 섬이 그려진다
-    await screen.findByRole("link", { name: "내 정보" });
+    render(<FindResultPage />);
 
     await 다시하기(user);
 
