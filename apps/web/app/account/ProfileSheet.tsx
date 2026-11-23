@@ -98,7 +98,7 @@ export function ProfileSheet({
       <fieldset className="mt-2 flex flex-col gap-2">
         <legend className="mb-2 flex w-full items-baseline justify-between gap-2 text-sm font-bold text-ink-900">
           <span>
-            프로필 그림 <span className="font-medium text-ink-500">— 내 사진도 돼요</span>
+            프로필 그림
           </span>
           {draftPhoto && (
             <button
