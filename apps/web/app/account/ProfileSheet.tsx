@@ -92,14 +92,13 @@ export function ProfileSheet({
           onChange={(e) => setName([...e.target.value].slice(0, MAX_PROFILE_NAME).join(""))}
           className="input focus-ring min-h-12 w-full rounded-control border border-ink-200 bg-surface px-4 text-base text-ink-900 placeholder:text-ink-500"
         />
-        <p className="text-xs text-ink-500">비우면 내 조건으로 지은 이름을 써요.</p>
       </div>
       </div>
 
       <fieldset className="mt-2 flex flex-col gap-2">
         <legend className="mb-2 flex w-full items-baseline justify-between gap-2 text-sm font-bold text-ink-900">
           <span>
-            프로필 그림 <span className="font-medium text-ink-500">— 내 사진도 돼요</span>
+            프로필 그림
           </span>
           {draftPhoto && (
             <button
@@ -192,7 +191,7 @@ export function ProfileSheet({
 
       <fieldset className="mt-2 flex flex-col gap-2">
         <legend className="mb-2 text-sm font-bold text-ink-900">
-          대표 배지 <span className="font-normal text-ink-500">— 받은 것 중 하나를 그림 옆에 걸어요</span>
+          대표 배지
         </legend>
         {earnedBadges.length === 0 ? (
           <p className="text-xs text-ink-500">배지를 받으면 여기서 걸 수 있어요.</p>

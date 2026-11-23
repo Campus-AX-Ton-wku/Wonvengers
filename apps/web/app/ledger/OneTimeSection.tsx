@@ -26,7 +26,6 @@ export function OneTimeSection({
     <section aria-label="한 번 받는 지원" className="mt-7 flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-extrabold leading-snug text-ink-900">한 번 받는 지원</h2>
-        <p className="text-[13px] leading-normal text-ink-600">달마다 넣지 않아요. 받으면 한 번만 눌러 주세요.</p>
       </div>
       {shown.length === 0 ? (
         <p className="rounded-card bg-surface px-[18px] py-4 text-sm leading-normal text-ink-600 shadow-card">

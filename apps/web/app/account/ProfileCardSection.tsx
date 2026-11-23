@@ -33,7 +33,7 @@ export function ProfileCardSection({
   const [editing, setEditing] = useState(false);
   const shown = card ?? DEFAULT_PROFILE_CARD;
   const photo = useProfilePhotoImage(card);
-  const { name, isDefault } = profileName(card, answers);
+  const { name } = profileName(card, answers);
   const color = profileColor(shown.color);
   const hasAnswers = Object.values(answers).some((v) => v !== null);
   const chips = hasAnswers
@@ -50,7 +50,6 @@ export function ProfileCardSection({
       <ProfileAvatar card={shown} size="lg" />
       <div className="flex flex-col gap-1">
         <h2 className="text-balance text-[22px] font-extrabold leading-snug text-ink-900">{name}</h2>
-        {isDefault && <p className="text-xs text-ink-500">내 조건으로 지은 이름이에요 · 바꿀 수 있어요</p>}
       </div>
       {chips.length > 0 && (
         <ul aria-label="내 조건" className="flex flex-wrap justify-center gap-1.5">

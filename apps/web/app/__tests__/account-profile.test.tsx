@@ -45,13 +45,13 @@ function 로그인한채로() {
 }
 
 describe("/account 내 정보 — 프로필 카드", () => {
-  it("상단바 제목 '내 정보'(뒤로 없음), 기본 이름 · 안내 · 조건 칩 · 두 버튼", async () => {
+  it("상단바 제목 '내 정보'(뒤로 없음), 기본 이름 · 조건 칩 · 두 버튼 (이름 아래 안내 줄은 11/23 뺐다)", async () => {
     로그인한채로();
     const card = await screen.findByRole("region", { name: "내 프로필" });
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("내 정보");
     expect(screen.queryByRole("button", { name: "이전 단계로" })).toBeNull();
     expect(within(card).getByRole("heading", { level: 2 }).textContent).toBe("익산 사는 대학생");
-    expect(within(card).getByText("내 조건으로 지은 이름이에요 · 바꿀 수 있어요")).toBeTruthy();
+    expect(within(card).queryByText(/내 조건으로 지은 이름이에요/)).toBeNull();
     for (const chip of ["25세", "익산시", "대학생", "월세"]) expect(within(card).getByText(chip)).toBeTruthy();
     expect(within(card).getByRole("button", { name: "프로필 꾸미기" })).toBeTruthy();
     expect(within(card).getByRole("link", { name: "내 조건 수정" }).getAttribute("href")).toBe("/find");

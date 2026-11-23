@@ -244,10 +244,7 @@ function SavedCardItem({ card: { policy, deadline, progress } }: { card: SavedCa
               <Icon3D name={policy.icon} size={40} />
               <div className="flex min-w-0 flex-col gap-0.5">
                 <p className="text-base font-bold leading-snug text-ink-900">{policy.name}</p>
-                <p className="text-[13px] text-ink-500">
-                  {policy.agency}
-                  {deadline === "접수 마감" && " · 다음 공고를 기다려요"}
-                </p>
+                <p className="text-[13px] text-ink-500">{policy.agency}</p>
               </div>
             </div>
           </div>

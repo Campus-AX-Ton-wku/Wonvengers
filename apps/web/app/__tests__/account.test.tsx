@@ -210,6 +210,7 @@ describe("/account — 로그인했지만 이 기기에 저장 동의가 없을 
     await screen.findByText("카카오로 로그인했어요");
     expect(screen.queryByText("이 기기에서는 아직 저장에 동의하지 않았어요")).toBeNull();
     expect(screen.queryByRole("button", { name: "동의하고 저장" })).toBeNull();
-    expect(screen.getByText("앱을 쓰다 보면 모여요")).toBeTruthy();
+    expect(screen.queryByText("저장에 동의하면 배지를 받을 수 있어요")).toBeNull();
+    expect(screen.queryByText("앱을 쓰다 보면 모여요")).toBeNull(); // 덧붙인 설명 줄은 뺐다 (ggue 11/23)
   });
 });

@@ -8,7 +8,7 @@ function shortDate(iso: string): string {
 }
 
 /**
- * 내 정보 배지 칸 (내 프로필 설계 §7) — "배지 n/8 · 앱을 쓰다 보면 모여요", 4칸 × 2줄.
+ * 내 정보 배지 칸 (내 프로필 설계 §7) — "배지 n/8", 4칸 × 2줄. 덧붙인 설명 줄은 뺐다(ggue 11/23).
  * 받은 칸은 색 그림 + 받은 날, 아직인 칸은 회색 그림 + 진행(3/5) 또는 '아직'. 친구 · 순위 비교 없음 — 나만 본다.
  */
 export function BadgeSection({
@@ -31,7 +31,7 @@ export function BadgeSection({
         <h2 id="badges-heading" className="text-base font-bold text-ink-900">
           배지 <span className="text-brand-700">{count}</span>/{statuses.length}
         </h2>
-        <p className="text-xs text-ink-500">{onConsent ? "저장에 동의하면 배지를 받을 수 있어요" : "앱을 쓰다 보면 모여요"}</p>
+        {onConsent && <p className="text-xs text-ink-500">저장에 동의하면 배지를 받을 수 있어요</p>}
       </div>
       <ul className="grid grid-cols-4 gap-2 rounded-card bg-surface p-3 shadow-card">
         {statuses.map((s) => {
