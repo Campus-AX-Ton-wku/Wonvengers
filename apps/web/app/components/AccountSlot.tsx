@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import noticesData from "@/data/notices.json";
 import policiesJson from "@/data/policies.json";
 import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
-import { hasUnseen, inboxItems, INBOX_SEEN_EVENT, loadInboxSeen } from "@/lib/inbox";
+import { hasUnseen, inboxItems, INBOX_SEEN_EVENT, loadInboxSeen, noticeInboxItems } from "@/lib/inbox";
 import { reloadPage } from "@/lib/redirect";
 import { loadAnswers, loadChecklist, loadDocumentChecks, loadSaved, onLocalChange } from "@/lib/storage";
 import { retrySync, startSync, useSyncState } from "@/lib/sync";
+import type { NoticeSnapshot } from "@/lib/notices";
 import type { PolicyMeta } from "@/lib/types";
 import { IconLink } from "./IconButton";
 import { SyncConflictSheet } from "./SyncConflictSheet";
@@ -27,6 +29,7 @@ import { TabIcon } from "./TabIcons";
  * 문구를 칸 안에 넣으면 줄이 밀린다 — 떠 있게 두어 레이아웃을 움직이지 않는다.
  */
 const policies = policiesJson as PolicyMeta[];
+const notices = (noticesData as NoticeSnapshot).notices;
 
 /** 알림함에 아직 보지 않은 알림이 있는지 — 내 답 · 찜이 바뀌거나 알림함을 보면 다시 센다. */
 function useInboxDot(enabled: boolean): boolean {
@@ -34,11 +37,10 @@ function useInboxDot(enabled: boolean): boolean {
   useEffect(() => {
     if (!enabled) return;
     const read = () => {
-      const items = inboxItems(policies, loadAnswers(), loadSaved(), seoulTodayISO(), {
-        checklist: loadChecklist,
-        documents: loadDocumentChecks,
-      });
-      setDot(hasUnseen(items, loadInboxSeen()));
+      const answers = loadAnswers();
+      const today = seoulTodayISO();
+      const items = inboxItems(policies, answers, loadSaved(), today, { checklist: loadChecklist, documents: loadDocumentChecks });
+      setDot(hasUnseen([...items, ...noticeInboxItems(notices, answers, today)], loadInboxSeen()));
     };
     read();
     const off = onLocalChange(read);
