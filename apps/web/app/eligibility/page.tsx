@@ -36,6 +36,7 @@ import {
   TopBar,
 } from "@/app/components";
 import { ICON_SM, Pencil } from "@/app/components/icons";
+import { markReveal } from "@/lib/reveal";
 
 /**
  * 2층 · 판정 질문. 주제별 묶음(lib/steps.ts) 하나가 한 화면이고, 묶음은 주소(?g=)에 있다.
@@ -371,6 +372,8 @@ function EligibilitySteps() {
     persist(profile, answered, statusTouched.current, statusPrefilled.current);
     setSaving(true);
     if (step < steps.length - 1) return go(String(step + 2));
+    // 결과 화면 앞 '찾았어요' 한 장 — 여기서 [결과 확인하기]를 누를 때만 보인다(lib/reveal.ts)
+    markReveal();
     router.push("/result");
   }
 

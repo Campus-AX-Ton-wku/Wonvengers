@@ -682,3 +682,24 @@ describe("/eligibility 고르기 전에는 아무 카드도 선택돼 보이지 
  * 이어받는 코드(app/eligibility/page.tsx 의 asksStatus)는 그대로 두었다. 그 질문을 쓰는 정책이
  * 다시 생기면 git 기록(2026-11-14 판)의 테스트를 되살린다.
  */
+
+/** 결과 화면 앞 '찾았어요' (11/23 시안) — 마지막 묶음에서 [결과 확인하기]를 누를 때만 표시를 남긴다 */
+describe("/eligibility → 찾았어요 표시", () => {
+  beforeEach(() => window.sessionStorage.clear());
+
+  it("마지막 묶음의 [결과 확인하기]만 표시를 남기고, 중간 [다음]은 남기지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<EligibilityPage />);
+    await screen.findByRole("heading", { level: 1 });
+    await pickBirthDate(user, 2003, 8, 12);
+
+    for (let i = 0; i < 10 && !screen.queryByRole("button", { name: "결과 확인하기" }); i++) {
+      await user.click(screen.getByRole("button", { name: "다음" }));
+      expect(window.sessionStorage.getItem("perky.reveal")).toBeNull();
+    }
+    await user.click(screen.getByRole("button", { name: "결과 확인하기" }));
+
+    expect(routerMock.push).toHaveBeenLastCalledWith("/result");
+    expect(window.sessionStorage.getItem("perky.reveal")).toBe("1");
+  });
+});

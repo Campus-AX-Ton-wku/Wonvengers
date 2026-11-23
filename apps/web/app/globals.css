@@ -651,6 +651,110 @@ select.input {
   }
 }
 
+/* ── 결과 화면 앞 '찾았어요' 한 장 (11/23 시안 '찾았어요 · 페이드', app/result/FoundReveal.tsx) ──
+   시안의 4초 반복 키프레임을 한 번짜리로 옮겼다. 시간은 시안 % × 4초.
+   0.08초 Perky 튀어나옴 · 0.24초 첫 줄 · 0.32~1.08초 숫자 굴림(1.04초 통통) · 0.88초 둘째 줄
+   2.2초 글자가 옅어지며 살짝 위로 · 2.28~2.68초 파랑이 걷힘 · (결과 화면) 2.4초부터 아래에서 떠오름.
+   옮길 때는 투명도와 위치만 바꾼다(시안 노트). */
+@keyframes reveal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.6);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(0) scale(1.07);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes reveal-rise-line {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes reveal-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(var(--reveal-n) * -1em));
+  }
+}
+@keyframes reveal-bump {
+  50% {
+    transform: scale(1.14);
+  }
+}
+@keyframes reveal-stage-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+@keyframes reveal-panel-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes reveal-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal-mascot {
+  animation: reveal-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+.reveal-l1 {
+  animation: reveal-rise-line 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+}
+.reveal-l2 {
+  animation: reveal-rise-line 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.88s both;
+}
+/* 다 굴러간 자리가 기본값이다 — 동작 줄이기로 움직임을 끄면 그대로 최종 숫자가 보인다 */
+.reveal-digits {
+  transform: translateY(calc(var(--reveal-n) * -1em));
+  animation: reveal-roll 0.76s cubic-bezier(0.3, 0.1, 0.2, 1) 0.32s both;
+}
+.reveal-num {
+  animation: reveal-bump 0.2s ease-out 1.04s;
+}
+.reveal-stage {
+  animation: reveal-stage-out 0.24s cubic-bezier(0.4, 0, 0.2, 1) 2.2s both;
+}
+.reveal-panel {
+  animation: reveal-panel-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) 2.28s both;
+}
+/* 막이 걷힐 때 결과 화면을 깐다 — 오른쪽에서 밀려오는 step-in 대신 아래에서 떠오른다(시안) */
+.reveal-result-in {
+  animation: reveal-result-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* 다 나온 모습으로 1.5초 보이고 바로 넘어간다(FoundReveal REVEAL_TIMING.reduced). 굴림 · 튀어 오름 · 옅어지기 없음 */
+  .reveal-mascot,
+  .reveal-l1,
+  .reveal-l2,
+  .reveal-digits,
+  .reveal-num,
+  .reveal-stage,
+  .reveal-panel,
+  .reveal-result-in {
+    animation: none;
+  }
+}
+
 /* ── 휠 데이트 피커 컬럼 ──
    스크롤바가 보이면 휠이 아니라 목록으로 읽힌다. 스크롤 자체는 살려 둔다. */
 .no-scrollbar {
