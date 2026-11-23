@@ -63,7 +63,7 @@ export default function ResultPage() {
     return <ResultState kind="error" onRetry={retry} />;
   }
 
-  const { included, unknownConditions } = summaryHighlights(summary);
+  const { included, pending } = summaryHighlights(summary);
   // 카드 금액이 맨 위 합계에 들어갔는지(금색 여부)는 최선 조합으로 정한다 — 중복 수급으로 빠진 정책도 있다.
   const cards = benefitResultCards(summary.results, asOf, new Set(summary.bestCombination.includedPolicyIds));
   const cardResults = cards.map((card) => ({
@@ -125,7 +125,7 @@ export default function ResultPage() {
           oneTime: summary.results.find((r) => r.policy.id === item.id)?.policy.benefitType === "lump_sum",
         }))}
         overlapExcluded={overlapExcluded}
-        unknownConditions={unknownConditions}
+        pending={pending}
       />
 
       {/* 11/18 진단 2회차: 합계 안 · 밖이 눈으로 구분되지 않았다 — 보이는 제목으로 나누고, 밖 묶음의 공통 설명은 한 번만 */}
@@ -149,7 +149,7 @@ export default function ResultPage() {
               조건이 맞으면 더 받을 수 있는 지원 {extraCards.length}개
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-ink-600">
-              위 금액에는 넣지 않았어요. 전입 · 재학처럼 계약 조건과 따로 정해지는 지원이에요.
+              위 금액에는 넣지 않았어요. 아직 확인할 조건이 남았거나, 전입 · 재학처럼 계약 조건과 따로 정해지는 지원이에요.
             </p>
           </div>
           {extraCards.map(({ card, result }, index) => (

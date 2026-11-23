@@ -19,7 +19,7 @@ describe("돈 요약 영수증 — 매달 나가는 돈과 한 번 내는 돈", 
         finalCost={2616000}
         included={[{ id: "split", name: "청년 주거급여 분리지급", amount: 2544000, oneTime: false }]}
         overlapExcluded={[]}
-        unknownConditions={[]}
+        pending={{ amount: 0, conditions: [] }}
       />
     );
     // (35만 + 3만) × 12 = 456만 − 254만 4천 = 201만 6천 ÷ 12 = 16만 8천
@@ -35,7 +35,7 @@ describe("돈 요약 영수증 — 매달 나가는 돈과 한 번 내는 돈", 
         finalCost={5060000}
         included={[{ id: "move", name: "이사비 지원", amount: 500000, oneTime: true }]}
         overlapExcluded={[]}
-        unknownConditions={[]}
+        pending={{ amount: 0, conditions: [] }}
       />
     );
     // 매달 38만원 그대로, 이사비 60만 − 50만 = 10만원

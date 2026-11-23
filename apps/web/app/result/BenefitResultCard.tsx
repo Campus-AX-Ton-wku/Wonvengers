@@ -62,7 +62,8 @@ export default function BenefitResultCard({
       ? `${formatDeadline(card.deadlineAt)} 마감 · ${card.deadlineDays === 0 ? "오늘" : `D-${card.deadlineDays}`}`
       : null;
 
-  if (!card.amount.countsInTotal) {
+  // 확인할 조건이 남은 지원(11/23)은 합계 밖이어도 큰 카드 — '확인 필요' 요건 목록과 예상 금액을 그대로 보여 준다
+  if (!card.amount.countsInTotal && card.amount.excludedReason !== "unconfirmed") {
     return (
       <article className="rounded-card bg-surface p-4 shadow-card" aria-labelledby={`benefit-${card.policyId}`}>
         {/* 상태 배지('확인 필요' 주황)는 두지 않는다(11/20) — 묶음 제목 '조건이 맞으면 더 받을 수 있는 지원'과
@@ -150,6 +151,9 @@ export default function BenefitResultCard({
         </p>
         <p className="mt-1 text-xs text-ink-600">{subText}</p>
         {ageLimit && <p className="mt-0.5 text-xs text-ink-600">{ageLimitReason(ageLimit)}만 셌어요</p>}
+        {card.amount.excludedReason === "unconfirmed" && card.amount.note && (
+          <p className="mt-1.5 text-xs font-semibold text-warn-800">{card.amount.note}</p>
+        )}
       </div>
 
       <DestinationLink
