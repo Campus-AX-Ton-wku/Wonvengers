@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, BottomTabBar, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, ResetAnswersButton, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
-import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
+import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
@@ -47,12 +47,16 @@ export default function FindPoliciesPage() {
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
-  const [loginOpen, setLoginOpen] = useState(false);
+  // 로그인을 쓸 수 있는데 아직 안 한 사람. 같은 effect 에서 정해야 첫 화면에 파란 계산 버튼이 한 번 비쳤다 사라지지 않는다.
+  const [guest, setGuest] = useState(false);
 
   useEffect(() => {
     setAnswers(loadAnswers());
     setAsOf(todayISO());
+    const updateGuest = () => setGuest(isLoginAvailable() && !hasStoredLogin());
+    updateGuest();
     setLoaded(true);
+    return onAuthChange(updateGuest);
   }, []);
 
   // 1층과 같은 경계 변환. 생년월일 → 만 나이는 여기서 한 번만 한다 (lib/age.ts).
@@ -64,6 +68,12 @@ export default function FindPoliciesPage() {
   // 접수가 끝난 정책도 1층 태그로는 '가능성 있음' 이 된다. 한 목록에 섞으면 제목의
   // 건수가 못 받는 것까지 세고, 금액이 가장 큰 마감 건이 첫 카드를 차지한다.
   const { 신청가능 } = asOf ? splitByApplicationWindow(groups, asOf) : { 신청가능: [] };
+
+  // 계산(2층)으로 보낼 수 있는가. 후보가 없거나 전세면 계산 화면이 받을 계약이 없다.
+  const canCalculate = count > 0 && resolved.housingType !== "전세";
+  // 비회원은 계산 버튼과 하단 섬의 카카오 버튼을 하나로 합친다(11/23) — 둘 다 결국 카카오 로그인이라
+  // [카카오로 로그인하고 홈으로]가 파란 계산 버튼을 덮고 서 있었다. 로그인 뒤 바로 계산 화면으로 간다.
+  const mergedLogin = guest && canCalculate;
 
   return (
     <AppShell>
@@ -145,6 +155,7 @@ export default function FindPoliciesPage() {
               받는 계약 형태가 월세·연세뿐이라, 전세 부담이 얼마나 주는지 계산할
               방법이 없다. 문구만 전세용으로 바꾸면 눌러서 막히는 길이 된다. */}
           {count > 0 &&
+            !mergedLogin &&
             (resolved.housingType === "전세" ? (
               <p className="mt-8 rounded-card bg-ink-100 px-5 py-4 text-sm leading-relaxed text-ink-600">
                 전세는 아직 계산할 수 없어요. 월세·연세만 가능해요.
@@ -152,13 +163,6 @@ export default function FindPoliciesPage() {
             ) : (
               <Link
                 href="/calculate"
-                onClick={(event) => {
-                  // 월세 계산은 로그인하고 한다(11/17). 로그인 상태 · 로그인을 쓸 수 없는 빌드에서는 그냥 간다.
-                  if (isLoginAvailable() && !hasStoredLogin()) {
-                    event.preventDefault();
-                    setLoginOpen(true);
-                  }
-                }}
                 className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-press active:bg-brand-press"
               >
                 <span className="text-balance text-left text-lg font-bold leading-snug text-white">
@@ -181,16 +185,25 @@ export default function FindPoliciesPage() {
         </>
       )}
       </main>
-      {/* 지원금 탭의 첫 화면 — 로그인한 사람에게만 하단 섬이 보인다 (BottomTabBar) */}
-      <BottomTabBar active="benefit" />
-      {loginOpen && (
-        <LoginSheet
-          title="로그인하고 계산해 볼까요?"
-          description="카카오로 3초 만에 로그인하면 내 주거비를 계산하고 다른 기기에서도 이어 볼 수 있어요."
-          next="/calculate"
-          onClose={() => setLoginOpen(false)}
-        />
-      )}
+      {/* 지원금 탭의 첫 화면 — 로그인한 사람에게만 하단 섬이 보인다 (BottomTabBar).
+          월세 계산은 로그인하고 한다(11/17) — 비회원의 계산 입구는 하단 섬의 카카오 버튼 하나다. */}
+      <BottomTabBar
+        active="benefit"
+        guestAction={
+          mergedLogin
+            ? {
+                // 한 줄에 다 들어가지 않는 길이라 끊을 자리를 정해 둔다 — 맡겨 두면 '내'가 윗줄 끝에 붙는다.
+                label: (
+                  <span className="text-center leading-snug">
+                    <span className="block">카카오로 로그인하고</span>{" "}
+                    <span className="block">내 최종 주거비 확인하기</span>
+                  </span>
+                ),
+                returnTo: "/calculate",
+              }
+            : undefined
+        }
+      />
     </AppShell>
   );
 }
