@@ -9,6 +9,7 @@ import { ChevronRight, ICON_LG, ICON_MD, Settings } from "@/app/components/icons
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { formatDotDate, seoulTodayISO } from "@/lib/date";
 import { inboxItems, loadInboxSeen, markInboxSeen, noticeInboxItems, seoulDateOf, type InboxItem, type NoticeInboxItem } from "@/lib/inbox";
+import { noticeHref } from "@/lib/notice-detail";
 import { noticeDeadlineLabel, type NoticeSnapshot } from "@/lib/notices";
 import { deadlineLabel } from "@/lib/preparation";
 import { isPushConfigured } from "@/lib/push";
@@ -173,7 +174,7 @@ function NoticeInboxRow({ item, today, fresh }: { item: NoticeInboxItem; today: 
   const [, m, d] = (notice.announcedAt ?? "").split("-");
   return (
     <li>
-      <Link href="/housing" className="focus-ring flex items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-3 shadow-card">
+      <Link href={noticeHref(notice.id)} className="focus-ring flex items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-3 shadow-card">
         <Icon3D name="bankbook" size={40} />
         <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
           <span className="flex items-center gap-1.5">
