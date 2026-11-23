@@ -349,6 +349,25 @@ export function toggleSavedPolicy(id: string): boolean {
   return isSaved(next, id);
 }
 
+// ── 신청 완료 표시 (11/23 ggue) — '신청을 마쳤어요' ──
+const APPLIED_KEY = "perky.applied";
+
+/** 신청 완료로 표시한 지원금 → 표시한 날(YYYY-MM-DD). 형식이 깨졌으면 빈 값 */
+export function loadApplied(): Record<string, string> {
+  const v = readJSON<unknown>(APPLIED_KEY);
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return {};
+  return Object.fromEntries(
+    Object.entries(v as Record<string, unknown>).filter((e): e is [string, string] => /^\d{4}-\d{2}-\d{2}$/.test(String(e[1])))
+  );
+}
+
+/** 표시하기(그날 날짜) · 지우기(null). 바꿀 때마다 알린다 — 계정에 저장된다 */
+export function setApplied(policyId: string, day: string | null): void {
+  const { [policyId]: _old, ...rest } = loadApplied();
+  const next = day ? { ...rest, [policyId]: day } : rest;
+  if (writeJSONSafely(APPLIED_KEY, next)) notifyLocalChange();
+}
+
 export function loadDocumentChecks(policyId: string): string[] {
   const v = readJSON<unknown>(`${DOCUMENT_CHECKS_PREFIX}${policyId}`);
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
@@ -448,6 +467,7 @@ const SYNCED_KEYS = [
   BADGES_KEY,
   LEDGER_KEY,
   HOUSE_CHECKLIST_KEY,
+  APPLIED_KEY,
 ];
 
 /** 이 기기의 답 갈래들을 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
@@ -481,6 +501,7 @@ export function readLocalContent(): UserDataContent {
     badges: readJSON<unknown>(BADGES_KEY) ?? {},
     ledger: ledgerForSync(loadLedger()),
     houseChecklist: loadHouseChecklist(),
+    applied: readJSON<unknown>(APPLIED_KEY) ?? {},
   });
 }
 
@@ -517,6 +538,7 @@ export function writeLocalContent(content: UserDataContent): void {
     if (Object.keys(content.badges).length > 0) writeJSON(BADGES_KEY, content.badges);
     if (content.ledger) writeJSON(LEDGER_KEY, content.ledger);
     if (content.houseChecklist.length > 0) writeJSON(HOUSE_CHECKLIST_KEY, { v: 1, checked: content.houseChecklist });
+    if (Object.keys(content.applied).length > 0) writeJSON(APPLIED_KEY, content.applied);
   });
 }
 
@@ -527,12 +549,15 @@ export function writeLocalContent(content: UserDataContent): void {
  */
 export function resetAllAnswers(): void {
   // 프로필 · 배지(11/22)는 답이 아니라서 남긴다 — 사본을 비우기 전에 읽어 두었다가 다시 쓴다
+  // 신청 완료 표시(11/23)도 답이 아니라 한 일의 기록이라 남긴다
   const profileCard = loadProfileCard();
   const badges = loadBadges();
+  const applied = loadApplied();
   quietly(() => {
     clearLocalContent();
     if (profileCard) writeJSON(PROFILE_CARD_KEY, profileCard);
     if (Object.keys(badges).length > 0) writeJSON(BADGES_KEY, badges);
+    if (Object.keys(applied).length > 0) writeJSON(APPLIED_KEY, applied);
   });
   clearDeviceRecords();
   notifyLocalChange(true);

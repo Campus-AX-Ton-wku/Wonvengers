@@ -44,13 +44,17 @@ export function savedCards(
 
 export type SavedSort = "deadline" | "recent";
 
-/** 관심 탭의 보기 (11/23) — 전체 · 신청 준비 중(체크리스트를 하나라도 체크한 것, hasStartedPreparing) */
-export type SavedView = "all" | "preparing";
+/**
+ * 관심 탭의 보기 (11/23) — 전체 · 신청 준비 중(체크리스트를 하나라도 체크한 것, hasStartedPreparing) ·
+ * 신청 완료('신청을 마쳤어요'로 표시한 것, lib/applied.ts). 전체 · 신청 준비 중에는 신청 완료가 없다.
+ */
+export type SavedView = "all" | "preparing" | "applied";
 /** 내 정보 '신청 준비 중'이 여는 주소 — 관심 탭을 '신청 준비 중' 보기로 */
 export const SAVED_PREPARING_HREF = "/saved?view=preparing";
 /** 주소의 ?view= 를 보기로. 모르는 값은 전체 */
 export function savedViewFromSearch(search: string): SavedView {
-  return new URLSearchParams(search).get("view") === "preparing" ? "preparing" : "all";
+  const view = new URLSearchParams(search).get("view");
+  return view === "preparing" || view === "applied" ? view : "all";
 }
 
 /**

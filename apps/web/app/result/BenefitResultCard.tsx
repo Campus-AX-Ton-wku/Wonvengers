@@ -4,7 +4,8 @@ import { formatKoreanMoney } from "@/lib/money";
 import { ageLimitReason, benefitFormula, monthlyBreakdown, supportAgeLimit } from "@/lib/benefit";
 import { formatDeadline, type BenefitResultCardData } from "@/lib/benefit-result";
 import type { ListingInput, PolicyResult } from "@/lib/types";
-import { ExternalLink, ICON_SM } from "@/app/components/icons";
+import { CircleCheck, ExternalLink, ICON_SM } from "@/app/components/icons";
+import { appliedDayLabel } from "@/lib/applied";
 import { Disclosure, Icon3D, SaveButton, StatusBadge, buttonClass } from "@/app/components";
 
 const STATE_COPY = {
@@ -47,10 +48,13 @@ export default function BenefitResultCard({
   result,
   listing,
   birthDate,
+  appliedDay,
 }: {
   card: BenefitResultCardData;
   result: PolicyResult;
   listing: ListingInput;
+  /** '신청을 마쳤어요'로 표시한 날(11/23) — 있으면 이름 밑에 '신청 완료'. 계산(합계)은 그대로다 */
+  appliedDay?: string;
   /** 받는 동안 나이를 따지는 지원을 나이 상한 전까지만 세려고 쓴다(11/21). 판정과 같은 값이어야 금액이 맞는다 */
   birthDate?: string;
 }) {
@@ -78,6 +82,7 @@ export default function BenefitResultCard({
                 {card.title}
               </h3>
               <p className="mt-0.5 text-xs text-ink-500">{card.agency}</p>
+              {appliedDay && <AppliedTag day={appliedDay} />}
             </div>
           </div>
           <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2 -mt-1 shrink-0" />
@@ -136,6 +141,7 @@ export default function BenefitResultCard({
               {card.title}
             </h3>
             <p className="mt-1 text-xs text-ink-500">{card.agency}</p>
+            {appliedDay && <AppliedTag day={appliedDay} />}
           </div>
         </div>
         {!hasStatusRow && <SaveButton policyId={card.policyId} policyName={card.title} className="-mr-2 -mt-1 shrink-0" />}
@@ -200,5 +206,15 @@ function RequirementList({ title, items, tone }: { title: string; items: string[
         {items.map((item) => <li key={item}>{item}</li>)}
       </ul>
     </div>
+  );
+}
+
+/** 신청 완료 표시 (11/23) — 결과 화면은 계산이라 카드를 빼지 않고 표시만 한다 */
+function AppliedTag({ day }: { day: string }) {
+  return (
+    <p className="mt-1.5 inline-flex h-6 items-center gap-1 rounded-full bg-ok-50 px-2.5 text-xs font-bold text-ok-700">
+      <CircleCheck size={ICON_SM - 2} strokeWidth={2.5} aria-hidden="true" />
+      신청 완료 · {appliedDayLabel(day)}
+    </p>
   );
 }

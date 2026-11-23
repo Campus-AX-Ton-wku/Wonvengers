@@ -192,7 +192,10 @@ describe("로그인 상태", () => {
       // 주거비 달력 · 집 보기 체크리스트도 비면 빠진다(11/23)
       ledger: payload.ledger ?? null,
       houseChecklist: payload.houseChecklist ?? [],
+      // 신청 완료 표시도 없으면 빠진다(11/23)
+      applied: payload.applied ?? {},
     }).toEqual(emptyContent());
+    expect(payload).not.toHaveProperty("applied");
     expect(payload).not.toHaveProperty("saved");
     expect(payload).not.toHaveProperty("documentChecks");
     expect(payload).not.toHaveProperty("profileCard");

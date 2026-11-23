@@ -254,6 +254,32 @@ describe("runNotifier — 찜한 지원금 마감 알림 (11/20)", () => {
     expect(t.remindedOn()).toBe("2026-11-16");
   });
 
+  it("신청 완료로 표시한 관심 지원금은 마감 알림을 보내지 않는다 (11/23)", async () => {
+    const t = setup({
+      now: TEN,
+      announced: ["d7", "d1"],
+      published: [d7, d1],
+      devices: [device("a", 1)],
+      users: { a: userItem({ saved: ["d7", "d1"], applied: { d7: "2026-11-15" } }) },
+    });
+    await runNotifier(t.deps);
+    expect(t.sent).toHaveLength(1);
+    expect(t.sent[0].message).toEqual(expect.objectContaining({ url: "/find/policies/d1/prepare" }));
+  });
+
+  it("관심 지원금을 모두 신청 완료로 표시했으면 아무것도 보내지 않는다", async () => {
+    const t = setup({
+      now: TEN,
+      announced: ["d7"],
+      published: [d7],
+      devices: [device("a", 1)],
+      users: { a: userItem({ saved: ["d7"], applied: { d7: "2026-11-15" } }) },
+    });
+    const summary = await runNotifier(t.deps);
+    expect(t.sent).toEqual([]);
+    expect(summary.reminders).toEqual(expect.objectContaining({ recipients: 0 }));
+  });
+
   it("같은 날 두 번 보내지 않는다 — 10시 회차가 다시 불려도(재시도)", async () => {
     const t = setup({
       now: TEN,

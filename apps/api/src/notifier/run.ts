@@ -217,7 +217,9 @@ async function remindDeadlines(
     try {
       const item = await deps.users.get(userId);
       if (!item || !item.data.consentVersion) continue;
-      const reminders = deadlineReminders(item.data.saved ?? [], published, today);
+      // 신청 완료로 표시한 지원금(11/23)은 마감 알림을 보내지 않는다 — 이미 신청했다
+      const applied = item.data.applied ?? {};
+      const reminders = deadlineReminders((item.data.saved ?? []).filter((id) => !(id in applied)), published, today);
       if (reminders.length === 0) continue;
       result.recipients += 1;
       await deliver(deps, directory, summary, userId, devices, composeReminder(reminders));

@@ -47,6 +47,7 @@ const DATA_KEYS = [
   "badges",
   "ledger",
   "houseChecklist",
+  "applied",
   "consentVersion",
   "consentAt",
 ] as const satisfies readonly (keyof UserDataPayload)[];

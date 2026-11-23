@@ -12,6 +12,7 @@ import {
   Icon3D,
   LinkButton,
   SaveButton,
+  AppliedButton,
   StatusBadge,
   StickyBottomAction,
   TopBar,
@@ -271,6 +272,11 @@ export default function PolicyDetail({ id }: { id: string }) {
           verifiedAt={policy.verifiedAt}
           phoneCheckedAt={policy.contact?.phoneCheckedAt ?? null}
         />
+
+        {/* 신청 완료 표시(11/23 ggue) — 신청 준비 화면과 같은 버튼 */}
+        <div className="mt-6">
+          <AppliedButton policyId={policy.id} policyName={policy.name} />
+        </div>
       </main>
 
       {/* 하단은 앞으로 가는 행동만 둔다. 마감·대상 아님은 지금 할 일이 없고, '다른 혜택
