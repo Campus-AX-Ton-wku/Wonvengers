@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import policiesJson from "@/data/policies.json";
 import { AppShell, BottomTabBar, Icon3D, LinkButton, TopBar } from "@/app/components";
-import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
+import { ChevronRight, ICON_MD } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
 import { ledgerPlan, monthKeyOf, oneTimeSupports, type LedgerPlan, type LedgerRecord, type MonthKey, type OneTimeSupport } from "@/lib/ledger";
@@ -102,13 +102,8 @@ export default function LedgerPage() {
           <BeforeCalculation />
         ) : (
           <>
-            <p className="mt-1.5 text-sm leading-normal text-ink-600">계산한 값을 미리 채워 뒀어요. 내고 받을 때 눌러 주세요.</p>
             <MonthSection plan={calc.plan} record={record} month={month} todayMonth={todayMonth} onMonth={setMonth} onChange={update} />
             <OneTimeSection supports={calc.oneTime} record={record} month={month} todayMonth={todayMonth} onChange={update} />
-            <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-normal text-ink-500">
-              <Info size={ICON_SM} strokeWidth={2} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <span>기록은 계정에 저장돼요. 다른 기기에서 로그인해도 이어 볼 수 있어요.</span>
-            </p>
           </>
         )}
       </main>

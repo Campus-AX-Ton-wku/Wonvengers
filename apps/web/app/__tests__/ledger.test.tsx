@@ -214,10 +214,12 @@ describe("/ledger — 주거비 달력", () => {
     expect(within(card).getByText("나가는 돈")).toBeTruthy();
   });
 
-  it("맨 아래 안내 한 줄, 하단 섬은 '달력'에 불", async () => {
+  it("덧붙인 안내 줄 없음(ggue 11/23), 하단 섬은 '달력'에 불", async () => {
     calculated();
     render(<LedgerPage />);
-    expect(await screen.findByText("기록은 계정에 저장돼요. 다른 기기에서 로그인해도 이어 볼 수 있어요.")).toBeTruthy();
+    await screen.findByRole("heading", { level: 1, name: "주거비 달력" });
+    expect(screen.queryByText(/기록은 계정에 저장돼요/)).toBeNull();
+    expect(screen.queryByText(/미리 채워 뒀어요/)).toBeNull();
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
     expect(within(nav).getByRole("link", { name: "달력" }).getAttribute("aria-current")).toBe("page");
   });

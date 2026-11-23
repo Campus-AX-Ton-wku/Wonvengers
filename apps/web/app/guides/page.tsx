@@ -10,7 +10,6 @@ export default function GuidesPage() {
       <TopBar backHref="/home" />
       <main className="flex flex-col gap-4 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">주거 가이드</h1>
-        <p className="text-[15px] leading-relaxed text-ink-600">처음 집을 구할 때 놓치기 쉬운 것만 짧게 모았어요.</p>
         <ul className="flex flex-col gap-3">
           {/* 집 보러 갈 때 체크리스트(11/22) — 계약 전에 가장 먼저 쓰는 것이라 맨 위 */}
           <li>

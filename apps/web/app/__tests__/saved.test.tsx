@@ -53,7 +53,7 @@ describe("/saved — 관심 탭", () => {
     expect([...card.querySelectorAll("img[data-icon3d]")].map((img) => img.getAttribute("data-icon3d"))).toEqual(["housing-benefit"]);
     const closed = within(list).getByRole("link", { name: /청년월세 지원/ });
     expect(within(closed).getByText("접수 마감")).toBeTruthy();
-    expect(within(closed).getByText(/다음 공고를 기다려요/)).toBeTruthy();
+    expect(within(closed).queryByText(/다음 공고를 기다려요/)).toBeNull(); // 덧붙인 설명은 뺐다 (ggue 11/23)
   });
 
   it("하단 섬에서 '관심'이 지금 화면이다", async () => {

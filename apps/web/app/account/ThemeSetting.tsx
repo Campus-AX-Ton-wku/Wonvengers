@@ -49,7 +49,6 @@ export function ThemeSetting() {
           );
         })}
       </div>
-      <p className="text-xs leading-relaxed text-ink-500">기기 설정을 고르면 휴대폰이 어두운 모드일 때 같이 어두워져요. 이 기기에만 저장돼요.</p>
     </section>
   );
 }
