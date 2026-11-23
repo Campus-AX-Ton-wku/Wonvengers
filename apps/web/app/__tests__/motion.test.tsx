@@ -59,7 +59,7 @@ describe("2. 배지 받는 순간", () => {
     act(() => saveSavedList([POLICY.id]));
     const sheet = await screen.findByRole("dialog", { name: "‘첫 관심’ 배지를 받았어요" });
     expect(sheet.querySelector(".badge-earned [data-badge='first_save']")).not.toBeNull();
-    expect(sheet.querySelector(".badge-ring")).not.toBeNull();
+    expect(sheet.querySelectorAll(".badge-ring")).toHaveLength(2);
   });
 });
 
@@ -88,11 +88,14 @@ describe("4. 체크할 때", () => {
     }
     const first = render(<Row initial />);
     expect(screen.getByText("확인함").closest(".check-in")).toBeNull();
+    expect(document.querySelector(".check-flash")).toBeNull();
     first.unmount();
 
     render(<Row initial={false} />);
     await userEvent.setup().click(screen.getByRole("checkbox", { name: /수압 · 물 빠짐/ }));
     expect(screen.getByText("확인함").closest(".check-in")).not.toBeNull();
+    // 누른 줄은 한 번 반짝인다
+    expect(screen.getByRole("checkbox", { name: /수압 · 물 빠짐/ }).closest("label")!.querySelector(".check-flash")).not.toBeNull();
   });
 });
 
@@ -100,7 +103,7 @@ describe("동작 줄이기", () => {
   it("휴대폰에서 '동작 줄이기'를 켜면 네 곳 모두 움직이지 않는다", () => {
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
     const reduce = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
-    for (const name of [".sheet-in", ".sheet-backdrop", ".badge-earned", ".badge-ring", ".heart-pop", ".check-in"]) {
+    for (const name of [".sheet-in", ".sheet-backdrop", ".badge-earned", ".badge-ring", ".heart-pop", ".heart-pop::after", ".check-in", ".check-flash"]) {
       expect(reduce, name).toContain(name);
     }
   });
