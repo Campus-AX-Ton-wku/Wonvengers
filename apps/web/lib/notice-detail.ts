@@ -17,8 +17,9 @@ export interface NoticeComplex {
 export interface NoticeHouseType {
   /** "59.85㎡ A" (전용면적) */
   type: string;
-  general: number;
-  special: number;
+  /** 세대 수, 모르면 null(0 과 다르다) */
+  general: number | null;
+  special: number | null;
   /** 원(청약홈 만원 × 1만), 없으면 null */
   topPrice: number | null;
 }

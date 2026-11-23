@@ -33,7 +33,10 @@ const fx = vi.hoisted(() => {
             schedule: [{ label: "1순위", start: day(1), end: null }],
             facts: [{ label: "입주 예정", value: "2030년 2월" }],
             complexes: [],
-            houseTypes: [{ type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 }],
+            houseTypes: [
+              { type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 },
+              { type: "104.9996㎡", general: null, special: null, topPrice: 520_000_000 },
+            ],
             contact: null,
           },
         }),
@@ -74,6 +77,8 @@ describe("/housing/notice — 청약 공고 상세", () => {
     const table = await screen.findByRole("table", { name: /주택형별 공급금액/ });
     expect(within(table).getByText("59.85㎡ A")).toBeTruthy();
     expect(within(table).getByText("3억 7,807만원")).toBeTruthy();
+    expect(within(table).getByText("11 · 12세대")).toBeTruthy();
+    expect(within(table).getByText("공고문 확인")).toBeTruthy(); // 세대 수를 모르면 0 이 아니라
     expect(within(table).getByRole("columnheader", { name: "최고 공급금액" })).toBeTruthy();
     expect(screen.getByText("2030년 2월")).toBeTruthy();
     expect(screen.queryByRole("region", { name: "단지" })).toBeNull();

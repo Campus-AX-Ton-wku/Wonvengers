@@ -18,6 +18,8 @@ export function ymd(raw) {
 }
 
 const won = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
+/** 세대 수 — 0 은 그대로, 빈 값 · "null" 은 null(0 으로 만들지 않는다 — F0-5) */
+const count = (v) => (v === null || v === undefined || String(v).trim() === "" || !(Number(v) >= 0) ? null : Number(v));
 const range = (label, s, e) => {
   const start = ymd(s);
   if (!start) return null;
@@ -51,7 +53,7 @@ function myhomeDetail(row, kind) {
       },
     ],
     houseTypes: null,
-    contact: refrnc ? { department: refrnc, phone: refrnc.match(/\d{2,4}-\d{3,4}-\d{4}|1\d{3}-\d{4}/)?.[0] ?? null, url: null } : null,
+    contact: refrnc ? { department: refrnc, phone: refrnc.match(/(?<!\d)(?:\d{2,4}-\d{3,4}-\d{4}|1\d{3}-\d{4})(?!\d)/)?.[0] ?? null, url: null } : null,
   };
 }
 
@@ -215,8 +217,8 @@ export function fromApplyhomeModels(json) {
       const price = won(r.LTTOT_TOP_AMOUNT);
       return {
         type: m ? `${Number(m[1])}㎡${m[2] ? ` ${m[2]}` : ""}` : String(r.HOUSE_TY ?? "").trim(),
-        general: Number(r.SUPLY_HSHLDCO) || 0,
-        special: Number(r.SPSPLY_HSHLDCO) || 0,
+        general: count(r.SUPLY_HSHLDCO),
+        special: count(r.SPSPLY_HSHLDCO),
         topPrice: price === null ? null : price * 10_000,
       };
     });
@@ -230,7 +232,10 @@ async function applyhomeModels(fetchJson, key, id) {
   u.searchParams.set("perPage", String(ROWS)); // 한 단지 주택형은 100개를 넘지 않는다. totalCount 는 전체 표 수라 쓰지 않는다
   u.searchParams.set("cond[HOUSE_MANAGE_NO::EQ]", manageNo);
   u.searchParams.set("cond[PBLANC_NO::EQ]", pblancNo);
-  return fromApplyhomeModels(await fetchJson(u.toString()));
+  const json = await fetchJson(u.toString());
+  // 조건을 무시한 줄이 섞여도 남의 단지 금액이 이 공고 표에 들어가지 않게 (목록 API 는 지역 조건을 무시했다 — 맨 위 주석)
+  const rows = Array.isArray(json?.data) ? json.data.filter((r) => String(r.HOUSE_MANAGE_NO) === manageNo && String(r.PBLANC_NO) === pblancNo) : json?.data;
+  return fromApplyhomeModels({ ...json, data: rows });
 }
 
 /** 네 목록을 모두 받아 합친다. 하나라도 실패하면 던진다(부르는 쪽이 지난 스냅숏을 지킨다). */

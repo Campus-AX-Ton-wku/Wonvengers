@@ -94,7 +94,11 @@ describe("받아 오기 (collectNotices)", () => {
     if (u.pathname.endsWith("/getAPTLttotPblancDetail")) return { data: [applyhomeRow(), applyhomeRow({ HOUSE_MANAGE_NO: "9", HSSPLY_ADRES: "전주시" })], totalCount: 2 };
     if (u.pathname.endsWith("/getRemndrLttotPblancDetail")) return { data: [], totalCount: 0 };
     if (u.pathname.endsWith("/getAPTLttotPblancMdl"))
-      return { data: [{ MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" }], totalCount: 15094 };
+      return { data: [
+        { HOUSE_MANAGE_NO: "2026000123", PBLANC_NO: "2026000123", MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" },
+        // 조건을 무시하고 다른 단지 줄이 섞여 와도 이 공고 표에 넣지 않는다 (리뷰 — 금액이 남의 단지 것이 되면 안 된다)
+        { HOUSE_MANAGE_NO: "2026000999", PBLANC_NO: "2026000999", MODEL_NO: "01", HOUSE_TY: "084.0000A", SUPLY_HSHLDCO: 5, SPSPLY_HSHLDCO: 5, LTTOT_TOP_AMOUNT: "99999" },
+      ], totalCount: 15094 };
     throw new Error(`예상 못 한 주소 ${u.pathname}`);
   };
   it("네 목록을 받아 익산만 합친다 — 마이홈은 익산 코드(52 · 140), 청약홈은 공급지역 전북", async () => {
@@ -189,6 +193,10 @@ describe("상세 (detail)", () => {
     expect(n.detail.contact).toEqual({ department: "견본주택", phone: "063-858-1118", url: "https://www.두산위브트레지움익산.com" });
     expect(n.detail.complexes).toEqual([]);
   });
+  it("마이홈 문의 — 숫자가 더 붙은 번호는 잘라 걸지 않는다 (리뷰)", () => {
+    expect(fromMyhome(myhomeRow({ refrnc: "관리사무소 063-1234-56789" }), "공공임대").detail.contact.phone).toBeNull();
+    expect(fromMyhome(myhomeRow({ refrnc: "관리사무소(063-859-5745)" }), "공공임대").detail.contact.phone).toBe("063-859-5745");
+  });
   it("전화번호 모양 — 모르는 모양은 null(틀린 번호를 걸지 않는다)", () => {
     expect(telLabel("0638581118")).toBe("063-858-1118");
     expect(telLabel("0212345678")).toBe("02-1234-5678");
@@ -205,10 +213,13 @@ describe("주택형 (getAPTLttotPblancMdl)", () => {
       { MODEL_NO: "02", HOUSE_TY: "059.8500B", SUPLY_HSHLDCO: 31, SPSPLY_HSHLDCO: 37, LTTOT_TOP_AMOUNT: "35289" },
       { MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" },
       { MODEL_NO: "03", HOUSE_TY: "084.8800 ", SUPLY_HSHLDCO: 73, SPSPLY_HSHLDCO: 0, LTTOT_TOP_AMOUNT: "" },
+      { MODEL_NO: "04", HOUSE_TY: "104.9996 ", SUPLY_HSHLDCO: "", SPSPLY_HSHLDCO: null, LTTOT_TOP_AMOUNT: "52000" },
     ] })).toEqual([
       { type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 },
       { type: "59.85㎡ B", general: 31, special: 37, topPrice: 352_890_000 },
       { type: "84.88㎡", general: 73, special: 0, topPrice: null },
+      // 빈 세대 수를 0 으로 만들지 않는다 — '특별 0세대'는 확인 안 된 값이다 (리뷰 Important-1, F0-5)
+      { type: "104.9996㎡", general: null, special: null, topPrice: 520_000_000 },
     ]);
     expect(() => fromApplyhomeModels({ currentCount: 0 })).toThrow();
   });

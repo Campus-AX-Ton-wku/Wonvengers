@@ -122,7 +122,7 @@ function Detail({ notice, today }: { notice: DetailedNotice; today: string }) {
                 {d.houseTypes.map((t) => (
                   <tr key={t.type} className="border-t border-ink-100">
                     <td className="whitespace-nowrap py-2 pr-3 font-bold text-ink-900">{t.type}</td>
-                    <td className="whitespace-nowrap py-2 pr-3 text-ink-600">{`${t.general} · ${t.special}세대`}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-ink-600">{t.general === null || t.special === null ? "공고문 확인" : `${t.general} · ${t.special}세대`}</td>
                     <td className="whitespace-nowrap py-2 text-right font-bold text-ink-900">{t.topPrice === null ? "공고문 확인" : formatKoreanMoney(t.topPrice)}</td>
                   </tr>
                 ))}
