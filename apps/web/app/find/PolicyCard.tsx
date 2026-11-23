@@ -80,7 +80,7 @@ export default function PolicyCard({
     <div className="relative">
     <Link
       href={`/find/policies/${policy.id}`}
-      className="focus-ring block rounded-card bg-surface py-5 pl-5 pr-14 shadow-card transition-transform hover:-translate-y-0.5 active:translate-y-0"
+      className="press focus-ring block rounded-card bg-surface py-5 pl-5 pr-14 shadow-card"
     >
       {/* 색만으로 상태를 말하지 않는다 — 배지마다 아이콘이 하나씩 붙는다. */}
       <div className="flex flex-wrap items-center gap-1.5">

@@ -21,7 +21,7 @@ export function MyRecords({ saved, preparing, ledgerMonths }: { saved: number; p
           <li key={row.label}>
             <Link
               href={row.href}
-              className="focus-ring flex min-h-[76px] flex-col justify-between gap-1 rounded-control bg-surface px-3 py-3 shadow-card"
+              className="press focus-ring flex min-h-[76px] flex-col justify-between gap-1 rounded-control bg-surface px-3 py-3 shadow-card"
             >
               <span className="text-xs font-semibold text-ink-600">{row.label}</span>
               <span className="flex items-center justify-between gap-1">

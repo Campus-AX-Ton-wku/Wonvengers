@@ -4,6 +4,7 @@ import { useEffect, useState, type MouseEvent } from "react";
 import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
 import { isSaved } from "@/lib/saved";
 import { loadSaved, onLocalChange, toggleSavedPolicy } from "@/lib/storage";
+import { showToast } from "@/lib/toast";
 import { Heart, ICON_MD } from "./icons";
 import { LoginSheet } from "./LoginSheet";
 
@@ -37,6 +38,13 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
     const next = toggleSavedPolicy(policyId);
     setSaved(next);
     if (next) setPop((n) => n + 1);
+    // 담은 뒤 아래 알림(11/23, 토스 영상 #3) — 관심 화면에서는 '보러가기'가 필요 없다
+    const onSavedPage = window.location.pathname.replace(/\/$/, "") === "/saved";
+    showToast(
+      next
+        ? { message: "관심 지원금에 담았어요", ...(onSavedPage ? {} : { action: { label: "보러가기", href: "/saved" } }) }
+        : { message: "관심에서 뺐어요" }
+    );
   }
 
   return (

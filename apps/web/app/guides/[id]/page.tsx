@@ -39,7 +39,7 @@ export default async function GuidePage({ params }: { params: Promise<{ id: stri
               <li key={section.keyword} className="border-b border-ink-100 last:border-b-0">
                 <Link
                   href={`/guides/${guide.id}/${i + 1}`}
-                  className="focus-ring flex min-h-19 items-center gap-3.5 py-3.5 pl-4 pr-3.5"
+                  className="press-row focus-ring flex min-h-19 items-center gap-3.5 py-3.5 pl-4 pr-3.5"
                 >
                   <span
                     aria-hidden="true"
