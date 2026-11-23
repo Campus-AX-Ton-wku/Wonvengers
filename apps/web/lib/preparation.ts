@@ -30,6 +30,14 @@ export function pageProgress(policy: PolicyMeta, checklist: ChecklistState, chec
   return { done: fixed + documentsDone(policy, checked), total: 2 + docs.length };
 }
 
+/**
+ * 신청 준비 중 — 체크리스트에서 하나라도 체크한 지원금 (다 체크한 것도 포함 — 실제로 신청했는지는 앱이 모른다).
+ * 내 정보 '신청 준비 중 n개'와 관심 화면 '신청 준비 중' 보기가 같은 기준을 쓴다 (ggue 11/23).
+ */
+export function hasStartedPreparing(policy: PolicyMeta, checklist: ChecklistState, checked: readonly string[]): boolean {
+  return pageProgress(policy, checklist, checked).done > 0;
+}
+
 const DAY = 86_400_000;
 
 export function deadlineLabel(policy: PolicyMeta, todayISO: string): string {

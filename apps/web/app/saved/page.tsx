@@ -7,7 +7,8 @@ import { AppShell, BottomTabBar, DeadlineBadge, Icon3D, LinkButton, TopBar } fro
 import { ChevronRight, FileText, Heart, ICON_MD, ICON_SM, ListChecks } from "@/app/components/icons";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
-import { isClosedDeadline, savedCards, sortSavedCards, type SavedCard, type SavedSort } from "@/lib/home";
+import { isClosedDeadline, savedCards, savedViewFromSearch, sortSavedCards, type SavedCard, type SavedSort, type SavedView } from "@/lib/home";
+import { hasStartedPreparing } from "@/lib/preparation";
 import { replacePage } from "@/lib/redirect";
 import { loadChecklist, loadDocumentChecks, loadSaved, onLocalChange } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
@@ -19,12 +20,15 @@ const policies = policiesJson as PolicyMeta[];
  * 찜은 로그인한 사람만 쓸 수 있어서(SaveButton) 홈과 같이 로그인 기록이 없으면 온보딩으로 보낸다.
  * 카드 모양 · 진행 막대는 홈에 있을 때 그대로다 (lib/home.ts savedCards).
  * 정렬은 '마감 가까운 순'이 기본, '최근 찜한 순'으로 바꿀 수 있다 (sortSavedCards). 고른 정렬은 이 화면에서만 산다.
+ * 보기는 '전체' · '신청 준비 중'(체크리스트를 하나라도 체크한 것, 11/23 ggue) — 내 정보 '신청 준비 중'은 ?view=preparing 으로 연다.
+ * 고른 보기는 주소에 남겨(replaceState, 기록 안 쌓음) 카드를 눌렀다 뒤로 와도 같은 보기다.
  */
 export default function SavedPage() {
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
   const [today, setToday] = useState("");
   const [sort, setSort] = useState<SavedSort>("deadline");
+  const [view, setView] = useState<SavedView>("all");
 
   useEffect(() => {
     const leave = () => replacePage("/onboarding");
@@ -32,6 +36,7 @@ export default function SavedPage() {
       leave();
       return;
     }
+    setView(savedViewFromSearch(window.location.search));
     const read = () => {
       setToday(seoulTodayISO());
       setSaved(loadSaved());
@@ -64,17 +69,25 @@ export default function SavedPage() {
     );
   }
 
-  const cards = sortSavedCards(savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks }), sort, today);
+  const all = savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks });
+  const preparing = all.filter(({ policy }) => hasStartedPreparing(policy, loadChecklist(policy.id), loadDocumentChecks(policy.id)));
+  const cards = sortSavedCards(view === "preparing" ? preparing : all, sort, today);
+  const title = view === "preparing" ? "신청 준비 중" : "관심 지원금";
+  const changeView = (next: SavedView) => {
+    setView(next);
+    window.history.replaceState(window.history.state, "", next === "preparing" ? "?view=preparing" : window.location.pathname);
+  };
 
   return (
     <AppShell>
       <TopBar />
       <main className="flex flex-col gap-4 pb-10 pt-2.5">
         <h1 className="text-2xl font-extrabold leading-snug text-ink-900">관심</h1>
-        <section aria-label="관심 지원금" className="flex flex-col gap-3">
+        {all.length > 0 && <ViewTabs value={view} onChange={changeView} counts={{ all: all.length, preparing: preparing.length }} />}
+        <section aria-label={title} className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-bold text-ink-700">
-              관심 지원금
+              {title}
               {cards.length > 0 && (
                 <>
                   <span className="sr-only"> </span>
@@ -87,8 +100,10 @@ export default function SavedPage() {
             </h2>
             {cards.length > 1 && <SortChips value={sort} onChange={setSort} />}
           </div>
-          {cards.length === 0 ? (
+          {all.length === 0 ? (
             <EmptySaved />
+          ) : cards.length === 0 ? (
+            <EmptyPreparing onShowAll={() => changeView("all")} />
           ) : (
             <ul className="flex flex-col gap-3">
               {cards.map((card) => (
@@ -100,6 +115,62 @@ export default function SavedPage() {
       </main>
       <BottomTabBar active="saved" />
     </AppShell>
+  );
+}
+
+/**
+ * 보기 두 칸 — 전체 · 신청 준비 중 (11/23). 정렬 칩(작은 알약)과 헷갈리지 않게 화면 폭을 채우는 두 칸 막대로,
+ * 고른 칸은 흰 면 + 그림자. 관심 지원금이 하나도 없으면 두지 않는다(빈 안내 하나만).
+ */
+function ViewTabs({ value, onChange, counts }: { value: SavedView; onChange: (view: SavedView) => void; counts: Record<SavedView, number> }) {
+  const options: { value: SavedView; label: string }[] = [
+    { value: "all", label: "전체" },
+    { value: "preparing", label: "신청 준비 중" },
+  ];
+  return (
+    <div role="group" aria-label="보기" className="grid grid-cols-2 gap-1 rounded-control bg-ink-100 p-1">
+      {options.map((option) => {
+        const on = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(option.value)}
+            className={`focus-ring inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] text-sm font-bold transition-colors ${
+              on ? "bg-surface text-ink-900 shadow-btn-quiet" : "text-ink-600 hover:text-ink-900"
+            }`}
+          >
+            {option.label}
+            <span className={on ? "text-brand-700" : "text-ink-500"}>{counts[option.value]}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** '신청 준비 중' 보기가 비었을 때 — 관심 지원금은 있지만 아직 아무것도 체크하지 않았다 */
+function EmptyPreparing({ onShowAll }: { onShowAll: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-card border border-brand-200 bg-surface px-5 pb-6 pt-7 text-center">
+      <span aria-hidden="true" className="empty-pop flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+        <ListChecks size={ICON_MD} />
+      </span>
+      <p className="mt-1 text-base font-bold text-ink-900">아직 준비를 시작한 지원금이 없어요</p>
+      <p className="text-sm leading-relaxed text-ink-600">
+        관심 지원금을 눌러 체크리스트를 하나라도 체크하면
+        <br />
+        여기에 모여요
+      </p>
+      <button
+        type="button"
+        onClick={onShowAll}
+        className="press focus-ring mt-3 inline-flex min-h-11 items-center rounded-full bg-surface px-5 text-sm font-bold text-ink-700 shadow-btn-quiet"
+      >
+        관심 지원금 전체 보기
+      </button>
+    </div>
   );
 }
 

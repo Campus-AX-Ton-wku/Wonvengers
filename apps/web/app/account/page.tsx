@@ -11,7 +11,7 @@ import { flushNow, hasUnsyncedChanges, logout, retrySync, syncEnabled, useSyncSt
 import { ThemeSetting } from "./ThemeSetting";
 import policiesJson from "@/data/policies.json";
 import { seoulTodayISO } from "@/lib/date";
-import { pageProgress } from "@/lib/preparation";
+import { hasStartedPreparing } from "@/lib/preparation";
 import {
   EMPTY_ANSWERS,
   loadAnswers,
@@ -44,14 +44,13 @@ interface Mine {
   earned: Partial<Record<BadgeId, string>>;
 }
 
-/** 내 기록 · 프로필에 쓰는 이 기기 값. 신청 준비 중 = 관심 지원금 중 하나라도 체크했지만 다 마치지 않은 것 */
+/** 내 기록 · 프로필에 쓰는 이 기기 값. 신청 준비 중 = 관심 지원금 중 체크리스트를 하나라도 체크한 것 (hasStartedPreparing, 11/23) */
 function readMine(today: string): Mine {
   const saved = loadSaved();
   const preparing = saved.filter((id) => {
     const policy = POLICIES.find((x) => x.id === id);
     if (!policy) return false;
-    const { done, total } = pageProgress(policy, loadChecklist(id), loadDocumentChecks(id));
-    return done > 0 && done < total;
+    return hasStartedPreparing(policy, loadChecklist(id), loadDocumentChecks(id));
   }).length;
   const ledgerMonths = Object.values(loadLedger().months).filter((m) => Object.keys(m.done).length > 0).length;
   return {

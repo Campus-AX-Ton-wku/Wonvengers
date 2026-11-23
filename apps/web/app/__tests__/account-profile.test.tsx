@@ -102,7 +102,7 @@ describe("/account 내 정보 — 프로필 카드", () => {
 });
 
 describe("/account 내 정보 — 내 기록", () => {
-  it("관심 지원금 · 신청 준비 중 · 달력 기록 개수, 누르면 관심 · 관심 · 달력 탭 (금액은 안 보인다)", async () => {
+  it("관심 지원금 · 신청 준비 중 · 달력 기록 개수, 누르면 관심 · 관심(신청 준비 중 보기) · 달력 탭 (금액은 안 보인다)", async () => {
     const [a, b] = (policiesJson as PolicyMeta[]).map((p) => p.id);
     saveSavedList([a, b]);
     saveChecklist(a, { eligibility: true, period: false, documents: false });
@@ -110,7 +110,8 @@ describe("/account 내 정보 — 내 기록", () => {
     로그인한채로();
     const records = await screen.findByRole("region", { name: "내 기록" });
     expect(within(records).getByRole("link", { name: /관심 지원금\s*2개/ }).getAttribute("href")).toBe("/saved");
-    expect(within(records).getByRole("link", { name: /신청 준비 중\s*\d개/ }).getAttribute("href")).toBe("/saved");
+    // 신청 준비 중 = 체크리스트를 하나라도 체크한 관심 지원금 (11/23) — a 하나
+    expect(within(records).getByRole("link", { name: /신청 준비 중\s*1개/ }).getAttribute("href")).toBe("/saved?view=preparing");
     expect(within(records).getByRole("link", { name: /달력 기록\s*1달/ }).getAttribute("href")).toBe("/ledger");
     expect(records.textContent).not.toMatch(/\d\s*(만\s*)?원/); // 금액(… 원)은 없다 — "지원금"의 원은 아니다
   });
