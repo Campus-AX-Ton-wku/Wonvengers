@@ -175,6 +175,123 @@ export const GUIDES: Guide[] = [
       { name: "국토교통부 실거래가 공개시스템", url: "https://rt.molit.go.kr" },
     ],
   },
+  /**
+   * 전세사기 피하는 법 (11/23). 시세 · 등기부 · 건축물대장 · 보증보험은 '계약 전에 꼭 볼 것'에 이미 있어 되풀이하지 않고,
+   * 그걸 다 해도 당하는 수법만 담았다 — HUG 안심전세포털 '전세사기 유형별 사례 및 대처방안'(step 1~7)에서 골랐다.
+   * 미납국세를 집주인 동의 없이 열람하는 길(국세징수법)은 원문을 못 열어 넣지 않았다(F0-5).
+   * 신탁원부는 HUG 가 '등기소에서 직접'이라고 하지만 온라인 발급 여부를 확인 못 해 '등기소'만 적었다.
+   */
+  {
+    id: "avoid-jeonse-fraud",
+    title: "전세사기 피하는 법",
+    summary: "서류를 다 봐도 당하는 수법들",
+    icon: "jeonse",
+    checkedAt: "2026-11-23",
+    sections: [
+      {
+        keyword: "신탁",
+        title: "등기부에 '신탁'이 보이면 멈춰요",
+        lead: "등기부 주인 칸(갑구)에 '신탁'이 적혀 있는지 봐요.",
+        body: [
+          "신탁은 집주인이 집을 신탁회사에 맡긴 거예요. 이러면 집의 진짜 주인(소유권)은 신탁회사로 넘어가요.",
+          "신탁된 집은 신탁회사가 동의해야 빌려줄 수 있어요. 동의 없이 집주인과만 계약하면 계약 자체가 무효가 될 수 있고, 쫓겨날 수도 있어요.",
+          "신탁이 적혀 있으면 '신탁원부'를 따로 떼서 누가 이 집을 빌려줄 권한이 있는지 확인해요. 읽기 어려우니 전문가 도움을 받거나, 다른 집을 먼저 알아보는 게 좋아요.",
+        ],
+        where: [{ name: "가까운 등기소", note: "신탁원부 떼기" }],
+        whereLabel: "어디서 떼요",
+        links: [{ label: "등기부 보는 법 먼저 보기", href: "/guides/before-contract/2" }],
+        terms: [
+          {
+            term: "신탁원부",
+            meaning: "맡긴 사람(위탁자) · 맡은 회사(수탁자), 신탁의 목적, 관리 방법 등이 적힌 서류예요. 누가 이 집을 빌려줄 권한이 있는지 알 수 있어요.",
+          },
+        ],
+      },
+      {
+        keyword: "중개사무소",
+        title: "이 중개사무소, 등록된 곳인가요?",
+        lead: "시 · 군 · 구청에 등록된 중개사무소에서 계약해요.",
+        body: [
+          "사무소 안에 걸린 중개사무소등록증, 공인중개사 자격증, 사업자등록증을 먼저 봐요.",
+          "등록된 곳인지, 등록증이 위조되지 않았는지는 시 · 군 · 구청 중개업무 담당 부서나 씨:리얼에서 확인할 수 있어요.",
+          "사무소에 걸린 '보증의 설정 증명서류'로 보증보험이나 공제에 들어 있는지도 봐요.",
+        ],
+        where: [
+          { name: "씨:리얼", url: "https://seereal.lh.or.kr/", note: "LH 부동산 정보 포털. '부동산중개업조회' 메뉴에서 찾아요" },
+          { name: "시 · 군 · 구청 중개업무 담당 부서" },
+        ],
+        caution: "중개사가 집주인 대신 계약하면, 집주인이 맡겼다는 위임장과 인감증명서를 꼭 확인해요.",
+      },
+      {
+        keyword: "집주인 정보",
+        title: "집주인이 꼭 보여 줘야 하는 두 가지",
+        lead: "계약할 때 집주인에게 확정일자 정보와 납세증명서를 보여 달라고 해요.",
+        body: [
+          "법에 따라 집주인은 계약할 때 두 가지를 보여 줘야 해요. 이 집의 확정일자 · 보증금 · 월세 정보, 그리고 국세 · 지방세 납세증명서예요.",
+          "한 건물에 세입자가 여럿이면, 나보다 먼저 번호표(확정일자)를 받은 세입자의 보증금이 내 앞줄에 서요. 집주인 동의를 받으면 주민센터 같은 확정일자 부여기관에서 직접 열람할 수도 있어요.",
+          "집주인이 세금을 밀린 채 집이 경매로 넘어가면, 그 세금이 내 보증금보다 먼저 돈을 가져갈 수 있어요. 집주인이 계약 전에 미납 세금 열람에 동의하면 납세증명서 대신 그걸로 확인해도 돼요.",
+        ],
+        where: [{ name: "주민센터 · 등기소", note: "집주인 동의를 받아 확정일자 정보 열람" }],
+        caution: "등기부에 '압류', '가압류', '강제경매개시결정' 같은 말이 보이면 피해요.",
+        terms: [
+          {
+            term: "선순위 보증금",
+            meaning: "나보다 먼저 우선변제권(대항력 + 확정일자)을 갖춘 세입자의 보증금이에요. 집이 경매로 넘어가면 내 보증금보다 먼저 돌려받아요.",
+          },
+        ],
+      },
+      {
+        keyword: "계약 당일",
+        title: "깃발은 다음 날, 은행 빚은 그날 바로",
+        lead: "잔금 치르기 직전에 등기부를 한 번 더 떼요.",
+        body: [
+          "전입신고(깃발)의 힘은 다음 날 0시부터 생겨요. 그런데 집주인이 집을 팔거나 대출(근저당)을 받으면 그날 바로 효력이 생겨요.",
+          "이 하루 차이를 노려, 계약한 날 집주인을 바꾸거나 대출을 받는 수법이 있어요. 그러면 은행 빚이 내 보증금보다 앞줄에 서요.",
+          "잔금 전에 뗀 등기부에 '신청사건 처리 중'이라고 적혀 있으면 잔금을 멈추고, 무슨 등기가 들어왔는지부터 확인해요. 이사하고 2~3일 뒤에도 한 번 더 봐요.",
+        ],
+        where: [{ name: "대법원 인터넷등기소", url: "https://www.iros.go.kr/" }],
+        whereLabel: "어디서 떼요",
+        caution: "계약서에 '계약한 날 다음 날까지 집주인을 바꾸거나 근저당을 잡지 않는다'는 특약을 넣어요.",
+      },
+      {
+        keyword: "전출 요구",
+        title: "전입신고 잠깐 빼 달라고 하면 거절해요",
+        lead: "집주인이 무엇을 부탁하든, 사는 동안 전입신고를 빼지 않아요.",
+        body: [
+          "'대출받는 날 잠깐만 주소를 옮겨 달라'는 부탁으로 시작하는 수법이 있어요.",
+          "전출신고를 하는 순간 깃발(대항력)이 사라져요. 그사이 잡힌 빚이나 새로 바뀐 집주인이 나보다 앞서게 돼서, 보증금을 돌려받지 못할 수 있어요.",
+        ],
+      },
+      {
+        keyword: "피해 지원",
+        title: "이미 당했다면 혼자 버티지 마요",
+        lead: "보증금을 못 돌려받을 것 같으면 상담부터 받고, 전세사기 피해자 결정을 신청해요.",
+        body: [
+          "주택도시보증공사(HUG) 전세피해 및 예방지원센터에서 법률상담과 피해 접수를 예약할 수 있어요.",
+          "전세사기 피해자로 인정받으려면 결정 신청을 해요. 전세사기피해자 지원관리시스템에서 온라인으로 하거나, 사는 곳의 시 · 도에 찾아가서 해요.",
+          "피해자로 결정되면 이 센터에서 받을 수 있는 지원을 자세히 안내받아요.",
+        ],
+        where: [
+          { name: "HUG 전세피해 및 예방지원센터", url: "https://www.khug.or.kr/jeonse/web/s01/s010001.jsp", note: "지역 센터 위치 · 전화번호" },
+          { name: "전세사기피해자 지원관리시스템", url: "https://jeonse.kgeop.go.kr/", note: "피해자 결정 온라인 신청" },
+          { name: "사는 곳의 시 · 도청", note: "피해자 결정 방문 신청" },
+        ],
+        links: [{ label: "보증금 못 받고 이사해야 한다면", href: "/guides/protect-deposit/5" }],
+      },
+    ],
+    sources: [
+      { name: "주택도시보증공사 안심전세포털", topic: "전세사기 유형별 사례 및 대처방안", url: "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp" },
+      { name: "주택도시보증공사 안심전세포털", topic: "신탁회사의 동의 없는 계약", url: "https://www.khug.or.kr/jeonse/web/s02/s020302.jsp" },
+      { name: "주택도시보증공사 안심전세포털", topic: "계약 당일 임대인 변경·주택담보대출 실행", url: "https://www.khug.or.kr/jeonse/web/s02/s020501.jsp" },
+      { name: "주택도시보증공사 안심전세포털", topic: "미납국세·임금채권 우선 변제", url: "https://www.khug.or.kr/jeonse/web/s02/s020601.jsp" },
+      { name: "주택도시보증공사 안심전세포털", topic: "세입자의 전출신고 후 벌어지는 전세사기", url: "https://www.khug.or.kr/jeonse/web/s02/s020602.jsp" },
+      { name: "찾기쉬운 생활법령", topic: "확정일자 등 확인(임대인의 정보 제시 의무)", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629&ccfNo=2&cciNo=1&cnpClsNo=1" },
+      { name: "찾기쉬운 생활법령", topic: "임대차계약의 당사자 확인(개업공인중개사)", url: "https://m.easylaw.go.kr/MOB/CsmInfoRetrieve.laf?csmSeq=629&ccfNo=2&cciNo=2&cnpClsNo=1" },
+      { name: "정책브리핑", topic: "전세사기피해자 결정신청 온라인 접수", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148928507" },
+      { name: "정책브리핑", topic: "피해자 결정 뒤 전세피해지원센터 안내", url: "https://www.korea.kr/news/policyNewsView.do?newsId=148924460" },
+      { name: "전세사기피해자 지원관리시스템", url: "https://jeonse.kgeop.go.kr/" },
+    ],
+  },
   {
     id: "protect-deposit",
     title: "보증금 지키는 법",
@@ -413,11 +530,12 @@ export function findGuide(id: string): Guide | undefined {
 /**
  * 홈 가이드 줄의 순서 — 처음 고른 집 형태로 첫 카드를 바꾸고 꼬리표를 단다 (docs/기획/2026-11-20-홈-보강-설계.md 5절).
  * 월세는 지원금 신청에 낼 서류가 많고, 전세는 지켜야 할 보증금이 커서 그걸 먼저. /guides 전체 목록 순서는 그대로다.
+ * 전세사기 가이드(11/23)는 전세에만 둘째로 끼웠다.
  */
 const HOUSING_ORDER: Partial<Record<HousingType, string[]>> = {
   월세: ["where-documents", "protect-deposit", "before-contract"],
   연세: ["where-documents", "protect-deposit", "before-contract"],
-  전세: ["protect-deposit", "before-contract", "where-documents"],
+  전세: ["protect-deposit", "avoid-jeonse-fraud", "before-contract", "where-documents"],
 };
 
 export function guidesForHousing(housingType: HousingType | null): { guides: Guide[]; tag: string | null } {

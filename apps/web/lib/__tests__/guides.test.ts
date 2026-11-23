@@ -7,8 +7,8 @@ const PUBLIC_URL = /^https:\/\/([a-z0-9-]+\.)*(go\.kr|gov\.kr|or\.kr|korea\.kr)(
 const isPublicUrl = (url: string) => PUBLIC_URL.test(url) || /^https:\/\/www\.applyhome\.co\.kr(\/|$)/.test(url);
 
 describe("주거 가이드 (lib/guides.ts)", () => {
-  it("네 편 — 계약 전 · 보증금 · 서류 · 청약, 홈 카드 순서 그대로", () => {
-    expect(GUIDES.map((g) => g.id)).toEqual(["before-contract", "protect-deposit", "where-documents", "cheongyak"]);
+  it("다섯 편 — 계약 전 · 전세사기 · 보증금 · 서류 · 청약, 홈 카드 순서 그대로", () => {
+    expect(GUIDES.map((g) => g.id)).toEqual(["before-contract", "avoid-jeonse-fraud", "protect-deposit", "where-documents", "cheongyak"]);
   });
 
   it("글마다 출처가 있고, 모두 https 공공 주소(go.kr · gov.kr · or.kr · korea.kr)다", () => {
@@ -83,8 +83,8 @@ describe("집 형태별 홈 가이드 순서 (guidesForHousing, 11/20)", () => {
     expect(guidesForHousing("연세").tag).toBe("연세라면 먼저");
   });
 
-  it("전세 — 보증금 지키기부터", () => {
-    expect(ids("전세")).toEqual(["protect-deposit", "before-contract", "where-documents"]);
+  it("전세 — 보증금 지키기부터, 둘째에 전세사기 (11/23)", () => {
+    expect(ids("전세")).toEqual(["protect-deposit", "avoid-jeonse-fraud", "before-contract", "where-documents"]);
     expect(guidesForHousing("전세").tag).toBe("전세라면 먼저");
   });
 
