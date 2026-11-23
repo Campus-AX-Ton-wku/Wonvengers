@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import policiesJson from "@/data/policies.json";
 import PolicyCard from "@/app/find/PolicyCard";
-import { AppShell, BottomTabBar, LoginSheet, ResetAnswersButton, TopBar } from "@/app/components";
+import { AppShell, BottomTabBar, Icon3D, TopBar } from "@/app/components";
 import { ChevronRight, ICON_MD, ICON_SM, Info } from "@/app/components/icons";
 import { resolveAnswers } from "@/lib/age";
-import { hasStoredLogin, isLoginAvailable } from "@/lib/auth";
-import { answerLine, candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
+import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
+import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
-import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 
 /**
@@ -39,7 +39,16 @@ const policies = policiesJson as PolicyMeta[];
 function ctaLabel(housingType: HousingType | null): string {
   if (housingType === "월세") return "지원받으면 내 월세는 얼마일까?";
   if (housingType === "연세") return "지원받으면 내 연세 부담은 얼마나 줄까?";
+  if (housingType === "전세") return "지원받으면 내 전세 부담은 얼마일까?";
   return "지원받으면 내 주거비는 얼마일까?";
+}
+
+/** 계산한 적 있으면 결과로 — 같은 카드 꼴에 말만 바꾼다(11/23 시안 Tweak '계산 후'). */
+function resultLabel(housingType: HousingType | null): string {
+  if (housingType === "월세") return "내 월세 계산 결과 보기";
+  if (housingType === "연세") return "내 연세 계산 결과 보기";
+  if (housingType === "전세") return "내 전세 계산 결과 보기";
+  return "내 주거비 계산 결과 보기";
 }
 
 export default function FindPoliciesPage() {
@@ -47,12 +56,19 @@ export default function FindPoliciesPage() {
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
-  const [loginOpen, setLoginOpen] = useState(false);
+  // 로그인을 쓸 수 있는데 아직 안 한 사람. 같은 effect 에서 정해야 첫 화면에 파란 계산 버튼이 한 번 비쳤다 사라지지 않는다.
+  const [guest, setGuest] = useState(false);
+  // 계산 결과가 있으면 계산 카드는 결과(/result)로 간다. 결과 화면이 읽는 두 값(계약 조건 · 프로필)이 다 있을 때만.
+  const [calculated, setCalculated] = useState(false);
 
   useEffect(() => {
     setAnswers(loadAnswers());
     setAsOf(todayISO());
+    setCalculated(loadListing() !== null && loadProfile() !== null);
+    const updateGuest = () => setGuest(isLoginAvailable() && !hasStoredLogin());
+    updateGuest();
     setLoaded(true);
+    return onAuthChange(updateGuest);
   }, []);
 
   // 1층과 같은 경계 변환. 생년월일 → 만 나이는 여기서 한 번만 한다 (lib/age.ts).
@@ -65,9 +81,16 @@ export default function FindPoliciesPage() {
   // 건수가 못 받는 것까지 세고, 금액이 가장 큰 마감 건이 첫 카드를 차지한다.
   const { 신청가능 } = asOf ? splitByApplicationWindow(groups, asOf) : { 신청가능: [] };
 
+  // 계산(2층)으로 보낼 수 있는가. 후보가 없으면 계산할 것이 없다. 전세도 11/23 부터 계산한다.
+  const canCalculate = count > 0;
+  // 비회원은 계산 버튼과 하단 섬의 카카오 버튼을 하나로 합친다(11/23) — 둘 다 결국 카카오 로그인이라
+  // [카카오로 로그인하고 홈으로]가 파란 계산 버튼을 덮고 서 있었다. 로그인 뒤 바로 계산 화면으로 간다.
+  const mergedLogin = guest && canCalculate;
+
   return (
     <AppShell>
-      <TopBar backHref="/find/result" />
+      {/* 하단 섬으로 들어오는 탭 첫 화면이라 뒤로 가기 대신 왼쪽 제목 — 관심 · 내 정보와 같은 꼴 (11/23 시안) */}
+      <TopBar title="지원금" />
       {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
       <main className="step-in pb-10">
 
@@ -76,35 +99,23 @@ export default function FindPoliciesPage() {
       ) : (
         <>
           {/* 금액은 앞 화면(/find/result)이 크게 말했다. 여기서 또 보여주면 같은
-              숫자를 두 번 붙는 셈이라 제목만 둔다.
+              숫자를 두 번 붙는 셈이라 개수 한 줄만 둔다(11/23 — 관심 탭의 '관심 지원금 3'과 같은 꼴).
 
               후보는 있는데 전부 마감이면 '해당되는 것이 없어요' 로 말하면 안 된다.
-              대상이 아니라는 뜻으로 읽히지만 실제로는 다음 회차를 기다리면 된다. */}
-          <h1 className="mt-4 text-2xl font-extrabold leading-snug text-ink-900">
-            {신청가능.length > 0
-              ? `받을 수 있는 주거 혜택 ${신청가능.length}개`
-              : count > 0
-                ? "지금 받을 수 있는 주거 혜택이 없어요"
-                : "아쉽게도 해당되는 주거 혜택이 없어요"}
-          </h1>
+              대상이 아니라는 뜻으로 읽히지만 실제로는 다음 회차를 기다리면 된다.
 
-          {/* 무슨 답변으로 나온 결과인지 한 줄로 말하고, 바로 고치러 갈 수 있게 한다.
-              소득 구간은 여기 두지 않는다 — 조건 수정 화면에 그대로 있다. */}
-          {/* 390px 아래에서는 답 줄이 한 줄을 다 쓰고 두 버튼이 그 아래 오른쪽에 선다 — 한 줄에 두면
-              320px 에서 답 줄이 "24세 · 익산시 · …" 로 잘린다. */}
-          <div className="mt-2 flex flex-col gap-1 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between min-[390px]:gap-3">
-            <p className="text-sm text-ink-500 min-[390px]:min-w-0 min-[390px]:truncate">{answerLine(resolved)}</p>
-            <div className="flex shrink-0 items-center self-end min-[390px]:self-auto">
-              <ResetAnswersButton />
-              <Link
-                href="/find"
-                className="focus-ring flex min-h-11 shrink-0 items-center gap-0.5 rounded-control pl-2 text-sm font-bold text-brand-700 transition-colors hover:bg-brand-50"
-              >
-                조건 수정
-                <ChevronRight size={ICON_SM} aria-hidden="true" className="text-brand-300" />
-              </Link>
-            </div>
-          </div>
+              11/23 시안: 답 줄 · [처음부터 다시] · [조건 수정]을 뺐다. 조건은 홈 · 내 정보에서 고치고,
+              처음부터 다시는 조건 수정 화면(/find) · 결과 화면(/find/result)에 있다. */}
+          {신청가능.length > 0 ? (
+            <h2 className="mt-1 text-[15px] font-bold leading-snug text-ink-700">
+              받을 수 있는 주거 혜택 <strong className="font-extrabold text-brand-800">{신청가능.length}</strong>
+              <span className="sr-only">개</span>
+            </h2>
+          ) : (
+            <h2 className="mt-2 text-xl font-extrabold leading-snug text-ink-900">
+              {count > 0 ? "지금 받을 수 있는 주거 혜택이 없어요" : "아쉽게도 해당되는 주거 혜택이 없어요"}
+            </h2>
+          )}
 
           {!isTrustedRegion(resolved.region) && (
             <p className="mt-4 flex items-start gap-2 rounded-control bg-ink-100 p-3.5 text-xs leading-relaxed text-ink-600">
@@ -116,7 +127,7 @@ export default function FindPoliciesPage() {
           {/* 카드 사이는 여백으로 가른다. 구분선을 함께 쓰면 목록이 표처럼 읽힌다. */}
           <section
             aria-label={`받을 수 있는 주거 혜택 ${신청가능.length}개`}
-            className="mt-6 space-y-3"
+            className="mt-3.5 space-y-3"
           >
             {신청가능.map(({ policy, result }, i) => (
               <div
@@ -140,57 +151,61 @@ export default function FindPoliciesPage() {
 
           {/* 다음에 할 일 하나. 목록이 답한 것은 '얼마까지'이고, 사용자가 실제로
               궁금한 것은 '그래서 내 주거비가 얼마가 되나'다.
-
-              전세 거주자에게는 이 CTA 를 내보내지 않는다. 계약 조건 화면(2층)이
-              받는 계약 형태가 월세·연세뿐이라, 전세 부담이 얼마나 주는지 계산할
-              방법이 없다. 문구만 전세용으로 바꾸면 눌러서 막히는 길이 된다. */}
-          {count > 0 &&
-            (resolved.housingType === "전세" ? (
-              <p className="mt-8 rounded-card bg-ink-100 px-5 py-4 text-sm leading-relaxed text-ink-600">
-                전세는 아직 계산할 수 없어요. 월세·연세만 가능해요.
-              </p>
-            ) : (
+              11/23 까지 전세 거주자에게는 이 CTA 대신 '아직 계산할 수 없어요'를 보였다 —
+              계산 화면이 월세·연세만 받았다. 이제 전세도 받는다(대출 이자 + 관리비). */}
+          {/* 계산 카드는 옅은 파랑 — 화면에서 가장 진한 파랑은 하단 섬의 '지원금'과 동그란 › 뿐이다(11/23 시안). */}
+          {canCalculate && !mergedLogin && (
               <Link
-                href="/calculate"
-                onClick={(event) => {
-                  // 월세 계산은 로그인하고 한다(11/17). 로그인 상태 · 로그인을 쓸 수 없는 빌드에서는 그냥 간다.
-                  if (isLoginAvailable() && !hasStoredLogin()) {
-                    event.preventDefault();
-                    setLoginOpen(true);
-                  }
-                }}
-                className="focus-ring mt-8 flex items-center justify-between gap-3 rounded-card bg-brand-600 px-5 py-5 shadow-card transition-colors hover:bg-brand-press active:bg-brand-press"
+                href={calculated ? "/result" : "/calculate"}
+                className="press focus-ring mt-6 flex min-h-20 items-center gap-3.5 rounded-card bg-brand-50 py-4 pl-4 pr-3.5 ring-1 ring-inset ring-brand-100"
               >
-                <span className="text-balance text-left text-lg font-bold leading-snug text-white">
-                  {ctaLabel(resolved.housingType)}
+                <Icon3D name="calculator" size={48} />
+                <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                  <span className="text-base font-extrabold leading-snug text-ink-900">
+                    {calculated ? resultLabel(resolved.housingType) : ctaLabel(resolved.housingType)}
+                  </span>
+                  <span className="text-balance text-[13px] leading-normal text-ink-600">
+                    {calculated ? "조건을 바꿔 다시 계산할 수도 있어요" : "계약 조건을 넣으면 실제로 내는 돈을 알려 줘요"}
+                  </span>
                 </span>
-                <ChevronRight size={ICON_MD + 2} aria-hidden="true" className="shrink-0 text-white/80" />
+                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-600">
+                  <ChevronRight size={ICON_MD} strokeWidth={2.4} className="text-white" />
+                </span>
               </Link>
-            ))}
+            )}
 
-          {/* 고지는 본문과 같은 무게로 두지 않는다. 회색 면에 작은 글씨, 아이콘 하나.
-              그러나 접지는 않는다 — 접을 수 있는 고지는 고지가 아니다. */}
-          <div className="mt-8 flex gap-2.5 rounded-card bg-ink-100 p-4">
-            <Info size={ICON_SM} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
-            <p className="text-xs leading-relaxed text-ink-600">
+          {/* 고지는 본문과 같은 무게로 두지 않는다. 가는 선 아래 작은 각주(11/23 시안).
+              그러나 접지는 않는다 — 접을 수 있는 고지는 고지가 아니다. 문장은 그대로. */}
+          <div className="mt-6 flex gap-2 border-t border-ink-100 pt-3.5">
+            <Info size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-500" />
+            <p className="text-xs leading-relaxed text-ink-500">
               나이 · 지역 · 현재 상태 · 소득 구간 · 주거 형태만 비교한 결과라
-              <strong className="font-bold text-ink-900"> 신청 자격을 확정하지 않습니다.</strong>{" "}
+              <strong className="font-bold text-ink-700"> 신청 자격을 확정하지 않습니다.</strong>{" "}
               최종 심사는 각 기관이 하니 공식 페이지에서 확인하세요.
             </p>
           </div>
         </>
       )}
       </main>
-      {/* 지원금 탭의 첫 화면 — 로그인한 사람에게만 하단 섬이 보인다 (BottomTabBar) */}
-      <BottomTabBar active="benefit" />
-      {loginOpen && (
-        <LoginSheet
-          title="로그인하고 계산해 볼까요?"
-          description="카카오로 3초 만에 로그인하면 내 주거비를 계산하고 다른 기기에서도 이어 볼 수 있어요."
-          next="/calculate"
-          onClose={() => setLoginOpen(false)}
-        />
-      )}
+      {/* 지원금 탭의 첫 화면 — 로그인한 사람에게만 하단 섬이 보인다 (BottomTabBar).
+          월세 계산은 로그인하고 한다(11/17) — 비회원의 계산 입구는 하단 섬의 카카오 버튼 하나다. */}
+      <BottomTabBar
+        active="benefit"
+        guestAction={
+          mergedLogin
+            ? {
+                // 한 줄에 다 들어가지 않는 길이라 끊을 자리를 정해 둔다 — 맡겨 두면 '내'가 윗줄 끝에 붙는다.
+                label: (
+                  <span className="text-center leading-snug">
+                    <span className="block">카카오로 로그인하고</span>{" "}
+                    <span className="block">내 최종 주거비 확인하기</span>
+                  </span>
+                ),
+                returnTo: "/calculate",
+              }
+            : undefined
+        }
+      />
     </AppShell>
   );
 }

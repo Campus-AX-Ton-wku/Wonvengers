@@ -57,9 +57,12 @@ export function StatusBadge({
   tone,
   icon,
   children,
+  size = "sm",
   className = "",
 }: {
   tone: BadgeTone;
+  /** md — 목록 카드의 금액 줄 오른쪽 알약(28px · 13px, 11/23 지원금 탭 시안). 그 밖은 sm. */
+  size?: "sm" | "md";
   /**
    * 톤의 기본 아이콘을 덮는다.
    *
@@ -75,9 +78,11 @@ export function StatusBadge({
   const Icon = icon ?? ToneIcon;
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${toneClass} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full font-bold ${
+        size === "md" ? "h-7 pl-2 pr-2.5 text-[13px]" : "px-2.5 py-1 text-[11px]"
+      } ${toneClass} ${className}`}
     >
-      <Icon size={ICON_SM - 2} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
+      <Icon size={size === "md" ? ICON_SM : ICON_SM - 2} strokeWidth={size === "md" ? 2 : 2.5} aria-hidden="true" className="shrink-0" />
       {children}
     </span>
   );

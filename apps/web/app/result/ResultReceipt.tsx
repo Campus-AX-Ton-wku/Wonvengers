@@ -88,7 +88,10 @@ export function ResultReceipt({
         <p className="text-[13px] font-bold text-ink-700">{months}개월 동안 내 주거비</p>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-ink-600">월세·관리비 {months}개월</dt>
+            {/* 전세의 매달 나가는 돈은 대출 이자다(lib/rent.ts). 보증금은 돌려받는 돈이라 줄을 두지 않는다. */}
+            <dt className="text-ink-600">
+              {listing.contractType === "전세" ? "대출 이자·관리비" : "월세·관리비"} {months}개월
+            </dt>
             <dd className="shrink-0 text-[15px] font-bold text-ink-900 tabular-nums">{formatKoreanMoney(rentAndFee)}</dd>
           </div>
           {listing.oneTimeMoveCost > 0 && (

@@ -1,6 +1,8 @@
 import { monthlyBreakdown } from "./benefit";
 import { formatKoreanMoney } from "./money";
+import { monthlyRentEquivalent } from "./rent";
 import type { CalculationSummary, ContractType, ListingInput, PolicyMeta } from "./types";
+import type { LedgerData, LedgerMonthData } from "./user-data";
 
 /**
  * 주거비 달력 (docs/기획/2026-11-21-주거비-달력-설계.md §4 · §5).
@@ -14,19 +16,9 @@ import type { CalculationSummary, ContractType, ListingInput, PolicyMeta } from 
 /** "2026-11" */
 export type MonthKey = string;
 
-export interface LedgerMonthRecord {
-  /** 누른 칸 → 누를 때의 금액(원). 다시 계산해도 누른 칸 금액은 그대로 둔다. */
-  done: Record<string, number>;
-  /** 고친 칸 → 고친 금액(원). 이 달에만. */
-  amounts: Record<string, number>;
-}
-
-export interface LedgerRecord {
-  v: 1;
-  months: Record<MonthKey, LedgerMonthRecord>;
-  /** 한 번 받는 지원: 정책 id → 받은 달 */
-  oneTime: Record<string, MonthKey>;
-}
+/** 기록 모양은 계정 저장 형식과 하나다(lib/user-data.ts — 11/23 부터 계정에 저장). */
+export type LedgerMonthRecord = LedgerMonthData;
+export type LedgerRecord = LedgerData;
 
 export function emptyLedger(): LedgerRecord {
   return { v: 1, months: {}, oneTime: {} };
@@ -134,7 +126,7 @@ export interface LedgerPlan {
   end: MonthKey;
   months: number;
   contractType: ContractType;
-  /** 월세 또는 연세 */
+  /** 월세 · 연세 금액, 전세면 매달 대출 이자 (lib/rent.ts monthlyJeonseInterest) */
   rent: number;
   fee: number;
   incomes: LedgerIncome[];
@@ -156,7 +148,7 @@ export function ledgerPlan(listing: ListingInput, summary: CalculationSummary, b
     end: addMonths(start, months - 1),
     months,
     contractType: listing.contractType,
-    rent: listing.rentOrYearlyAmount,
+    rent: listing.contractType === "전세" ? monthlyRentEquivalent(listing) : listing.rentOrYearlyAmount,
     fee: listing.managementFee,
     incomes,
   };
@@ -213,7 +205,7 @@ function linesFor(plan: LedgerPlan, record: LedgerRecord, month: MonthKey): Ledg
   if (plan.contractType === "연세") {
     if (n === 1 && plan.rent > 0) lines.push(line(RENT_KEY, "out", "연세", plan.rent, "연세는 계약 시작 달에 한 번만 나와요"));
   } else if (plan.rent > 0) {
-    lines.push(line(RENT_KEY, "out", "월세", plan.rent));
+    lines.push(line(RENT_KEY, "out", plan.contractType === "전세" ? "전세대출 이자" : "월세", plan.rent));
   }
   if (plan.fee > 0) lines.push(line(FEE_KEY, "out", "관리비", plan.fee));
   for (const income of plan.incomes) {
@@ -318,6 +310,22 @@ export function oneTimeSupports(summary: CalculationSummary): OneTimeSupport[] {
       const amountText = cap == null || cap <= 0 ? null : r.policy.lumpSumBasis === "fixedGrant" ? formatKoreanMoney(cap) : `최대 ${formatKoreanMoney(cap)}`;
       return { policy: r.policy, amountText, status: r.status as OneTimeSupport["status"] };
     });
+}
+
+/**
+ * 보고 있는 달에 보일 한 번 받는 지원 (ggue 11/23). 받은 달 다음 달부터는 뺀다 — 받은 달과 그 앞 달엔 그대로 둬서
+ * 잘못 누른 것은 받은 달로 돌아가 풀 수 있다. hiddenCount 는 이 목록 안에서 뺀 개수(결과에 없는 정책의 기록은 세지 않는다).
+ */
+export function oneTimeForMonth(
+  supports: OneTimeSupport[],
+  record: LedgerRecord,
+  month: MonthKey
+): { shown: OneTimeSupport[]; hiddenCount: number } {
+  const shown = supports.filter((s) => {
+    const got = record.oneTime[s.policy.id];
+    return got === undefined || monthsBetween(got, month) <= 0;
+  });
+  return { shown, hiddenCount: supports.length - shown.length };
 }
 
 // ── 홈 한 줄 ──

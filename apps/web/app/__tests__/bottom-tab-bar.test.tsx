@@ -28,6 +28,13 @@ describe("하단 섬 탭 (BottomTabBar)", () => {
     expect(screen.queryByRole("navigation", { name: "주요 메뉴" })).toBeNull();
   });
 
+  it("guestAction 으로 비회원 버튼의 문구와 돌아갈 곳을 바꾼다 (지원금 목록 · 11/23)", async () => {
+    enableLogin();
+    render(<BottomTabBar active="benefit" guestAction={{ label: "카카오로 로그인하고 내 최종 주거비 확인하기", returnTo: "/calculate" }} />);
+    await userEvent.setup().click(await screen.findByRole("button", { name: /내 최종 주거비 확인하기/ }));
+    expect(signIn).toHaveBeenCalledWith("/calculate");
+  });
+
   it("내 정보 화면은 본문에 카카오 버튼이 있어 띄우지 않는다", () => {
     enableLogin();
     render(<BottomTabBar active="my" />);

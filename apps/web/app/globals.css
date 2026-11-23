@@ -380,6 +380,231 @@ select.input {
   animation: slide-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── 움직임 4곳 (11/23 ggue — 처음엔 은은하게 넣었다가 "뭐가 바뀐지 모르겠다"로 더 또렷하게) ──
+   방향은 같은 문법(아래에서 위로 · 지수형 감속). 영상에서도 보이게 거리 · 크기 · 시간을 키웠다.
+   돈과 숫자는 여전히 움직이지 않는다. 동작 줄이기에서는 모두 끈다(아래 @media). */
+
+/* 1. 아래에서 올라오는 창 — 배경은 0.3초 어두워지고, 창은 화면 밖 맨 아래에서 0.45초에 올라온다 */
+@keyframes sheet-backdrop {
+  from {
+    background-color: transparent;
+  }
+}
+
+.sheet-backdrop {
+  animation: sheet-backdrop 0.3s ease-out both;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(calc(100% + 2rem));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 2. 배지 받는 순간 — 창이 올라온 뒤 배지가 작게 시작해 톡 튀며 자리를 잡고, 빛 고리 두 겹이 크게 퍼진다.
+   (튀는 곡선은 여기서만 — 돈이 아니라 축하하는 순간이다) */
+@keyframes badge-earned {
+  from {
+    opacity: 0;
+    transform: scale(0.35) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.badge-earned {
+  position: relative;
+  display: inline-flex;
+  animation: badge-earned 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes badge-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+.badge-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 8px var(--color-brand-300);
+  pointer-events: none;
+  animation: badge-ring 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+/* 두 번째 고리 — 조금 늦게 */
+.badge-ring + .badge-ring {
+  animation-delay: 0.85s;
+}
+
+/* 3. 하트 — 담을 때만, 토스처럼 두 단계: 0.1초 작아졌다가 → 살짝 크게 튀어나오며 채워진다(0.38초). 뺄 때는 움직이지 않는다 */
+@keyframes heart-pop {
+  30% {
+    transform: scale(0.35);
+  }
+  70% {
+    transform: scale(1.18);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.heart-pop {
+  display: inline-flex;
+  animation: heart-pop 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 4. 체크할 때 — 누른 줄이 잠깐 초록빛으로 반짝이고, '확인함'이 오른쪽에서 밀려 들어온다 */
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.check-in {
+  animation: check-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes check-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.check-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-ok-50);
+  box-shadow: inset 0 0 0 2px var(--color-ok-700);
+  pointer-events: none;
+  /* 줄(label · isolate) 배경 위, 글자 아래 — 반짝여도 글이 가려지지 않는다 */
+  z-index: -1;
+  animation: check-flash 0.7s ease-out both;
+}
+
+/* ── 토스 영상에서 가져온 것 (11/23 ggue) — #1 누를 때 · #3·#4 아래 알림 · #5 빈 화면 그림 ── */
+
+/* #1 누를 때 — 카드는 손가락을 대는 동안 살짝 작아지고(press), 카드 안 줄은 밝은 배경이 깔린다(press-row) */
+.press {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.16s ease-out;
+}
+
+.press:active {
+  transform: scale(0.97);
+}
+
+.press-row {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease-out;
+}
+
+.press-row:active {
+  background-color: var(--color-ink-100);
+}
+
+/* #3 아래 알림 — 아래에서 작게 커지며 0.2초에 올라오고, 점 → 동그라미(0.3초 뒤) → 체크(0.5초 뒤) */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast-in {
+  animation: toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* #4 새 알림이 오면 앞 알림은 아래로 빠지며 사라진다 */
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+.toast-out {
+  animation: toast-out 0.2s ease-in both;
+}
+
+@keyframes toast-check-circle {
+  from {
+    transform: scale(0.28);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.toast-check-circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: toast-check-circle 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes toast-check-mark {
+  from {
+    stroke-dashoffset: 14;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.toast-check-mark {
+  stroke-dasharray: 14;
+  animation: toast-check-mark 0.24s ease-out 0.5s both;
+}
+
+/* #5 빈 화면 그림 — 글이 먼저 나오고, 그림은 0.15초 늦게 카드 뒤집듯 돌며 자리를 잡는다 */
+@keyframes empty-pop {
+  from {
+    opacity: 0;
+    transform: perspective(480px) rotateY(-75deg) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.empty-pop {
+  animation: empty-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* 최종 상태로 즉시 보여준다. 애니메이션만 끄면 both 때문에 사라진 채로 남는다.
      움직임만 덜어내고 상태(보임/색)는 그대로 둔다. */
@@ -389,10 +614,35 @@ select.input {
   .amount-in,
   .amount-in > *,
   .amount-reveal,
-  .slide-in {
+  .slide-in,
+  .sheet-in,
+  .sheet-backdrop,
+  .badge-earned,
+  .heart-pop,
+  .check-in {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  /* 빛 고리 · 하트 둘레 원 · 줄 반짝임은 꾸밈뿐이라 아예 그리지 않는다 */
+  .badge-ring,
+  .check-flash {
+    display: none;
+  }
+
+  .toast-in,
+  .toast-out,
+  .toast-check-circle,
+  .empty-pop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .toast-check-mark {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 
   /* 눌림 반응까지 없애지는 않는다 — 버튼이 죽은 것처럼 보인다. 거리만 줄인다. */
@@ -434,15 +684,18 @@ html.splash #splash {
   justify-content: center;
   background: var(--color-brand-600);
 }
+/* 마크는 화면 높이의 4% 만큼 위로 — 계산상 정가운데면 P 꼬리 때문에 처져 보인다(ggue 11/23, 눈으로 보는 가운데).
+   아이폰 시작 이미지(scripts/build-apple-splash.mjs)도 같은 값이라 바꾸면 같이 바꾸고 이미지를 다시 굽는다 */
 #splash img {
   display: block;
   width: 150px;
   height: 150px;
+  transform: translateY(-4vh);
 }
-/* 마크는 정가운데 그대로, 줄은 그 아래에 따로 — 줄이 나타나도 마크가 움직이지 않는다 */
+/* 줄은 마크 아래에 따로 — 줄이 나타나도 마크가 움직이지 않는다 */
 #splash .splash-slow {
   position: absolute;
-  top: calc(50% + 92px);
+  top: calc(50% - 4vh + 92px);
   left: 0;
   right: 0;
   margin: 0;

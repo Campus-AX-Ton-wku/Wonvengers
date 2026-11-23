@@ -18,7 +18,7 @@ export default function ChecklistPage() {
             <Icon3D name={HOUSE_CHECKLIST_CARD.icon} size={64} />
             <h1 className="min-w-0 text-2xl font-extrabold leading-snug text-ink-900">{HOUSE_CHECKLIST_CARD.title}</h1>
           </div>
-          <p className="text-[15px] leading-relaxed text-ink-600">집을 보면서 하나씩 눌러 확인해요. 확인한 것은 이 기기에만 남아요.</p>
+          <p className="text-[15px] leading-relaxed text-ink-600">집을 보면서 하나씩 눌러 확인해요. 확인한 것은 로그인하면 계정에 저장돼요.</p>
         </header>
         <HouseChecklist />
         <SourceList sources={HOUSE_CHECKLIST_SOURCES} />

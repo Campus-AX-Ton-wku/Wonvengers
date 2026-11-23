@@ -445,10 +445,9 @@ describe("/calculate 계약 형태 이어받기", () => {
     expect(접힌줄("연세")).toBeTruthy();
   });
 
-  // 1층은 '지금 사는 집', 2층은 '계산해 볼 매물' 이다. 전세 사는 사람이 월세 매물을 계산해 본다고
-  // 1층 답을 월세로 바꾸면 전세 전용 정책(보증료 지원 등)이 /find/policies 에서 말없이 사라진다.
-  // 월세·연세끼리만 같은 질문으로 보고 되돌려 쓴다.
-  it.each(["전세", "그 외"] as const)("1층이 %s 이면 2층에서 계약 형태를 골라도 1층 답을 지킨다", async (housing) => {
+  // 1층은 '지금 사는 집', 2층은 '계산해 볼 매물' 이다. 그 외(공공임대 · 기숙사)는 계약 형태가 아니라
+  // 2층에서 고른 값으로 덮지 않는다. 월세·연세·전세끼리만 같은 질문으로 보고 되돌려 쓴다(11/23 전세 추가).
+  it.each(["그 외"] as const)("1층이 %s 이면 2층에서 계약 형태를 골라도 1층 답을 지킨다", async (housing) => {
     const user = userEvent.setup();
     일층(housing);
     render(<CalculatePage />);
@@ -466,13 +465,23 @@ describe("/calculate 계약 형태 이어받기", () => {
     expect(window.localStorage.getItem("perky.answers")).toBeNull();
   });
 
-  it.each(["전세", "그 외", null] as const)("1층이 %s 이면 지금처럼 두 카드로 묻고, 고르기 전에는 넘어가지 않는다", async (housing) => {
+  it("1층이 전세면 2층에서 월세를 골랐을 때 1층도 월세가 된다 — 2층이 전세를 받으니 같은 질문이다 (11/23)", async () => {
+    const user = userEvent.setup();
+    일층("전세");
+    render(<CalculatePage />);
+
+    await user.click(접힌줄("전세"));
+    await user.click(screen.getByRole("button", { name: "월세" }));
+    expect(loadAnswers().housingType).toBe("월세");
+  });
+
+  it.each(["그 외", null] as const)("1층이 %s 이면 지금처럼 카드로 묻고, 고르기 전에는 넘어가지 않는다", async (housing) => {
     const user = userEvent.setup();
     일층(housing);
     render(<CalculatePage />);
 
     expect(screen.queryByRole("button", { name: /^계약 형태 고치기/ })).toBeNull();
-    for (const type of ["월세", "연세"]) {
+    for (const type of ["월세", "연세", "전세"]) {
       expect(screen.getByRole("button", { name: type }).getAttribute("aria-pressed"), type).toBe("false");
     }
     await user.type(screen.getAllByRole("spinbutton")[1], "35");
@@ -490,5 +499,105 @@ describe("/calculate 계약 형태 이어받기", () => {
 
     expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=2");
     expect(loadListing()?.contractType).toBe("월세");
+  });
+});
+
+/**
+ * 전세 계산 (11/23 ggue A안) — 월 부담 = 대출 이자(대출 금액 × 연 금리 ÷ 12) + 관리비.
+ * 보증금은 돌려받는 돈이라 넣지 않는다.
+ */
+describe("/calculate 전세", () => {
+  const 전세로 = () =>
+    saveAnswers({
+      birthDate: birthDateForAge(23),
+      region: "전북특별자치도 익산시",
+      status: "재직",
+      incomeBracket: 2,
+      housingType: "전세",
+    });
+  // Field 는 <label> 이라 이름에 안내 문구(hint)까지 붙는다 — 앞부분으로 찾는다
+  const 칸 = (name: string) => screen.getByRole("spinbutton", { name: new RegExp(`^${name.replace(/[()%]/g, "\\$&")}`) });
+
+  it("1층에서 전세라고 답했으면 전세로 이어받고, 월세액 대신 전세 보증금 · 대출 금액을 묻는다", () => {
+    전세로();
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("button", { name: "계약 형태 고치기: 전세" })).toBeTruthy();
+    expect(칸("전세 보증금 (만원)")).toBeTruthy();
+    expect(칸("그중 대출받은 금액 (만원)")).toBeTruthy();
+    expect(screen.queryByRole("spinbutton", { name: /^월세액/ })).toBeNull();
+    // 대출이 없으면 금리를 묻지 않는다
+    expect(screen.queryByRole("spinbutton", { name: /^대출 금리/ })).toBeNull();
+  });
+
+  it("계약 형태 카드에 전세가 있다", () => {
+    render(<CalculatePage />);
+    expect(screen.getByRole("button", { name: "전세" })).toBeTruthy();
+  });
+
+  it("보증금이 없으면 · 대출이 보증금보다 크면 · 대출은 있는데 금리가 없으면 넘어가지 않는다", async () => {
+    const user = userEvent.setup();
+    전세로();
+    render(<CalculatePage />);
+    const 다음 = () => user.click(screen.getByRole("button", { name: "다음" }));
+
+    await 다음();
+    expect(screen.getByText("전세 보증금을 입력해주세요.")).toBeTruthy();
+
+    await user.type(칸("전세 보증금 (만원)"), "5000");
+    await user.type(칸("그중 대출받은 금액 (만원)"), "6000");
+    await 다음();
+    expect(screen.getByText("대출 금액은 전세 보증금보다 클 수 없어요.")).toBeTruthy();
+
+    await user.clear(칸("그중 대출받은 금액 (만원)"));
+    await user.type(칸("그중 대출받은 금액 (만원)"), "4000");
+    await 다음();
+    expect(screen.getByText("대출 금리를 입력해주세요.")).toBeTruthy();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  it("대출 금액과 소수점 금리를 저장하고, 2단계에 요약과 월 이자 식을 보여준다", async () => {
+    const user = userEvent.setup();
+    전세로();
+    render(<CalculatePage />);
+
+    await user.type(칸("전세 보증금 (만원)"), "10000");
+    await user.type(칸("그중 대출받은 금액 (만원)"), "8000");
+    await user.type(칸("대출 금리 (연 %)"), "2.4");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=2");
+    expect(loadListing()).toMatchObject({
+      contractType: "전세",
+      deposit: 100_000_000,
+      rentOrYearlyAmount: 0,
+      jeonseLoanAmount: 80_000_000,
+      jeonseLoanRate: 2.4,
+    });
+  });
+
+  it("2단계 위 요약은 전세 보증금과 대출이고, 월 이자를 식으로 보여준다", () => {
+    saveListing(
+      makeListing({ contractType: "전세", deposit: 100_000_000, rentOrYearlyAmount: 0, jeonseLoanAmount: 80_000_000, jeonseLoanRate: 2.4 })
+    );
+    resetNavigation("/calculate?s=2");
+    render(<CalculatePage />);
+
+    expect(screen.getByRole("link", { name: /^전세 보증금 고치기: 전세 1억/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^전세대출 고치기: 대출 8,000만원 · 연 2.4%/ })).toBeTruthy();
+    expect(screen.getByText(/80,000,000원 × 연 2.4% ÷ 12개월 = 월 이자/).textContent).toContain("160,000원");
+  });
+
+  it("대출 없이 얻은 전세도 계산한다 — 관리비만 낸다", async () => {
+    const user = userEvent.setup();
+    전세로();
+    render(<CalculatePage />);
+
+    await user.type(칸("전세 보증금 (만원)"), "5000");
+    await user.click(screen.getByRole("button", { name: "다음" }));
+
+    expect(routerMock.push).toHaveBeenCalledWith("/calculate?s=2");
+    expect(loadListing()?.contractType).toBe("전세");
+    expect(loadListing()?.jeonseLoanAmount ?? 0).toBe(0); // 대출 칸을 건드리지 않았으면 칸 자체가 없다
   });
 });

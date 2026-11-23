@@ -128,7 +128,7 @@ function InboxRow({ item, today, fresh }: { item: InboxItem; today: string; fres
   const href = item.kind === "deadline" ? `/find/policies/${policy.id}/prepare` : `/find/policies/${policy.id}`;
   return (
     <li>
-      <Link href={href} className="focus-ring flex items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-3 shadow-card">
+      <Link href={href} className="press focus-ring flex items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-3 shadow-card">
         <Icon3D name={policy.icon} size={40} />
         <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
           <span className="flex items-center gap-1.5">
@@ -152,7 +152,7 @@ function InboxRow({ item, today, fresh }: { item: InboxItem; today: string; fres
 function EmptyInbox() {
   return (
     <div className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-8 text-center shadow-card">
-      <span aria-hidden="true" className="flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+      <span aria-hidden="true" className="empty-pop flex size-14 items-center justify-center rounded-full bg-brand-50 text-brand-600">
         <TabIcon name="bell" />
       </span>
       <p className="text-base font-bold text-ink-900">새 소식이 없어요</p>

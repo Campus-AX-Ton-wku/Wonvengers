@@ -21,7 +21,7 @@ type Calculated = { plan: LedgerPlan; oneTime: OneTimeSupport[] };
 
 /**
  * 주거비 달력 — 계산한 값이 미리 적힌 체크표 (docs/기획/2026-11-21-주거비-달력-설계.md, 하단 섬 '달력' 탭).
- * 로그인한 사람만(관심 화면과 같은 방식). 기록은 이 기기에만(lib/storage.ts loadLedger · saveLedger).
+ * 로그인한 사람만(관심 화면과 같은 방식). 기록은 11/23 부터 계정에 저장(lib/storage.ts loadLedger · saveLedger → lib/sync.ts).
  * 보고 있는 달은 화면 상태로만 둔다 — 주소에 남기면 뒤로 가기가 달을 하나씩 되짚는다.
  * 같은 탭에서 계산값이 바뀌면(onLocalChange) 계획을 다시 만든다. 서버 값 받기는 조용히 저장하고 화면을 다시 불러오므로 여기까지 오지 않는다.
  * 다른 탭의 변경은 storage 이벤트로 듣는다 — 기록(perky.ledger)은 다시 읽고, 계산값(listing · profile)은 계획을 다시 만든다.
@@ -107,7 +107,7 @@ export default function LedgerPage() {
             <OneTimeSection supports={calc.oneTime} record={record} month={month} todayMonth={todayMonth} onChange={update} />
             <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-normal text-ink-500">
               <Info size={ICON_SM} strokeWidth={2} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <span>기록은 이 기기에만 저장돼요. 로그아웃하면 지워져요.</span>
+              <span>기록은 계정에 저장돼요. 다른 기기에서 로그인해도 이어 볼 수 있어요.</span>
             </p>
           </>
         )}

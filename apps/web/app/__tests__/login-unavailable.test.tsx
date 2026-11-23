@@ -108,8 +108,8 @@ describe("로그인을 쓸 수 없을 때(환경변수 없음) — 오늘과 똑
 
   it("'처음부터 다시'는 서버 없이 그대로 동작한다", async () => {
     saveAnswers(익산_대학생);
-    resetNavigation("/find/policies", "/find?q=birth");
-    render(<FindPoliciesPage />);
+    resetNavigation("/find/result", "/find?q=birth");
+    render(<FindResultPage />);
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "처음부터 다시" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "다시 하기" }));
