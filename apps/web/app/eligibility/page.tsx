@@ -3,16 +3,15 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import policiesData from "@/data/policies.json";
-import type { DiscoveryStatus, EligibilityProfile, PolicyMeta, RequiredInputKey } from "@/lib/types";
+import type { DiscoveryAnswers, DiscoveryStatus, EligibilityProfile, ListingInput, PolicyMeta, RequiredInputKey } from "@/lib/types";
 import { getRequiredQuestions, type QuestionDef } from "@/lib/questions";
 import { birthYearOptions } from "@/lib/birth";
-import { formatDotDate } from "@/lib/date";
+import { formatDotDate, seoulTodayISO } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import { replaceKeepingEntry, stepHref, useStepParam } from "@/lib/navigation";
 import WheelDatePicker from "@/app/WheelDatePicker";
 
 import { buildQuestionSteps } from "@/lib/steps";
-import { policiesForRegion } from "@/lib/region";
 import {
   loadAnswers,
   loadEligibilityAnsweredKeys,
@@ -37,6 +36,7 @@ import {
 } from "@/app/components";
 import { ICON_SM, Pencil } from "@/app/components/icons";
 import { markReveal } from "@/lib/reveal";
+import { questionScope } from "@/lib/scope";
 
 /**
  * 2층 · 판정 질문. 주제별 묶음(lib/steps.ts) 하나가 한 화면이고, 묶음은 주소(?g=)에 있다.
@@ -203,6 +203,8 @@ function EligibilityLoading() {
 function EligibilitySteps() {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
+  /** 질문을 고르는 기준(lib/scope.ts) — 계약 조건 · 첫 질문 답 · 오늘 */
+  const [scopeBase, setScopeBase] = useState<{ listing: Pick<ListingInput, "region" | "contractType">; answers: DiscoveryAnswers; asOf: string } | null>(null);
   const [profile, setProfile] = useState<EligibilityProfile>(DEFAULT_PROFILE);
   const [error, setError] = useState<string | null>(null);
   /**
@@ -244,6 +246,8 @@ function EligibilitySteps() {
       return;
     }
     setRegion(listing.region);
+    const scopeNow = { listing, answers: loadAnswers(), asOf: seoulTodayISO() };
+    setScopeBase(scopeNow);
 
     // 생년월일은 1층과 2층이 나눠 갖는 값이 아니라 하나다. 1층 답을 소스 오브
     // 트루스로 삼아 여기서는 다시 묻지 않고 채워 둔다 — 고치는 건 그대로 된다
@@ -267,7 +271,7 @@ function EligibilitySteps() {
     //
     // 이 지역이 묻지 않는 질문이면 채우지 않는다. 화면에 안 나오는 값을 저장하면 사용자가
     // 본 적도 없는 답이 프로필에 남는다.
-    const asksStatus = getRequiredQuestions(policiesForRegion(policies, listing.region)).some(
+    const asksStatus = getRequiredQuestions(questionScope(policies, scopeNow.listing, scopeNow.answers, scopeNow.asOf)).some(
       (q) => q.key === "isStudentOrEmployed",
     );
     if (일층.status && asksStatus && !chosen.has("isStudentOrEmployed")) {
@@ -282,12 +286,12 @@ function EligibilitySteps() {
     setAnswered(chosen);
   }, [router]);
 
-  // 지역에 해당하지 않는 정책은 후보에서 빠지고, 그 정책만 쓰던 질문도 함께 사라진다.
-  // 빠진 질문은 어떤 판정 규칙도 참조하지 않으므로 결과에 영향이 없다.
+  // 첫 질문 후보이면서 지금 접수 중인 정책의 질문만 묻는다(lib/scope.ts, 11/23 ggue). 지역 밖 · 첫 질문에서
+  // '해당 없음' · 접수가 끝난 정책만 쓰던 질문은 사라진다 — 결과도 같은 범위로 판정하므로 영향이 없다.
   const steps = useMemo(() => {
-    if (region === null) return [];
-    return buildQuestionSteps(getRequiredQuestions(policiesForRegion(policies, region)));
-  }, [region]);
+    if (region === null || scopeBase === null) return [];
+    return buildQuestionSteps(getRequiredQuestions(questionScope(policies, scopeBase.listing, scopeBase.answers, scopeBase.asOf)));
+  }, [region, scopeBase]);
 
   /** 묶음 주소 값(?g=). 질문이 없는 묶음은 빠지므로 지역에 따라 1~3 개다. */
   const groupKeys = useMemo(() => steps.map((_, i) => String(i + 1)), [steps]);

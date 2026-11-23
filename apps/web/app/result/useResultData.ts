@@ -10,9 +10,9 @@ import type {
 } from "@/lib/types";
 import { seoulTodayISO } from "@/lib/date";
 import { buildCalculationSummary } from "@/lib/summary";
-import { loadListing, loadProfile } from "@/lib/storage";
-import { policiesForRegion } from "@/lib/region";
+import { loadListing, loadProfile, loadAnswers } from "@/lib/storage";
 import { isExpiredResult, resultAvailability } from "@/lib/benefit-result";
+import { calculationScope } from "@/lib/scope";
 
 const policies = policiesData as PolicyMeta[];
 
@@ -49,7 +49,8 @@ export function useResultData() {
     // 판정질문 화면과 같은 후보 집합을 써야 한다. 여기서 지역 밖 정책을 같이 빼지 않으면
     // 묻지 않은 질문이 unknown 으로 남아 그 정책이 '조건충족시가능'으로 잘못 뜬다.
     try {
-      const scoped = policiesForRegion(policies, saved.listing.region);
+      // 판정 질문 화면과 같은 후보 집합(lib/scope.ts) — 첫 질문에서 '해당 없음'인 정책은 넣지 않는다
+      const scoped = calculationScope(policies, saved.listing, loadAnswers(), asOf);
       return { summary: buildCalculationSummary(scoped, saved.profile, saved.listing, asOf), error: false };
     } catch {
       // localStorage 값이 구 버전이거나 손상돼도 결과 화면에서 죽지 않게 상태로 보낸다.

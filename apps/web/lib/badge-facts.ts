@@ -3,8 +3,8 @@ import type { BadgeFacts } from "./badges";
 import { GUIDES } from "./guides";
 import { addMonths, ledgerMonth, ledgerPlan, ledgerProgress, type LedgerPlan, type LedgerRecord, type MonthKey } from "./ledger";
 import { pageProgress } from "./preparation";
-import { policiesForRegion } from "./region";
 import {
+  loadAnswers,
   loadChecklist,
   loadDocumentChecks,
   loadGuidesRead,
@@ -15,6 +15,7 @@ import {
 } from "./storage";
 import { buildCalculationSummary } from "./summary";
 import type { PolicyMeta } from "./types";
+import { calculationScope } from "./scope";
 
 const POLICIES = policiesJson as PolicyMeta[];
 
@@ -39,7 +40,7 @@ export function readBadgeFacts(todayISO: string): BadgeFacts {
   let plan: LedgerPlan | null = null;
   if (listing && profile) {
     try {
-      const summary = buildCalculationSummary(policiesForRegion(POLICIES, listing.region), profile, listing, todayISO);
+      const summary = buildCalculationSummary(calculationScope(POLICIES, listing, loadAnswers(), todayISO), profile, listing, todayISO);
       plan = ledgerPlan(listing, summary, profile.birthDate);
     } catch {
       plan = null;

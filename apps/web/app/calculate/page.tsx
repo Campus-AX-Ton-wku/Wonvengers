@@ -10,7 +10,7 @@ import { contractYearOptions } from "@/lib/date";
 import { formatKoreanMoney } from "@/lib/money";
 import WheelDatePicker from "@/app/WheelDatePicker";
 import { loadAnswers, loadListing, saveAnswers, saveListing } from "@/lib/storage";
-import { REGION_HIERARCHY, isRegionValue, policiesForRegion, regionDisplayName } from "@/lib/region";
+import { REGION_HIERARCHY, isRegionValue, regionDisplayName } from "@/lib/region";
 import { getRequiredQuestions } from "@/lib/questions";
 import { buildQuestionSteps } from "@/lib/steps";
 import { useStepParam } from "@/lib/navigation";
@@ -30,6 +30,8 @@ import {
   TopBar,
 } from "@/app/components";
 import { ICON_SM, Pencil } from "@/app/components/icons";
+import { questionScope } from "@/lib/scope";
+import { seoulTodayISO } from "@/lib/date";
 
 const policies = policiesData as PolicyMeta[];
 
@@ -160,10 +162,13 @@ function CalculateSteps() {
   const monthlyInterest = isJeonse ? monthlyJeonseInterest(form) : 0;
 
   // 뒤에 이어질 판정질문 스텝 수까지 합쳐 전체 진행률을 보여준다.
+  // 판정 질문 화면과 같은 범위(lib/scope.ts) — 첫 질문 후보 중 지금 접수 중인 정책의 질문만
   const totalSteps = useMemo(() => {
-    const scoped = form.region ? policiesForRegion(policies, form.region) : policies;
+    const scoped = form.region
+      ? questionScope(policies, { region: form.region, contractType: form.contractType }, loadAnswers(), seoulTodayISO())
+      : policies;
     return 2 + buildQuestionSteps(getRequiredQuestions(scoped)).length;
-  }, [form.region]);
+  }, [form.region, form.contractType]);
 
   const { step: stepKey, go } = useStepParam<CalcStep>("s", CALC_STEPS, {
     ready: loaded,
