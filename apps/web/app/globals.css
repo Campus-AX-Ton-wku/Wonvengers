@@ -393,7 +393,7 @@ select.input {
 
 .onboard-progress {
   transform-origin: left;
-  animation: onboard-progress var(--onboard-ms, 4000ms) linear both;
+  animation: onboard-progress var(--onboard-ms, 2800ms) linear both;
 }
 
 /* ── 움직임 4곳 (11/23 ggue — 처음엔 은은하게 넣었다가 "뭐가 바뀐지 모르겠다"로 더 또렷하게) ──

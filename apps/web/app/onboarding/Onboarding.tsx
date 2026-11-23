@@ -30,7 +30,7 @@ import { replaceKeepingEntry } from "@/lib/navigation";
  * 파랑이 위다: 로그인 없이 바로 써 보는 게 이 앱의 첫 약속이고, 비회원에게는 계산 · 찜을 누를 때
  * 로그인을 다시 권한다(LoginSheet). 회원은 '처음이면 위, 회원이면 아래'로 읽고 아래를 누른다.
  * - 1 · 2장 오른쪽 위 [건너뛰기] → 마지막 장. 새 폰의 회원이 소개를 다 넘기지 않게
- * - 소개를 본 비회원이 / 로 들어오면 /start(이 화면을 마지막 장부터)로 온다(lib/start-redirect.ts)
+ * - / 로 들어온 비회원은 소개를 봤어도 1장부터(11/23). 홈에서 로그인이 풀리면 /start(마지막 장부터)로 온다(lib/start-redirect.ts)
  * - 카카오 버튼은 로그인을 쓸 수 있을 때(정식 주소)만, 이 기기에 로그인 기록이 없을 때만 보인다
  *
  * ── 넘기기 (11/23 ggue) ─────────────────────────────────────────────
@@ -82,8 +82,8 @@ const LAST = SLIDES.length - 1;
 
 export const ONBOARDING_LAST = LAST;
 
-/** 가만히 두면 이만큼 뒤 다음 장으로. 제목 두 줄을 읽을 만큼 — 진행 점이 차오르는 시간과 같다. */
-export const AUTO_MS = 4000;
+/** 가만히 두면 이만큼 뒤 다음 장으로. 제목 두 줄을 읽을 만큼 — 진행 점이 차오르는 시간과 같다. 11/23 4초 → 2.8초("간격이 너무 멀다") */
+export const AUTO_MS = 2800;
 /** 이만큼 옆으로 밀어야 넘긴다. 그보다 짧거나 위아래로 더 움직였으면 누른 것 · 위아래로 민 것으로 본다. */
 const SWIPE_PX = 40;
 
@@ -101,7 +101,7 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
    * 첫 렌더에서는 옮기지 않는다 — 페이지에 들어오자마자 포커스가 튀면 안 된다.
    */
   const headingRef = useRef<HTMLHeadingElement>(null);
-  /** 사람이 넘겼을 때만 제목으로 포커스를 옮긴다. 저절로 넘어갈 때 옮기면 읽던 자리를 4초마다 빼앗는다. */
+  /** 사람이 넘겼을 때만 제목으로 포커스를 옮긴다. 저절로 넘어갈 때 옮기면 읽던 자리를 몇 초마다 빼앗는다. */
   const moveFocus = useRef(false);
 
   useEffect(() => {
