@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell, Button, KakaoButton, PerkyCharacter, StickyBottomAction } from "@/app/components";
+import { AppShell, Button, KakaoButton, PerkyCharacter } from "@/app/components";
 import type { PerkyState } from "@/app/components";
 import { hasStoredLogin, isLoginAvailable, signIn } from "@/lib/auth";
 import { markOnboardingSeen } from "@/lib/storage";
@@ -30,7 +31,13 @@ import { replaceKeepingEntry } from "@/lib/navigation";
  * 로그인을 다시 권한다(LoginSheet). 회원은 '처음이면 위, 회원이면 아래'로 읽고 아래를 누른다.
  * - 1 · 2장 오른쪽 위 [건너뛰기] → 마지막 장. 새 폰의 회원이 소개를 다 넘기지 않게
  * - 소개를 본 비회원이 / 로 들어오면 /start(이 화면을 마지막 장부터)로 온다(lib/start-redirect.ts)
- * - 카카오 버튼은 로그인을 쓸 수 있을 때(정식 주소)만, 이 기기에 로그인 기록이 없을 때만 보인다 — 11/22 부터 1장부터 모든 장에
+ * - 카카오 버튼은 로그인을 쓸 수 있을 때(정식 주소)만, 이 기기에 로그인 기록이 없을 때만 보인다
+ *
+ * ── 넘기기 (11/23 ggue) ─────────────────────────────────────────────
+ * [다음] · [이전] 버튼을 없앴다. 옆으로 밀거나(← 다음 · → 이전), 가만히 두면 AUTO_MS 마다 다음 장으로 간다.
+ * 마지막 장에서 멈춘다. 지금 장의 진행 점이 차오르며 언제 넘어가는지 보여 준다.
+ * 아래 버튼([내 혜택 찾아보기] · [카카오로 로그인])은 마지막 장에만 — 11/22 에 1장부터 넣었던 카카오도 마지막 장으로 돌렸다.
+ * 1 · 2장에서도 버튼 칸의 자리는 잡아 둔다(보이지만 않게). 안 잡으면 마지막 장에서 버튼이 생길 때 그림과 제목이 위로 튄다.
  *
  * ── SSR ──────────────────────────────────────────────────────────
  * 렌더에 localStorage 를 읽지 않는다. 읽으면 서버 HTML 과 첫 클라이언트 렌더가
@@ -59,7 +66,7 @@ const SLIDES: Slide[] = [
     character: "guide",
     glow: "bg-brand-200",
     eyebrowSr: "안내",
-    title: "다섯 가지만\n답하면 돼요",
+    title: "몇 가지 질문만\n답하면 돼요",
   },
   {
     character: "success",
@@ -75,9 +82,16 @@ const LAST = SLIDES.length - 1;
 
 export const ONBOARDING_LAST = LAST;
 
+/** 가만히 두면 이만큼 뒤 다음 장으로. 제목 두 줄을 읽을 만큼 — 진행 점이 차오르는 시간과 같다. */
+export const AUTO_MS = 4000;
+/** 이만큼 옆으로 밀어야 넘긴다. 그보다 짧거나 위아래로 더 움직였으면 누른 것 · 위아래로 민 것으로 본다. */
+const SWIPE_PX = 40;
+
 export default function Onboarding({ initialStep = 0 }: { initialStep?: number }) {
   const router = useRouter();
   const [step, setStep] = useState(initialStep);
+  // 들어온 방향 — 다음 장은 오른쪽에서, 이전 장은 왼쪽에서 들어온다. 처음 그릴 때는 0(지금처럼 아래에서 위로).
+  const [dir, setDir] = useState<-1 | 0 | 1>(0);
   // 로그인 기록은 렌더에서 읽지 않는다(hydration). 처음 그린 뒤 한 번 본다 — 로그인한 사람이 소개를 다시 열면 카카오 버튼이 빠진다.
   const [loggedIn, setLoggedIn] = useState(false);
   useEffect(() => setLoggedIn(hasStoredLogin()), []);
@@ -87,15 +101,59 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
    * 첫 렌더에서는 옮기지 않는다 — 페이지에 들어오자마자 포커스가 튀면 안 된다.
    */
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const mounted = useRef(false);
+  /** 사람이 넘겼을 때만 제목으로 포커스를 옮긴다. 저절로 넘어갈 때 옮기면 읽던 자리를 4초마다 빼앗는다. */
+  const moveFocus = useRef(false);
 
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
+    if (!moveFocus.current) return;
+    moveFocus.current = false;
     headingRef.current?.focus();
   }, [step]);
+
+  function go(to: number, byHand = true) {
+    const next = Math.max(0, Math.min(LAST, to));
+    if (next === step) return;
+    moveFocus.current = byHand;
+    setDir(next > step ? 1 : -1);
+    setStep(next);
+  }
+
+  // 가만히 두면 다음 장으로. 장이 바뀔 때마다(손으로 넘겨도) 처음부터 다시 센다. 마지막 장에서 멈춘다.
+  useEffect(() => {
+    if (step >= LAST) return;
+    const t = window.setTimeout(() => {
+      moveFocus.current = false;
+      setDir(1);
+      setStep((s) => Math.min(LAST, s + 1));
+    }, AUTO_MS);
+    return () => window.clearTimeout(t);
+  }, [step]);
+
+  // 컴퓨터에서는 ← → 키로도 넘긴다
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowRight") go(step + 1);
+      else if (e.key === "ArrowLeft") go(step - 1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // 옆으로 밀기 — 손가락(터치)과 마우스 끌기 둘 다 pointer 이벤트로 받는다
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  function onPointerDown(e: ReactPointerEvent) {
+    swipeStart.current = { x: e.clientX, y: e.clientY };
+  }
+  function onPointerUp(e: ReactPointerEvent) {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) <= Math.abs(dy)) return;
+    // 왼쪽으로 밀면(dx < 0) 다음 장
+    go(dx < 0 ? step + 1 : step - 1);
+  }
 
   function leave(to: string) {
     markOnboardingSeen();
@@ -113,8 +171,9 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
 
   const slide = SLIDES[step];
   const isLast = step === LAST;
-  // 1장부터 보인다(11/22) — 로그아웃한 회원 · 새 폰의 회원이 소개를 넘기지 않고 바로 로그인한다. 장마다 같은 자리라 넘겨도 버튼이 튀지 않는다.
+  // 마지막 장에만(11/23) — 로그아웃한 회원 · 새 폰의 회원은 [건너뛰기]로 바로 온다
   const showKakao = isLoginAvailable() && !loggedIn;
+  const slideFrom = { "--slide-from-x": `${dir * 32}px`, "--slide-from-y": dir === 0 ? "14px" : "0px" } as CSSProperties;
 
   return (
     <AppShell className="relative">
@@ -123,7 +182,7 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
       {!isLast && (
         <button
           type="button"
-          onClick={() => setStep(LAST)}
+          onClick={() => go(LAST)}
           className="focus-ring absolute right-2 top-2 z-10 min-h-11 rounded-control px-3 text-sm font-bold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
         >
           건너뛰기
@@ -139,7 +198,17 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
       */}
       {/* 키 작은 화면(아이폰 SE 등)에서는 그림을 화면 높이에 맞춰 줄이고 간격을 좁힌다 — 마지막 장은 아래 버튼이
           둘이라(파랑 · 카카오) 제목과 설명이 버튼 칸에 가려지기 쉽다(11/20). */}
-      <main key={step} className="flex flex-1 flex-col items-center justify-center gap-8 py-4 [@media(max-height:700px)]:gap-5 [@media(max-height:700px)]:py-3">
+      {/* touch-action: pan-y — 위아래 스크롤은 브라우저가, 옆으로 민 건 여기서 받는다. select-none — 마우스로 끌 때 글자가 잡히지 않게 */}
+      <main
+        key={step}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (swipeStart.current = null)}
+        // 마우스로 그림을 끌면 브라우저가 이미지 끌기를 시작해 pointerup 이 안 온다
+        onDragStart={(e) => e.preventDefault()}
+        style={slideFrom}
+        className="flex flex-1 touch-pan-y select-none flex-col items-center justify-center gap-8 py-4 [@media(max-height:700px)]:gap-5 [@media(max-height:700px)]:py-3"
+      >
         <div className="relative flex items-center justify-center">
           {/* 배경 광원. 캐릭터 뒤 한 겹뿐이고 단계마다 색이 바뀐다.
               blur-3xl 로 형태를 지운다 — 원으로 읽히면 장식이 된다. */}
@@ -171,7 +240,7 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
           </h1>
           {slide.description && (
             <p
-              className="slide-in max-w-[19rem] text-[15px] leading-relaxed text-ink-600"
+              className="slide-in max-w-[19rem] whitespace-pre-line text-[15px] leading-relaxed text-ink-600"
               style={{ animationDelay: "0.12s" }}
             >
               {slide.description}
@@ -180,54 +249,52 @@ export default function Onboarding({ initialStep = 0 }: { initialStep?: number }
         </div>
       </main>
 
-      <StickyBottomAction>
+      {/* 아래 칸 — StickyBottomAction 의 그림자 띠는 쓰지 않는다. 1 · 2장에서 비워 둔 버튼 자리 위에 빈 띠만 떠 보인다.
+          이 화면은 스크롤되지 않으니 띠로 가를 것도 없다. 여백은 StickyBottomAction 과 같다. */}
+      <div className="mt-auto pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
         {/* 진행 점. 눌러서 그 장으로 갈 수 있다 — 점만 그려 두고 못 누르게 하면
-            어디까지 왔는지는 알려주면서 되돌아갈 길은 막는 셈이다. */}
+            어디까지 왔는지는 알려주면서 되돌아갈 길은 막는 셈이다.
+            지금 장의 점은 AUTO_MS 동안 차오른다 — 다 차면 다음 장. 마지막 장은 꽉 찬 채로 멈춘다. */}
         <div className="mb-4 flex items-center justify-center gap-2">
           {SLIDES.map((s, i) => (
             <button
               key={s.character}
               type="button"
-              onClick={() => setStep(i)}
+              onClick={() => go(i)}
               aria-label={`${i + 1}단계 · ${s.eyebrowSr}`}
               aria-current={i === step ? "step" : undefined}
               className="focus-ring flex h-11 w-6 items-center justify-center rounded-full"
             >
               <span
                 aria-hidden="true"
-                className={`block h-2 rounded-full transition-all duration-300 ${
-                  i === step ? "w-6 bg-brand-600" : "w-2 bg-ink-200"
+                className={`block h-2 overflow-hidden rounded-full transition-all duration-300 ${
+                  i === step ? "w-6 bg-brand-200" : "w-2 bg-ink-200"
                 }`}
-              />
+              >
+                {i === step && (
+                  <span
+                    key={step}
+                    className={`block h-full w-full rounded-full bg-brand-600 ${isLast ? "" : "onboard-progress"}`}
+                    style={{ "--onboard-ms": `${AUTO_MS}ms` } as CSSProperties}
+                  />
+                )}
+              </span>
             </button>
           ))}
         </div>
 
-        <Button onClick={() => (isLast ? leave("/find") : setStep(step + 1))}>
-          {isLast ? "내 혜택 찾아보기" : "다음"}
-        </Button>
+        {/* 마지막 장에만 버튼. 1 · 2장에서는 자리만 잡아 둔다 — invisible 은 화면 · 탭 순서 · 스크린리더에서 모두 빠진다. */}
+        <div className={isLast ? "slide-in" : "invisible"} aria-hidden={!isLast} style={{ animationDelay: "0.12s" }}>
+          <Button onClick={() => leave("/find")}>내 혜택 찾아보기</Button>
 
-        {/* 회원 → 바로 홈. 카카오 디자인 가이드대로 노랑 버튼 그대로, 문구는 가이드의 '로그인'. */}
-        {showKakao && (
-          <div className="mt-2">
-            <KakaoButton onClick={logIn}>카카오로 로그인</KakaoButton>
-          </div>
-        )}
-
-        {/* '이전' 은 자리를 늘 잡아 둔다. 1장에서만 사라지면 버튼이 그 순간 위로
-            튀어 올라 '다음' 의 위치가 바뀐다. */}
-        <div className="flex h-11 items-center justify-center">
-          {step > 0 && (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="focus-ring rounded-control px-4 py-2 text-sm font-bold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
-            >
-              이전
-            </button>
+          {/* 회원 → 바로 홈. 카카오 디자인 가이드대로 노랑 버튼 그대로, 문구는 가이드의 '로그인'. */}
+          {showKakao && (
+            <div className="mt-2">
+              <KakaoButton onClick={logIn}>카카오로 로그인</KakaoButton>
+            </div>
           )}
         </div>
-      </StickyBottomAction>
+      </div>
     </AppShell>
   );
 }
