@@ -684,15 +684,18 @@ html.splash #splash {
   justify-content: center;
   background: var(--color-brand-600);
 }
+/* 마크는 화면 높이의 4% 만큼 위로 — 계산상 정가운데면 P 꼬리 때문에 처져 보인다(ggue 11/23, 눈으로 보는 가운데).
+   아이폰 시작 이미지(scripts/build-apple-splash.mjs)도 같은 값이라 바꾸면 같이 바꾸고 이미지를 다시 굽는다 */
 #splash img {
   display: block;
   width: 150px;
   height: 150px;
+  transform: translateY(-4vh);
 }
-/* 마크는 정가운데 그대로, 줄은 그 아래에 따로 — 줄이 나타나도 마크가 움직이지 않는다 */
+/* 줄은 마크 아래에 따로 — 줄이 나타나도 마크가 움직이지 않는다 */
 #splash .splash-slow {
   position: absolute;
-  top: calc(50% + 92px);
+  top: calc(50% - 4vh + 92px);
   left: 0;
   right: 0;
   margin: 0;
