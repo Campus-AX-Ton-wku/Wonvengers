@@ -48,7 +48,7 @@ export function HouseChecklist() {
         </p>
         <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-ink-100">
           <div
-            className="h-full rounded-full bg-brand-600 transition-[width] motion-reduce:transition-none"
+            className="h-full rounded-full bg-brand-600 transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
             style={{ width: `${(done / total) * 100}%` }}
           />
         </div>

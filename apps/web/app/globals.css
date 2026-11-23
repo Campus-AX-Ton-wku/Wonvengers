@@ -380,6 +380,104 @@ select.input {
   animation: slide-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── 작은 움직임 4곳 (11/23 ggue) ──
+   같은 문법(아래에서 위로 · 지수형 감속 · 짧게) 안에서. 돈과 숫자는 움직이지 않는다. */
+
+/* 1. 아래에서 올라오는 창 — 배경은 0.2초 어두워지고, 창은 아래에서 미끄러져 올라온다 */
+@keyframes sheet-backdrop {
+  from {
+    background-color: transparent;
+  }
+}
+
+.sheet-backdrop {
+  animation: sheet-backdrop 0.2s ease-out both;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 2. 배지 받는 순간 — 창이 올라온 뒤 배지가 살짝 커지며 자리를 잡고(튀지 않음), 빛 고리가 한 번 퍼지고 사라진다 */
+@keyframes badge-earned {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.badge-earned {
+  position: relative;
+  display: inline-flex;
+  animation: badge-earned 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+}
+
+@keyframes badge-ring {
+  from {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.badge-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 6px var(--color-brand-200);
+  pointer-events: none;
+  animation: badge-ring 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
+}
+
+/* 3. 하트 — 담을 때만 짧게 톡(0.3초) 커졌다 돌아온다. 뺄 때는 움직이지 않는다 */
+@keyframes heart-pop {
+  40% {
+    transform: scale(1.28);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.heart-pop {
+  display: inline-flex;
+  animation: heart-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 4. 체크할 때 — 누른 줄의 '확인함'이 아래에서 살짝 떠오른다 */
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.check-in {
+  animation: check-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* 최종 상태로 즉시 보여준다. 애니메이션만 끄면 both 때문에 사라진 채로 남는다.
      움직임만 덜어내고 상태(보임/색)는 그대로 둔다. */
@@ -389,10 +487,20 @@ select.input {
   .amount-in,
   .amount-in > *,
   .amount-reveal,
-  .slide-in {
+  .slide-in,
+  .sheet-in,
+  .sheet-backdrop,
+  .badge-earned,
+  .heart-pop,
+  .check-in {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  /* 빛 고리는 꾸밈뿐이라 아예 그리지 않는다 */
+  .badge-ring {
+    display: none;
   }
 
   /* 눌림 반응까지 없애지는 않는다 — 버튼이 죽은 것처럼 보인다. 거리만 줄인다. */

@@ -84,8 +84,12 @@ export function BadgeWatcher() {
       onClose={close}
     >
       {/* 배지 그림이 주인공 — 마스코트는 넣지 않는다(시안) */}
+      {/* 창이 올라온 뒤 배지가 자리를 잡고, 빛 고리가 한 번 퍼진다(11/23 · globals.css '작은 움직임') */}
       <div className="flex justify-center pb-1">
-        <BadgeMedal id={shown.badge.id} size="lg" />
+        <span className="badge-earned">
+          <span aria-hidden="true" className="badge-ring" />
+          <BadgeMedal id={shown.badge.id} size="lg" />
+        </span>
       </div>
       <Button size="screen" onClick={() => pin(shown.badge.id)}>
         대표 배지로 걸기

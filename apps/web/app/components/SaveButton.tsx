@@ -15,6 +15,8 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
   const [available, setAvailable] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  // 담을 때만 하트가 톡(11/23) — 누를 때마다 숫자를 올려 같은 움직임을 다시 튼다. 처음 그릴 때 · 뺄 때는 0 이거나 안 담긴 상태
+  const [pop, setPop] = useState(0);
 
   useEffect(() => {
     setAvailable(isLoginAvailable());
@@ -32,7 +34,9 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
       setLoginOpen(true);
       return;
     }
-    setSaved(toggleSavedPolicy(policyId));
+    const next = toggleSavedPolicy(policyId);
+    setSaved(next);
+    if (next) setPop((n) => n + 1);
   }
 
   return (
@@ -48,7 +52,9 @@ export function SaveButton({ policyId, policyName, className = "" }: { policyId:
           saved ? "bg-brand-50 text-brand-600 hover:bg-brand-100" : "text-ink-500 hover:bg-brand-50"
         } ${className}`}
       >
-        <Heart size={ICON_MD} aria-hidden="true" fill={saved ? "currentColor" : "none"} />
+        <span key={pop} className={pop > 0 && saved ? "heart-pop" : "inline-flex"}>
+          <Heart size={ICON_MD} aria-hidden="true" fill={saved ? "currentColor" : "none"} />
+        </span>
       </button>
       {loginOpen && (
         <LoginSheet
