@@ -110,4 +110,12 @@ describe("서류 떼는 곳 1장 — 지도 버튼 (11/22)", () => {
   it("행안부 출처", () => {
     expect(findGuide("where-documents")!.sources.map((s) => s.name)).toContain("행정안전부 무인민원발급기정보");
   });
+
+  it("앱 안 링크(links)는 '/' 로 시작하는 앱 주소만, 글자는 비어 있지 않다 (11/22 청약 가이드)", () => {
+    const links = GUIDES.flatMap((g) => g.sections.flatMap((s) => s.links ?? []));
+    for (const l of links) {
+      expect(l.href).toMatch(/^\/[a-z]/);
+      expect(l.label.length).toBeGreaterThan(0);
+    }
+  });
 });

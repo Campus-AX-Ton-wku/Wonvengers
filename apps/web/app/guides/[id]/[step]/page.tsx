@@ -100,6 +100,12 @@ export default async function GuideStepPage({ params }: { params: Promise<{ id: 
           </Link>
         )}
 
+        {section.links?.map((link) => (
+          <Link key={link.href} href={link.href} className={buttonClass({ variant: "secondary", size: "md", full: true })}>
+            {link.label}
+          </Link>
+        ))}
+
         {section.caution && (
           <p className="flex items-start gap-2.5 rounded-card bg-warn-50 p-4 text-[15px] leading-relaxed text-ink-700">
             <TriangleAlert size={ICON_MD} aria-hidden="true" className="mt-0.5 shrink-0 text-warn-800" />

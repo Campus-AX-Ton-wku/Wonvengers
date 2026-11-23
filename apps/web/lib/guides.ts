@@ -38,6 +38,11 @@ export interface GuideSection {
   whereLabel?: string;
   /** true 면 '어디서' 칸 아래에 서류 떼는 곳 지도(/guides/places) 버튼 — 서류 떼는 곳 1장 */
   placesMap?: boolean;
+  /**
+   * 앱 안 화면으로 가는 버튼 (11/22 청약 가이드 — 청약통장 상품 · 익산 청약 공고).
+   * '어디서 해요'(where)는 바깥 공공 주소만이라 칸을 나눴다. href 는 '/' 로 시작하는 앱 주소만.
+   */
+  links?: { label: string; href: string }[];
   /** 조심해요 (있을 때만) */
   caution?: string;
   /** 용어 풀이 — 비유 대신 정확한 뜻 */

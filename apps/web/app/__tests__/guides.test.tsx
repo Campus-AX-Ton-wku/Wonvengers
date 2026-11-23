@@ -190,3 +190,11 @@ describe("장 넘기기 — 기록을 쌓지 않는다", () => {
     expect(screen.queryByRole("link", { name: /지도 보기/ })).toBeNull();
   });
 });
+
+describe("앱 안 링크 (11/22)", () => {
+  it("청약 쉽게 2장 — 청년 주택드림 청약통장 상품으로 가는 버튼", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "cheongyak", step: "2" }) }));
+    const link = screen.getByRole("link", { name: "청년 주택드림 청약통장 보기" });
+    expect(link.getAttribute("href")).toBe("/loans/youth-dream-savings-account");
+  });
+});
