@@ -368,7 +368,8 @@ select.input {
 @keyframes slide-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    /* 넘긴 방향을 따라 옆에서 들어온다(11/23 넘기기). 변수가 없으면 지금처럼 아래에서 위로 */
+    transform: translate(var(--slide-from-x, 0px), var(--slide-from-y, 14px));
   }
   to {
     opacity: 1;
@@ -378,6 +379,21 @@ select.input {
 
 .slide-in {
   animation: slide-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 진행 점이 차오른다 — 기다리면 다음 장으로 넘어간다는 걸 보여 준다(11/23). 길이는 Onboarding.tsx 의 AUTO_MS */
+@keyframes onboard-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.onboard-progress {
+  transform-origin: left;
+  animation: onboard-progress var(--onboard-ms, 4000ms) linear both;
 }
 
 /* ── 움직임 4곳 (11/23 ggue — 처음엔 은은하게 넣었다가 "뭐가 바뀐지 모르겠다"로 더 또렷하게) ──
@@ -615,6 +631,7 @@ select.input {
   .amount-in > *,
   .amount-reveal,
   .slide-in,
+  .onboard-progress,
   .sheet-in,
   .sheet-backdrop,
   .badge-earned,

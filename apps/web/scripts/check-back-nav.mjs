@@ -109,8 +109,8 @@ async function enter(browser) {
   await page.goto(`${ORIGIN}/`, { waitUntil: "commit" });
   await page.waitForURL("**/onboarding", { waitUntil: "networkidle" });
   await settle(page);
-  await press(page, "다음");
-  await press(page, "다음");
+  // [다음]은 없다(11/23) — 진행 점으로 마지막 장에 간다
+  await press(page, "3단계 · 결과");
   await press(page, "내 혜택 찾아보기");
   await page.waitForURL(/\/find\?q=birth$/);
   await settle(page);
