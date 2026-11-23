@@ -81,6 +81,14 @@ describe("/auth/consent (설계 '화면' 3)", () => {
     expect(row?.textContent).toContain("받은 배지");
   });
 
+  it("주거비 달력 · 집 보기 체크리스트도 저장 항목으로 보여준다 (11/23)", async () => {
+    render(<ConsentPage />);
+    await screen.findByRole("heading", { level: 1 });
+    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("주거비 달력 · 집 보기 체크리스트"));
+    expect(row?.textContent).toContain("누른 표시와 고친 금액");
+    expect(row?.textContent).toContain("확인한 항목");
+  });
+
   it("관심 지원금도 저장 항목으로 보여준다", async () => {
     render(<ConsentPage />);
     await screen.findByRole("heading", { level: 1 });
