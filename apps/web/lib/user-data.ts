@@ -20,8 +20,17 @@ import type {
  */
 
 export const SCHEMA_VERSION = 1;
-/** 동의 화면 문구의 버전. 문구를 바꾸면 날짜를 올리고, 서버는 옛 버전의 저장을 거절한다. */
-export const CONSENT_VERSION = "2026-11-04";
+/**
+ * 동의 화면 문구의 버전. 문구를 바꾸면 날짜를 올리고, 서버는 옛 버전의 저장을 거절한다.
+ * 2026-11-23: 저장 항목에 '프로필 사진(선택)'을 넣으며 올렸다(ggue 결정) — 이 기기에서 새 문구에 다시 동의해야 저장된다.
+ */
+export const CONSENT_VERSION = "2026-11-23";
+/**
+ * 예전 문구에 동의하고 저장된 묶음. **읽기에서만** 받는다(validateUserData) — 쓰기(validatePutRequest)는
+ * 지금 버전만. 안 받으면 버전을 올린 순간 모든 계정의 저장값이 '형식 오류'가 되어 다시 동의해도 못 불러온다.
+ * 읽은 뒤에는 이 기기의 새 동의로 다시 저장된다(lib/sync.ts 가 지금 버전을 붙여 올린다).
+ */
+export const PREVIOUS_CONSENT_VERSIONS: readonly string[] = ["2026-11-04"];
 /** PUT 본문 상한. 글자 수가 아니라 바이트다 — 한글은 한 글자에 3바이트. */
 export const MAX_BODY_BYTES = 64 * 1024;
 
@@ -59,6 +68,12 @@ export interface ProfileCardData {
   name: string | null;
   /** 그림 오른쪽 아래에 거는 받은 배지 하나 */
   pinnedBadge: BadgeId | null;
+  /**
+   * 프로필 사진을 고른 때(11/23, lib/profile-photo-data.ts 의 at). 있으면 그림 대신 사진을 보인다.
+   * 사진 자체는 따로 저장한다(GET · PUT /me/photo) — 이 값이 바뀐 것을 보면 다른 기기가 새로 받는다.
+   * 사진이 없으면 키를 아예 빼고 저장한다 — 예전 서버(11/23 전)는 모르는 키를 거부한다.
+   */
+  photoAt?: string;
 }
 
 /**
@@ -424,7 +439,7 @@ function parseDocumentChecks(v: unknown, path: string): Record<string, string[]>
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
 
 function parseProfileCard(v: unknown, path: string): ProfileCardData {
-  const o = exact(v, path, ["icon", "color", "name", "pinnedBadge"]);
+  const o = exact(v, path, ["icon", "color", "name", "pinnedBadge"], ["photoAt"]);
   const name = nullable(o.name, (x) => {
     if (typeof x !== "string") fail(`${path}.name`, "not a string");
     const s = x as string;
@@ -437,6 +452,7 @@ function parseProfileCard(v: unknown, path: string): ProfileCardData {
     color: oneOf(o.color, `${path}.color`, PROFILE_COLOR_IDS),
     name,
     pinnedBadge: nullable(o.pinnedBadge, (x) => oneOf(x, `${path}.pinnedBadge`, BADGE_IDS)),
+    ...(o.photoAt !== undefined && { photoAt: timestamp(o.photoAt, `${path}.photoAt`) }),
   };
 }
 
@@ -522,13 +538,16 @@ export function ledgerForSync(record: LedgerData): LedgerData | null {
   return result.ok ? result.value : null;
 }
 
-function parsePayload(v: unknown, path: string): UserDataPayload {
+function parsePayload(v: unknown, path: string, acceptPrevious = false): UserDataPayload {
   const o = record(v, path);
   const allowed: readonly string[] = [...PAYLOAD_KEYS, ...OPTIONAL_PAYLOAD_KEYS];
   for (const k of Object.keys(o)) if (!allowed.includes(k)) fail(`${path}.${k}`, "unknown key");
   for (const k of PAYLOAD_KEYS) if (!Object.prototype.hasOwnProperty.call(o, k)) fail(`${path}.${k}`, "missing");
   if (o.schemaVersion !== SCHEMA_VERSION) fail(`${path}.schemaVersion`, "unsupported version");
-  if (o.consentVersion !== CONSENT_VERSION) fail(`${path}.consentVersion`, "consent required");
+  const consentOk =
+    o.consentVersion === CONSENT_VERSION ||
+    (acceptPrevious && typeof o.consentVersion === "string" && PREVIOUS_CONSENT_VERSIONS.includes(o.consentVersion));
+  if (!consentOk) fail(`${path}.consentVersion`, "consent required");
   return {
     schemaVersion: SCHEMA_VERSION,
     consentVersion: CONSENT_VERSION,
@@ -560,8 +579,12 @@ function attempt<T>(parse: () => T): Validation<T> {
   }
 }
 
+/**
+ * 서버에서 받은 묶음을 읽을 때(lib/remote.ts loadRemote). 예전 동의 버전도 받는다 — PREVIOUS_CONSENT_VERSIONS.
+ * 돌려주는 consentVersion 은 지금 버전이다: 이 묶음은 이 기기의 새 동의로 다시 저장된다.
+ */
 export function validateUserData(input: unknown): Validation<UserDataPayload> {
-  return attempt(() => parsePayload(input, "data"));
+  return attempt(() => parsePayload(input, "data", true));
 }
 
 export function validatePutRequest(input: unknown): Validation<PutRequestBody> {

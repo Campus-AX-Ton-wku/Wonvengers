@@ -90,7 +90,7 @@ describe("validatePutRequest — 서버가 다시 하는 형식 검사(신뢰 �
   });
 
   it("CONSENT_VERSION 은 설계의 날짜다", () => {
-    expect(CONSENT_VERSION).toBe("2026-11-04");
+    expect(CONSENT_VERSION).toBe("2026-11-23");
   });
 });
 

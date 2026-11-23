@@ -3,7 +3,8 @@ import { route, type Deps } from "../src/app";
 import type { AccountService } from "../src/cognito";
 import { KakaoUnlinkError, type KakaoUnlinker } from "../src/kakao";
 import type { LogEntry } from "../src/log";
-import type { PutOutcome, StoredItem, UserDataStore } from "../src/store";
+import type { PhotoStore, PutOutcome, StoredItem, UserDataStore } from "../src/store";
+import type { ProfilePhotoBody } from "../../web/lib/profile-photo-data";
 import type { PushStore, StoredDevice } from "../src/push-store";
 import type { PushSubscriptionBody } from "../../web/lib/push-subscription";
 import type { UserDataPayload } from "../../web/lib/user-data";
@@ -26,7 +27,26 @@ class MemoryStore implements UserDataStore {
   async delete(userId: string) {
     this.calls.push(`store.delete:${userId}`);
     this.items.delete(userId);
+    this.photos.delete(userId); // DynamoUserDataStore.delete 처럼 사진도 함께
   }
+  readonly photos = new Map<string, ProfilePhotoBody>();
+}
+
+/** 사진 저장소 대역 — 같은 MemoryStore 의 photos 를 쓴다(실제로도 한 표) */
+function photoStore(store: MemoryStore, calls: string[]): PhotoStore {
+  return {
+    async getPhoto(userId) {
+      return store.photos.get(userId) ?? null;
+    },
+    async putPhoto(userId, photo) {
+      calls.push(`photo.put:${userId}`);
+      store.photos.set(userId, photo);
+    },
+    async deletePhoto(userId) {
+      calls.push(`photo.delete:${userId}`);
+      store.photos.delete(userId);
+    },
+  };
 }
 
 /** 구독 저장소 대역 — 호출 순서를 calls 에 남긴다. */
@@ -90,6 +110,7 @@ function setup(kakaoImpl?: KakaoUnlinker["unlink"]) {
   let second = 0;
   const deps: Deps = {
     store,
+    photos: photoStore(store, calls),
     push,
     accounts,
     kakao,
@@ -337,5 +358,56 @@ describe("로그", () => {
   it("모르는 경로는 404", async () => {
     const { deps } = setup();
     expect((await route(apiEvent("POST /me/data", A), deps)).statusCode).toBe(404);
+  });
+});
+
+describe("GET · PUT · DELETE /me/photo — 프로필 사진 (11/23)", () => {
+  const AT = "2026-11-23T12:00:00.000Z";
+  const image = (() => {
+    const buf = Buffer.alloc(2000, 0x41);
+    buf[0] = 0xff;
+    buf[1] = 0xd8;
+    buf[2] = 0xff;
+    return buf.toString("base64");
+  })();
+
+  it("없으면 204, 올리면 204, 받으면 200 { image, at }", async () => {
+    const { deps } = setup();
+    expect((await route(apiEvent("GET /me/photo", A), deps)).statusCode).toBe(204);
+    expect((await route(apiEvent("PUT /me/photo", A, { image, at: AT }), deps)).statusCode).toBe(204);
+    const res = await route(apiEvent("GET /me/photo", A), deps);
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(String(res.body))).toEqual({ image, at: AT });
+  });
+
+  it("JPEG 가 아니면 400, 본문이 64KB 를 넘으면 413", async () => {
+    const { deps } = setup();
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]).toString("base64");
+    const bad = await route(apiEvent("PUT /me/photo", A, { image: png, at: AT }), deps);
+    expect(bad.statusCode).toBe(400);
+    expect(JSON.parse(String(bad.body))).toEqual({ error: "invalid", path: "body.image: not a jpeg" });
+    const huge = await route(apiEvent("PUT /me/photo", A, { image: "A".repeat(70 * 1024), at: AT }), deps);
+    expect(huge.statusCode).toBe(413);
+  });
+
+  it("남의 사진은 못 본다 — 사용자는 토큰 sub 로만 정한다", async () => {
+    const { deps } = setup();
+    await route(apiEvent("PUT /me/photo", A, { image, at: AT }), deps);
+    expect((await route(apiEvent("GET /me/photo", B), deps)).statusCode).toBe(204);
+  });
+
+  it("지우면 204 이고 다시 받으면 204", async () => {
+    const { deps } = setup();
+    await route(apiEvent("PUT /me/photo", A, { image, at: AT }), deps);
+    expect((await route(apiEvent("DELETE /me/photo", A), deps)).statusCode).toBe(204);
+    expect((await route(apiEvent("GET /me/photo", A), deps)).statusCode).toBe(204);
+  });
+
+  it("회원 탈퇴하면 사진도 지운다", async () => {
+    const { deps, store } = setup();
+    await route(put(A, { data: validPayload(), baseUpdatedAt: null }), deps);
+    await route(apiEvent("PUT /me/photo", A, { image, at: AT }), deps);
+    expect((await route(apiEvent("DELETE /me", A), deps)).statusCode).toBe(204);
+    expect(store.photos.has(A.sub)).toBe(false);
   });
 });

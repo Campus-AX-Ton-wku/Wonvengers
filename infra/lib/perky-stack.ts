@@ -222,6 +222,13 @@ export class PerkyStack extends Stack {
       authorizer,
     });
     api.addRoutes({ path: "/me", methods: [apigw.HttpMethod.DELETE], integration, authorizer });
+    // 프로필 사진(11/23) — 답과 같은 표의 다른 항목(photo#<sub>). 이미 받은 GetItem · PutItem · DeleteItem 으로 충분하다
+    api.addRoutes({
+      path: "/me/photo",
+      methods: [apigw.HttpMethod.GET, apigw.HttpMethod.PUT, apigw.HttpMethod.DELETE],
+      integration,
+      authorizer,
+    });
     api.addRoutes({
       path: "/me/push",
       methods: [apigw.HttpMethod.PUT, apigw.HttpMethod.DELETE],

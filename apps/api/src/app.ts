@@ -1,14 +1,16 @@
 import { MAX_BODY_BYTES, validatePutRequest } from "../../web/lib/user-data";
 import { MAX_PUSH_BODY_BYTES, validatePushEndpoint, validatePushSubscription } from "../../web/lib/push-subscription";
+import { MAX_PHOTO_BODY_BYTES, validatePhotoBody } from "../../web/lib/profile-photo-data";
 import type { AccountService } from "./cognito";
 import { bodyBytes, json, type ApiEvent, type ApiResult } from "./http";
 import type { KakaoUnlinker } from "./kakao";
 import { hashUserId, type LogEntry } from "./log";
 import type { PushStore } from "./push-store";
-import type { UserDataStore } from "./store";
+import type { PhotoStore, UserDataStore } from "./store";
 
 export interface Deps {
   store: UserDataStore;
+  photos: PhotoStore;
   push: PushStore;
   accounts: AccountService;
   kakao: KakaoUnlinker;
@@ -17,7 +19,7 @@ export interface Deps {
 }
 
 /**
- * 다섯 경로 (설계 "API"). JWT authorizer 가 발급자·audience 를 이미 검증했다.
+ * 여덟 경로 (설계 "API" 다섯 + 11/23 프로필 사진 GET · PUT · DELETE /me/photo). JWT authorizer 가 발급자·audience 를 이미 검증했다.
  * 사용자 ID 는 그 토큰의 sub 에서만 꺼낸다 — 본문·경로·쿼리는 보지 않는다.
  */
 export async function route(event: ApiEvent, deps: Deps): Promise<ApiResult> {
@@ -33,6 +35,13 @@ export async function route(event: ApiEvent, deps: Deps): Promise<ApiResult> {
         return finish(deps, key, user, await getData(sub, deps));
       case "PUT /me/data":
         return finish(deps, key, user, await putData(sub, event, deps));
+      case "GET /me/photo":
+        return finish(deps, key, user, await getPhoto(sub, deps));
+      case "PUT /me/photo":
+        return finish(deps, key, user, await putPhoto(sub, event, deps));
+      case "DELETE /me/photo":
+        await deps.photos.deletePhoto(sub);
+        return finish(deps, key, user, json(204));
       case "PUT /me/push":
         return finish(deps, key, user, await putPush(sub, event, deps));
       case "DELETE /me/push":
@@ -100,6 +109,22 @@ function readJson(event: ApiEvent, maxBytes: number): { ok: true; value: unknown
   } catch {
     return { ok: false, result: json(400, { error: "invalid_json" }) };
   }
+}
+
+/** 프로필 사진 받기 (11/23). 없으면 204. */
+async function getPhoto(sub: string, deps: Deps): Promise<ApiResult> {
+  const photo = await deps.photos.getPhoto(sub);
+  return photo === null ? json(204) : json(200, photo);
+}
+
+/** 프로필 사진 올리기 — JPEG · 40KB 이하만(lib/profile-photo-data.ts). 마지막 한 장으로 덮어쓴다. */
+async function putPhoto(sub: string, event: ApiEvent, deps: Deps): Promise<ApiResult> {
+  const body = readJson(event, MAX_PHOTO_BODY_BYTES);
+  if (!body.ok) return body.result;
+  const checked = validatePhotoBody(body.value);
+  if (!checked.ok) return json(400, { error: "invalid", path: checked.error });
+  await deps.photos.putPhoto(sub, checked.value, deps.now());
+  return json(204);
 }
 
 /** 알림 켜기 · 갱신 (설계 "API"). 사용자는 토큰 sub 로만 정한다. */

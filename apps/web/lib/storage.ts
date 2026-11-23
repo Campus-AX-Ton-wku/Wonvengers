@@ -613,6 +613,9 @@ export function clearDeviceRecords(): void {
   removeQuietly(GUIDES_READ_KEY);
   removeQuietly(BADGES_SEEN_KEY);
   removeQuietly(HOME_REACHED_KEY);
+  // 프로필 사진 사본(11/23) — 공용 기기에서 로그아웃하면 사진이 남지 않게. 계정의 사진은 그대로다
+  removeQuietly(PROFILE_PHOTO_KEY);
+  removeQuietly(PROFILE_PHOTO_DELETE_KEY);
 }
 
 function removeQuietly(key: string): void {
@@ -644,6 +647,10 @@ export function onDeviceRecordChange(listener: () => void): () => void {
 const GUIDES_READ_KEY = "perky.guides-read";
 const BADGES_SEEN_KEY = "perky.badges-seen";
 const HOME_REACHED_KEY = "perky.home-reached";
+/** 프로필 사진 사본 { at, image, uploaded } — lib/profile-photo.ts */
+export const PROFILE_PHOTO_KEY = "perky.profile-photo";
+/** 서버 사진을 아직 못 지웠다는 표시 — lib/profile-photo.ts */
+export const PROFILE_PHOTO_DELETE_KEY = "perky.profile-photo-delete";
 
 /** 끝 장까지 연 가이드 id. 모르는 id 는 버린다 */
 export function loadGuidesRead(): string[] {

@@ -98,7 +98,7 @@ describe("로그인 후 쓰기", () => {
 
     const [payload, base] = save.mock.calls[0];
     expect(payload.answers.values).toEqual(답);
-    expect(payload.consentVersion).toBe("2026-11-04");
+    expect(payload.consentVersion).toBe("2026-11-23");
     expect(base).toBe(T0);
     await vi.waitFor(() => expect(getSyncState()).toMatchObject({ status: "idle", lastSavedAt: "2026-11-04T09:00:05.000Z" }));
     expect(meta()).toMatchObject({ baseUpdatedAt: "2026-11-04T09:00:05.000Z", dirty: false });
