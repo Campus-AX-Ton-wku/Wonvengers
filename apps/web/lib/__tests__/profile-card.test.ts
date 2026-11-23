@@ -23,10 +23,10 @@ describe("기본 이름 — 사는 곳 + 사는 + 상태", () => {
     expect(defaultProfileName(answers({ status: "구직" }))).toBe("익산 사는 구직자");
   });
 
-  it("하나만 있으면 있는 것만, 둘 다 없으면 '청년'", () => {
+  it("상태가 없으면 '청년', 지역 답이 없으면 앱이 다루는 유일한 지역(익산) — 처음 로그인해도 '익산 사는 청년' (ggue 11/23)", () => {
     expect(defaultProfileName(answers({ status: null }))).toBe("익산 사는 청년");
-    expect(defaultProfileName(answers({ region: null }))).toBe("대학생");
-    expect(defaultProfileName(answers({ region: null, status: null }))).toBe("청년");
+    expect(defaultProfileName(answers({ region: null }))).toBe("익산 사는 대학생");
+    expect(defaultProfileName(answers({ region: null, status: null }))).toBe("익산 사는 청년");
   });
 
   it("시 · 도만 고른 값이면 시 · 도 약칭", () => {

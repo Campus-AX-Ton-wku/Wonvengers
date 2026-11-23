@@ -1,5 +1,5 @@
 import type { Icon3DName } from "./icons3d";
-import { provinceForRegion, regionDisplayName, REGION_HIERARCHY } from "./region";
+import { provinceForRegion, regionDisplayName, REGION_HIERARCHY, REGION_OPTIONS } from "./region";
 import type { DiscoveryAnswers, DiscoveryStatus } from "./types";
 import {
   MAX_PROFILE_NAME,
@@ -70,9 +70,13 @@ function placeName(region: string): string {
   return stripped;
 }
 
-/** 내 조건으로 지은 이름 — "익산 사는 대학생" (설계 §2) */
+/** 지역 답이 없을 때 쓰는 곳 — 앱이 지역 하나(지금 익산시)만 다루면 그곳, 여럿이면 없음 */
+const ONLY_PLACE: string | null = REGION_OPTIONS.length === 1 ? placeName(REGION_OPTIONS[0].value) : null;
+
+/** 내 조건으로 지은 이름 — "익산 사는 대학생" (설계 §2).
+ *  답이 없어도 "익산 사는 청년" — 처음 로그인했을 때 그냥 '청년'만 보이지 않게, 지역 · 나이대를 함께 (ggue 11/23) */
 export function defaultProfileName(answers: Pick<DiscoveryAnswers, "region" | "status">): string {
-  const place = answers.region ? placeName(answers.region) : null;
+  const place = answers.region ? placeName(answers.region) : ONLY_PLACE;
   const who = answers.status ? STATUS_NOUN[answers.status] : null;
   if (place) return `${place} 사는 ${who ?? "청년"}`;
   return who ?? "청년";
