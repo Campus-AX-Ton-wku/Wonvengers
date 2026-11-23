@@ -395,6 +395,7 @@ export const GUIDES: Guide[] = [
           "다음으로 접수 기간, 당첨자 발표일, 계약 날짜를 달력에 적어 둬요.",
           "마지막으로 낼 서류 목록을 보고 미리 떼어 둬요.",
         ],
+        links: [{ label: "익산 청약 공고 보기", href: "/housing" }],
       },
     ],
     sources: [

@@ -199,6 +199,11 @@ describe("앱 안 링크 (11/22)", () => {
     const link = screen.getByRole("link", { name: "청년 주택드림 청약통장 보기" });
     expect(link.getAttribute("href")).toBe("/loans/youth-dream-savings-account");
   });
+
+  it("청약 쉽게 6장 — 익산 청약 공고 화면으로", async () => {
+    render(await GuideStepPage({ params: Promise.resolve({ id: "cheongyak", step: "6" }) }));
+    expect(screen.getByRole("link", { name: "익산 청약 공고 보기" }).getAttribute("href")).toBe("/housing");
+  });
 });
 
 /** '가이드 정독' 배지 재료 (11/22 내 프로필 ②) — 끝 장을 열면 그 가이드를 읽음으로 남긴다(이 기기에만) */
