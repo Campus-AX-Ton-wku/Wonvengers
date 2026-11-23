@@ -19,7 +19,6 @@ import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgres
 import { formatApproxMoney } from "@/lib/money";
 import { markPushAsked, pushAskFor, type PushAskKind } from "@/lib/push-ask";
 import { replacePage } from "@/lib/redirect";
-import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, loadApplied, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
 import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
@@ -29,6 +28,7 @@ import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 import type { ProfileCardData } from "@/lib/user-data";
 import { HomeGreeting } from "./HomeGreeting";
 import { notApplied, notAppliedIds } from "@/lib/applied";
+import { calculationScope } from "@/lib/scope";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -90,7 +90,7 @@ export default function HomePage() {
       const profile = loadProfile();
       if (listing && profile) {
         try {
-          const s = buildCalculationSummary(policiesForRegion(policies, listing.region), profile, listing, t);
+          const s = buildCalculationSummary(calculationScope(policies, listing, loadAnswers(), t), profile, listing, t);
           // 기간은 lib/rent.ts calcMonths — 주거비 · 지원금과 같은 기간(입력한 거주 개월 수)
           setCosts({ nominal: s.nominalTotalCost, final: s.finalEstimatedHousingCost, months: calcMonths(listing) });
           // 주거비 달력 입구 한 줄 — 달력 화면과 같은 함수로 센다 (lib/ledger.ts)

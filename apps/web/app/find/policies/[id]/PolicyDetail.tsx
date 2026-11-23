@@ -24,10 +24,10 @@ import { cardStatus } from "@/lib/discovery";
 import { formatDotDate, todayISO } from "@/lib/date";
 import { combineTags, tagFromEvaluation, tagPolicy } from "@/lib/filter";
 import { getRequiredQuestions } from "@/lib/questions";
-import { policiesForRegion } from "@/lib/region";
 import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, IncomeBracket, NextRound, PolicyMeta, TagResult } from "@/lib/types";
+import { calculationScope } from "@/lib/scope";
 
 /**
  * 정책 하나의 전부.
@@ -94,7 +94,7 @@ function evaluatedTag(policyId: string, asOfISO: string): TagResult | null {
   try {
     // 판정질문 화면과 같은 후보 집합을 쓴다 — 지역 밖 정책을 같이 빼지 않으면
     // 묻지 않은 질문이 unknown 으로 남는다.
-    const scoped = policiesForRegion(policies, listing.region);
+    const scoped = calculationScope(policies, listing, loadAnswers(), asOfISO);
     const summary = buildCalculationSummary(scoped, profile, listing, asOfISO);
     const result = summary.results.find((r) => r.policy.id === policyId);
     return result ? tagFromEvaluation(result) : null;

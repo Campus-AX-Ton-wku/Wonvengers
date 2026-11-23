@@ -8,12 +8,12 @@ import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/
 import { seoulTodayISO } from "@/lib/date";
 import { ledgerPlan, monthKeyOf, oneTimeSupports, type LedgerPlan, type LedgerRecord, type MonthKey, type OneTimeSupport } from "@/lib/ledger";
 import { replacePage } from "@/lib/redirect";
-import { policiesForRegion } from "@/lib/region";
-import { loadLedger, loadListing, loadProfile, onLocalChange, saveLedger } from "@/lib/storage";
+import { loadLedger, loadListing, loadProfile, onLocalChange, saveLedger, loadAnswers } from "@/lib/storage";
 import { buildCalculationSummary } from "@/lib/summary";
 import type { PolicyMeta } from "@/lib/types";
 import { MonthSection } from "./MonthSection";
 import { OneTimeSection } from "./OneTimeSection";
+import { calculationScope } from "@/lib/scope";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -47,7 +47,7 @@ export default function LedgerPage() {
       let next: Calculated | null = null;
       if (listing && profile) {
         try {
-          const summary = buildCalculationSummary(policiesForRegion(policies, listing.region), profile, listing, today);
+          const summary = buildCalculationSummary(calculationScope(policies, listing, loadAnswers(), today), profile, listing, today);
           next = { plan: ledgerPlan(listing, summary, profile.birthDate), oneTime: oneTimeSupports(summary) };
         } catch {
           next = null;

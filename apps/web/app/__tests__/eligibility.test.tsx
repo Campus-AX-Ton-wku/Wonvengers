@@ -268,6 +268,10 @@ describe("1층에서 받은 생년월일", () => {
 });
 
 describe("숫자 질문의 '모름'", () => {
+  // 2026-05-01 — 국토부 · 익산형 청년월세가 접수 중이던 날. 판정 질문은 지금 접수 중인 정책의 것만 묻는다(lib/scope.ts)
+  // 그 두 정책이 쓰는 소득 질문 · 세 묶음을 보려면 그때로 맞춘다. Date 만 바꾼다 — 사용자 입력의 타이머는 그대로
+  beforeEach(() => vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-05-01T03:00:00Z") }));
+  afterEach(() => vi.useRealTimers());
   /** 가구원 수 · 소득처럼 숫자를 받는 칸들 */
   const numberInputs = () => screen.getAllByRole("spinbutton") as HTMLInputElement[];
 
@@ -389,6 +393,10 @@ describe("/eligibility 묶음 주소", () => {
 });
 
 describe("/eligibility 진행 표시·답 접기", () => {
+  // 2026-05-01 — 국토부 · 익산형 청년월세가 접수 중이던 날. 판정 질문은 지금 접수 중인 정책의 것만 묻는다(lib/scope.ts)
+  // 그 두 정책이 쓰는 소득 질문 · 세 묶음을 보려면 그때로 맞춘다. Date 만 바꾼다 — 사용자 입력의 타이머는 그대로
+  beforeEach(() => vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-05-01T03:00:00Z") }));
+  afterEach(() => vi.useRealTimers());
   const 일층 = { ...EMPTY_ANSWERS, birthDate: "2003-08-12" };
 
   afterEach(() => {
