@@ -82,7 +82,7 @@ export function Sheet({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center"
+      className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-scrim/45 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 min-[390px]:px-5 sm:items-center"
       onClick={(event) => {
         if (event.target === event.currentTarget) onCloseRef.current();
       }}
@@ -93,7 +93,7 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className="flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
+        className="sheet-in flex max-h-full w-full max-w-[350px] flex-col gap-4 overflow-y-auto rounded-card border border-ink-200 bg-surface p-6 shadow-card"
       >
         {visual ? (
           <div className="flex items-center gap-3">
