@@ -88,6 +88,7 @@ export function BadgeWatcher() {
       <div className="flex justify-center pb-1">
         <span className="badge-earned">
           <span aria-hidden="true" className="badge-ring" />
+          <span aria-hidden="true" className="badge-ring" />
           <BadgeMedal id={shown.badge.id} size="lg" />
         </span>
       </div>
