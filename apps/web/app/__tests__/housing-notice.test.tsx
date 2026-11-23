@@ -74,7 +74,7 @@ describe("/housing/notice — 청약 공고 상세", () => {
     const table = await screen.findByRole("table", { name: /주택형별 공급금액/ });
     expect(within(table).getByText("59.85㎡ A")).toBeTruthy();
     expect(within(table).getByText("3억 7,807만원")).toBeTruthy();
-    expect(within(table).getByRole("columnheader", { name: /최고가 기준/ })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "최고 공급금액" })).toBeTruthy();
     expect(screen.getByText("2030년 2월")).toBeTruthy();
     expect(screen.queryByRole("region", { name: "단지" })).toBeNull();
   });

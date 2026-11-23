@@ -67,9 +67,8 @@ function Detail({ notice, today }: { notice: DetailedNotice; today: string }) {
             <DeadlineBadge label={noticeDeadlineLabel(notice, today)} />
           </span>
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">{notice.title}</h1>
-          <p className="text-[13px] text-ink-500">
-            {[notice.supplier, `접수 ${period(notice.applyStart, notice.applyEnd) || "공고문 확인"}`].filter(Boolean).join(" · ")}
-          </p>
+          {notice.supplier && <p className="text-[13px] text-ink-500">{notice.supplier}</p>}
+          <p className="text-[13px] text-ink-500">접수 · {period(notice.applyStart, notice.applyEnd) || "공고문 확인"}</p>
         </header>
 
         {schedule.length > 0 && (
@@ -114,22 +113,22 @@ function Detail({ notice, today }: { notice: DetailedNotice; today: string }) {
             <table aria-label="주택형별 공급금액" className="w-full text-left text-sm">
               <thead className="text-xs text-ink-500">
                 <tr>
-                  <th scope="col" className="pb-2 font-medium">주택형(전용)</th>
-                  <th scope="col" className="pb-2 font-medium">세대 (일반 · 특별)</th>
-                  <th scope="col" className="pb-2 text-right font-medium">공급금액(최고가 기준)</th>
+                  <th scope="col" className="pb-2 pr-3 font-medium">주택형</th>
+                  <th scope="col" className="pb-2 pr-3 font-medium">일반 · 특별</th>
+                  <th scope="col" className="pb-2 text-right font-medium">최고 공급금액</th>
                 </tr>
               </thead>
               <tbody>
                 {d.houseTypes.map((t) => (
                   <tr key={t.type} className="border-t border-ink-100">
-                    <td className="py-2 font-bold text-ink-900">{t.type}</td>
-                    <td className="py-2 text-ink-600">{`${t.general} · ${t.special}`}</td>
-                    <td className="py-2 text-right font-bold text-ink-900">{t.topPrice === null ? "공고문 확인" : formatKoreanMoney(t.topPrice)}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 font-bold text-ink-900">{t.type}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-ink-600">{`${t.general} · ${t.special}세대`}</td>
+                    <td className="whitespace-nowrap py-2 text-right font-bold text-ink-900">{t.topPrice === null ? "공고문 확인" : formatKoreanMoney(t.topPrice)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-xs leading-relaxed text-ink-500">청약홈 기준이에요. 같은 주택형도 층 · 동에 따라 금액이 달라요.</p>
+            <p className="mt-3 text-xs leading-relaxed text-ink-500">주택형은 전용면적, 금액은 청약홈 공급금액의 최고가 기준이에요. 같은 주택형도 층 · 동에 따라 달라요.</p>
           </Card>
         )}
 
