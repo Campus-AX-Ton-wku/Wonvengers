@@ -69,10 +69,18 @@ describe("bestCombination", () => {
   it("대상아님·신청불가 정책은 조합 후보에서 제외한다", () => {
     const a = makeResult({ id: "a", status: "대상아님", amount: 0 });
     const b = makeResult({ id: "b", status: "신청불가", amount: 0 });
-    const c = makeResult({ id: "c", status: "조건충족시가능", amount: 1000000 });
+    const c = makeResult({ id: "c", status: "예상적용", amount: 1000000 });
     const result = bestCombination([a, b, c]);
 
     expect(result.includedPolicyIds).toEqual(["c"]);
+  });
+
+  // 11/23 ggue: 맨 위 합계는 확인이 끝난 지원만 — 확인할 조건이 남은 지원은 기본 조합에 넣지 않는다
+  it("기본은 '예상 적용'만 — '조건 충족 시 가능'은 넣으라고 할 때만 센다", () => {
+    const sure = makeResult({ id: "sure", status: "예상적용", amount: 500000 });
+    const maybe = makeResult({ id: "maybe", status: "조건충족시가능", amount: 2000000 });
+    expect(bestCombination([sure, maybe])).toEqual({ includedPolicyIds: ["sure"], totalAmount: 500000 });
+    expect(bestCombination([sure, maybe], ["예상적용", "조건충족시가능"]).totalAmount).toBe(2500000);
   });
 
   it("후보가 없으면 0원, 빈 조합을 반환한다", () => {

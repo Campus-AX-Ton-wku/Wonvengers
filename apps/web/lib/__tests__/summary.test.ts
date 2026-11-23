@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import policiesData from "@/data/policies.json";
 import type { PolicyMeta } from "@/lib/types";
-import { buildCalculationSummary, summaryHighlights } from "@/lib/summary";
+import { buildCalculationSummary, pendingSupport, summaryHighlights } from "@/lib/summary";
+import { bestCombination } from "@/lib/combinations";
 import { makeListing, makeProfile, OPEN_PERIOD_DAY } from "./fixtures";
 
 const policies = policiesData as PolicyMeta[];
@@ -31,20 +32,39 @@ describe("summaryHighlights", () => {
     expect(sum).toBe(summary.maxSupportAmount);
   });
 
-  it("조합에 들어간 '조건 충족 시 가능' 정책의 미확인 조건만 모은다 (F4-8)", () => {
+  it("확인할 조건이 남은 지원은 맨 위 합계에 넣지 않고, 확인하면 더 받을 몫과 그 조건으로 따로 모은다 (11/23 ggue)", () => {
+    // 화면 그대로: 원가구 소득을 '모름'으로 답하면 청년 주거급여 분리지급이 '조건 충족 시 가능'이 된다
     const summary = buildCalculationSummary(
       policies,
-      makeProfile({ ownHouseholdMonthlyIncome: "unknown" }),
+      makeProfile({ originHouseholdMonthlyIncome: "unknown" }),
       listing,
       OPEN_PERIOD_DAY
     );
-    const { unknownConditions } = summaryHighlights(summary);
-
-    expect(unknownConditions.length).toBeGreaterThan(0);
-    for (const u of unknownConditions) {
-      expect(summary.bestCombination.includedPolicyIds).toContain(u.policyId);
-      expect(u.label).toBeTruthy();
+    const pendingResults = summary.results.filter((r) => r.status === "조건충족시가능" && r.estimatedAmount > 0);
+    expect(pendingResults.length).toBeGreaterThan(0);
+    for (const r of pendingResults) expect(summary.bestCombination.includedPolicyIds).not.toContain(r.policy.id);
+    for (const r of summary.results.filter((x) => summary.bestCombination.includedPolicyIds.includes(x.policy.id))) {
+      expect(r.status).toBe("예상적용");
     }
+
+    const { pending } = summaryHighlights(summary);
+    expect(pending.amount).toBe(pendingSupport(summary).amount);
+    expect(pending.amount).toBeGreaterThan(0);
+    expect(pending.conditions.length).toBeGreaterThan(0);
+    for (const c of pending.conditions) expect(pendingResults.map((r) => r.policy.id)).toContain(c.policyId);
+    // 최종 주거비도 확인이 끝난 지원만 뺀다
+    expect(summary.finalEstimatedHousingCost).toBe(Math.max(0, summary.nominalTotalCost - summary.maxSupportAmount));
+  });
+
+  it("확인하면 더 받을 몫 = '조건 충족 시 가능'까지 넣은 최선 조합 − 맨 위 합계", () => {
+    const summary = buildCalculationSummary(
+      policies,
+      makeProfile({ originHouseholdMonthlyIncome: "unknown" }),
+      listing,
+      OPEN_PERIOD_DAY
+    );
+    const potential = bestCombination(summary.results, ["예상적용", "조건충족시가능"]);
+    expect(pendingSupport(summary).amount).toBe(potential.totalAmount - summary.maxSupportAmount);
   });
 
   it("판정 질문을 다 채우면 최선 조합에 미확인 조건이 남지 않는다", () => {
@@ -52,8 +72,8 @@ describe("summaryHighlights", () => {
     // 익산 전입 지원 2건에만 있다. 둘 다 정액이라 예상액이 0원이고 최선 조합에 들지 않는다.
     // (직접 답하는 조건이 답 전까지 미확인으로 남는 것은 eligibility.test.ts 의 익산 전입 지원 테스트가 본다)
     const summary = buildCalculationSummary(policies, makeProfile(), listing, OPEN_PERIOD_DAY);
-    const { unknownConditions } = summaryHighlights(summary);
-    expect(unknownConditions).toEqual([]);
+    const { pending } = summaryHighlights(summary);
+    expect(pending).toEqual({ amount: 0, conditions: [] });
   });
 
   it("받을 수 있는 정책이 없으면 빈 목록이고 0원이다", () => {
@@ -65,9 +85,9 @@ describe("summaryHighlights", () => {
       listing,
       OPEN_PERIOD_DAY
     );
-    const { included, unknownConditions } = summaryHighlights(summary);
+    const { included, pending } = summaryHighlights(summary);
     expect(included).toEqual([]);
-    expect(unknownConditions).toEqual([]);
+    expect(pending).toEqual({ amount: 0, conditions: [] });
     expect(summary.maxSupportAmount).toBe(0);
   });
 });

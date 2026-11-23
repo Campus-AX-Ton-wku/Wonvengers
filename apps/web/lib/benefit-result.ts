@@ -25,7 +25,7 @@ export interface BenefitResultCardData {
     /** 합계에 들어가지 않은 이유. 들어갔으면 null */
     note: string | null;
     /** 이유의 종류 — 카드는 중복(overlap)만 따로 적고, 나머지는 '더 받을 수 있는 지원' 묶음 설명이 한 번 한다 */
-    excludedReason: "overlap" | "fixedGrant" | "notCalculated" | null;
+    excludedReason: "unconfirmed" | "overlap" | "fixedGrant" | "notCalculated" | null;
   };
   evidence: { matchedCount: number; missingCount: number; message: string };
   /** 원본 공고에는 날짜만 있어, 시간은 임의로 만들지 않고 YYYY-MM-DD를 보존한다. */
@@ -96,15 +96,20 @@ export function toBenefitResultCardData(
   const isMaximum = ceiling !== null && amountValue === ceiling.amount;
   const prepareHref = `/find/policies/${policy.id}/prepare`;
   const counted = result.estimatedAmount > 0 && (includedPolicyIds?.has(policy.id) ?? true);
+  // 11/23 ggue: 맨 위 합계는 확인이 끝난('예상 적용') 지원만 — 확인할 조건이 남은 지원은 금액이 있어도 합계 밖
   const excludedReason: BenefitResultCardData["amount"]["excludedReason"] = counted
     ? null
-    : result.estimatedAmount > 0
+    : result.estimatedAmount > 0 && result.status === "조건충족시가능"
+      ? "unconfirmed"
+      : result.estimatedAmount > 0
       ? "overlap"
       : policy.lumpSumBasis === "fixedGrant"
         ? "fixedGrant"
         : "notCalculated";
   const note =
-    excludedReason === "overlap"
+    excludedReason === "unconfirmed"
+      ? "확인할 조건이 남아 위 합계에는 넣지 않았어요"
+      : excludedReason === "overlap"
       ? "같이 받을 수 없는 지원과 겹쳐 위 합계에서 뺐어요"
       : excludedReason === "fixedGrant"
         ? "정해진 금액이라 위 합계에는 넣지 않았어요"

@@ -29,7 +29,7 @@ export function ResultReceipt({
   finalCost,
   included,
   overlapExcluded,
-  unknownConditions,
+  pending,
 }: {
   listing: ListingInput;
   supportAmount: number;
@@ -39,7 +39,8 @@ export function ResultReceipt({
   /** 중복 수급 제한으로 조합에서 빠진 정책 */
   overlapExcluded: { policy: PolicyMeta; conflictsWith: string[] }[];
   /** 이 금액에 아직 확인되지 않은 조건이 섞여 있으면 그 목록 */
-  unknownConditions: { policy: string; label: string }[];
+  /** 조건을 확인하면 더 받을 수 있는 몫 — 맨 위 합계에는 넣지 않는다(11/23 ggue, lib/summary.ts pendingSupport) */
+  pending: { amount: number; conditions: { policy: string; label: string }[] };
 }) {
   // lib/rent.ts nominalTotalCost · 지원금과 같은 기간 — 입력한 거주 개월 수
   const months = calcMonths(listing);
@@ -81,6 +82,12 @@ export function ResultReceipt({
         </p>
         {/* 자격 미확정 고지는 맨 아래에 전체 문장이 있지만 금액과 2화면 떨어져 있었다(11/19) — 숫자 바로 밑에 한 줄 */}
         <p className="text-xs text-ink-500">최종 금액은 각 기관이 심사해 정해요</p>
+        {/* 확인 안 된 지원은 위 큰 숫자에 더하지 않고, 바로 밑에 따로 — 무엇을 확인하면 되는지는 영수증 아래 */}
+        {pending.amount > 0 && (
+          <p className="text-[13px] font-bold text-brand-800">
+            조건을 확인하면 최대 +{formatKoreanMoney(pending.amount)}
+          </p>
+        )}
       </div>
 
       {/* 영수증 — 내는 돈 위, 받는 지원을 빼고, 굵은 선 아래 실제 부담 (시안 '영수증 한 장', 11/20) */}
@@ -113,7 +120,9 @@ export function ResultReceipt({
           ) : (
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-ink-600">받는 지원</dt>
-              <dd className="shrink-0 text-xs text-ink-500">합칠 수 있는 지원이 아직 없어요</dd>
+              <dd className="shrink-0 text-xs text-ink-500">
+                {pending.amount > 0 ? "확인이 끝난 지원이 아직 없어요" : "합칠 수 있는 지원이 아직 없어요"}
+              </dd>
             </div>
           )}
         </dl>
@@ -141,14 +150,16 @@ export function ResultReceipt({
       )}
 
       {/* 계약 당일 필요한 현금(보증금) 줄은 11/20 뺐다(ggue) — 계약하는 사람은 보증금을 당일 낸다는 걸 이미 안다 */}
-      {unknownConditions.length > 0 && (
+      {/* 11/23 ggue: 확인 안 된 조건이 든 지원은 위 금액에 넣지 않는다 — 예전엔 '이 금액에는 아직 확인되지 않은 조건이
+          들어 있어요'라며 합계에 더했다. 이제는 무엇을 확인하면 얼마를 더 받는지만 말한다 */}
+      {pending.amount > 0 && pending.conditions.length > 0 && (
         <div className="border-t border-ink-100 pt-4 text-xs text-ink-600">
           <p className="flex items-start gap-2 font-bold text-ink-700">
             <TriangleAlert size={ICON_SM} aria-hidden="true" className="mt-px shrink-0 text-warn-800" />
-            <span>이 금액에는 아직 확인되지 않은 조건이 들어 있어요</span>
+            <span>이 조건을 확인하면 최대 {formatKoreanMoney(pending.amount)}을 더 받을 수 있어요 — 위 금액에는 넣지 않았어요</span>
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-6 leading-relaxed">
-            {unknownConditions.map((u, i) => (
+            {pending.conditions.map((u, i) => (
               <li key={i}>
                 [{u.policy}] {u.label}
               </li>

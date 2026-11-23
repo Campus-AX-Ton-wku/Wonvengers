@@ -23,11 +23,34 @@ export function buildCalculationSummary(
   };
 }
 
+export interface PendingSupport {
+  /** 조건을 확인하면 맨 위 합계에 더해질 수 있는 금액(최대). 확인이 끝난 합계와의 차이 */
+  amount: number;
+  /** 그 몫을 이루는 '조건 충족 시 가능' 지원 */
+  policyIds: string[];
+}
+
+/**
+ * 조건을 확인하면 더 받을 수 있는 몫 (11/23 ggue). 맨 위 합계는 '예상 적용'만 더하므로(lib/combinations.ts),
+ * '조건 충족 시 가능'까지 넣은 최선 조합과의 차이를 따로 보여 준다 — 합계에 섞지 않는다.
+ */
+export function pendingSupport(summary: CalculationSummary): PendingSupport {
+  const potential = bestCombination(summary.results, ["예상적용", "조건충족시가능"]);
+  const amount = Math.max(0, potential.totalAmount - summary.maxSupportAmount);
+  const policyIds =
+    amount > 0
+      ? summary.results
+          .filter((r) => r.status === "조건충족시가능" && r.estimatedAmount > 0 && potential.includedPolicyIds.includes(r.policy.id))
+          .map((r) => r.policy.id)
+      : [];
+  return { amount, policyIds };
+}
+
 export interface SummaryHighlights {
-  /** 최대 지원 가능액을 구성한 정책 */
+  /** 맨 위 합계(확인이 끝난 지원)를 구성한 정책 */
   included: { id: string; name: string; amount: number }[];
-  /** 그 조합에 들어갔지만 아직 확인되지 않은 조건 (F4-8) */
-  unknownConditions: { policyId: string; policy: string; label: string }[];
+  /** 조건을 확인하면 더 받을 수 있는 몫과, 그 몫에 남은 확인할 조건 (F4-8 · 11/23) */
+  pending: { amount: number; conditions: { policyId: string; policy: string; label: string }[] };
 }
 
 /**
@@ -39,6 +62,7 @@ export function summaryHighlights(summary: CalculationSummary): SummaryHighlight
   const isIncluded = (r: PolicyResult) =>
     summary.bestCombination.includedPolicyIds.includes(r.policy.id);
   const includedResults = summary.results.filter(isIncluded);
+  const pending = pendingSupport(summary);
 
   return {
     included: includedResults.map((r) => ({
@@ -46,14 +70,11 @@ export function summaryHighlights(summary: CalculationSummary): SummaryHighlight
       name: r.policy.name,
       amount: r.estimatedAmount,
     })),
-    unknownConditions: includedResults
-      .filter((r) => r.status === "조건충족시가능")
-      .flatMap((r) =>
-        r.unknownLabels.map((label) => ({
-          policyId: r.policy.id,
-          policy: r.policy.name,
-          label,
-        }))
-      ),
+    pending: {
+      amount: pending.amount,
+      conditions: summary.results
+        .filter((r) => pending.policyIds.includes(r.policy.id))
+        .flatMap((r) => r.unknownLabels.map((label) => ({ policyId: r.policy.id, policy: r.policy.name, label }))),
+    },
   };
 }
