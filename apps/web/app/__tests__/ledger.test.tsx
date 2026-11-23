@@ -128,6 +128,46 @@ describe("/ledger — 주거비 달력", () => {
     expect(loadLedger().oneTime).toEqual({ [first.id]: thisMonth });
   });
 
+  it("한 번 받는 지원 — 받은 달 다음 달부터는 안 뜨고 한 줄 안내, 받은 달로 돌아오면 다시 보인다 (ggue 11/23)", async () => {
+    calculated();
+    const summary = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, seoulTodayISO());
+    const expected = oneTimeSupports(summary);
+    expect(expected.length).toBeGreaterThan(0);
+    const first = expected[0].policy;
+    const user = userEvent.setup();
+    render(<LedgerPage />);
+    let section = await screen.findByRole("region", { name: "한 번 받는 지원" });
+    await user.click(within(section).getByRole("button", { name: `${first.name} 받았어요` }));
+
+    await user.click(screen.getByRole("button", { name: "다음 달" }));
+    section = screen.getByRole("region", { name: "한 번 받는 지원" });
+    expect(within(section).queryByText(first.name)).toBeNull();
+    for (const { policy } of expected.slice(1)) expect(within(section).getByText(policy.name)).toBeTruthy();
+    expect(within(section).getByText("받은 지원 1건은 받은 달에서 볼 수 있어요.")).toBeTruthy();
+    expect(within(section).queryByText(/받을 수 있다고 나온 한 번 받는 지원이 없어요/)).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "이전 달" }));
+    section = screen.getByRole("region", { name: "한 번 받는 지원" });
+    expect(within(section).getByRole("button", { name: `${first.name} 받았어요` }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(section).queryByText(/받은 달에서 볼 수 있어요/)).toBeNull();
+  });
+
+  it("한 번 받는 지원 — 다 받았으면 다음 달엔 '없어요' 대신 안내 한 줄만", async () => {
+    calculated();
+    const summary = buildCalculationSummary(policiesForRegion(policiesJson as PolicyMeta[], listing.region), profile, listing, seoulTodayISO());
+    const expected = oneTimeSupports(summary);
+    expect(expected.length).toBeGreaterThan(0);
+    const user = userEvent.setup();
+    render(<LedgerPage />);
+    let section = await screen.findByRole("region", { name: "한 번 받는 지원" });
+    for (const { policy } of expected) await user.click(within(section).getByRole("button", { name: `${policy.name} 받았어요` }));
+    await user.click(screen.getByRole("button", { name: "다음 달" }));
+    section = screen.getByRole("region", { name: "한 번 받는 지원" });
+    expect(within(section).queryAllByRole("listitem")).toHaveLength(0);
+    expect(within(section).getByText(`받은 지원 ${expected.length}건은 받은 달에서 볼 수 있어요.`)).toBeTruthy();
+    expect(within(section).queryByText(/받을 수 있다고 나온 한 번 받는 지원이 없어요/)).toBeNull();
+  });
+
   it("다른 탭이 기록을 바꾸면(storage 이벤트) 이 화면도 따라간다 — 덮어써서 잃지 않게", async () => {
     calculated();
     render(<LedgerPage />);

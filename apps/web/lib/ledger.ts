@@ -311,6 +311,22 @@ export function oneTimeSupports(summary: CalculationSummary): OneTimeSupport[] {
     });
 }
 
+/**
+ * 보고 있는 달에 보일 한 번 받는 지원 (ggue 11/23). 받은 달 다음 달부터는 뺀다 — 받은 달과 그 앞 달엔 그대로 둬서
+ * 잘못 누른 것은 받은 달로 돌아가 풀 수 있다. hiddenCount 는 이 목록 안에서 뺀 개수(결과에 없는 정책의 기록은 세지 않는다).
+ */
+export function oneTimeForMonth(
+  supports: OneTimeSupport[],
+  record: LedgerRecord,
+  month: MonthKey
+): { shown: OneTimeSupport[]; hiddenCount: number } {
+  const shown = supports.filter((s) => {
+    const got = record.oneTime[s.policy.id];
+    return got === undefined || monthsBetween(got, month) <= 0;
+  });
+  return { shown, hiddenCount: supports.length - shown.length };
+}
+
 // ── 홈 한 줄 ──
 
 export interface LedgerProgress {
