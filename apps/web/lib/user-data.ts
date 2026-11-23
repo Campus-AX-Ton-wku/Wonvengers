@@ -125,6 +125,12 @@ export interface UserDataContent {
   ledger: LedgerData | null;
   /** perky.house-checklist — 집 보기 체크리스트에서 체크한 줄 id, 이름순 (11/23) */
   houseChecklist: string[];
+  /**
+   * perky.applied — '신청을 마쳤어요'로 표시한 지원금 → 표시한 날(YYYY-MM-DD) (11/23 ggue).
+   * 지원금 탭 · 홈 추천 · 새 지원금 · 관심 마감 알림에서 빠지고, 관심 탭 '신청 완료'에 모인다.
+   * Perky 는 실제 신청 여부를 모른다 — 사용자가 직접 누른 표시다.
+   */
+  applied: Record<string, string>;
 }
 
 export interface UserDataPayload extends UserDataContent {
@@ -233,10 +239,12 @@ const PAYLOAD_KEYS = [
 const MAX_DECLARED = 100;
 const MAX_CHECKLISTS = 200;
 export const MAX_SAVED = 50;
+/** 신청 완료 표시 상한 — 관심(50)과 따로, 관심을 안 눌러도 표시할 수 있다 */
+export const MAX_APPLIED = 100;
 export const MAX_DOCUMENTS = 15;
 export const MAX_DOCUMENT_NAME = 60;
 /** 없어도 받는 칸 — 예전 앱(홈 화면에 캐시된 앱 포함)은 보내지 않는다 */
-const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks", "profileCard", "badges", "ledger", "houseChecklist"] as const;
+const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks", "profileCard", "badges", "ledger", "houseChecklist", "applied"] as const;
 /** 달력에 남길 수 있는 달 수(10년). 넘으면 이 기기에서 올릴 때 최근 달만 남긴다(ledgerForSync). */
 export const MAX_LEDGER_MONTHS = 120;
 const MAX_LEDGER_LINES = 30;
@@ -413,6 +421,17 @@ function parseChecklists(v: unknown, path: string): Record<string, ChecklistStat
   return out;
 }
 
+function parseApplied(v: unknown, path: string): Record<string, string> {
+  const entries = Object.entries(record(v, path));
+  if (entries.length > MAX_APPLIED) fail(path, "too many entries");
+  const out: Record<string, string> = {};
+  for (const [policyId, day] of entries) {
+    if (!POLICY_ID.test(policyId)) fail(`${path}.${policyId}`, "bad policy id");
+    out[policyId] = date(day, `${path}.${policyId}`);
+  }
+  return out;
+}
+
 function parseSaved(v: unknown, path: string): string[] {
   if (!Array.isArray(v) || v.length > MAX_SAVED) fail(path, "not a list");
   for (const id of v) if (typeof id !== "string" || !POLICY_ID.test(id)) fail(path, "bad policy id");
@@ -565,6 +584,7 @@ function parsePayload(v: unknown, path: string, acceptPrevious = false): UserDat
     ledger: o.ledger === undefined ? null : nullable(o.ledger, (x) => parseLedger(x, `${path}.ledger`)),
     houseChecklist:
       o.houseChecklist === undefined ? [] : parseHouseChecklist(o.houseChecklist, `${path}.houseChecklist`),
+    applied: o.applied === undefined ? {} : parseApplied(o.applied, `${path}.applied`),
   };
 }
 
@@ -613,6 +633,7 @@ export function emptyContent(): UserDataContent {
     badges: {},
     ledger: null,
     houseChecklist: [],
+    applied: {},
   };
 }
 
@@ -622,7 +643,7 @@ export function emptyContent(): UserDataContent {
  */
 export function sanitizeContent(
   raw: Record<"answers" | "listing" | "profile" | "declared" | "checklists", unknown> &
-    Partial<Record<"saved" | "documentChecks" | "profileCard" | "badges" | "ledger" | "houseChecklist", unknown>>
+    Partial<Record<"saved" | "documentChecks" | "profileCard" | "badges" | "ledger" | "houseChecklist" | "applied", unknown>>
 ): UserDataContent {
   const keep = <T>(parse: () => T, fallback: T): T => {
     const result = attempt(parse);
@@ -650,6 +671,7 @@ export function sanitizeContent(
       () => (raw.houseChecklist === undefined ? [] : parseHouseChecklist(raw.houseChecklist, "houseChecklist")),
       []
     ),
+    applied: keep(() => (raw.applied === undefined ? {} : parseApplied(raw.applied, "applied")), {}),
   };
 }
 
@@ -678,7 +700,8 @@ export function isEmptyContent(c: UserDataContent): boolean {
     c.profileCard === null &&
     Object.keys(c.badges).length === 0 &&
     c.ledger === null &&
-    c.houseChecklist.length === 0
+    c.houseChecklist.length === 0 &&
+    Object.keys(c.applied).length === 0
   );
 }
 
@@ -696,6 +719,7 @@ export function contentOf(c: UserDataContent): UserDataContent {
     badges: c.badges,
     ledger: c.ledger,
     houseChecklist: c.houseChecklist,
+    applied: c.applied,
   };
 }
 

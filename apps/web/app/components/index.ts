@@ -35,6 +35,7 @@ export { ProfileAvatar } from "./ProfileAvatar";
 export { BadgeMedal } from "./BadgeMedal";
 export { ResetAnswersButton } from "./ResetAnswersButton";
 export { SaveButton } from "./SaveButton";
+export { AppliedButton } from "./AppliedButton";
 export { Sheet } from "./Sheet";
 export { SyncConflictSheet } from "./SyncConflictSheet";
 export { CARD_STATUS_BADGE, StatusBadge } from "./StatusBadge";

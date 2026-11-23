@@ -15,8 +15,9 @@ import { noticeDeadlineLabel, type NoticeSnapshot } from "@/lib/notices";
 import { deadlineLabel } from "@/lib/preparation";
 import { isPushConfigured } from "@/lib/push";
 import { replacePage } from "@/lib/redirect";
-import { loadAnswers, loadChecklist, loadDocumentChecks, loadSaved } from "@/lib/storage";
+import { loadAnswers, loadChecklist, loadDocumentChecks, loadApplied, loadSaved } from "@/lib/storage";
 import type { PolicyMeta } from "@/lib/types";
+import { notApplied, notAppliedIds } from "@/lib/applied";
 
 const policies = policiesJson as PolicyMeta[];
 const notices = (noticesData as NoticeSnapshot).notices;
@@ -49,7 +50,9 @@ export default function NotificationsPage() {
     }
     const t = seoulTodayISO();
     const answers = loadAnswers();
-    const list = inboxItems(policies, answers, loadSaved(), t, { checklist: loadChecklist, documents: loadDocumentChecks });
+    // 신청 완료로 표시한 지원금은 알림함에서 뺀다(11/23, lib/applied.ts)
+    const applied = loadApplied();
+    const list = inboxItems(notApplied(policies, applied), answers, notAppliedIds(loadSaved(), applied), t, { checklist: loadChecklist, documents: loadDocumentChecks });
     const noticeList = noticeInboxItems(notices, answers, t);
     const seen = loadInboxSeen();
     setToday(t);

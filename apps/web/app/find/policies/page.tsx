@@ -11,8 +11,9 @@ import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
 import { isTrustedRegion } from "@/lib/trust";
-import { EMPTY_ANSWERS, loadAnswers, loadListing, loadProfile } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, loadApplied, loadListing, loadProfile } from "@/lib/storage";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
+import { notApplied } from "@/lib/applied";
 
 /**
  * 1층 · 발견 — 질문 결과 목록.
@@ -53,6 +54,8 @@ function resultLabel(housingType: HousingType | null): string {
 
 export default function FindPoliciesPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
+  /** 신청 완료로 표시한 지원금 — 목록에서 뺀다(11/23 ggue, lib/applied.ts) */
+  const [applied, setAppliedIds] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
@@ -63,6 +66,7 @@ export default function FindPoliciesPage() {
 
   useEffect(() => {
     setAnswers(loadAnswers());
+    setAppliedIds(loadApplied());
     setAsOf(todayISO());
     setCalculated(loadListing() !== null && loadProfile() !== null);
     const updateGuest = () => setGuest(isLoginAvailable() && !hasStoredLogin());
@@ -74,7 +78,7 @@ export default function FindPoliciesPage() {
   // 1층과 같은 경계 변환. 생년월일 → 만 나이는 여기서 한 번만 한다 (lib/age.ts).
   const resolved = resolveAnswers(answers, asOf ?? null);
 
-  const groups = groupPolicies(policies, resolved);
+  const groups = groupPolicies(notApplied(policies, applied), resolved);
   const count = candidateCount(groups);
 
   // 접수가 끝난 정책도 1층 태그로는 '가능성 있음' 이 된다. 한 목록에 섞으면 제목의

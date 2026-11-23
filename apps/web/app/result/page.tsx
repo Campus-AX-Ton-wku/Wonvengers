@@ -29,6 +29,7 @@ import { ResultReceipt } from "./ResultReceipt";
 import { ResultLoading, ResultState } from "./ResultState";
 import { benefitResultCards } from "@/lib/benefit-result";
 import { takeReveal } from "@/lib/reveal";
+import { loadApplied } from "@/lib/storage";
 import FoundReveal from "./FoundReveal";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
@@ -45,6 +46,9 @@ export default function ResultPage() {
   /** cover: 파란 막만 · leaving: 막이 걷히며 결과를 밑에 깐다 · done: 막 없음 */
   const [revealPhase, setRevealPhase] = useState<"cover" | "leaving" | "done">("cover");
   const titleRef = useRef<HTMLHeadingElement>(null);
+  /** '신청을 마쳤어요'로 표시한 지원금(11/23) — 카드에 표시만 한다. 계산은 그대로 */
+  const [applied, setAppliedIds] = useState<Record<string, string>>({});
+  useEffect(() => setAppliedIds(loadApplied()), []);
   useEffect(() => {
     if (tookReveal.current === null) tookReveal.current = takeReveal();
     setRevealRequested(tookReveal.current);
@@ -136,7 +140,7 @@ export default function ResultPage() {
           </h2>
           {countedCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min(index * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} appliedDay={applied[card.policyId]} />
             </div>
           ))}
         </section>
@@ -154,7 +158,7 @@ export default function ResultPage() {
           </div>
           {extraCards.map(({ card, result }, index) => (
             <div key={card.policyId} className="stagger-in" style={{ animationDelay: `${Math.min((countedCards.length + index) * 45, 225)}ms` }}>
-              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} />
+              <BenefitResultCard card={card} result={result} listing={listing} birthDate={birthDate} appliedDay={applied[card.policyId]} />
             </div>
           ))}
         </section>

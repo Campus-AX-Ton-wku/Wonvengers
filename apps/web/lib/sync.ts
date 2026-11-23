@@ -170,7 +170,8 @@ function payloadFor(sub: string, content: UserDataContent): PutPayload {
   // 서버는 빠진 찜 필드를 빈 값으로 본다. 이 변경 이전에 배포된 API 는 exact() 로 모르는 키를 400 으로 거절하므로,
   // 비어 있으면 빼고 보낸다 — 찜을 안 쓴 사용자는 배포 시점과 상관없이 평소처럼 저장된다.
   // 프로필 · 배지(11/22), 주거비 달력 · 집 보기 체크리스트(11/23)도 같은 까닭으로 — 비어 있으면 빼고 보낸다.
-  const { saved, documentChecks, profileCard, badges, ledger, houseChecklist, ...rest } = content;
+  // 신청 완료 표시(11/23)도 같은 까닭 — 표시가 없으면 빼고 보낸다
+  const { saved, documentChecks, profileCard, badges, ledger, houseChecklist, applied, ...rest } = content;
   return {
     ...rest,
     ...(saved.length > 0 ? { saved } : {}),
@@ -179,6 +180,7 @@ function payloadFor(sub: string, content: UserDataContent): PutPayload {
     ...(Object.keys(badges).length > 0 ? { badges } : {}),
     ...(ledger !== null ? { ledger } : {}),
     ...(houseChecklist.length > 0 ? { houseChecklist } : {}),
+    ...(Object.keys(applied).length > 0 ? { applied } : {}),
     schemaVersion: SCHEMA_VERSION,
     consentVersion: CONSENT_VERSION,
     consentAt: consentAtFor(sub) ?? new Date().toISOString(),

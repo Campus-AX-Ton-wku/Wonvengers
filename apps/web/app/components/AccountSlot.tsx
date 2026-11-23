@@ -7,13 +7,14 @@ import { hasStoredLogin, isLoginAvailable, onAuthChange } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
 import { hasUnseen, inboxItems, INBOX_SEEN_EVENT, loadInboxSeen, noticeInboxItems } from "@/lib/inbox";
 import { reloadPage } from "@/lib/redirect";
-import { loadAnswers, loadChecklist, loadDocumentChecks, loadSaved, onLocalChange } from "@/lib/storage";
+import { loadAnswers, loadChecklist, loadDocumentChecks, loadApplied, loadSaved, onLocalChange } from "@/lib/storage";
 import { retrySync, startSync, useSyncState } from "@/lib/sync";
 import type { NoticeSnapshot } from "@/lib/notices";
 import type { PolicyMeta } from "@/lib/types";
 import { IconLink } from "./IconButton";
 import { SyncConflictSheet } from "./SyncConflictSheet";
 import { TabIcon } from "./TabIcons";
+import { notApplied, notAppliedIds } from "@/lib/applied";
 
 /**
  * 상단바 오른쪽 자리 (설계 '화면' 4). 로그인 전에는 비워 두고(폭만 잡는다), 로그인 후 알림 종.
@@ -39,7 +40,9 @@ function useInboxDot(enabled: boolean): boolean {
     const read = () => {
       const answers = loadAnswers();
       const today = seoulTodayISO();
-      const items = inboxItems(policies, answers, loadSaved(), today, { checklist: loadChecklist, documents: loadDocumentChecks });
+      // 신청 완료로 표시한 지원금은 새 소식에서 뺀다(11/23, lib/applied.ts)
+      const applied = loadApplied();
+      const items = inboxItems(notApplied(policies, applied), answers, notAppliedIds(loadSaved(), applied), today, { checklist: loadChecklist, documents: loadDocumentChecks });
       setDot(hasUnseen([...items, ...noticeInboxItems(notices, answers, today)], loadInboxSeen()));
     };
     read();

@@ -15,8 +15,9 @@ import { resolveAnswers } from "@/lib/age";
 import { largestTotalCeiling } from "@/lib/benefit";
 import { candidateCount, groupPolicies, splitByApplicationWindow } from "@/lib/discovery";
 import { todayISO } from "@/lib/date";
-import { EMPTY_ANSWERS, loadAnswers } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, loadApplied } from "@/lib/storage";
 import type { DiscoveryAnswers, PolicyMeta } from "@/lib/types";
+import { notApplied } from "@/lib/applied";
 
 /**
  * 1층 · 발견 — 결과 요약.
@@ -41,18 +42,21 @@ const policies = policiesJson as PolicyMeta[];
 
 export default function FindResultPage() {
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
+  /** 신청 완료로 표시한 지원금 — 결과 목록에서 뺀다(11/23 ggue, lib/applied.ts) */
+  const [applied, setAppliedIds] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
   // 정적 빌드 시점의 날짜가 HTML 에 박히면 안 되므로 브라우저에서 채운다.
   const [asOf, setAsOf] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     setAnswers(loadAnswers());
+    setAppliedIds(loadApplied());
     setAsOf(todayISO());
     setLoaded(true);
   }, []);
 
   const resolved = resolveAnswers(answers, asOf ?? null);
-  const groups = groupPolicies(policies, resolved);
+  const groups = groupPolicies(notApplied(policies, applied), resolved);
   const count = candidateCount(groups);
   const { 신청가능 } = asOf
     ? splitByApplicationWindow(groups, asOf)

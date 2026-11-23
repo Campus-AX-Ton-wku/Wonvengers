@@ -5,6 +5,7 @@ import {
   AppShell,
   Button,
   SaveButton,
+  AppliedButton,
   ContactInfo,
   ChecklistRow,
   PerkyNote,
@@ -211,6 +212,14 @@ export default function ApplicationPreparation({ policy }: { policy: PolicyMeta 
             className="mt-5 rounded-card bg-ok-50 px-4 py-3"
           />
         )}
+
+        {/* 신청 완료 표시(11/23 ggue) — 공식 사이트에서 제출한 뒤 돌아와 누른다. 관심 탭 '신청 완료'에 모이고 추천에서 빠진다 */}
+        <section aria-label="신청 완료 표시" className="mt-6 flex flex-col gap-2">
+          <AppliedButton policyId={policy.id} policyName={policy.name} />
+          <p className="text-center text-xs leading-relaxed text-ink-500">
+            신청을 마쳤으면 눌러 두세요. 관심 탭 ‘신청 완료’에 모이고, 추천과 마감 알림에서는 빠져요.
+          </p>
+        </section>
       </main>
 
       <StickyBottomAction>

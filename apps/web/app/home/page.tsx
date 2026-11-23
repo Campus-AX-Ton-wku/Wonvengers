@@ -20,7 +20,7 @@ import { formatApproxMoney } from "@/lib/money";
 import { markPushAsked, pushAskFor, type PushAskKind } from "@/lib/push-ask";
 import { replacePage } from "@/lib/redirect";
 import { policiesForRegion } from "@/lib/region";
-import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, onLocalChange } from "@/lib/storage";
+import { EMPTY_ANSWERS, loadAnswers, markHomeReached, loadChecklist, loadDocumentChecks, loadLedger, loadListing, loadProfile, loadProfileCard, loadSaved, loadApplied, onLocalChange } from "@/lib/storage";
 import { guidesForHousing } from "@/lib/guides";
 import { HOUSE_CHECKLIST_CARD } from "@/lib/house-checklist";
 import { calcMonths } from "@/lib/rent";
@@ -28,6 +28,7 @@ import { buildCalculationSummary } from "@/lib/summary";
 import type { DiscoveryAnswers, HousingType, PolicyMeta } from "@/lib/types";
 import type { ProfileCardData } from "@/lib/user-data";
 import { HomeGreeting } from "./HomeGreeting";
+import { notApplied, notAppliedIds } from "@/lib/applied";
 
 const policies = policiesJson as PolicyMeta[];
 
@@ -49,6 +50,7 @@ export default function HomePage() {
   const [ready, setReady] = useState(false);
   const [answers, setAnswers] = useState<DiscoveryAnswers>(EMPTY_ANSWERS);
   const [saved, setSaved] = useState<string[]>([]);
+  const [applied, setAppliedIds] = useState<Record<string, string>>({});
   const [profileCard, setProfileCard] = useState<ProfileCardData | null>(null);
   const [today, setToday] = useState("");
   const [costs, setCosts] = useState<Costs | null>(null);
@@ -82,6 +84,7 @@ export default function HomePage() {
       setToday(t);
       setAnswers(loadAnswers());
       setSaved(loadSaved());
+      setAppliedIds(loadApplied());
       setProfileCard(loadProfileCard());
       const listing = loadListing();
       const profile = loadProfile();
@@ -129,13 +132,16 @@ export default function HomePage() {
 
   if (!ready) return <AppShell><TopBar home /><p className="mt-10 text-center text-sm text-ink-500">불러오는 중…</p></AppShell>;
 
-  const open = openPolicies(policies, answers, today);
-  const cards = savedCards(policies, saved, today, { checklist: loadChecklist, documents: loadDocumentChecks });
+  // 신청 완료로 표시한 지원금은 홈의 추천 · 관심 미리보기 · 할 일 · 일정에서 뺀다(11/23 ggue, lib/applied.ts)
+  const shown = notApplied(policies, applied);
+  const savedOpen = notAppliedIds(saved, applied);
+  const open = openPolicies(shown, answers, today);
+  const cards = savedCards(shown, savedOpen, today, { checklist: loadChecklist, documents: loadDocumentChecks });
   const read = { checklist: loadChecklist, documents: loadDocumentChecks };
   // 답 전(시작하기 카드)에는 할 일을 두지 않는다 — '시작하기'가 그 사람의 할 일 하나다
-  const todo = open === null ? null : todayTodo(policies, answers, saved, today, read, costs !== null);
+  const todo = open === null ? null : todayTodo(shown, answers, savedOpen, today, read, costs !== null);
   // 오늘 할 일에 오른 정책은 일정에서 뺀다 — 같은 지원금이 한 화면에 두 번 나오지 않게(11/20)
-  const schedule = upcomingSchedule(policies, saved, today, todoPolicyId(todo?.item ?? null));
+  const schedule = upcomingSchedule(shown, savedOpen, today, todoPolicyId(todo?.item ?? null));
 
   return (
     <AppShell>

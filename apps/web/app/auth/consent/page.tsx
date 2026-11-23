@@ -29,7 +29,8 @@ const STORED_ITEMS: { name: string; detail: string; sensitive?: boolean }[] = [
     sensitive: true,
   },
   { name: "신청 체크리스트", detail: "정책마다 확인 표시한 항목" },
-  { name: "관심 지원금", detail: "하트로 모아 둔 지원금과 정책별 서류 준비 체크" },
+  // 11/23 신청 완료 표시 — 직접 누른 표시라 동의 버전은 올리지 않는다(ggue)
+  { name: "관심 지원금", detail: "하트로 모아 둔 지원금과 정책별 서류 준비 체크, ‘신청을 마쳤어요’로 표시한 지원금과 표시한 날" },
   // 11/22 내 프로필 — 동의 버전은 올리지 않는다(11/17 관심 지원금 줄과 같게, 설계 §1)
   // 11/23 프로필 사진(선택) — 이번에는 동의 버전을 2026-11-23 으로 올렸다(ggue 결정, lib/user-data.ts CONSENT_VERSION)
   {

@@ -71,7 +71,7 @@ export function loadRemote(): Promise<GetResponseBody | null> {
 }
 
 /** 전송 본문. 비어 있는 찜 필드는 빼고 보낸다(lib/sync.ts payloadFor). */
-type OptionalField = "saved" | "documentChecks" | "profileCard" | "badges" | "ledger" | "houseChecklist";
+type OptionalField = "saved" | "documentChecks" | "profileCard" | "badges" | "ledger" | "houseChecklist" | "applied";
 export type PutPayload = Omit<UserDataPayload, OptionalField> & Partial<Pick<UserDataPayload, OptionalField>>;
 
 export function saveRemote(data: PutPayload, baseUpdatedAt: string | null): Promise<SaveResult> {

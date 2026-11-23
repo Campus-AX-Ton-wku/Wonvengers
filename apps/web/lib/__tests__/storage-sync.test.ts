@@ -80,6 +80,7 @@ const 기대: UserDataContent = {
   badges: {},
   ledger: null,
   houseChecklist: [],
+  applied: {},
 };
 
 describe("이 기기의 사본 — 일곱 갈래 키를 한 묶음으로", () => {
