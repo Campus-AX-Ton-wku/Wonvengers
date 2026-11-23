@@ -11,10 +11,8 @@ import { TodayCard } from "./TodayCard";
 import { LedgerRow } from "./LedgerRow";
 import { LoanRow } from "./LoanRow";
 import { todayTodo, todoPolicyId, upcomingSchedule } from "@/lib/home-today";
-import { resolveAnswers } from "@/lib/age";
 import { AUTH_KEY, hasStoredLogin, isLoginAvailable, onAuthChange, storedSub } from "@/lib/auth";
 import { seoulTodayISO } from "@/lib/date";
-import { answerLine } from "@/lib/discovery";
 import { homePose, openPolicies, savedCards, type SavedCard } from "@/lib/home";
 import { ledgerMonth, ledgerPlan, ledgerProgress, monthKeyOf, type LedgerProgress } from "@/lib/ledger";
 import { formatApproxMoney } from "@/lib/money";
@@ -126,7 +124,6 @@ export default function HomePage() {
           {/* 홈 인사(11/22 내 프로필) — 제목 위, 누르면 내 정보. 계산 전 · 후 같은 머리 */}
           <HomeGreeting card={profileCard} answers={answers} />
           <h1 className="text-2xl font-extrabold leading-snug text-ink-900">내 주거지원 현황</h1>
-          {open !== null && <ConditionChip line={answerLine(resolveAnswers(answers, today))} />}
         </header>
 
         {todo?.item && <TodayCard item={todo.item} more={todo.more} />}
@@ -142,25 +139,6 @@ export default function HomePage() {
       </main>
       <BottomTabBar active="home" />
     </AppShell>
-  );
-}
-
-/**
- * "25세 · 익산시 · 대학생" — 내 조건을 글로만 보여 준다.
- * 11/23 ggue: 홈에서는 조건을 고치지 않는다([✎ 수정] 칩 링크를 뺐다). 조건 수정은 지원금 화면('조건 수정')과
- * 내 정보('내 조건 수정')에 있다. 누를 수 없는 줄이라 버튼처럼 보이는 면 · 그림자도 두지 않는다.
- */
-function ConditionChip({ line }: { line: string }) {
-  const parts = line.split(" · ");
-  return (
-    <p className="max-w-full truncate text-sm font-semibold text-ink-600">
-      {parts.map((part, i) => (
-        <span key={i}>
-          {i > 0 && <span aria-hidden="true" className="mx-1.5 text-ink-300">·</span>}
-          {part}
-        </span>
-      ))}
-    </p>
   );
 }
 

@@ -73,14 +73,14 @@ describe("/home", () => {
     await vi.waitFor(() => expect(replacePage).toHaveBeenCalledWith("/start"));
   });
 
-  // 11/23 ggue: 홈에서는 조건을 고치지 않는다 — [수정] 버튼을 빼고 조건은 글로만 보여 준다.
-  // 조건 수정은 지원금 화면('조건 수정') · 내 정보('내 조건 수정')에 남아 있다.
-  it("제목 아래 내 조건은 글로만 — 수정 버튼 · 링크가 없다", async () => {
+  // 11/23 ggue: 홈에서는 조건을 고치지 않는다([수정] 버튼 뺌) → 같은 날 조건 줄('25세 · 익산시 · 재직')도 뺌.
+  // 조건은 지원금 화면('조건 수정') · 내 정보('내 조건 수정')에서 보고 고친다.
+  it("제목 아래에 내 조건 줄이 없다 — 수정 버튼 · 링크도 없다", async () => {
     enableLogin(); signInAs("sub-a"); saveAnswers(익산_재직);
     render(<HomePage />);
     expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("내 주거지원 현황");
-    const line = screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "25세·익산시·재직");
-    expect(line.closest("a")).toBeNull();
+    expect(screen.queryByText((_, el) => el?.tagName === "P" && /25세/.test(el.textContent ?? ""))).toBeNull();
+    expect(screen.queryByText("재직")).toBeNull();
     expect(screen.queryByRole("link", { name: /조건 수정/ })).toBeNull();
     expect(screen.queryByText("수정")).toBeNull();
   });
