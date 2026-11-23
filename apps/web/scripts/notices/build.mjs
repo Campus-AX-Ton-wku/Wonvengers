@@ -205,6 +205,34 @@ async function applyhomeAll(fetchJson, key, op) {
   return rows;
 }
 
+/** 청약홈 주택형 — LTTOT_TOP_AMOUNT 는 만원(11/23 청약홈 화면과 대조) → 원 */
+export function fromApplyhomeModels(json) {
+  if (!Array.isArray(json?.data)) throw new Error("applyhome mdl: data 없음");
+  return [...json.data]
+    .sort((a, b) => String(a.MODEL_NO).localeCompare(String(b.MODEL_NO)))
+    .map((r) => {
+      const m = /^(\d+(?:\.\d+)?)\s*([A-Z]*)/.exec(String(r.HOUSE_TY ?? "").trim());
+      const price = won(r.LTTOT_TOP_AMOUNT);
+      return {
+        type: m ? `${Number(m[1])}㎡${m[2] ? ` ${m[2]}` : ""}` : String(r.HOUSE_TY ?? "").trim(),
+        general: Number(r.SUPLY_HSHLDCO) || 0,
+        special: Number(r.SPSPLY_HSHLDCO) || 0,
+        topPrice: price === null ? null : price * 10_000,
+      };
+    });
+}
+
+async function applyhomeModels(fetchJson, key, id) {
+  const [, manageNo, pblancNo] = /^applyhome:(.+)-(.*)$/.exec(id);
+  const u = new URL(`${APPLYHOME}/getAPTLttotPblancMdl`);
+  u.searchParams.set("serviceKey", key);
+  u.searchParams.set("page", "1");
+  u.searchParams.set("perPage", String(ROWS)); // 한 단지 주택형은 100개를 넘지 않는다. totalCount 는 전체 표 수라 쓰지 않는다
+  u.searchParams.set("cond[HOUSE_MANAGE_NO::EQ]", manageNo);
+  u.searchParams.set("cond[PBLANC_NO::EQ]", pblancNo);
+  return fromApplyhomeModels(await fetchJson(u.toString()));
+}
+
 /** 네 목록을 모두 받아 합친다. 하나라도 실패하면 던진다(부르는 쪽이 지난 스냅숏을 지킨다). */
 export async function collectNotices({ fetchJson, key, today }) {
   const [rent, sale, apt, remain] = await Promise.all([
@@ -213,7 +241,7 @@ export async function collectNotices({ fetchJson, key, today }) {
     applyhomeAll(fetchJson, key, "getAPTLttotPblancDetail"),
     applyhomeAll(fetchJson, key, "getRemndrLttotPblancDetail"),
   ]);
-  return mergeNotices(
+  const notices = mergeNotices(
     [
       ...rent.map((r) => fromMyhome(r, "공공임대")),
       ...sale.map((r) => fromMyhome(r, "공공분양")),
@@ -222,4 +250,17 @@ export async function collectNotices({ fetchJson, key, today }) {
     ],
     today
   );
+  // 주택형은 남은 아파트 공고만, 실패하면 그 공고의 표만 빠진다(설계 §7.2). 무순위는 단위 미대조라 부르지 않는다
+  await Promise.all(
+    notices
+      .filter((n) => n.kind === "아파트 분양")
+      .map(async (n) => {
+        try {
+          n.detail.houseTypes = await applyhomeModels(fetchJson, key, n.id);
+        } catch {
+          n.detail.houseTypes = null;
+        }
+      })
+  );
+  return notices;
 }

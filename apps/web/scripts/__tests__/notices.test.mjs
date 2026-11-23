@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectNotices, formatSnapshot, fromApplyhome, fromMyhome, mergeNotices, myhomeRows, telLabel, ymd } from "../notices/build.mjs";
+import { collectNotices, formatSnapshot, fromApplyhome, fromApplyhomeModels, fromMyhome, mergeNotices, myhomeRows, telLabel, ymd } from "../notices/build.mjs";
 
 const TODAY = "2026-11-22";
 const myhomeRow = (over = {}) => ({
@@ -93,6 +93,8 @@ describe("받아 오기 (collectNotices)", () => {
     if (u.pathname.endsWith("/ltRsdtRcritNtcList")) return myhomeJson([]);
     if (u.pathname.endsWith("/getAPTLttotPblancDetail")) return { data: [applyhomeRow(), applyhomeRow({ HOUSE_MANAGE_NO: "9", HSSPLY_ADRES: "전주시" })], totalCount: 2 };
     if (u.pathname.endsWith("/getRemndrLttotPblancDetail")) return { data: [], totalCount: 0 };
+    if (u.pathname.endsWith("/getAPTLttotPblancMdl"))
+      return { data: [{ MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" }], totalCount: 15094 };
     throw new Error(`예상 못 한 주소 ${u.pathname}`);
   };
   it("네 목록을 받아 익산만 합친다 — 마이홈은 익산 코드(52 · 140), 청약홈은 공급지역 전북", async () => {
@@ -111,6 +113,21 @@ describe("받아 오기 (collectNotices)", () => {
   });
   it("한 목록이라도 실패하면 던진다 — 반쪽 목록으로 덮어쓰지 않게", async () => {
     await expect(collectNotices({ fetchJson: fakeFetch({ fail: "getAPTLttotPblancDetail" }), key: "k", today: TODAY })).rejects.toThrow();
+  });
+  it("남은 익산 아파트 공고만 주택형을 부른다 — 관리번호 · 공고번호 조건", async () => {
+    const seen = [];
+    const fetchJson = async (url) => (seen.push(new URL(url)), fakeFetch()(url));
+    const notices = await collectNotices({ fetchJson, key: "k", today: TODAY });
+    const mdl = seen.filter((u) => u.pathname.endsWith("/getAPTLttotPblancMdl"));
+    expect(mdl).toHaveLength(1);
+    expect([mdl[0].searchParams.get("cond[HOUSE_MANAGE_NO::EQ]"), mdl[0].searchParams.get("cond[PBLANC_NO::EQ]")]).toEqual(["2026000123", "2026000123"]);
+    expect(notices.find((n) => n.source === "청약홈").detail.houseTypes).toEqual([{ type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 }]);
+    expect(notices.find((n) => n.source === "마이홈포털").detail.houseTypes).toBeNull();
+  });
+  it("주택형 호출이 실패해도 목록은 그대로 — 표만 없다", async () => {
+    const notices = await collectNotices({ fetchJson: fakeFetch({ fail: "getAPTLttotPblancMdl" }), key: "k", today: TODAY });
+    expect(notices.map((n) => n.id)).toEqual(["myhome:1001", "applyhome:2026000123-2026000123"]);
+    expect(notices[1].detail.houseTypes).toBeNull();
   });
 });
 
@@ -179,5 +196,20 @@ describe("상세 (detail)", () => {
     expect(telLabel("063-836-3620")).toBe("063-836-3620");
     expect(telLabel("12")).toBeNull();
     expect(telLabel(undefined)).toBeNull();
+  });
+});
+
+describe("주택형 (getAPTLttotPblancMdl)", () => {
+  it("주택형 → 전용 ㎡ + 글자, 만원 → 원, 모델 번호 순", () => {
+    expect(fromApplyhomeModels({ data: [
+      { MODEL_NO: "02", HOUSE_TY: "059.8500B", SUPLY_HSHLDCO: 31, SPSPLY_HSHLDCO: 37, LTTOT_TOP_AMOUNT: "35289" },
+      { MODEL_NO: "01", HOUSE_TY: "059.8500A", SUPLY_HSHLDCO: 11, SPSPLY_HSHLDCO: 12, LTTOT_TOP_AMOUNT: "37807" },
+      { MODEL_NO: "03", HOUSE_TY: "084.8800 ", SUPLY_HSHLDCO: 73, SPSPLY_HSHLDCO: 0, LTTOT_TOP_AMOUNT: "" },
+    ] })).toEqual([
+      { type: "59.85㎡ A", general: 11, special: 12, topPrice: 378_070_000 },
+      { type: "59.85㎡ B", general: 31, special: 37, topPrice: 352_890_000 },
+      { type: "84.88㎡", general: 73, special: 0, topPrice: null },
+    ]);
+    expect(() => fromApplyhomeModels({ currentCount: 0 })).toThrow();
   });
 });
