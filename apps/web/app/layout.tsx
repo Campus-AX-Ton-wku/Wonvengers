@@ -124,7 +124,7 @@ export default function RootLayout({
         ))}
       </head>
       <body className="min-h-dvh bg-canvas text-ink-900 antialiased">
-        {/* 앱 시작 화면 — html.splash 일 때만 보인다(globals.css). 아이폰 시작 이미지와 같은 한 장: 파랑 + 정가운데 앱 아이콘 */}
+        {/* 앱 시작 화면 — html.splash 일 때만 보인다(globals.css). 아이폰 시작 이미지와 같은 한 장: 파랑 + 가운데에서 살짝 위로 올린 앱 아이콘 */}
         <div id="splash" role="status" aria-label="Perky를 여는 중">
           {/* eslint-disable-next-line @next/next/no-img-element -- 번들보다 먼저 그려져야 하는 정적 그림 */}
           <img src="/icon.png" alt="" width={150} height={150} />
