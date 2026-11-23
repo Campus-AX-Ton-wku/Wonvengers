@@ -169,14 +169,16 @@ function removeMeta(): void {
 function payloadFor(sub: string, content: UserDataContent): PutPayload {
   // 서버는 빠진 찜 필드를 빈 값으로 본다. 이 변경 이전에 배포된 API 는 exact() 로 모르는 키를 400 으로 거절하므로,
   // 비어 있으면 빼고 보낸다 — 찜을 안 쓴 사용자는 배포 시점과 상관없이 평소처럼 저장된다.
-  // 프로필 · 배지(11/22)도 같은 까닭으로 — 안 꾸몄거나 배지가 없으면 빼고 보낸다.
-  const { saved, documentChecks, profileCard, badges, ...rest } = content;
+  // 프로필 · 배지(11/22), 주거비 달력 · 집 보기 체크리스트(11/23)도 같은 까닭으로 — 비어 있으면 빼고 보낸다.
+  const { saved, documentChecks, profileCard, badges, ledger, houseChecklist, ...rest } = content;
   return {
     ...rest,
     ...(saved.length > 0 ? { saved } : {}),
     ...(Object.keys(documentChecks).length > 0 ? { documentChecks } : {}),
     ...(profileCard !== null ? { profileCard } : {}),
     ...(Object.keys(badges).length > 0 ? { badges } : {}),
+    ...(ledger !== null ? { ledger } : {}),
+    ...(houseChecklist.length > 0 ? { houseChecklist } : {}),
     schemaVersion: SCHEMA_VERSION,
     consentVersion: CONSENT_VERSION,
     consentAt: consentAtFor(sub) ?? new Date().toISOString(),
@@ -200,6 +202,22 @@ const localFingerprint = () => contentFingerprint(readLocalContent());
 function settleNoopDirty(meta: SyncMeta): SyncMeta {
   if (!meta.dirty || meta.syncedHash === null || meta.syncedHash !== localFingerprint()) return meta;
   const next = { ...meta, dirty: false };
+  writeMeta(next);
+  return next;
+}
+
+/**
+ * 11/23 전에는 주거비 달력 · 집 보기 체크리스트가 이 기기에만 있었다. 그때 남긴 기록은 서버와 맞춘 지문(syncedHash)에
+ * 들어 있지 않아, 고친 것이 없어도(dirty 아님) 지금 사본과 지문이 다르다. 그런 기록이 있으면 한 번 올리도록 표시한다 —
+ * 그러지 않으면 다른 기기의 변경을 받을 때(writeLocalContent) 서버에 없던 기록이 지워진다.
+ * 올린 뒤에는 지문이 같아져 다시 일어나지 않는다. 기록이 없는 사람은 아무 일도 없다(서버 배포 전에도 안전).
+ */
+function adoptDeviceRecords(meta: SyncMeta): SyncMeta {
+  if (meta.dirty || meta.syncedHash === null) return meta;
+  const local = readLocalContent();
+  if (local.ledger === null && local.houseChecklist.length === 0) return meta;
+  if (contentFingerprint(local) === meta.syncedHash) return meta;
+  const next = { ...meta, dirty: true };
   writeMeta(next);
   return next;
 }
@@ -368,7 +386,7 @@ async function refreshFromServer(): Promise<void> {
     }
     return;
   }
-  const meta = settleNoopDirty(stored);
+  const meta = adoptDeviceRecords(settleNoopDirty(stored));
   if (meta.dirty) return flushNow();
   const seqAtStart = changeSeq;
   try {
@@ -489,7 +507,8 @@ export async function logout(): Promise<LogoutResult> {
       clearLocalContent();
       removeMeta();
     }
-    // 주거비 달력 · 집 보기 체크리스트는 서버에 없는, 이 기기에만 있는 기록 — 동기화 기록이 없어도 지운다(공용 기기 보호)
+    // 주거비 달력 · 집 보기 체크리스트 · 가이드 읽음 — 동기화 기록이 없어도(동의 전 로그인) 지운다(공용 기기 보호).
+    // 달력 · 체크리스트는 11/23 부터 계정에도 저장돼 다시 로그인하면 돌아온다.
     clearDeviceRecords();
     signOut();
   }

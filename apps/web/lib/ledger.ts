@@ -1,6 +1,7 @@
 import { monthlyBreakdown } from "./benefit";
 import { formatKoreanMoney } from "./money";
 import type { CalculationSummary, ContractType, ListingInput, PolicyMeta } from "./types";
+import type { LedgerData, LedgerMonthData } from "./user-data";
 
 /**
  * 주거비 달력 (docs/기획/2026-11-21-주거비-달력-설계.md §4 · §5).
@@ -14,19 +15,9 @@ import type { CalculationSummary, ContractType, ListingInput, PolicyMeta } from 
 /** "2026-11" */
 export type MonthKey = string;
 
-export interface LedgerMonthRecord {
-  /** 누른 칸 → 누를 때의 금액(원). 다시 계산해도 누른 칸 금액은 그대로 둔다. */
-  done: Record<string, number>;
-  /** 고친 칸 → 고친 금액(원). 이 달에만. */
-  amounts: Record<string, number>;
-}
-
-export interface LedgerRecord {
-  v: 1;
-  months: Record<MonthKey, LedgerMonthRecord>;
-  /** 한 번 받는 지원: 정책 id → 받은 달 */
-  oneTime: Record<string, MonthKey>;
-}
+/** 기록 모양은 계정 저장 형식과 하나다(lib/user-data.ts — 11/23 부터 계정에 저장). */
+export type LedgerMonthRecord = LedgerMonthData;
+export type LedgerRecord = LedgerData;
 
 export function emptyLedger(): LedgerRecord {
   return { v: 1, months: {}, oneTime: {} };

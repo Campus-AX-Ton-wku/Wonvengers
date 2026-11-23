@@ -9,6 +9,7 @@ import {
   DISCOVERY_KEYS,
   ELIGIBILITY_KEYS,
   emptyContent,
+  ledgerForSync,
   readBadges,
   readProfileCard,
   sanitizeContent,
@@ -348,6 +349,9 @@ export function saveDocumentChecks(policyId: string, names: readonly string[]): 
 // ── 내 프로필 · 배지 (11/22, docs/기획/2026-11-22-내-프로필-설계.md §1) — 계정과 동기화한다 ──
 const PROFILE_CARD_KEY = "perky.profile-card";
 const BADGES_KEY = "perky.badges";
+/** 주거비 달력 · 집 보기 체크리스트 — 11/23 부터 계정에 저장(아래 각 절) */
+const LEDGER_KEY = "perky.ledger";
+export const HOUSE_CHECKLIST_KEY = "perky.house-checklist";
 
 /** 꾸민 프로필. 안 꾸몄으면(또는 깨졌으면) null — 화면은 기본값(집 · 파랑 · 기본 이름)으로 그린다 */
 export function loadProfileCard(): ProfileCardData | null {
@@ -430,9 +434,11 @@ const SYNCED_KEYS = [
   SAVED_KEY,
   PROFILE_CARD_KEY,
   BADGES_KEY,
+  LEDGER_KEY,
+  HOUSE_CHECKLIST_KEY,
 ];
 
-/** 이 기기의 답 일곱 갈래를 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
+/** 이 기기의 답 갈래들을 서버 형식으로 모은다. 깨진 묶음은 그 묶음만 버린다. */
 export function readLocalContent(): UserDataContent {
   if (typeof window === "undefined") return emptyContent();
   const discovery = DISCOVERY_KEYS as readonly string[];
@@ -461,6 +467,8 @@ export function readLocalContent(): UserDataContent {
     documentChecks: Object.fromEntries(documentCheckIds().map((id) => [id, loadDocumentChecks(id)])),
     profileCard: readJSON<unknown>(PROFILE_CARD_KEY),
     badges: readJSON<unknown>(BADGES_KEY) ?? {},
+    ledger: ledgerForSync(loadLedger()),
+    houseChecklist: loadHouseChecklist(),
   });
 }
 
@@ -495,6 +503,8 @@ export function writeLocalContent(content: UserDataContent): void {
     for (const [id, names] of Object.entries(content.documentChecks)) writeJSON(`${DOCUMENT_CHECKS_PREFIX}${id}`, names);
     if (content.profileCard) writeJSON(PROFILE_CARD_KEY, content.profileCard);
     if (Object.keys(content.badges).length > 0) writeJSON(BADGES_KEY, content.badges);
+    if (content.ledger) writeJSON(LEDGER_KEY, content.ledger);
+    if (content.houseChecklist.length > 0) writeJSON(HOUSE_CHECKLIST_KEY, { v: 1, checked: content.houseChecklist });
   });
 }
 
@@ -518,13 +528,11 @@ export function resetAllAnswers(): void {
 
 // ── 주거비 달력 (docs/기획/2026-11-21-주거비-달력-설계.md §5) ──
 
-const LEDGER_KEY = "perky.ledger";
 
 /**
- * 주거비 달력 기록. **이 기기에만** 둔다 — SYNCED_KEYS · readLocalContent 에 넣지 않는다.
- * 저장할 때 notifyLocalChange 를 부르지 않는다: lib/sync.ts 가 그 알림마다 서버에 올리므로 누를 때마다 PUT 이 나간다.
- * clearLocalContent 에도 넣지 않는다: 그 함수는 로그인하면서 서버 값으로 덮어쓸 때(writeLocalContent)도 불린다.
- * 지우는 곳은 로그아웃 · 탈퇴(lib/sync.ts)와 '처음부터 다시'(resetAllAnswers).
+ * 주거비 달력 기록. 11/23 부터 **계정에 저장**한다(ggue) — SYNCED_KEYS · readLocalContent · writeLocalContent 에 있다.
+ * 누를 때마다 notifyLocalChange — lib/sync.ts 가 1.5초 모았다가 한 번 올린다.
+ * 지우는 곳: 로그아웃(이 기기 사본만, 서버에는 남는다) · 탈퇴 · '처음부터 다시'(서버도 비운다).
  */
 export function loadLedger(): LedgerRecord {
   if (typeof window === "undefined") return emptyLedger();
@@ -537,7 +545,10 @@ export function loadLedger(): LedgerRecord {
 }
 
 export function saveLedger(record: LedgerRecord): void {
-  if (writeJSONSafely(LEDGER_KEY, record)) notifyDeviceRecordChange();
+  if (writeJSONSafely(LEDGER_KEY, record)) {
+    notifyLocalChange();
+    notifyDeviceRecordChange();
+  }
 }
 
 export function clearLedger(): void {
@@ -552,9 +563,8 @@ export function clearLedger(): void {
 // ── 집 보러 갈 때 체크리스트 (docs/기획/2026-11-22-집-보기-체크리스트-설계.md) ──
 // 이름이 HouseChecklist 인 까닭: 위의 loadChecklist · saveChecklist 는 신청 준비 체크(perky.application-checklist:*)다.
 
-export const HOUSE_CHECKLIST_KEY = "perky.house-checklist";
 
-/** 체크한 줄. 주거비 달력과 같은 규칙 — 이 기기에만, notifyLocalChange 안 부름, clearLocalContent 밖. */
+/** 체크한 줄. 주거비 달력과 같은 규칙 — 11/23 부터 계정에 저장, 바꿀 때마다 notifyLocalChange. */
 export function loadHouseChecklist(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -567,8 +577,9 @@ export function loadHouseChecklist(): string[] {
   }
 }
 
+/** [체크 모두 지우기]도 이것으로(빈 목록) — clearHouseChecklist 는 알리지 않아서 서버에 남는다. */
 export function saveHouseChecklist(ids: string[]): void {
-  writeJSONSafely(HOUSE_CHECKLIST_KEY, { v: 1, checked: ids });
+  if (writeJSONSafely(HOUSE_CHECKLIST_KEY, { v: 1, checked: ids })) notifyLocalChange();
 }
 
 export function clearHouseChecklist(): void {
@@ -580,7 +591,10 @@ export function clearHouseChecklist(): void {
   }
 }
 
-/** 서버에 없는, 이 기기에만 있는 기록(주거비 달력 · 집 보기 체크리스트). 로그아웃 · 탈퇴(lib/sync.ts) · '처음부터 다시'에서 지운다 */
+/**
+ * 이 기기 사본에서 지울 기록 — 주거비 달력 · 집 보기 체크리스트(11/23 부터 계정에도 있다) · 가이드 읽음 · 배지 처음 판정.
+ * 로그아웃 · 탈퇴(lib/sync.ts) · '처음부터 다시'에서. 알리지 않는다(서버 값은 그대로).
+ */
 export function clearDeviceRecords(): void {
   clearLedger();
   clearHouseChecklist();
@@ -597,8 +611,8 @@ function removeQuietly(key: string): void {
   }
 }
 
-// ── 이 기기에만 있는 기록의 알림 (11/22 배지) ──
-// 주거비 달력 · 가이드 읽음은 동기화 알림(onLocalChange)을 쓰지 않는다 — 그 알림은 서버로 올린다.
+// ── 배지 재료 기록의 알림 (11/22 배지) ──
+// 가이드 읽음은 이 기기에만 있어 동기화 알림(onLocalChange)을 쓰지 않는다. 주거비 달력은 11/23 부터 둘 다 보낸다.
 // 배지 판정(BadgeWatcher)이 다시 볼 수 있게 따로 알린다.
 const DEVICE_RECORD_EVENT = "perky:device-record";
 

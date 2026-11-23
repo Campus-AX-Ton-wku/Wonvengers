@@ -183,10 +183,15 @@ describe("로그인 상태", () => {
       // 안 꾸민 프로필 · 없는 배지도 빠진다(11/22)
       profileCard: payload.profileCard ?? null,
       badges: payload.badges ?? {},
+      // 주거비 달력 · 집 보기 체크리스트도 비면 빠진다(11/23)
+      ledger: payload.ledger ?? null,
+      houseChecklist: payload.houseChecklist ?? [],
     }).toEqual(emptyContent());
     expect(payload).not.toHaveProperty("saved");
     expect(payload).not.toHaveProperty("documentChecks");
     expect(payload).not.toHaveProperty("profileCard");
     expect(payload).not.toHaveProperty("badges");
+    expect(payload).not.toHaveProperty("ledger");
+    expect(payload).not.toHaveProperty("houseChecklist");
   });
 });

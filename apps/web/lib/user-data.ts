@@ -61,13 +61,32 @@ export interface ProfileCardData {
   pinnedBadge: BadgeId | null;
 }
 
+/**
+ * 주거비 달력 기록 (lib/ledger.ts · docs/기획/2026-11-21-주거비-달력-설계.md §5). 11/23 부터 계정에 저장한다.
+ * 줄 키는 "rent" · "fee" · "policy:<정책 id>".
+ */
+export interface LedgerMonthData {
+  /** 누른 칸 → 누를 때의 금액(원). 다시 계산해도 누른 칸 금액은 그대로 둔다. */
+  done: Record<string, number>;
+  /** 고친 칸 → 고친 금액(원). 이 달에만. */
+  amounts: Record<string, number>;
+}
+
+export interface LedgerData {
+  v: 1;
+  /** "2026-11" → 그 달 기록 */
+  months: Record<string, LedgerMonthData>;
+  /** 한 번 받는 지원: 정책 id → 받은 달 */
+  oneTime: Record<string, string>;
+}
+
 export interface ChecklistState {
   eligibility: boolean;
   period: boolean;
   documents: boolean;
 }
 
-/** 이 기기의 localStorage 키 일곱 갈래를 그대로 옮긴 묶음. */
+/** 이 기기의 localStorage 키들을 그대로 옮긴 묶음. */
 export interface UserDataContent {
   /** perky.answers + perky.answered */
   answers: { values: DiscoveryAnswers; answeredKeys: DiscoveryKey[] };
@@ -87,6 +106,10 @@ export interface UserDataContent {
   profileCard: ProfileCardData | null;
   /** perky.badges — 받은 배지 → 받은 날 (11/22) */
   badges: Partial<Record<BadgeId, string>>;
+  /** perky.ledger — 주거비 달력 기록, 누른 것도 고친 것도 없으면 null (11/23) */
+  ledger: LedgerData | null;
+  /** perky.house-checklist — 집 보기 체크리스트에서 체크한 줄 id, 이름순 (11/23) */
+  houseChecklist: string[];
 }
 
 export interface UserDataPayload extends UserDataContent {
@@ -194,7 +217,16 @@ export const MAX_SAVED = 50;
 export const MAX_DOCUMENTS = 15;
 export const MAX_DOCUMENT_NAME = 60;
 /** 없어도 받는 칸 — 예전 앱(홈 화면에 캐시된 앱 포함)은 보내지 않는다 */
-const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks", "profileCard", "badges"] as const;
+const OPTIONAL_PAYLOAD_KEYS = ["saved", "documentChecks", "profileCard", "badges", "ledger", "houseChecklist"] as const;
+/** 달력에 남길 수 있는 달 수(10년). 넘으면 이 기기에서 올릴 때 최근 달만 남긴다(ledgerForSync). */
+export const MAX_LEDGER_MONTHS = 120;
+const MAX_LEDGER_LINES = 30;
+const MAX_LEDGER_ONE_TIME = 50;
+export const MAX_LEDGER_AMOUNT = 1_000_000_000;
+const MAX_HOUSE_CHECKLIST = 60;
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const LEDGER_LINE = /^[A-Za-z0-9_:.-]{1,120}$/;
+const CHECK_ID = /^[a-z0-9-]{1,60}$/;
 const DECLARED_KEY = /^[A-Za-z0-9_:.-]{1,100}$/;
 const POLICY_ID = /^[a-z0-9-]{1,100}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -408,6 +440,79 @@ function parseBadges(v: unknown, path: string): Partial<Record<BadgeId, string>>
   return out;
 }
 
+function parseLedgerAmounts(v: unknown, path: string): Record<string, number> {
+  const entries = Object.entries(record(v, path));
+  if (entries.length > MAX_LEDGER_LINES) fail(path, "too many entries");
+  const out: Record<string, number> = {};
+  for (const [key, amount] of entries) {
+    if (!LEDGER_LINE.test(key)) fail(`${path}.${key}`, "bad key");
+    out[key] = num(amount, `${path}.${key}`, MAX_LEDGER_AMOUNT, true);
+    if (out[key] === 0) fail(`${path}.${key}`, "out of range");
+  }
+  return out;
+}
+
+/** 빈 달(누른 것도 고친 것도 없는 달)은 버리고, 남는 것이 없으면 null — 기록 없음과 같게 본다. */
+function parseLedger(v: unknown, path: string): LedgerData | null {
+  const o = exact(v, path, ["v", "months", "oneTime"]);
+  if (o.v !== 1) fail(`${path}.v`, "unsupported version");
+  const months = Object.entries(record(o.months, `${path}.months`));
+  if (months.length > MAX_LEDGER_MONTHS) fail(`${path}.months`, "too many entries");
+  const out: LedgerData = { v: 1, months: {}, oneTime: {} };
+  for (const [month, value] of months) {
+    const p = `${path}.months.${month}`;
+    if (!MONTH.test(month)) fail(p, "not a month");
+    const m = exact(value, p, ["done", "amounts"]);
+    const done = parseLedgerAmounts(m.done, `${p}.done`);
+    const amounts = parseLedgerAmounts(m.amounts, `${p}.amounts`);
+    if (Object.keys(done).length > 0 || Object.keys(amounts).length > 0) out.months[month] = { done, amounts };
+  }
+  const oneTime = Object.entries(record(o.oneTime, `${path}.oneTime`));
+  if (oneTime.length > MAX_LEDGER_ONE_TIME) fail(`${path}.oneTime`, "too many entries");
+  for (const [id, month] of oneTime) {
+    if (!POLICY_ID.test(id)) fail(`${path}.oneTime.${id}`, "bad policy id");
+    if (typeof month !== "string" || !MONTH.test(month)) fail(`${path}.oneTime.${id}`, "not a month");
+    out.oneTime[id] = month;
+  }
+  return Object.keys(out.months).length === 0 && Object.keys(out.oneTime).length === 0 ? null : out;
+}
+
+function parseHouseChecklist(v: unknown, path: string): string[] {
+  if (!Array.isArray(v) || v.length > MAX_HOUSE_CHECKLIST) fail(path, "not a list");
+  for (const id of v) if (typeof id !== "string" || !CHECK_ID.test(id)) fail(path, "bad id");
+  return [...new Set(v as string[])].sort();
+}
+
+/**
+ * 이 기기의 달력 기록(lib/ledger.ts parseLedger 로 이미 다듬은 값)을 서버 검사에 맞춘다 —
+ * 칸 하나가 상한을 넘었다고 기록 전체를 못 올리면 안 된다. 넘치는 달은 최근 달만, 틀린 줄은 뺀다.
+ */
+export function ledgerForSync(record: LedgerData): LedgerData | null {
+  const lines = (amounts: Record<string, number>) =>
+    Object.fromEntries(
+      Object.entries(amounts)
+        .filter(([key, n]) => LEDGER_LINE.test(key) && Number.isInteger(n) && n > 0 && n <= MAX_LEDGER_AMOUNT)
+        .slice(0, MAX_LEDGER_LINES)
+    );
+  const months = Object.keys(record.months)
+    .filter((m) => MONTH.test(m))
+    .sort()
+    .slice(-MAX_LEDGER_MONTHS);
+  const raw = {
+    v: 1,
+    months: Object.fromEntries(
+      months.map((m) => [m, { done: lines(record.months[m].done), amounts: lines(record.months[m].amounts) }])
+    ),
+    oneTime: Object.fromEntries(
+      Object.entries(record.oneTime)
+        .filter(([id, m]) => POLICY_ID.test(id) && MONTH.test(m))
+        .slice(0, MAX_LEDGER_ONE_TIME)
+    ),
+  };
+  const result = attempt(() => parseLedger(raw, "ledger"));
+  return result.ok ? result.value : null;
+}
+
 function parsePayload(v: unknown, path: string): UserDataPayload {
   const o = record(v, path);
   const allowed: readonly string[] = [...PAYLOAD_KEYS, ...OPTIONAL_PAYLOAD_KEYS];
@@ -429,6 +534,9 @@ function parsePayload(v: unknown, path: string): UserDataPayload {
       o.documentChecks === undefined ? {} : parseDocumentChecks(o.documentChecks, `${path}.documentChecks`),
     profileCard: o.profileCard === undefined ? null : nullable(o.profileCard, (x) => parseProfileCard(x, `${path}.profileCard`)),
     badges: o.badges === undefined ? {} : parseBadges(o.badges, `${path}.badges`),
+    ledger: o.ledger === undefined ? null : nullable(o.ledger, (x) => parseLedger(x, `${path}.ledger`)),
+    houseChecklist:
+      o.houseChecklist === undefined ? [] : parseHouseChecklist(o.houseChecklist, `${path}.houseChecklist`),
   };
 }
 
@@ -471,6 +579,8 @@ export function emptyContent(): UserDataContent {
     documentChecks: {},
     profileCard: null,
     badges: {},
+    ledger: null,
+    houseChecklist: [],
   };
 }
 
@@ -480,7 +590,7 @@ export function emptyContent(): UserDataContent {
  */
 export function sanitizeContent(
   raw: Record<"answers" | "listing" | "profile" | "declared" | "checklists", unknown> &
-    Partial<Record<"saved" | "documentChecks" | "profileCard" | "badges", unknown>>
+    Partial<Record<"saved" | "documentChecks" | "profileCard" | "badges" | "ledger" | "houseChecklist", unknown>>
 ): UserDataContent {
   const keep = <T>(parse: () => T, fallback: T): T => {
     const result = attempt(parse);
@@ -503,6 +613,11 @@ export function sanitizeContent(
       null
     ),
     badges: keep(() => (raw.badges === undefined ? {} : parseBadges(raw.badges, "badges")), {}),
+    ledger: keep(() => (raw.ledger === undefined ? null : nullable(raw.ledger, (x) => parseLedger(x, "ledger"))), null),
+    houseChecklist: keep(
+      () => (raw.houseChecklist === undefined ? [] : parseHouseChecklist(raw.houseChecklist, "houseChecklist")),
+      []
+    ),
   };
 }
 
@@ -529,7 +644,9 @@ export function isEmptyContent(c: UserDataContent): boolean {
     c.saved.length === 0 &&
     Object.keys(c.documentChecks).length === 0 &&
     c.profileCard === null &&
-    Object.keys(c.badges).length === 0
+    Object.keys(c.badges).length === 0 &&
+    c.ledger === null &&
+    c.houseChecklist.length === 0
   );
 }
 
@@ -545,6 +662,8 @@ export function contentOf(c: UserDataContent): UserDataContent {
     documentChecks: c.documentChecks,
     profileCard: c.profileCard,
     badges: c.badges,
+    ledger: c.ledger,
+    houseChecklist: c.houseChecklist,
   };
 }
 
