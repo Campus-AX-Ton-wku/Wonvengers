@@ -38,7 +38,7 @@ export function evaluatePolicy(
   }
 
   // 1층의 계약 형태 조건(예: 전세 계약만)을 2층 계약에도 적용한다. 2층 규칙(policy-rules.ts)에는 이 검사가 없어서
-  // 월세로 계산한 사람에게 전세 전용 정책이 '조건충족시가능'으로 떴다(11/17). 2층은 월세 · 연세만 다룬다.
+  // 월세로 계산한 사람에게 전세 전용 정책이 '조건충족시가능'으로 떴다(11/17). 2층은 11/23 부터 전세도 다룬다.
   const housingTypes = policy.discovery.housingTypes;
   if (housingTypes !== null && !housingTypes.includes(listing.contractType)) {
     return {
@@ -57,6 +57,17 @@ export function evaluatePolicy(
 
   // 받는 동안 나이를 따지는 지원인데 계약 시작 때 이미 나이 상한을 넘으면 한 달도 못 받는다 (11/21).
   // 0원 카드로 두면 '계산하지 않는 지원'처럼 읽히므로 실패한 조건으로 남긴다.
+  // 계약 형태를 따지지 않는 월세 상한 지원(주거급여 분리지급)을 전세로 계산하면 기준이 될 월세가 없다(11/23).
+  // 탈락시키지도, 대출 이자로 금액을 세지도 않는다 — 확인할 것으로 남긴다 (benefit.ts cappedRentBase).
+  if (policy.benefitType === "rent_capped_monthly" && listing.contractType === "전세") {
+    checks.push({
+      key: "jeonseAmount",
+      label: "전세 계약의 지급액 — 앱이 계산하지 않아요",
+      result: "unknown",
+      howToConfirm: "전세 계약에도 주는지, 얼마를 주는지 공고 원문이나 문의처에서 확인하세요.",
+    });
+  }
+
   const ageLimit = supportAgeLimit(policy, listing, profile.birthDate);
   if (ageLimit && ageLimit.months === 0) {
     checks.push({

@@ -71,7 +71,19 @@ function writeJSONSafely(key: string, value: unknown): boolean {
 }
 
 export function saveListing(listing: ListingInput): void {
-  if (writeJSON(LISTING_KEY, listing)) notifyLocalChange();
+  // 전세 칸은 전세 계약에만 남긴다 — 예전 서버(11/23 전)는 모르는 키를 거부해서, 월세로 바꾼 뒤에도
+  // 칸이 남아 있으면 월세 저장까지 서버에 못 올라간다. 전세면 월세 · 연세 금액은 쓰지 않으니 0 으로 둔다.
+  const { jeonseLoanAmount, jeonseLoanRate, ...rest } = listing;
+  const tidy: ListingInput =
+    listing.contractType === "전세"
+      ? {
+          ...rest,
+          rentOrYearlyAmount: 0,
+          ...(jeonseLoanAmount !== undefined && { jeonseLoanAmount }),
+          ...(jeonseLoanRate !== undefined && { jeonseLoanRate }),
+        }
+      : rest;
+  if (writeJSON(LISTING_KEY, tidy)) notifyLocalChange();
 }
 
 export function loadListing(): ListingInput | null {

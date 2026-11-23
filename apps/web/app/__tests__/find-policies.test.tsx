@@ -170,13 +170,14 @@ describe("/find/policies", () => {
    * 그리로 보내면 자기 계약을 입력할 방법이 없는 화면에 도착한다. 문구만 전세용으로
    * 바꾸는 건 눌러서 막히는 길을 만드는 것이라, 대신 왜 아직 못 하는지를 말한다.
    */
-  it("전세 거주자에게는 월세 계산 CTA 대신 안내를 준다", async () => {
+  it("전세 거주자에게도 계산 입구를 준다 — 문구는 전세 (11/23 전세 계산 추가)", async () => {
     saveAnswers({ ...익산_대학생, housingType: "전세" as const });
     render(<FindPoliciesPage />);
 
     await screen.findByRole("heading", { level: 2 });
     expect(screen.queryByRole("link", { name: /내 월세는 얼마일까/ })).toBeNull();
-    expect(screen.getByText(/전세는 아직 계산할 수 없어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /내 전세 부담은 얼마일까/ }).getAttribute("href")).toBe("/calculate");
+    expect(screen.queryByText(/전세는 아직 계산할 수 없어요/)).toBeNull();
   });
 
   it("전세 거주자에게는 전세 전용 지원금이 신청 가능으로 뜬다", async () => {

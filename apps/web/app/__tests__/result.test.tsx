@@ -308,3 +308,28 @@ describe("결과 화면 하단", () => {
     expect(routerMock.push).toHaveBeenCalledWith("/eligibility?g=1");
   });
 });
+
+/** 전세 계산 (11/23 ggue A안) — 영수증은 '대출 이자·관리비', 월세 상한 지원은 이자로 세지 않는다. */
+describe("결과 — 전세 계약", () => {
+  it("영수증 첫 줄이 대출 이자·관리비이고, 금액이 (이자 + 관리비) × 개월이다", async () => {
+    saveListing(
+      makeListing({
+        contractType: "전세",
+        deposit: 100_000_000,
+        rentOrYearlyAmount: 0,
+        jeonseLoanAmount: 80_000_000,
+        jeonseLoanRate: 2.4,
+        managementFee: 40_000,
+        months: 24,
+      })
+    );
+    saveProfile(makeProfile());
+    render(<ResultPage />);
+    await screen.findByText(지원금_라벨);
+
+    const label = screen.getByText(/^대출 이자·관리비 24개월$/);
+    // (16만 + 4만) × 24 = 480만
+    expect(label.nextElementSibling?.textContent).toBe("480만원");
+    expect(screen.queryByText(/^월세·관리비/)).toBeNull();
+  });
+});
