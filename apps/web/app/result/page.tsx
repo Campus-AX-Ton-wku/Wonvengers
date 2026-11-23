@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import loanProductsData from "@/data/loan-products.json";
@@ -27,6 +28,8 @@ import BenefitResultCard from "./BenefitResultCard";
 import { ResultReceipt } from "./ResultReceipt";
 import { ResultLoading, ResultState } from "./ResultState";
 import { benefitResultCards } from "@/lib/benefit-result";
+import { takeReveal } from "@/lib/reveal";
+import FoundReveal from "./FoundReveal";
 
 const allLoanProducts = loanProductsData as LoanProductMeta[];
 
@@ -34,7 +37,24 @@ export default function ResultPage() {
   const router = useRouter();
   const { listing, birthDate, summary, asOf, status, expiredAt, retry } = useResultData();
 
-  if (status === "loading") return <ResultLoading />;
+  // 결과 화면 앞 '찾았어요' 한 장 (11/23 시안). 판정 질문의 [결과 확인하기]가 남긴 표시를 한 번 꺼내 지운다 —
+  // 새로고침 · 뒤로 가기 · 홈의 '계산 결과 보기'로 다시 열면 표시가 없어 바로 결과다.
+  // ref 에 담는 이유: 개발 모드(StrictMode)는 effect 를 두 번 돌리는데, 두 번째 꺼내기는 늘 false 다.
+  const tookReveal = useRef<boolean | null>(null);
+  const [revealRequested, setRevealRequested] = useState<boolean | null>(null);
+  /** cover: 파란 막만 · leaving: 막이 걷히며 결과를 밑에 깐다 · done: 막 없음 */
+  const [revealPhase, setRevealPhase] = useState<"cover" | "leaving" | "done">("cover");
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (tookReveal.current === null) tookReveal.current = takeReveal();
+    setRevealRequested(tookReveal.current);
+  }, []);
+  // 막이 걷히면 결과 제목에 초점 — 화면 읽기가 '찾았어요' 다음에 결과 제목부터 읽는다(시안 노트)
+  useEffect(() => {
+    if (revealRequested && revealPhase === "done") titleRef.current?.focus({ preventScroll: true });
+  }, [revealRequested, revealPhase]);
+
+  if (status === "loading" || revealRequested === null) return <ResultLoading />;
   if (status === "missing") return <MissingInput />;
   if (status === "error") return <ResultState kind="error" onRetry={retry} />;
   if (status === "empty") return <ResultState kind="empty" />;
@@ -74,16 +94,21 @@ export default function ResultPage() {
   // 중복 제한 때문에 빠진 정책 (F4-5). 조용히 빠지면 왜 합산되지 않았는지 알 수 없다.
   const overlapExcluded = excludedByOverlap(summary.results, summary.bestCombination);
 
-  return (
+  // 받을 수 있는 게 없으면(빈 화면 · 만료 화면) 막 없이 그 화면이 바로 나온다 — 위에서 이미 돌아갔다.
+  const fromReveal = revealRequested && cards.length > 0;
+  const showReveal = fromReveal && revealPhase !== "done";
+
+  const content = (
     <AppShell>
       <TopBar backHref="/eligibility" />
 
       {/* 등장 애니메이션은 main 에만 — AppShell 에 걸면 그 안의 상단바(sticky) · 하단 섬(fixed)이 iOS 에서 본문과 같이 스크롤된다 (11/20) */}
-      <main className="step-in flex flex-col gap-5 pb-10 pt-3">
+      {/* '찾았어요'에서 넘어오면 오른쪽에서 밀려오는 대신 아래에서 떠오른다(시안 '페이드') */}
+      <main className={`${fromReveal ? "reveal-result-in" : "step-in"} flex flex-col gap-5 pb-10 pt-3`}>
         <header>
           {/* 제목 위 작은 머리글 — 계산 중 · 다시 계산 화면(ResultState)과 같은 말 (시안 '계산 결과', 11/20) */}
           <p className="text-[13px] font-bold text-ink-500">맞춤 혜택 결과</p>
-          <h1 className="mt-1 text-[21px] font-extrabold leading-[1.4] text-ink-900">
+          <h1 ref={titleRef} tabIndex={-1} className="mt-1 text-[21px] font-extrabold leading-[1.4] text-ink-900 outline-none">
             {resultHeadline}
           </h1>
           {/* 둘째 줄은 마감 임박일 때만 — 금액은 바로 아래 영수증이 말한다(11/18, 같은 금액 반복을 뺐다) */}
@@ -174,5 +199,20 @@ export default function ResultPage() {
       {/* 결과는 홈의 하위 화면 — 하단 섬은 '홈'에 불 (11/21 계산 탭을 달력 탭으로 바꿈) */}
       <BottomTabBar active="home" />
     </AppShell>
+  );
+
+  // 같은 자리에 두어 막이 걷힌 뒤 결과 화면이 다시 마운트되지 않게 한다(등장 움직임이 두 번 돌지 않게)
+  return (
+    <>
+      {(!showReveal || revealPhase === "leaving") && content}
+      {showReveal && (
+        <FoundReveal
+          count={cards.length}
+          leadState={leadState}
+          onLeave={() => setRevealPhase("leaving")}
+          onDone={() => setRevealPhase("done")}
+        />
+      )}
+    </>
   );
 }
